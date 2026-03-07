@@ -1,9 +1,10 @@
 import { Search, Bell, Mail, MoreHorizontal } from "lucide-react";
 import { SiSoundcloud } from "react-icons/si";
 import { Link } from "react-router-dom";
-
+import { Outlet } from "react-router-dom";
 export default function Navbar() {
   return (
+    <>
     <nav className="w-full h-12 bg-black text-white border-b border-zinc-800">
       <div className="max-w-[1200px] mx-auto h-full flex items-center justify-between px-6">
 
@@ -65,5 +66,7 @@ export default function Navbar() {
 
       </div>
     </nav>
+    <Outlet />
+    </>
   );
 }
