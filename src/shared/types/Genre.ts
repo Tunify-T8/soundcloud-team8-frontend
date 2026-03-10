@@ -1,4 +1,3 @@
-
 export const enum Genre {
    ALTERNATIVE_ROCK= 'alternative_rock',
    AMBIENT= 'ambient',
