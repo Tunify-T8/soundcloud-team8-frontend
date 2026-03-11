@@ -1,7 +1,11 @@
 import type { recorder } from "../types"
+import { useRef, useState } from "react"
 
 
 export default function Recorder({setMicOpen , micOpen}:recorder){
+    const[isRecording , setisRecording] =useState<boolean>(false);
+    const MediaStream = useRef(null);
+    const MediaRecoder = useRef(null);
     return(
      <main>   
                  {/* RECORD SECTION */}

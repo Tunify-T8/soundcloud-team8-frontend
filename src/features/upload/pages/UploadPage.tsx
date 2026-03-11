@@ -1,10 +1,12 @@
 import { useState, useRef, useCallback } from "react";
 import Recorder from "../components/Recorder";
-
+import TrackInfoPage from "../components/TrackInfo";
 export default function SoundCloudUpload() {
   const [isDragging, setIsDragging] = useState(false);
   const [micOpen, setMicOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [showTrackInfo, setShowTrackInfo] = useState(false);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -14,14 +16,30 @@ export default function SoundCloudUpload() {
   const handleDragLeave = useCallback(() => setIsDragging(false), []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  }, []);
-
+  e.preventDefault();
+  setIsDragging(false);
+  
+  const files = Array.from(e.dataTransfer.files);
+  if (files.length > 0) {
+    setUploadedFiles(files);
+    setShowTrackInfo(true);
+  }
+}, []);
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+    setUploadedFiles(files);
+    setShowTrackInfo(true);
+  }
+}, []);
   const handlemicdrop = () =>{
     setMicOpen(!micOpen);
 
   }
+  // Add this before the return statement
+if (showTrackInfo) {
+  return <TrackInfoPage />;
+}
 
   return (
     <div className="min-h-screen bg-[#111111] text-white flex flex-col font-sans">
@@ -108,13 +126,14 @@ export default function SoundCloudUpload() {
             `}
           >
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              accept="audio/*"
-              multiple
-            />
+         <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept="audio/*"
+          multiple
+          onChange={handleFileSelect} // Add this line
+         />
 
             <svg width="56" height="56" viewBox="0 0 80 80" fill="none">
               <circle cx="40" cy="40" r="39" fill="#1e1e1e"/>
