@@ -1,9 +1,10 @@
 // ============================================================
 // SIGN UP PAGE — Tunify
+// Responsive + Tell us more about you step
 // ============================================================
 
 import React, { useState, useEffect } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Loader2, ChevronLeft } from 'lucide-react';
@@ -12,53 +13,97 @@ import { signUpSchema, type SignUpFormData } from '../schemas/auth.schemas';
 import { register as registerUser } from '../services';
 import { storeTokens } from '../utils/token.utils';
 import { extractErrorMessage } from '../hooks/useAuth';
+import { isDisplayNameTaken } from '../data/mockUsers';
 
 const TunifyLogo: React.FC = () => (
   <Link to="/" className="flex items-center gap-2 no-underline">
-    <svg viewBox="0 0 33 15" className="h-7 w-auto" fill="white" aria-hidden="true">
+    <svg viewBox="0 0 33 15" className="h-6 w-auto sm:h-7" fill="white" aria-hidden="true">
       <path d="M0 11.5c0 .8.7 1.5 1.5 1.5s1.5-.7 1.5-1.5V6c0-.8-.7-1.5-1.5-1.5S0 5.2 0 6v5.5zm4.5 1.5c.8 0 1.5-.7 1.5-1.5V3.5C6 2.7 5.3 2 4.5 2S3 2.7 3 3.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V1.5C10.5.7 9.8 0 9 0S7.5.7 7.5 1.5V11.5C7.5 12.3 8.2 13 9 13zm4.5 0c.8 0 1.5-.7 1.5-1.5V3.5C15 2.7 14.3 2 13.5 2S12 2.7 12 3.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V2.5C19.5 1.7 18.8 1 18 1s-1.5.7-1.5 1.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V4.5C24 3.7 23.3 3 22.5 3S21 3.7 21 4.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V4.5C27 3.7 26.3 3 25.5 3S24 3.7 24 4.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V2.5C33 1.7 32.3 1 31.5 1S30 1.7 30 2.5V11.5c0 .8.7 1.5 1.5 1.5z" />
     </svg>
-    <span className="text-white font-bold text-base tracking-widest uppercase">Tunify</span>
+    <span className="text-white font-bold text-sm sm:text-base tracking-widest uppercase">Tunify</span>
   </Link>
 );
+
+// ── Date of birth constants ──
+const MONTHS = [
+  'January','February','March','April','May','June',
+  'July','August','September','October','November','December'
+];
+const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
+const currentYear = new Date().getFullYear();
+const YEARS = Array.from({ length: 100 }, (_, i) => currentYear - 13 - i);
+
+type SignUpStep = 'password' | 'profile';
 
 const SignUpPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const prefillEmail = (location.state as { email?: string })?.email ?? '';
 
+  // ── password step state ──
+  const [signUpStep, setSignUpStep] = useState<SignUpStep>('password');
   const [showPassword, setShowPassword] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [passwordValue, setPasswordValue] = useState('');
 
-  const { register, handleSubmit, formState: { errors }, control, reset } = useForm<SignUpFormData>({
+  // ── profile step state ──
+  const defaultDisplayName = prefillEmail.split('@')[0] ?? '';
+  const [displayName, setDisplayName] = useState(defaultDisplayName);
+  const [displayNameError, setDisplayNameError] = useState<string | null>(null);
+  const [dobMonth, setDobMonth] = useState('');
+  const [dobDay, setDobDay] = useState('');
+  const [dobYear, setDobYear] = useState('');
+  const [gender, setGender] = useState('');
+
+  const isPasswordReady = passwordValue.length >= 8;
+
+  // Profile form is valid when all fields are filled and no errors
+  const isProfileReady =
+    displayName.trim().length > 0 &&
+    !displayNameError &&
+    dobMonth !== '' &&
+    dobDay !== '' &&
+    dobYear !== '' &&
+    gender !== '';
+
+  const { register, formState: { errors }, reset } = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
-    defaultValues: {
-      email: prefillEmail,
-      agreeToTerms: false,
-    },
+    defaultValues: { email: prefillEmail, agreeToTerms: false },
   });
 
-  // Watch the password field live to enable/disable the button
-  const passwordValue = useWatch({ control, name: 'password', defaultValue: '' });
-  const isPasswordReady = (passwordValue ?? '').length >= 8;
-
-  // Clear everything on unmount (navigating away)
   useEffect(() => {
     return () => { reset(); };
   }, []);
 
-  const onSubmit = async (data: SignUpFormData) => {
+  const handleDisplayNameChange = (val: string) => {
+    setDisplayName(val);
+    if (val.trim().length === 0) {
+      setDisplayNameError('Display name is required');
+    } else if (isDisplayNameTaken(val.trim()) && val.trim().toLowerCase() !== defaultDisplayName.toLowerCase()) {
+      setDisplayNameError('This display name is already taken');
+    } else {
+      setDisplayNameError(null);
+    }
+  };
+
+  const handlePasswordContinue = () => {
+    if (!isPasswordReady) return;
+    setSignUpStep('profile');
+  };
+
+  const handleProfileContinue = async () => {
+    if (!isProfileReady) return;
     setApiError(null);
     setIsSubmitting(true);
     try {
       const res = await registerUser({
-        username: data.username ?? data.email.split('@')[0],
-        email: data.email,
-        password: data.password,
+        username: displayName,
+        email: prefillEmail,
+        password: passwordValue,
       });
       storeTokens(res.accessToken, res.refreshToken, 3600);
-      navigate('/confirm-email');
+      navigate('/');
     } catch (error) {
       setApiError(extractErrorMessage(error));
     } finally {
@@ -66,112 +111,242 @@ const SignUpPage: React.FC = () => {
     }
   };
 
+  const selectClass = "w-full bg-white text-black text-sm px-3 py-3 rounded-sm border border-[#555] focus:outline-none focus:border-[#888] appearance-none cursor-pointer";
+
   return (
     <div className="min-h-screen bg-[#0d0d0d] flex flex-col">
-      <header className="flex items-center justify-between px-6 py-3 bg-[#0d0d0d] border-b border-[#222]">
+
+      {/* ── Responsive Navbar ── */}
+      <header className="flex items-center justify-between px-4 sm:px-6 py-3 bg-[#0d0d0d] border-b border-[#222]">
         <TunifyLogo />
         <nav className="hidden md:flex items-center gap-8">
           <Link to="/" className="text-white text-sm font-medium hover:text-white/80">Home</Link>
           <Link to="/stream" className="text-white/60 text-sm hover:text-white">Feed</Link>
           <Link to="/discover" className="text-white/60 text-sm hover:text-white">Library</Link>
         </nav>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <Link to="/signin" className="text-white text-sm font-medium hover:text-white/80">Sign in</Link>
-          <Link to="/create-account" className="border border-white text-white text-sm font-medium px-5 py-1.5 rounded-full hover:bg-white hover:text-black transition-all">
+          <Link to="/create-account" className="hidden sm:inline-flex border border-white text-white text-sm font-medium px-5 py-1.5 rounded-full hover:bg-white hover:text-black transition-all">
             Create account
           </Link>
-          <button className="text-white/60 text-lg hover:text-white">···</button>
+          <button className="text-white/60 text-lg hover:text-white hidden sm:block">···</button>
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-4 py-10">
-        <div className="w-full max-w-[480px]">
-          <div className="border border-[#3a3a3a] rounded-sm p-[3px] bg-[#111]">
-            <div className="border border-[#555] rounded-sm bg-[#181818] min-h-[520px] p-8">
+      <main className="flex-1 flex items-start sm:items-center justify-center px-0 sm:px-4 py-0 sm:py-10">
+        <div className="w-full sm:max-w-[480px]">
 
-              <div className="flex items-center gap-4 mb-6">
-                <button type="button" onClick={() => navigate('/signin')}
-                  className="w-9 h-9 rounded-full bg-[#2a2a2a] hover:bg-[#3a3a3a] flex items-center justify-center transition-colors flex-shrink-0"
-                >
-                  <ChevronLeft className="h-5 w-5 text-white" />
-                </button>
-                <h1 className="text-white text-base font-bold">Create an account</h1>
-              </div>
+          <div className="sm:border sm:border-[#3a3a3a] sm:rounded-sm sm:p-[3px] sm:bg-[#111]">
+            <div className="sm:border sm:border-[#555] sm:rounded-sm bg-[#181818] sm:min-h-[520px]">
 
-              {apiError && (
-                <div role="alert" className="mb-4 px-4 py-3 bg-[#2a1a1a] border border-red-500/40 rounded text-red-400 text-sm">
-                  {apiError}
+              {/* ══ PASSWORD STEP ══ */}
+              {signUpStep === 'password' && (
+                <div className="px-6 py-8 sm:p-8">
+                  <div className="flex items-center gap-4 mb-6">
+                    <button
+                      type="button"
+                      onClick={() => navigate('/signin')}
+                      className="w-9 h-9 rounded-full bg-[#2a2a2a] hover:bg-[#3a3a3a] flex items-center justify-center transition-colors flex-shrink-0"
+                    >
+                      <ChevronLeft className="h-5 w-5 text-white" />
+                    </button>
+                    <h1 className="text-white text-base font-bold">Create an account</h1>
+                  </div>
+
+                  {apiError && (
+                    <div role="alert" className="mb-4 px-4 py-3 bg-[#2a1a1a] border border-red-500/40 rounded text-red-400 text-sm">
+                      {apiError}
+                    </div>
+                  )}
+
+                  {/* Email display */}
+                  {prefillEmail ? (
+                    <div className="mb-4">
+                      <p className="text-[#aaa] text-xs mb-1">Your email address</p>
+                      <p className="text-white text-sm font-medium">{prefillEmail}</p>
+                    </div>
+                  ) : (
+                    <div className="mb-4">
+                      <label className="block text-[#aaa] text-xs mb-1.5">Your email address</label>
+                      <input
+                        type="email"
+                        {...register('email')}
+                        placeholder="you@example.com"
+                        className={`w-full bg-[#2a2a2a] border rounded-sm px-4 py-3 text-white text-sm placeholder-[#666] focus:outline-none transition-colors ${errors.email ? 'border-red-500' : 'border-[#444] focus:border-[#888]'}`}
+                      />
+                      {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email.message}</p>}
+                    </div>
+                  )}
+
+                  {/* Password */}
+                  <div className="relative mb-4">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={passwordValue}
+                      onChange={(e) => setPasswordValue(e.target.value)}
+                      placeholder="Choose a password (min. 8 characters)"
+                      className="w-full bg-[#2a2a2a] border border-[#444] rounded-sm px-4 py-3 pr-10 text-white text-sm placeholder-[#666] focus:outline-none focus:border-[#888] transition-colors"
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#777] hover:text-white"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+
+                  {/* Continue — dark/disabled until 8 chars, white when ready */}
+                  <button
+                    type="button"
+                    onClick={handlePasswordContinue}
+                    disabled={!isPasswordReady}
+                    className={`w-full py-3 rounded-sm text-sm font-semibold transition-all flex items-center justify-center gap-2 mb-4 ${
+                      isPasswordReady
+                        ? 'bg-white hover:bg-gray-100 text-black cursor-pointer'
+                        : 'bg-[#333] text-[#888] cursor-not-allowed border border-[#444]'
+                    }`}
+                  >
+                    Continue
+                  </button>
+
+                  <Link to="/forgot-password" className="text-[#0066cc] text-sm hover:underline">Need help?</Link>
                 </div>
               )}
 
-              <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
-
-                {/* Email — read-only text if pre-filled, editable if not */}
-                {prefillEmail ? (
-                  <div>
-                    <p className="text-[#aaa] text-xs mb-1">Your email address</p>
-                    <p className="text-white text-sm font-medium">{prefillEmail}</p>
-                    <input type="hidden" {...register('email')} value={prefillEmail} />
+              {/* ══ PROFILE STEP — Tell us more about you ══ */}
+              {signUpStep === 'profile' && (
+                <div className="px-6 py-8 sm:p-8">
+                  <div className="flex items-center gap-4 mb-6">
+                    <button
+                      type="button"
+                      onClick={() => { setSignUpStep('password'); setApiError(null); }}
+                      className="w-9 h-9 rounded-full bg-[#2a2a2a] hover:bg-[#3a3a3a] flex items-center justify-center transition-colors flex-shrink-0"
+                    >
+                      <ChevronLeft className="h-5 w-5 text-white" />
+                    </button>
+                    <h1 className="text-white text-base font-bold">Tell us more about you</h1>
                   </div>
-                ) : (
-                  <div>
-                    <label htmlFor="email" className="block text-[#aaa] text-xs mb-1.5">Your email address</label>
-                    <input
-                      id="email"
-                      type="email"
-                      {...register('email')}
-                      placeholder="you@example.com"
-                      className={`w-full bg-[#2a2a2a] border rounded-sm px-4 py-3 text-white text-sm placeholder-[#666] focus:outline-none transition-colors ${errors.email ? 'border-red-500' : 'border-[#444] focus:border-[#888]'}`}
-                      autoComplete="email"
-                    />
-                    {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email.message}</p>}
-                  </div>
-                )}
 
-                {/* Password */}
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    {...register('password')}
-                    placeholder="Choose a password (min. 8 characters)"
-                    className={`w-full bg-[#2a2a2a] border rounded-sm px-4 py-3 pr-10 text-white text-sm placeholder-[#666] focus:outline-none transition-colors ${errors.password ? 'border-red-500' : 'border-[#444] focus:border-[#888]'}`}
-                    autoComplete="new-password"
-                  />
-                  <button type="button" onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#777] hover:text-white"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+                  {apiError && (
+                    <div role="alert" className="mb-4 px-4 py-3 bg-[#2a1a1a] border border-red-500/40 rounded text-red-400 text-sm">
+                      {apiError}
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-4">
+
+                    {/* Display name */}
+                    <div>
+                      <div className={`bg-[#2a2a2a] border rounded-sm px-4 pt-2 pb-2 ${displayNameError ? 'border-red-500' : 'border-[#555] focus-within:border-[#888]'} transition-colors`}>
+                        <label className="block text-[#aaa] text-xs mb-0.5">Display name</label>
+                        <input
+                          type="text"
+                          value={displayName}
+                          onChange={(e) => handleDisplayNameChange(e.target.value)}
+                          className="w-full bg-transparent text-white text-sm focus:outline-none placeholder-[#666]"
+                          placeholder="Your display name"
+                        />
+                      </div>
+                      {displayNameError
+                        ? <p className="text-red-400 text-xs mt-1">{displayNameError}</p>
+                        : <p className="text-[#777] text-xs mt-1">Your display name can be anything you like. Your name or artist name are good choices.</p>
+                      }
+                    </div>
+
+                    {/* Date of birth */}
+                    <div>
+                      <p className="text-white text-sm font-medium mb-2">Date of birth <span className="text-[#aaa] font-normal">(required)</span></p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {/* Month */}
+                        <div className="relative">
+                          <select
+                            value={dobMonth}
+                            onChange={(e) => setDobMonth(e.target.value)}
+                            className={selectClass}
+                          >
+                            <option value="" disabled>Month</option>
+                            {MONTHS.map((m, i) => (
+                              <option key={m} value={String(i + 1)}>{m}</option>
+                            ))}
+                          </select>
+                          <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-black text-xs">▼</div>
+                        </div>
+                        {/* Day */}
+                        <div className="relative">
+                          <select
+                            value={dobDay}
+                            onChange={(e) => setDobDay(e.target.value)}
+                            className={selectClass}
+                          >
+                            <option value="" disabled>Day</option>
+                            {DAYS.map((d) => (
+                              <option key={d} value={String(d)}>{d}</option>
+                            ))}
+                          </select>
+                          <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-black text-xs">▼</div>
+                        </div>
+                        {/* Year */}
+                        <div className="relative">
+                          <select
+                            value={dobYear}
+                            onChange={(e) => setDobYear(e.target.value)}
+                            className={selectClass}
+                          >
+                            <option value="" disabled>Year</option>
+                            {YEARS.map((y) => (
+                              <option key={y} value={String(y)}>{y}</option>
+                            ))}
+                          </select>
+                          <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-black text-xs">▼</div>
+                        </div>
+                      </div>
+                      <p className="text-[#777] text-xs mt-1">Your date of birth is used to verify your age and is not shared publicly.</p>
+                    </div>
+
+                    {/* Gender */}
+                    <div>
+                      <div className="relative">
+                        <select
+                          value={gender}
+                          onChange={(e) => setGender(e.target.value)}
+                          className={`w-full bg-[#2a2a2a] border text-sm px-4 py-3 rounded-sm focus:outline-none transition-colors appearance-none cursor-pointer ${gender === '' ? 'text-[#666] border-[#555]' : 'text-white border-[#555]'} focus:border-[#888]`}
+                        >
+                          <option value="" disabled>Gender (required)</option>
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                        </select>
+                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#777] text-xs">▼</div>
+                      </div>
+                    </div>
+
+                    {/* Continue button */}
+                    <button
+                      type="button"
+                      onClick={handleProfileContinue}
+                      disabled={!isProfileReady || isSubmitting}
+                      className={`w-full py-3 rounded-sm text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+                        isProfileReady && !isSubmitting
+                          ? 'bg-white hover:bg-gray-100 text-black cursor-pointer'
+                          : 'bg-[#333] text-[#888] cursor-not-allowed border border-[#444]'
+                      }`}
+                    >
+                      {isSubmitting
+                        ? <><Loader2 className="h-4 w-4 animate-spin" />Creating account…</>
+                        : 'Continue'
+                      }
+                    </button>
+
+                    <Link to="/forgot-password" className="text-[#0066cc] text-sm hover:underline">Need help?</Link>
+                  </div>
                 </div>
-                {errors.password && <p className="text-red-400 text-xs -mt-3">{errors.password.message}</p>}
+              )}
 
-                {/* Hidden fields */}
-                <input type="hidden" {...register('username')} value={prefillEmail.split('@')[0] || 'user'} />
-                <input type="hidden" {...register('confirmPassword')} value={passwordValue ?? ''} />
-                <input type="hidden" {...register('agreeToTerms')} value="true" />
-
-                {/* Continue button — disabled + dark until 8 chars, white when ready */}
-                <button
-                  type="submit"
-                  disabled={!isPasswordReady || isSubmitting}
-                  className={`w-full py-3 rounded-sm text-sm font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                    isPasswordReady
-                      ? 'bg-white hover:bg-gray-100 text-black'
-                      : 'bg-[#333] text-[#888] cursor-not-allowed border border-[#444]'
-                  }`}
-                >
-                  {isSubmitting
-                    ? <><Loader2 className="h-4 w-4 animate-spin" />Creating account…</>
-                    : 'Continue'
-                  }
-                </button>
-
-                <Link to="/forgot-password" className="text-[#0066cc] text-sm hover:underline">Need help?</Link>
-              </form>
             </div>
           </div>
 
-          <p className="text-center text-[#777] text-sm mt-6">
+          <p className="hidden sm:block text-center text-[#777] text-sm mt-6">
             Already have an account?{' '}
             <Link to="/signin" className="text-white hover:underline font-medium">Sign in</Link>
           </p>

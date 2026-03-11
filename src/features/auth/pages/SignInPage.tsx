@@ -1,5 +1,6 @@
 // ============================================================
 // SIGN IN PAGE — Tunify
+// Responsive + multi-step including "Tell us more about you"
 // ============================================================
 
 import React, { useRef, useState, useEffect } from 'react';
@@ -64,24 +65,27 @@ const SocialButton: React.FC<SocialButtonProps> = ({
 
 const TunifyLogo: React.FC = () => (
   <Link to="/" className="flex items-center gap-2 no-underline">
-    <svg viewBox="0 0 33 15" className="h-7 w-auto" fill="white" aria-hidden="true">
+    <svg viewBox="0 0 33 15" className="h-6 w-auto sm:h-7" fill="white" aria-hidden="true">
       <path d="M0 11.5c0 .8.7 1.5 1.5 1.5s1.5-.7 1.5-1.5V6c0-.8-.7-1.5-1.5-1.5S0 5.2 0 6v5.5zm4.5 1.5c.8 0 1.5-.7 1.5-1.5V3.5C6 2.7 5.3 2 4.5 2S3 2.7 3 3.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V1.5C10.5.7 9.8 0 9 0S7.5.7 7.5 1.5V11.5C7.5 12.3 8.2 13 9 13zm4.5 0c.8 0 1.5-.7 1.5-1.5V3.5C15 2.7 14.3 2 13.5 2S12 2.7 12 3.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V2.5C19.5 1.7 18.8 1 18 1s-1.5.7-1.5 1.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V4.5C24 3.7 23.3 3 22.5 3S21 3.7 21 4.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V4.5C27 3.7 26.3 3 25.5 3S24 3.7 24 4.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V2.5C33 1.7 32.3 1 31.5 1S30 1.7 30 2.5V11.5c0 .8.7 1.5 1.5 1.5z" />
     </svg>
-    <span className="text-white font-bold text-base tracking-widest uppercase">Tunify</span>
+    <span className="text-white font-bold text-sm sm:text-base tracking-widest uppercase">Tunify</span>
   </Link>
 );
 
 type Step = 'social' | 'email' | 'password';
 
-const isValidEmail = (val: string) =>
-  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
+const isValidEmail = (val: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
+
+// const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+// const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
+// const currentYear = new Date().getFullYear();
+// const YEARS = Array.from({ length: 100 }, (_, i) => currentYear - 13 - i);
 
 const SignInPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: Location })?.from?.pathname ?? '/';
 
-  // ── All state resets when component mounts (i.e. every time you navigate here)
   const [step, setStep] = useState<Step>('social');
   const [emailInput, setEmailInput] = useState('');
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -97,7 +101,6 @@ const SignInPage: React.FC = () => {
     resolver: zodResolver(signInSchema),
   });
 
-  // Reset everything when navigating away and back
   useEffect(() => {
     return () => {
       setStep('social');
@@ -109,9 +112,7 @@ const SignInPage: React.FC = () => {
     };
   }, []);
 
-  const handleEmailFocus = () => {
-    if (step === 'social') setStep('email');
-  };
+  const handleEmailFocus = () => { if (step === 'social') setStep('email'); };
 
   const handleBack = () => {
     setApiError(null);
@@ -122,22 +123,17 @@ const SignInPage: React.FC = () => {
 
   const handleEmailContinue = async () => {
     const email = emailInput.trim();
-
-    // Validate format first
     if (!isValidEmail(email)) {
       setEmailError('Enter a valid email address or profile url.');
       return;
     }
-
     setEmailError(null);
     setIsCheckingEmail(true);
     await new Promise((r) => setTimeout(r, 400));
-
     if (!isKnownEmail(email)) {
       navigate('/create-account', { state: { email } });
       return;
     }
-
     setValue('email', email);
     setStep('password');
     setIsCheckingEmail(false);
@@ -178,47 +174,75 @@ const SignInPage: React.FC = () => {
 
   const isSocialDisabled = socialLoading !== null || isSubmitting || isCheckingEmail;
 
+  // ── Shared back button ──
+  const BackButton = ({ onClick }: { onClick: () => void }) => (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-9 h-9 rounded-full bg-[#2a2a2a] hover:bg-[#3a3a3a] flex items-center justify-center transition-colors flex-shrink-0"
+    >
+      <ChevronLeft className="h-5 w-5 text-white" />
+    </button>
+  );
+
   return (
     <div className="min-h-screen bg-[#0d0d0d] flex flex-col">
-      <header className="flex items-center justify-between px-6 py-3 bg-[#0d0d0d] border-b border-[#222]">
+
+      {/* ── Responsive Navbar ── */}
+      <header className="flex items-center justify-between px-4 sm:px-6 py-3 bg-[#0d0d0d] border-b border-[#222]">
         <TunifyLogo />
+        {/* Nav links — hidden on mobile */}
         <nav className="hidden md:flex items-center gap-8">
           <Link to="/" className="text-white text-sm font-medium hover:text-white/80">Home</Link>
           <Link to="/stream" className="text-white/60 text-sm hover:text-white">Feed</Link>
           <Link to="/discover" className="text-white/60 text-sm hover:text-white">Library</Link>
         </nav>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <Link to="/signin" className="text-white text-sm font-medium hover:text-white/80">Sign in</Link>
-          <Link to="/create-account" className="border border-white text-white text-sm font-medium px-5 py-1.5 rounded-full hover:bg-white hover:text-black transition-all">
+          <Link to="/create-account" className="hidden sm:inline-flex border border-white text-white text-sm font-medium px-5 py-1.5 rounded-full hover:bg-white hover:text-black transition-all">
             Create account
           </Link>
-          <button className="text-white/60 text-lg hover:text-white">···</button>
+          <button className="text-white/60 text-lg hover:text-white hidden sm:block">···</button>
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-4 py-10">
-        <div className="w-full max-w-[480px]">
-          <div className="border border-[#3a3a3a] rounded-sm p-[3px] bg-[#111]">
-            <div className="border border-[#555] rounded-sm bg-[#181818] min-h-[520px]">
+      {/* ── Main ── */}
+      {/*
+        Responsive layout:
+        - On mobile (< sm): full-width, no border card, padded content
+        - On sm+ (≥ 640px): centered card with double border
+      */}
+      <main className="flex-1 flex items-start sm:items-center justify-center px-0 sm:px-4 py-0 sm:py-10">
+        <div className="w-full sm:max-w-[480px]">
+
+          {/* Card wrapper — border only on sm+ */}
+          <div className="sm:border sm:border-[#3a3a3a] sm:rounded-sm sm:p-[3px] sm:bg-[#111]">
+            <div className="sm:border sm:border-[#555] sm:rounded-sm bg-[#181818] sm:min-h-[520px]">
 
               {/* ══ STEP: social ══ */}
               {step === 'social' && (
-                <div className="p-8 flex flex-col gap-3">
-                  <h1 className="text-white text-xl font-bold mb-1 text-center">Sign in or create an account</h1>
-                  <p className="text-[#999] text-xs mb-2 leading-relaxed text-center">
+                <div className="px-6 py-8 sm:p-8 flex flex-col gap-3">
+                  {/* Title — left-aligned on mobile like screenshot, centered on desktop */}
+                  <h1 className="text-white text-2xl sm:text-xl font-bold mb-1 text-left sm:text-center leading-tight">
+                    Sign in or create an account
+                  </h1>
+                  <p className="text-[#999] text-xs mb-2 leading-relaxed text-left sm:text-center">
                     By clicking "Continue" you agree to Tunify's{' '}
                     <a href="#" className="text-[#0066cc] hover:underline">Terms of Use</a>{' '}
                     and acknowledge our{' '}
                     <a href="#" className="text-[#0066cc] hover:underline">Privacy Policy</a>.
                   </p>
+
                   <SocialButton provider="facebook" label="Continue with Facebook" icon={<FacebookIcon />} bgColor="bg-[#1877f2]" hoverColor="hover:bg-[#1565d8]" onClick={handleSocialLogin} disabled={isSocialDisabled} />
                   <SocialButton provider="google" label="Continue with Google" icon={<GoogleIcon />} bgColor="bg-[#3c3c3c]" hoverColor="hover:bg-[#4a4a4a]" onClick={handleSocialLogin} disabled={isSocialDisabled} />
                   <SocialButton provider="apple" label="Continue with Apple" icon={<AppleIcon />} bgColor="bg-black" hoverColor="hover:bg-[#1a1a1a]" borderColor="border-[#555]" onClick={handleSocialLogin} disabled={isSocialDisabled} />
+
                   <div className="flex items-center gap-3 my-1">
                     <div className="flex-1 h-px bg-[#444]" />
                     <span className="text-white text-sm font-semibold whitespace-nowrap">Or with email</span>
                     <div className="flex-1 h-px bg-[#444]" />
                   </div>
+
                   <input
                     ref={emailRef}
                     type="email"
@@ -235,25 +259,20 @@ const SignInPage: React.FC = () => {
                   >
                     Continue
                   </button>
-                  <div className="text-center">
+                  <div className="text-left sm:text-center">
                     <Link to="/forgot-password" className="text-[#0066cc] text-sm hover:underline">Need help?</Link>
                   </div>
                 </div>
               )}
 
-              {/* ══ STEP: email (focused) ══ */}
+              {/* ══ STEP: email focused ══ */}
               {step === 'email' && (
-                <div className="p-8">
+                <div className="px-6 py-8 sm:p-8">
                   <div className="flex items-center gap-4 mb-6">
-                    <button type="button" onClick={handleBack}
-                      className="w-9 h-9 rounded-full bg-[#2a2a2a] hover:bg-[#3a3a3a] flex items-center justify-center transition-colors flex-shrink-0"
-                    >
-                      <ChevronLeft className="h-5 w-5 text-white" />
-                    </button>
+                    <BackButton onClick={handleBack} />
                     <h1 className="text-white text-base font-bold">Sign in or create an account</h1>
                   </div>
 
-                  {/* Email input with error state */}
                   <div className="relative mb-1">
                     <input
                       autoFocus
@@ -271,10 +290,10 @@ const SignInPage: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  {emailError && (
-                    <p className="text-red-500 text-xs mb-3 mt-1">{emailError}</p>
-                  )}
-                  {!emailError && <div className="mb-4" />}
+                  {emailError
+                    ? <p className="text-red-500 text-xs mb-3 mt-1">{emailError}</p>
+                    : <div className="mb-4" />
+                  }
 
                   <button type="button" onClick={handleEmailContinue}
                     disabled={!emailInput.trim() || isCheckingEmail}
@@ -289,13 +308,9 @@ const SignInPage: React.FC = () => {
 
               {/* ══ STEP: password ══ */}
               {step === 'password' && (
-                <div className="p-8">
+                <div className="px-6 py-8 sm:p-8">
                   <div className="flex items-center gap-4 mb-6">
-                    <button type="button" onClick={handleBack}
-                      className="w-9 h-9 rounded-full bg-[#2a2a2a] hover:bg-[#3a3a3a] flex items-center justify-center transition-colors flex-shrink-0"
-                    >
-                      <ChevronLeft className="h-5 w-5 text-white" />
-                    </button>
+                    <BackButton onClick={handleBack} />
                     <h1 className="text-white text-base font-bold">Welcome back!</h1>
                   </div>
 
@@ -326,14 +341,14 @@ const SignInPage: React.FC = () => {
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
-                    {errors.password && (
-                      <p className="text-red-400 text-xs -mt-3 mb-3">{errors.password.message}</p>
-                    )}
+                    {errors.password && <p className="text-red-400 text-xs -mt-3 mb-3">{errors.password.message}</p>}
+
                     <button type="submit" disabled={isSubmitting}
                       className="w-full bg-white hover:bg-gray-200 text-black py-3 rounded-sm text-sm font-semibold transition-colors disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer mb-4"
                     >
                       {isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin text-black" />Signing in…</> : 'Continue'}
                     </button>
+
                     <Link to="/forgot-password" className="text-[#0066cc] text-sm hover:underline">Forgot your password?</Link>
                   </form>
                 </div>
@@ -341,7 +356,9 @@ const SignInPage: React.FC = () => {
 
             </div>
           </div>
-          <p className="text-center text-[#777] text-sm mt-6">
+
+          {/* Below card — hidden on mobile (no space), shown on sm+ */}
+          <p className="hidden sm:block text-center text-[#777] text-sm mt-6">
             Don't have an account?{' '}
             <Link to="/create-account" className="text-white hover:underline font-medium">Create one for free</Link>
           </p>
