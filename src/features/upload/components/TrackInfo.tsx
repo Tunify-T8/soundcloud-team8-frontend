@@ -1,20 +1,7 @@
 import { useState } from "react";
+import type { ToggleProps } from "../types";
+import type {TogglesState} from "../types"
 
-interface ToggleProps {
-  enabled: boolean;
-  onChange: (val: boolean) => void;
-}
-
-interface TogglesState {
-  downloads: boolean;
-  offline: boolean;
-  rss: boolean;
-  embed: boolean;
-  appPlayback: boolean;
-  comments: boolean;
-  showComments: boolean;
-  insights: boolean;
-}
 
 function Toggle({ enabled, onChange }: ToggleProps) {
   return (
