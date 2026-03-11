@@ -1,0 +1,230 @@
+import { useState, useRef, useCallback } from "react";
+
+export default function SoundCloudUpload() {
+  const [isDragging, setIsDragging] = useState(false);
+  const [micOpen, setMicOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback(() => setIsDragging(false), []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-[#111111] text-white flex flex-col font-sans">
+
+      {/* HEADER */}
+      <header className="flex items-center justify-between px-8 py-4 border-b border-[#222]">
+        <div className="flex items-center gap-3">
+          <svg viewBox="0 0 55 18" width="55" height="18" fill="white">
+            <path d="M6.5 17C3.46 17 1 14.54 1 11.5c0-2.3 1.4-4.27 3.43-5.1A6.5 6.5 0 0 1 11 1a6.49 6.49 0 0 1 6.13 4.3A4.5 4.5 0 0 1 22 9.75V17H6.5z"/>
+            <rect x="25" y="5" width="2.2" height="12" rx="1.1"/>
+            <rect x="29" y="3" width="2.2" height="14" rx="1.1"/>
+            <rect x="33" y="1" width="2.2" height="16" rx="1.1"/>
+            <rect x="37" y="4" width="2.2" height="13" rx="1.1"/>
+            <rect x="41" y="6" width="2.2" height="11" rx="1.1"/>
+            <rect x="45" y="3" width="2.2" height="14" rx="1.1"/>
+            <rect x="49" y="5" width="2.2" height="12" rx="1.1"/>
+          </svg>
+
+          <span className="text-[15px] font-semibold">Upload</span>
+        </div>
+
+        <button className="text-[#888] hover:text-white transition">
+          <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </header>
+
+
+      {/* MAIN */}
+      <main className="flex-1 flex justify-center px-6 py-10">
+        <div className="w-full max-w-[1100px]">
+
+          {/* PROGRESS */}
+          <div className="bg-[#1f1f1f] border border-[#2a2a2a] rounded-lg px-6 py-4 flex items-center gap-4 mb-10 shadow-[0_0_0_1px_rgba(255,255,255,0.02),0_10px_30px_rgba(0,0,0,0.6)]">
+
+            <span className="text-[13px] text-[#aaa] whitespace-nowrap">
+              0% of uploads used
+            </span>
+
+            <div className="flex-1 h-[6px] bg-[#2c2c2c] rounded-full overflow-hidden">
+              <div className="h-full w-0 bg-[#ff5500]" />
+            </div>
+
+            <span className="text-[13px] text-[#aaa] whitespace-nowrap">
+              0 of 120 minutes
+            </span>
+
+            <button className="ml-auto border border-[#444] text-[13px] px-4 py-1.5 rounded-full hover:bg-[#2a2a2a] transition">
+              Get unlimited uploads
+            </button>
+          </div>
+
+
+          {/* TITLE */}
+          <h1 className="text-[26px] font-semibold mb-2">
+            Upload your audio files.
+          </h1>
+
+          <p className="text-[13px] text-[#888] mb-8">
+            For best quality, use WAV, FLAC, AIFF, or ALAC. The maximum file size is 4GB uncompressed.
+            <a className="underline ml-1 hover:text-white cursor-pointer">
+              Learn more
+            </a>
+          </p>
+
+
+          {/* DROPZONE */}
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            className={`
+              border border-dashed rounded-lg w-full
+              flex flex-col items-center justify-center
+              cursor-pointer transition-all mb-6 py-20
+              shadow-[0_0_0_1px_rgba(255,255,255,0.02),0_15px_40px_rgba(0,0,0,0.7)]
+              ${isDragging
+                ? "border-[#ff5500] bg-[#ff5500]/5"
+                : "border-[#333] hover:border-[#444]"
+              }
+            `}
+          >
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept="audio/*"
+              multiple
+            />
+
+            <svg width="56" height="56" viewBox="0 0 80 80" fill="none">
+              <circle cx="40" cy="40" r="39" fill="#1e1e1e"/>
+              <path
+                d="M54 46C57 45 59 42.2 59 39c0-4-3.3-7.3-7.3-7.3-.5 0-1 .1-1.4.2C49 27.5 45.3 25 41 25c-5.5 0-10 4.3-10 9.6v.4C27.7 36 25 39 25 42.5c0 4 3.3 7.5 7.5 7.5H53"
+                stroke="#888"
+                strokeWidth="2"
+              />
+              <path d="M40 56V42" stroke="#ff5500" strokeWidth="3"/>
+              <path d="M34 48l6-6 6 6" stroke="#ff5500" strokeWidth="3"/>
+            </svg>
+
+            <p className="mt-6 text-[15px] font-semibold">
+              Drag and drop audio files to get started.
+            </p>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                fileInputRef.current?.click();
+              }}
+              className="mt-4 bg-white text-black rounded-full px-6 py-2 text-[13px] font-semibold hover:bg-[#eee]"
+            >
+              Choose files
+            </button>
+          </div>
+
+
+          {/* RECORD SECTION */}
+          <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded-xl overflow-hidden shadow-[0_0_0_1px_rgba(255,255,255,0.02),0_15px_40px_rgba(0,0,0,0.7)]">
+
+            <button
+              className="w-full flex items-center justify-between px-8 py-5 hover:bg-[#202020]"
+              onClick={() => setMicOpen(!micOpen)}
+            >
+
+              <div className="flex items-center gap-5">
+
+                {/* ORIGINAL MIC ICON (UNCHANGED) */}
+                <div className="flex items-center gap-1.5 text-[#ccc]">
+
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" y1="19" x2="12" y2="23"/>
+                    <line x1="8" y1="23" x2="16" y2="23"/>
+                  </svg>
+
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+
+                </div>
+
+                <div className="text-left">
+                  <p className="text-[15px] font-semibold">
+                    Or record with a microphone
+                  </p>
+
+                  <p className="text-[13px] text-[#888] mt-1">
+                    Upload recorded voice memos, updates, news, or intros to new releases.
+                  </p>
+                </div>
+
+              </div>
+
+            </button>
+
+
+            {micOpen && (
+              <div className="px-8 py-6 border-t border-[#2a2a2a] bg-[#181818] flex flex-col items-center text-center gap-3">
+
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#f59e0b">
+                  <path d="M12 2L1 21h22L12 2z"/>
+                </svg>
+
+                <p className="text-[14px] font-semibold text-amber-400">
+                  No microphone found
+                </p>
+
+                <p className="text-[13px] text-[#888]">
+                  Please allow microphone access in your web browser settings.
+                </p>
+
+              </div>
+            )}
+
+          </div>
+
+        </div>
+      </main>
+
+
+      {/* FOOTER */}
+      <footer className="border-t border-[#1e1e1e] py-6 flex justify-center flex-wrap gap-2 text-[12px] text-[#666]">
+
+        {[
+          "Legal",
+          "Privacy",
+          "Cookie Policy",
+          "Cookie Manager",
+          "Imprint",
+          "About us",
+          "Copyright",
+          "Feedback"
+        ].map((item, i) => (
+          <span key={i} className="flex items-center">
+            <a className="hover:text-[#aaa] px-1 cursor-pointer">
+              {item}
+            </a>
+            {i < 7 && <span>-</span>}
+          </span>
+        ))}
+
+      </footer>
+
+    </div>
+  );
+}
