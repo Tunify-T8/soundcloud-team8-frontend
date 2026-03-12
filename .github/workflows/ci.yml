@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint
+
+  docker:
+    name: Docker Build (Test + Build)
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --build-arg VITE_USE_MOCK=${{ secrets.VITE_REAL_API_URL && 'false' || 'true' }} \
+            --build-arg VITE_REAL_API_URL=${{ secrets.VITE_REAL_API_URL }} \
+            -t soundcloud-frontend .
