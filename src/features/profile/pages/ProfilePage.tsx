@@ -1,11 +1,14 @@
-import Header from "../components/Header";
-
+import Header from "../components/Header/Header";
+import Menu from "../components/Menu/Menu";
+import { Outlet } from "react-router-dom";
 export default function ProfilePage() {
   return (
     <div className="min-h-screen text-white">
-      <Header src="/path/to/header-image.jpg" name="John Doe" username="johndoe" />
-      <h1 className="text-3xl font-bold p-6">Profile Page</h1>
-      {/* Add profile details and tracks here */}
+      <Header name="John Doe" username="johndoe" location="Egypt"/>
+      <section>
+        <Menu />
+      </section>
+      <Outlet />
     </div>
   );
 }

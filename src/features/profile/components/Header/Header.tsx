@@ -1,13 +1,15 @@
 import Avatar from "./Avatar";
-import UserName from "./UserName";
+import UserName from "./UserDetails";
 import HeaderImg from "./HeaderImg";
 
 export default function Header({
   name,
   username,
+  location,
 }: {
   name?: string;
   username?: string;
+  location?: string;
 }) {
   return (
     <div className="item-center flex justify-center w-full">
@@ -17,7 +19,7 @@ export default function Header({
           <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full bg-gray-300">
             <Avatar />
           </div>
-          <UserName name={name} username={username} />
+          <UserName name={name} username={username} location={location} />
         </div>
       </div>
     </div>
