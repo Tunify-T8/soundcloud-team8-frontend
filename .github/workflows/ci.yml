@@ -1,8 +1,10 @@
-name: CI
+name: CI/CD
 
 on:
   pull_request:
     branches: [main, develop]
+  push:
+    branches: [main]
 
 jobs:
   lint:
@@ -32,3 +34,38 @@ jobs:
             --build-arg VITE_USE_MOCK=${{ secrets.VITE_REAL_API_URL && 'false' || 'true' }} \
             --build-arg VITE_REAL_API_URL=${{ secrets.VITE_REAL_API_URL }} \
             -t soundcloud-frontend .
+
+  deploy:
+    name: Deploy to Azure
+    needs: docker
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        run: |
+          docker build \
+            --build-arg VITE_USE_MOCK=${{ secrets.VITE_REAL_API_URL && 'false' || 'true' }} \
+            --build-arg VITE_REAL_API_URL=${{ secrets.VITE_REAL_API_URL }} \
+            -t amirdiaa/soundcloud-frontend:latest \
+            -t amirdiaa/soundcloud-frontend:${{ github.sha }} .
+          docker push amirdiaa/soundcloud-frontend:latest
+          docker push amirdiaa/soundcloud-frontend:${{ github.sha }}
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: soundcloud-t8-app
+          images: amirdiaa/soundcloud-frontend:${{ github.sha }}
