@@ -35,8 +35,8 @@ jobs:
             --build-arg VITE_REAL_API_URL=${{ secrets.VITE_REAL_API_URL }} \
             -t soundcloud-frontend .
 
-  deploy:
-    name: Deploy to Azure
+  push:
+    name: Push to Docker Hub
     needs: docker
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -58,6 +58,14 @@ jobs:
             -t amirdiaa/soundcloud-frontend:${{ github.sha }} .
           docker push amirdiaa/soundcloud-frontend:latest
           docker push amirdiaa/soundcloud-frontend:${{ github.sha }}
+
+  deploy:
+    name: Deploy to Azure
+    needs: push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_AZURE == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Login to Azure
         uses: azure/login@v2
