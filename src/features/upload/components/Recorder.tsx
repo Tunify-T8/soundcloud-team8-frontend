@@ -1,11 +1,6 @@
 import { useRef, useState, useEffect } from "react"
-
-type RecorderProps = {
-  setMicOpen: (open: boolean) => void
-  micOpen: boolean
-}
-
-type PermissionState = "idle" | "granted" | "denied" | "requesting"
+import type { RecorderProps } from "../types"
+import type { PermissionState } from "../types"
 
 export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
   const [permission, setPermission] = useState<PermissionState>("idle")

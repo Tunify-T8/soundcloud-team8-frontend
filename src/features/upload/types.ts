@@ -1,7 +1,7 @@
 
-export type recorder={
-    setMicOpen:React.Dispatch<React.SetStateAction<boolean>> ,
-    micOpen:boolean,
+export type RecorderProps = {
+  setMicOpen: (open: boolean) => void
+  micOpen: boolean
 }
 
 export type ToggleProps  = {
@@ -19,3 +19,4 @@ export type TogglesState =  {
   showComments: boolean;
   insights: boolean;
 }
+export type PermissionState = "idle" | "granted" | "denied" | "requesting"
