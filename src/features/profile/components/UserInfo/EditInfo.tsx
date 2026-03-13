@@ -49,7 +49,7 @@ export default function EditInfo({
 
           <div>
             <div>
-              <label className="mb-2 block text-sm font-semibold text-white">
+              <label className="mb-2 block text-sm font-bold text-white">
                 Display name
               </label>
               <input
@@ -62,7 +62,7 @@ export default function EditInfo({
 
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <div>
-                <label className="mb-2 block text-sm font-semibold text-white">
+                <label className="mb-2 block text-sm font-bold text-white">
                   City
                 </label>
                 <input
@@ -73,7 +73,7 @@ export default function EditInfo({
                 />
               </div>
               <div>
-                <label className="mb-2 block text-sm font-semibold text-white">
+                <label className="mb-2 block text-sm font-bold text-white">
                   Country
                 </label>
                 <input
@@ -86,7 +86,7 @@ export default function EditInfo({
             </div>
 
             <div className="mt-4">
-              <label className="mb-2 block text-sm font-semibold text-white">
+              <label className="mb-2 block text-sm font-bold text-white">
                 Bio
               </label>
               <textarea

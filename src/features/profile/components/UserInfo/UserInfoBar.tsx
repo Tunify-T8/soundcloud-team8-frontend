@@ -1,14 +1,15 @@
 import Tab from "./Tab";
 import EditInfo from "./EditInfo";
+import { FaUser, FaPen } from "react-icons/fa";
 import { NavLink } from "react-router-dom";
-import { PenLine, Upload } from "lucide-react";
+import { Upload } from "lucide-react";
 import { useState } from "react";
 
 export default function UserInfoBar({
   displayName,
   country,
   city,
-  bio
+  bio,
 }: {
   displayName?: string;
   country?: string;
@@ -39,7 +40,11 @@ export default function UserInfoBar({
             </NavLink>
           ))}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <button className="inline-flex items-center gap-2 rounded-sm bg-white px-3 py-1.5 text-sm font-bold text-black hover:text-zinc-500 cursor-pointer">
+            <FaUser />
+            <span>Follow</span>
+          </button>
           <button className="inline-flex items-center gap-2 rounded-sm bg-zinc-800 px-3 py-1.5 text-sm font-bold text-white hover:text-zinc-500 cursor-pointer">
             <Upload size={14} />
             <span>Share</span>
@@ -48,12 +53,20 @@ export default function UserInfoBar({
             onClick={toggleModal}
             className="inline-flex items-center gap-2 rounded-sm bg-zinc-800 px-3 py-1.5 text-sm font-bold text-white hover:text-zinc-500 cursor-pointer"
           >
-            <PenLine size={14} />
+            <FaPen />
             <span>Edit</span>
           </button>
         </div>
       </div>
-      {modal && <EditInfo onClick={toggleModal} displayName={displayName} country={country} city={city} bio={bio} />}
+      {modal && (
+        <EditInfo
+          onClick={toggleModal}
+          displayName={displayName}
+          country={country}
+          city={city}
+          bio={bio}
+        />
+      )}
     </div>
   );
 }
