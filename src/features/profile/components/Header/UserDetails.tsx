@@ -1,18 +1,20 @@
 export default function UserName({
-  name,
+  displayName,
   username,
-  location,
+  country,
+  city,
 }: {
-  name?: string;
+  displayName?: string;
   username?: string;
-  location?: string;
+  country?: string;
+  city?: string;
 }) {
   return (
     <div className="ml-6">
       <div>
-        {name && (
+        {displayName && (
           <span className="bg-black text-white font-bold text-2xl md:text-3xl lg:text-4xl px-2">
-            {name}
+            {displayName}
           </span>
         )}
       </div>
@@ -24,9 +26,14 @@ export default function UserName({
         )}
       </div>
       <div className="mt-3">
-        {location && (
-          <span className="bg-black font-bold text-gray-400 text-base md:text-lg px-2 py-1">
-            {location}
+        {country && (
+          <span className="bg-black font-bold text-gray-400 text-base md:text-lg pl-2 py-1">
+            {country},
+          </span>
+        )}
+        {city && (
+          <span className="bg-black font-bold text-gray-400 text-base md:text-lg pr-2 pl-1 py-1">
+            {city}
           </span>
         )}
       </div>
