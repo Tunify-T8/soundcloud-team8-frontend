@@ -15,3 +15,9 @@ export interface ConversationSummary {
 export interface GetConversationsResponse {
 	conversations: ConversationSummary[];
 }
+
+export interface FollowingUser {
+	id: string;
+	username: string;
+	avatarUrl?: string;
+}
