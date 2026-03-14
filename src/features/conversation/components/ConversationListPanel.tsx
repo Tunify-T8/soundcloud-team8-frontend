@@ -32,7 +32,7 @@ export default function ConversationListPanel() {
   } = useConversationSummary();
 
   return (
-    <section className="w-full max-w-[310px]">
+    <section className="w-full max-w-[380px]">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Messages</h1>
         <button
@@ -59,6 +59,7 @@ export default function ConversationListPanel() {
                 name={conversation.participant.username}
                 preview={conversation.lastMessagePreview}
                 timeLabel={formatTime(conversation.lastMessageAt)}
+                unreadCount={conversation.unreadCount}
               />
             ))
           : null}
