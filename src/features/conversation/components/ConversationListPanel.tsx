@@ -1,10 +1,36 @@
+import { useConversationSummary } from "../hooks/useConversationSummary";
 import ConversationListItem from "./ConversationListItem";
 
-const mockConversations = [
-  { id: 1, name: "Test User", preview: "asadasd", timeLabel: "29 minutes ago" },
-];
+function formatTime(isoTimestamp: string): string {
+  const messageDate = new Date(isoTimestamp);
+
+  if (Number.isNaN(messageDate.getTime())) {
+    return "";
+  }
+
+  const elapsedMilliseconds = Date.now() - messageDate.getTime();
+  const elapsedMinutes = Math.max(1, Math.floor(elapsedMilliseconds / 60000));
+
+  if (elapsedMinutes < 60) {
+    return `${elapsedMinutes} minutes ago`;
+  }
+
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+  if (elapsedHours < 24) {
+    return `${elapsedHours} hours ago`;
+  }
+
+  const elapsedDays = Math.floor(elapsedHours / 24);
+  return `${elapsedDays} days ago`;
+}
 
 export default function ConversationListPanel() {
+  const {
+    conversations: conversationList,
+    isLoading: isLoadingConversations,
+    error: conversationsError,
+  } = useConversationSummary();
+
   return (
     <section className="w-full max-w-[310px]">
       <div className="flex items-center justify-between">
@@ -18,14 +44,24 @@ export default function ConversationListPanel() {
       </div>
 
       <div className="mt-4 flex flex-col gap-2">
-        {mockConversations.map((c) => (
-          <ConversationListItem
-            key={c.id}
-            name={c.name}
-            preview={c.preview}
-            timeLabel={c.timeLabel}
-          />
-        ))}
+        {isLoadingConversations ? <p className="text-sm text-zinc-400">Loading conversations...</p> : null}
+
+        {conversationsError ? <p className="text-sm text-red-400">{conversationsError}</p> : null}
+
+        {!isLoadingConversations && !conversationsError && conversationList.length === 0 ? (
+          <p className="text-sm text-zinc-400">No conversations yet.</p>
+        ) : null}
+
+        {!isLoadingConversations && !conversationsError
+          ? conversationList.map((conversation) => (
+              <ConversationListItem
+                key={conversation.id}
+                name={conversation.participant.username}
+                preview={conversation.lastMessagePreview}
+                timeLabel={formatTime(conversation.lastMessageAt)}
+              />
+            ))
+          : null}
       </div>
     </section>
   );
