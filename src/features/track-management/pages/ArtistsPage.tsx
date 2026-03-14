@@ -92,7 +92,6 @@ function StudioHeader() {
 
 const TABS = ["SoundCloud Tracks", "Distribution", "Vinyl Records", "Comments"];
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function ArtistsPage() {
   const [activeTab, setActiveTab] = useState("SoundCloud Tracks");
   const [searchQuery, setSearchQuery] = useState("");

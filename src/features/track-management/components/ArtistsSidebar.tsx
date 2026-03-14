@@ -1,4 +1,5 @@
-import { Home, Archive, BarChart2, Star } from "lucide-react";
+import { Home, Archive, BarChart2, Star, } from "lucide-react";
+import { SiSoundcloud } from "react-icons/si";
 
 export default function ArtistsSidebar() {
   const items = [
@@ -9,17 +10,9 @@ export default function ArtistsSidebar() {
   ];
   return (
     <nav className="w-[90px] bg-black border-r border-[hsl(0,0%,15%)] flex flex-col items-center pt-4 pb-6 gap-1 shrink-0">
-      {/* Logo */}
-      <a href="/" className="mb-6 flex items-center justify-center">
-        <svg width="34" height="17" viewBox="0 0 34 17" fill="none">
-          <rect x="0" y="7" width="1.6" height="10" rx="0.8" fill="white" opacity="0.55"/>
-          <rect x="3" y="5" width="1.6" height="12" rx="0.8" fill="white" opacity="0.65"/>
-          <rect x="6" y="3" width="1.6" height="14" rx="0.8" fill="white" opacity="0.75"/>
-          <rect x="9" y="0" width="1.6" height="17" rx="0.8" fill="white" opacity="0.85"/>
-          <rect x="12" y="2" width="1.6" height="15" rx="0.8" fill="white" opacity="0.9"/>
-          <rect x="15" y="4" width="1.6" height="13" rx="0.8" fill="white"/>
-        </svg>
-      </a>
+       <div className="flex items-center gap-6">
+            <SiSoundcloud size={35} />
+        </div>
       {items.map(({ icon: Icon, label }) => (
         <button key={label} className="flex flex-col items-center gap-1.5 text-[hsl(0,0%,45%)] hover:text-white transition-colors w-full py-3">
           <Icon className="w-5 h-5" />
