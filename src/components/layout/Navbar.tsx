@@ -2,6 +2,7 @@ import { Search, Bell, Mail, MoreHorizontal } from "lucide-react";
 import { SiSoundcloud } from "react-icons/si";
 import { Link } from "react-router-dom";
 import { Outlet } from "react-router-dom";
+
 export default function Navbar() {
   return (
     <>
