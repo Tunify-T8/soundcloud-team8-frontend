@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { mockConversations } from "../mockConversations";
 import { conversationService } from "../conversationService";
 import type { ConversationSummary } from "../types";
 
@@ -18,7 +19,7 @@ export function useConversationSummary(): UseConversationSummaryResult {
 
     async function fetchConversations() {
       try {
-        const fetchedConversations = await conversationService.getConversations();
+        const fetchedConversations = await conversationService.getConversationsSummary();
         if (!isMounted) {
           return;
         }
@@ -28,7 +29,8 @@ export function useConversationSummary(): UseConversationSummaryResult {
         if (!isMounted) {
           return;
         }
-        setError("Failed to load conversations.");
+        setConversations(mockConversations);
+        setError(null);
       } finally {
         if (isMounted) {
           setIsLoading(false);

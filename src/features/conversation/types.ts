@@ -8,7 +8,7 @@ export interface ConversationSummary {
 	id: string;
 	participant: ConversationParticipant;
 	lastMessagePreview: string;
-	updatedAt: string;
+	lastMessageAt: string;
 	unreadCount: number;
 }
 
