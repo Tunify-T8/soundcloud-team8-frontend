@@ -58,7 +58,10 @@ export default function Navbar() {
           </Link>
 
           <Bell size={18} className="text-zinc-400 hover:text-white cursor-pointer" />
-          <Mail size={18} className="text-zinc-400 hover:text-white cursor-pointer" />
+          
+          <Link to="/messages" className="text-zinc-400 hover:text-white">
+            <Mail size={18} className="cursor-pointer" />
+          </Link>
           <MoreHorizontal size={18} className="text-zinc-400 hover:text-white cursor-pointer" />
 
           <div className="w-7 h-7 bg-zinc-600 rounded-full cursor-pointer" />
