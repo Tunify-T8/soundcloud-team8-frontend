@@ -10,13 +10,13 @@ function UploadBanner() {
     <div className="bg-[hsl(0,0%,11%)] border-b border-[hsl(0,0%,18%)] flex items-center justify-between px-8 py-3 shrink-0">
       <div className="flex items-center gap-3">
         <Upload className="w-4 h-4 text-[hsl(0,0%,60%)]" />
-        <span className="text-white text-sm font-medium">0% of uploads used</span>
+        <span className="text-white text-sm font-medium tracking-tighter">0% of uploads used</span>
         <div className="w-44 h-1.5 bg-[hsl(0,0%,23%)] rounded-full overflow-hidden">
           <div className="h-full bg-[hsl(0,0%,50%)] rounded-full" style={{ width: "0%" }} />
         </div>
         <span className="text-[hsl(0, 100%, 99%)] text-sm font-semibold">0 of 180 minutes</span>
       </div>
-      <button className="bg-white text-black text-sm font-semibold px-5 py-2 rounded-full hover:bg-[hsl(0,0%,88%)] transition-colors">
+      <button className="bg-black text-white text-sm font-bold tracking-tighter px-5 py-2 rounded-full hover:bg-[hsl(0,0%,88%)] transition-colors">
         Get unlimited uploads
       </button>
     </div>
