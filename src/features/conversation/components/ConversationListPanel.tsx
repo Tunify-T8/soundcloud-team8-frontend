@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { useConversationSummary } from "../hooks/useConversationSummary";
 import ConversationListItem from "./ConversationListItem";
+import NewMessageDialog from "./NewMessageDialog";
 
 function formatTime(isoTimestamp: string): string {
   const messageDate = new Date(isoTimestamp);
@@ -25,6 +27,8 @@ function formatTime(isoTimestamp: string): string {
 }
 
 export default function ConversationListPanel() {
+  const [isNewMessageDialogOpen, setIsNewMessageDialogOpen] = useState(false);
+
   const {
     conversations: conversationList,
     isLoading: isLoadingConversations,
@@ -37,11 +41,17 @@ export default function ConversationListPanel() {
         <h1 className="text-3xl font-bold tracking-tight">Messages</h1>
         <button
           type="button"
+          onClick={() => setIsNewMessageDialogOpen(true)}
           className="rounded-md bg-white px-3 py-1 text-sm font-semibold text-black hover:text-gray-200 hover:cursor-pointer"
         >
           New
         </button>
       </div>
+
+      <NewMessageDialog
+        isOpen={isNewMessageDialogOpen}
+        onClose={() => setIsNewMessageDialogOpen(false)}
+      />
 
       <div className="mt-4 flex flex-col gap-2">
         {isLoadingConversations ? <p className="text-sm text-zinc-400">Loading conversations...</p> : null}
