@@ -16,9 +16,9 @@ function UploadBanner() {
         </div>
         <span className="text-[hsl(0, 100%, 99%)] text-sm font-semibold">0 of 180 minutes</span>
       </div>
-      <button className="bg-black text-white text-sm font-bold tracking-tighter px-5 py-2 rounded-full hover:bg-[hsl(0,0%,88%)] transition-colors">
-        Get unlimited uploads
-      </button>
+     <button className="bg-black text-white text-sm font-bold tracking-tighter px-5 py-2 rounded-full hover:bg-[hsl(0,0%,20%)] transition-colors">
+      Get unlimited uploads
+    </button>
     </div>
   );
 }
@@ -164,7 +164,7 @@ export default function ArtistsPage() {
               </div>
 
               {/* Search + filters + count */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 font-bold tracking-tighter flex-wrap">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(0,0%,42%)]" />
                   <input
@@ -172,33 +172,32 @@ export default function ArtistsPage() {
                     placeholder="Search tracks"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="bg-transparent border border-[hsl(0,0%,26%)] rounded text-white text-sm pl-9 pr-3 py-2 w-56 placeholder:text-[hsl(0,0%,42%)] focus:outline-none focus:border-[hsl(0,0%,48%)]"
+                    className="bg-transparent border border-[hsl(0,0%,26%)] rounded-full text-white text-sm pl-9 pr-3 py-2 w-56 placeholder:text-[hsl(0,0%,42%)] focus:outline-none focus:border-[hsl(0,0%,48%)]"
                   />
                 </div>
 
-                {/* Visibility toggle */}
-                <div className="flex">
-                  <button
-                    onClick={() => handleVisibilityChange("public")}
-                    className={`px-5 py-2 text-sm border-t border-b border-l rounded-l transition-colors
-                      ${visibilityFilter === "public"
-                        ? "bg-[hsl(0,0%,23%)] text-white border-[hsl(0,0%,38%)]"
-                        : "bg-transparent text-[hsl(0,0%,65%)] border-[hsl(0,0%,26%)] hover:bg-[hsl(0,0%,16%)]"
-                      }`}
-                  >
-                    Public
-                  </button>
-                  <button
-                    onClick={() => handleVisibilityChange("private")}
-                    className={`px-5 py-2 text-sm border rounded-r transition-colors
-                      ${visibilityFilter === "private"
-                        ? "bg-[hsl(0,0%,23%)] text-white border-[hsl(0,0%,38%)]"
-                        : "bg-transparent text-[hsl(0,0%,65%)] border-[hsl(0,0%,26%)] hover:bg-[hsl(0,0%,16%)]"
-                      }`}
-                  >
-                    Private
-                  </button>
-                </div>
+               <div className="flex gap-2">
+                <button
+                  onClick={() => handleVisibilityChange("public")}
+                  className={`px-5 py-2 text-sm border font-semibold rounded-full transition-colors
+                    ${visibilityFilter === "public"
+                      ? "bg-[hsl(0,0%,23%)] text-white tracking-tighter border-[hsl(0,0%,38%)]"
+                      : "bg-transparent text-[hsl(0,0%,65%)] border-[hsl(0,0%,26%)] hover:bg-[hsl(0,0%,16%)]"
+                    }`}
+                >
+                  Public
+                </button>
+                <button
+                  onClick={() => handleVisibilityChange("private")}
+                  className={`px-5 py-2 text-sm border font-semibold rounded-full transition-colors
+                    ${visibilityFilter === "private"
+                      ? "bg-[hsl(0,0%,23%)] text-white tracking-tighter border-[hsl(0,0%,38%)]"
+                      : "bg-transparent text-[hsl(0,0%,65%)] border-[hsl(0,0%,26%)] hover:bg-[hsl(0,0%,16%)]"
+                    }`}
+                >
+                  Private
+                </button>
+              </div>
 
                 <div className="ml-auto flex items-center gap-2 text-[hsl(0,0%,50%)] text-sm">
                   <span>{filteredTracks.length} tracks</span>
