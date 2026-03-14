@@ -82,33 +82,31 @@ export default function TrackCard({ track, isSelected = false, onSelect }: Track
         </span>
       </div>
 
-      {/* Engagements */}
       <div className="flex items-center gap-4 w-52 justify-center">
         <span className="flex items-center gap-1 text-zinc-500 text-xs">
           <Heart className="w-3.5 h-3.5" />
-          {fmt(track.engagements.likes)}
+          {fmt(track.likes)}
         </span>
 
         <span className="flex items-center gap-1 text-zinc-500 text-xs">
           <MessageSquare className="w-3.5 h-3.5" />
-          {fmt(track.engagements.comments)}
+          {fmt(track.comments)}
         </span>
 
         <span className="flex items-center gap-1 text-zinc-500 text-xs">
           <Repeat2 className="w-3.5 h-3.5" />
-          {fmt(track.engagements.reposts)}
+          {fmt(track.reposts)}
         </span>
 
         <span className="flex items-center gap-1 text-zinc-500 text-xs">
           <Download className="w-3.5 h-3.5" />
-          {fmt(track.engagements.downloads)}
+          {fmt(track.downloads)}
         </span>
       </div>
 
-      {/* Plays */}
       <div className="w-16 text-right">
         <span className="text-white text-sm font-semibold tabular-nums">
-          {track.engagements.plays}
+          {track.plays}
         </span>
       </div>
 

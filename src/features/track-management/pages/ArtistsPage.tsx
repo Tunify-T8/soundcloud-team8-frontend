@@ -1,9 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, Upload, Plus, Globe, DollarSign, SlidersHorizontal, ArrowUpDown, BarChart, Users, Gift } from "lucide-react";
 import TrackList from "../components/TrackList";
-import { SampleTracks } from "../tests/SampleTracks";
+//import { SampleTracks } from "../tests/SampleTracks"; // for testing before API integration
 import ArtistsNavbar from "../components/ArtistsNavbar";
 import ArtistsSidebar from "../components/ArtistsSidebar";
+import { trackService } from "../trackService";
+import type { Track } from "../types";
 
 function UploadBanner() {
   return (
@@ -97,8 +99,19 @@ export default function ArtistsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [visibilityFilter, setVisibilityFilter] = useState<"all" | "public" | "private">("all");
 
+  const [tracks, setTracks] = useState<Track[]>([])
+
+useEffect(() => {
+  const fetchTracks = async () => {
+    const data = await trackService.getUploadedTracks()
+    setTracks(data)
+  }
+
+  fetchTracks()
+}, [])
+
   const filteredTracks = useMemo(() => {
-    return SampleTracks.filter((track) => {
+    return tracks.filter((track) => {
       const matchesSearch = track.title.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesVisibility =
         visibilityFilter === "all" ||
@@ -106,7 +119,7 @@ export default function ArtistsPage() {
         (visibilityFilter === "private" && track.isPrivate);
       return matchesSearch && matchesVisibility;
     });
-  }, [searchQuery, visibilityFilter]);
+  }, [tracks, searchQuery, visibilityFilter])
 
   const handleVisibilityChange = (v: "public" | "private") => {
     setVisibilityFilter((prev) => (prev === v ? "all" : v));
