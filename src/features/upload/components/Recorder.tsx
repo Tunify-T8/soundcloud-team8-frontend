@@ -391,7 +391,7 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
     }
   }
 
-  const tickRaf = () => {
+  const tickRaf = useCallback(() => {
     const audio = audioRef.current
     if (!audio) return
     const t = audio.currentTime
@@ -404,7 +404,7 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
     }
     setPlaybackCurrent(t)
     if (!audio.paused && !audio.ended) rafRef.current = requestAnimationFrame(tickRaf)
-  }
+  } , [])
 
   const handlePlay = useCallback(() => {
     if (!audioRef.current) {
