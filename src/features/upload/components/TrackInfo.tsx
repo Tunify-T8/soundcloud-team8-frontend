@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { ToggleProps } from "../types";
 import type { TogglesState } from "../types";
 import { useDispatch, useSelector } from "react-redux";
@@ -71,6 +71,100 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
 
   const [isUploading, setIsUploading] = useState(false);
   const [uploadDone, setUploadDone] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [fileReady, setFileReady] = useState(false); // true once file is uploaded
+  const audioUrlRef = useRef<string | null>(null); // stores the uploaded audioUrl
+
+  // Auto-start file upload as soon as TrackInfo mounts
+  useEffect(() => {
+    if (!source?.url) return;
+    let cancelled = false;
+
+    const uploadFile = async () => {
+      setIsUploading(true);
+      setUploadProgress(0);
+      try {
+        const blob = await axios.get(source.url, { responseType: "blob" }).then(r => r.data);
+        const MAX_MOCKAPI_SIZE = 1 * 1024 * 1024; // 1MB — MockAPI payload limit
+
+        if (blob.size > MAX_MOCKAPI_SIZE) {
+          // File too large for MockAPI — show progress based on chunk processing
+          // but don't try to POST the base64 (MockAPI will reject it)
+          // TODO: replace with real multipart upload + onUploadProgress when backend is ready
+          const CHUNK_SIZE = 256 * 1024;
+          const totalChunks = Math.ceil(blob.size / CHUNK_SIZE);
+
+          for (let i = 0; i < totalChunks; i++) {
+            if (cancelled) return;
+            // Process each chunk (reads it) so progress reflects real work
+            const start = i * CHUNK_SIZE;
+            const chunk = blob.slice(start, start + CHUNK_SIZE);
+            await new Promise<void>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve();
+              reader.onerror = reject;
+              reader.readAsArrayBuffer(chunk);
+            });
+            if (!cancelled) {
+              setUploadProgress(Math.round(((i + 1) / totalChunks) * 100));
+            }
+          }
+
+          if (!cancelled) {
+            audioUrlRef.current = null; // not stored — too large for MockAPI
+            setUploadProgress(100);
+            setFileReady(true);
+          }
+          return;
+        }
+
+        // Small files (under 1MB) — encode in chunks and store as base64 in MockAPI
+        const CHUNK_SIZE = 256 * 1024;
+        const totalChunks = Math.ceil(blob.size / CHUNK_SIZE);
+        const parts: string[] = [];
+
+        for (let i = 0; i < totalChunks; i++) {
+          if (cancelled) return;
+          const start = i * CHUNK_SIZE;
+          const chunk = blob.slice(start, start + CHUNK_SIZE);
+
+          const chunkBase64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const result = reader.result as string;
+              resolve(result.split(",")[1]);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(chunk);
+          });
+
+          parts.push(chunkBase64);
+          if (!cancelled) {
+            setUploadProgress(Math.round(((i + 1) / totalChunks) * 100));
+          }
+        }
+
+        if (cancelled) return;
+
+        const mimeType = blob.type || "audio/wav";
+        audioUrlRef.current = `data:${mimeType};base64,${parts.join("")}`;
+        setUploadProgress(100);
+        setFileReady(true);
+      } catch (err) {
+        console.error("File encoding failed:", err);
+        if (!cancelled) {
+          audioUrlRef.current = null;
+          setUploadProgress(100);
+          setFileReady(true);
+        }
+      } finally {
+        if (!cancelled) setIsUploading(false);
+      }
+    };
+
+    uploadFile();
+    return () => { cancelled = true };
+  }, []);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [permissionsOpen, setPermissionsOpen] = useState(false);
   const [audioClipOpen, setAudioClipOpen] = useState(false);
@@ -130,22 +224,14 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
     10 + Math.abs(Math.sin(i * 0.4) * 28 + Math.sin(i * 0.13) * 18)
   );
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   // ── 3. Handlers ──────────────────────────────────────────────────────────────
   const handleUpload = async () => {
-    setIsUploading(true);
+    if (!fileReady || isSubmitting) return;
+    setIsSubmitting(true);
     try {
       const BASE_URL = "http://69b6043a583f543fbd9cc84e.mockapi.io";
-
-      // Convert audio to base64 so MockAPI can store it as a string
-      let audioUrl: string | null = null;
-      if (source?.url) {
-        const blob = await axios.get(source.url, { responseType: "blob" }).then(r => r.data);
-        audioUrl = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(blob);
-        });
-      }
 
       const { data: track } = await axios.post(`${BASE_URL}/tracks`, {
         title: titleRef.current?.value || "Untitled",
@@ -157,7 +243,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
           ? artistsRef.current.value.split(",").map(a => a.trim())
           : [],
         status: "uploaded",
-        audioUrl,
+        audioUrl: audioUrlRef.current,
         waveformUrl: null,
         availability: "worldwide",
         licensing: license,
@@ -168,10 +254,10 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
       console.log("Track created:", track.id);
       setUploadDone(true);
     } catch (err) {
-      console.error("Upload failed:", err);
+      console.error("Metadata POST failed:", err);
       setUploadDone(true);
     } finally {
-      setIsUploading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -190,27 +276,66 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
         </a>
 
         <div className="flex items-center gap-5">
-          <div className="flex items-center gap-2 text-sm text-[#aaa]">
-            {source?.kind === "recorded" ? (
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                <line x1="12" y1="19" x2="12" y2="23"/>
-                <line x1="8" y1="23" x2="16" y2="23"/>
-              </svg>
-            ) : (
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none" />
-              </svg>
-            )}
-            <span className="max-w-[220px] truncate">{fileName}</span>
-            {fileMeta && <span className="text-[#555] text-xs">{fileMeta}</span>}
-          </div>
 
-          <button className="text-white text-sm font-semibold hover:text-[#aaa] transition">
-            Replace track
-          </button>
+          {/* ── Uploading state ── */}
+          {isUploading && (
+            <div className="flex items-center gap-3">
+              <div className="flex flex-col items-end gap-1">
+                <div className="flex items-center gap-2 text-sm text-[#aaa]">
+                  <span className="max-w-[200px] truncate">{fileName}</span>
+                  <span className="text-white font-semibold">Uploading {uploadProgress}%</span>
+                </div>
+                <div className="w-48 h-1.5 bg-[#2a2a2a] rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-[#169b45] rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Done state (not uploading, not showing success screen yet) ── */}
+          {!isUploading && uploadProgress === 100 && (
+            <div className="flex items-center gap-3 text-sm text-[#aaa]">
+              <button className="text-[#aaa] hover:text-white transition">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none" />
+                </svg>
+              </button>
+              <span className="max-w-[200px] truncate">{fileName}</span>
+              <button className="text-white text-sm font-semibold hover:text-[#aaa] transition">
+                Replace track
+              </button>
+            </div>
+          )}
+
+          {/* ── Default state ── */}
+          {!isUploading && uploadProgress < 100 && (
+            <div className="flex items-center gap-5">
+              <div className="flex items-center gap-2 text-sm text-[#aaa]">
+                {source?.kind === "recorded" ? (
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" y1="19" x2="12" y2="23"/>
+                    <line x1="8" y1="23" x2="16" y2="23"/>
+                  </svg>
+                ) : (
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none" />
+                  </svg>
+                )}
+                <span className="max-w-[220px] truncate">{fileName}</span>
+                {fileMeta && <span className="text-[#555] text-xs">{fileMeta}</span>}
+              </div>
+              <button className="text-white text-sm font-semibold hover:text-[#aaa] transition">
+                Replace track
+              </button>
+            </div>
+          )}
 
           <button
             onClick={() => onBack ? onBack() : dispatch(clearAudioSource())}
@@ -541,13 +666,13 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
         </p>
         <button
           onClick={handleUpload}
-          disabled={isUploading}
-          className="bg-[#169b45] hover:bg-[#1db954] disabled:opacity-60 disabled:cursor-not-allowed text-white px-8 py-2.5 rounded-full font-semibold text-sm transition flex items-center gap-2"
+          disabled={!fileReady || isSubmitting}
+          className="bg-[#169b45] hover:bg-[#1db954] disabled:opacity-40 disabled:cursor-not-allowed text-white px-8 py-2.5 rounded-full font-semibold text-sm transition flex items-center gap-2"
         >
-          {isUploading && (
+          {(!fileReady || isSubmitting) && (
             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           )}
-          {isUploading ? "Uploading…" : "Upload"}
+          {!fileReady ? "Uploading…" : isSubmitting ? "Saving…" : "Upload"}
         </button>
       </div>
     </div>
