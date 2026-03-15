@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react"
+import { useRef, useState, useEffect, useCallback } from "react"
 import type { RecorderProps } from "../types"
 import type { PermissionState } from "../types"
 import { useDispatch } from "react-redux"
@@ -49,22 +49,6 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
     }
   }, [])
-
-  useEffect(() => {
-    if (recordingState === "recording" && elapsed >= MAX_SECONDS * 1000) stopRecording()
-  }, [elapsed, recordingState])
-
-  useEffect(() => {
-    if (!finalized) return
-    const totalSecs = elapsed / 1000
-    playbackDurationRef.current = totalSecs
-    setPlaybackDuration(totalSecs)
-    setPlaybackCurrent(prev => {
-      const clamped = Math.min(prev, totalSecs)
-      if (audioRef.current) audioRef.current.currentTime = clamped
-      return clamped
-    })
-  }, [elapsed, finalized])
 
   // ─── timer helpers ───────────────────────────────────────────────────────────
 
@@ -153,6 +137,16 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
     }
   }
 
+  // Wrap stopRecording in useCallback
+  const stopRecording = useCallback(() => {
+    freezeTimer()
+    // Keep default onstop so latestBlobRef stays current
+    if (mediaRecorder.current && mediaRecorder.current.state !== "inactive") {
+      mediaRecorder.current.stop()
+    }
+    setRecordingState("stopped")
+  }, [])
+
   // On undo+resume: stop current recorder, AWAIT full flush, save as splice
   // original, then start a fresh recorder from the trim point onward.
   const resumeRecording = async () => {
@@ -206,15 +200,6 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
     }
   }
 
-  const stopRecording = () => {
-    freezeTimer()
-    // Keep default onstop so latestBlobRef stays current
-    if (mediaRecorder.current && mediaRecorder.current.state !== "inactive") {
-      mediaRecorder.current.stop()
-    }
-    setRecordingState("stopped")
-  }
-
   const handleMainButton = () => {
     if      (recordingState === "idle")      startRecording()
     else if (recordingState === "recording") pauseRecording()
@@ -243,6 +228,23 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
     audioRef.current = null
     setRecordingState("idle")
   }
+
+  // Add stopRecording to dependency array
+  useEffect(() => {
+    if (recordingState === "recording" && elapsed >= MAX_SECONDS * 1000) stopRecording()
+  }, [elapsed, recordingState, stopRecording])
+
+  useEffect(() => {
+    if (!finalized) return
+    const totalSecs = elapsed / 1000
+    playbackDurationRef.current = totalSecs
+    setPlaybackDuration(totalSecs)
+    setPlaybackCurrent(prev => {
+      const clamped = Math.min(prev, totalSecs)
+      if (audioRef.current) audioRef.current.currentTime = clamped
+      return clamped
+    })
+  }, [elapsed, finalized])
 
   // ─── WAV encoder ─────────────────────────────────────────────────────────────
 
