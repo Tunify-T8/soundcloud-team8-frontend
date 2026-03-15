@@ -1,7 +1,8 @@
 import { useState } from "react";
 import type { ToggleProps } from "../types";
-import type {TogglesState} from "../types"
-
+import type { TogglesState } from "../types";
+import { useDispatch, useSelector } from "react-redux";
+import { clearAudioSource } from "../../../store/AudioSourceSlice";
 
 function Toggle({ enabled, onChange }: ToggleProps) {
   return (
@@ -45,10 +46,41 @@ function LockIcon() {
   );
 }
 
+function fmtBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
+}
+
+function fmtDuration(secs: number): string {
+  const m = Math.floor(secs / 60).toString().padStart(2, "0")
+  const s = Math.floor(secs % 60).toString().padStart(2, "0")
+  return `${m}:${s}`
+}
+
 const inputClass =
   "w-full bg-[#181818] border border-[#333] text-white text-sm px-4 py-3 focus:outline-none focus:border-[#555] placeholder-[#555]";
 
-export default function TrackInfoPage() {
+export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
+  const dispatch = useDispatch();
+  const source = useSelector((s: any) => s.audioSource.source);
+
+  // Derive display values from the Redux source
+  const fileName = source?.kind === "file"
+    ? source.name
+    : source?.kind === "recorded"
+    ? "recording.wav"
+    : "Unknown"
+
+  const fileMeta = source
+    ? source.kind === "file"
+      ? `${fmtBytes(source.size)} · ${source.mimeType || "audio"}`
+      : `${fmtBytes(source.size)} · ${fmtDuration(source.duration)} · WAV`
+    : ""
+
+  // Default track title = filename without extension
+  const defaultTitle = fileName.replace(/\.[^/.]+$/, "")
+
   const [advancedOpen, setAdvancedOpen] = useState<boolean>(false);
   const [permissionsOpen, setPermissionsOpen] = useState<boolean>(false);
   const [audioClipOpen, setAudioClipOpen] = useState<boolean>(false);
@@ -104,18 +136,36 @@ export default function TrackInfoPage() {
           </svg>
           <span className="font-semibold text-base">Track info</span>
         </div>
+
         <div className="flex items-center gap-5">
+          {/* Audio source badge */}
           <div className="flex items-center gap-2 text-sm text-[#aaa]">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none" />
-            </svg>
-            <span>file_example_WAV_1MG.wav</span>
+            {source?.kind === "recorded" ? (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+            ) : (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none" />
+              </svg>
+            )}
+            <span className="max-w-[220px] truncate">{fileName}</span>
+            {fileMeta && <span className="text-[#555] text-xs">{fileMeta}</span>}
           </div>
+
           <button className="text-white text-sm font-semibold hover:text-[#aaa] transition">
             Replace track
           </button>
-          <button className="text-[#aaa] hover:text-white transition">
+
+          {/* Close — goes back to upload page by clearing source */}
+          <button
+            onClick={() => onBack ? onBack() : dispatch(clearAudioSource())}
+            className="text-[#aaa] hover:text-white transition"
+          >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
@@ -132,6 +182,18 @@ export default function TrackInfoPage() {
 
           {/* LEFT: Artwork */}
           <div>
+            {/* Show a mini audio player if we have a URL */}
+            {source?.url && (
+              <div className="mb-4">
+                <p className="text-xs text-[#555] mb-2 uppercase tracking-wider">Preview</p>
+                <audio
+                  controls
+                  src={source.url}
+                  className="w-full max-w-[380px] h-10"
+                  style={{ colorScheme: "dark" }}
+                />
+              </div>
+            )}
             <div className="w-full aspect-square border border-dashed border-[#444] flex flex-col items-center justify-center text-[#888] hover:border-[#666] transition cursor-pointer max-w-[380px]">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
                 <rect x="3" y="3" width="18" height="18" rx="1" />
@@ -152,7 +214,7 @@ export default function TrackInfoPage() {
               </div>
               <input
                 type="text"
-                defaultValue="file_example_WAV_1MG"
+                defaultValue={defaultTitle}
                 className="w-full bg-transparent text-white text-sm py-1 focus:outline-none"
               />
             </div>
@@ -217,12 +279,7 @@ export default function TrackInfoPage() {
               <div className="flex gap-6 text-sm text-white">
                 {(["Public", "Private", "Schedule"] as const).map((opt) => (
                   <label key={opt} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="privacy"
-                      defaultChecked={opt === "Public"}
-                      className="accent-white w-4 h-4"
-                    />
+                    <input type="radio" name="privacy" defaultChecked={opt === "Public"} className="accent-white w-4 h-4" />
                     {opt}
                   </label>
                 ))}
@@ -233,67 +290,41 @@ export default function TrackInfoPage() {
 
         {/* Advanced Details */}
         <div className="border-t border-[#2a2a2a]">
-          <button
-            onClick={() => setAdvancedOpen(!advancedOpen)}
-            className="flex items-center justify-between w-full text-left py-5"
-          >
+          <button onClick={() => setAdvancedOpen(!advancedOpen)} className="flex items-center justify-between w-full text-left py-5">
             <div>
               <p className="text-sm font-bold text-white">Advanced details</p>
               <p className="text-sm text-[#666] mt-0.5">Buy link, record label, release date, publisher...</p>
             </div>
             <ChevronDown open={advancedOpen} />
           </button>
-
           {advancedOpen && (
             <div className="pb-8 space-y-6">
               <div>
                 <label className="text-sm font-bold text-white block mb-2">Buy link</label>
-                <input
-                  placeholder="Add a link to let your fans purchase the track from another site."
-                  className={inputClass}
-                />
+                <input placeholder="Add a link to let your fans purchase the track from another site." className={inputClass} />
               </div>
               <div>
                 <label className="text-sm font-bold text-white block mb-2">Record label</label>
-                <input
-                  placeholder="If your track is released under a specific record label, you can add that here."
-                  className={inputClass}
-                />
+                <input placeholder="If your track is released under a specific record label, you can add that here." className={inputClass} />
               </div>
               <div>
                 <label className="text-sm font-bold text-white block mb-1">Release date</label>
-                <p className="text-sm text-[#666] mb-2">
-                  If your track has a specific release date, you can add that here.
-                </p>
-                <input
-                  type="date"
-                  className="w-48 bg-[#181818] border border-[#333] text-[#888] text-sm px-4 py-2.5 focus:outline-none focus:border-[#555]"
-                />
+                <p className="text-sm text-[#666] mb-2">If your track has a specific release date, you can add that here.</p>
+                <input type="date" className="w-48 bg-[#181818] border border-[#333] text-[#888] text-sm px-4 py-2.5 focus:outline-none focus:border-[#555]" />
               </div>
               <div>
                 <label className="text-sm font-bold text-white block mb-1">Publisher</label>
-                <p className="text-sm text-[#666] mb-2">
-                  If you have a publisher, you can add that here. A music publisher is a person or organization
-                  that helps songwriters promote and monetize their songs and ensure that they are properly
-                  compensated when their songs are used.
-                </p>
+                <p className="text-sm text-[#666] mb-2">If you have a publisher, you can add that here.</p>
                 <input className={inputClass} />
               </div>
               <div>
                 <label className="text-sm font-bold text-white block mb-1">ISRC</label>
-                <p className="text-sm text-[#666] mb-2">
-                  An ISRC (International Standard Recording Code) is a unique identifier that is assigned to a
-                  track. Use the same ISRC for a given track wherever you distribute it. If you work with a
-                  record label or distributor, ask them if they already have ISRCs for your tracks.
-                </p>
+                <p className="text-sm text-[#666] mb-2">An ISRC is a unique identifier assigned to a track.</p>
                 <input className={inputClass} />
               </div>
               <div>
                 <label className="text-sm font-bold text-white block mb-1">Contains explicit content</label>
-                <p className="text-sm text-[#666] mb-3">
-                  Please check this if your track contains explicit content. The badge will be displayed next
-                  to your track title.
-                </p>
+                <p className="text-sm text-[#666] mb-3">Please check this if your track contains explicit content.</p>
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input type="checkbox" className="w-4 h-4 accent-white" />
                   <span className="text-sm text-white">Explicit content</span>
@@ -305,10 +336,7 @@ export default function TrackInfoPage() {
                   <label className="text-sm font-bold text-white">P line</label>
                   <InfoIcon />
                 </div>
-                <p className="text-sm text-[#666] mb-2">
-                  P line notice identify the owner of the rights in the original sound recording (the masters)
-                  at the time that the CD/carrier/file is manufactured.
-                </p>
+                <p className="text-sm text-[#666] mb-2">P line notices identify the owner of rights in the original sound recording.</p>
                 <input className={inputClass} />
               </div>
             </div>
@@ -317,10 +345,7 @@ export default function TrackInfoPage() {
 
         {/* Permissions */}
         <div className="border-t border-[#2a2a2a]">
-          <button
-            onClick={() => setPermissionsOpen(!permissionsOpen)}
-            className="flex items-center justify-between w-full text-left py-5"
-          >
+          <button onClick={() => setPermissionsOpen(!permissionsOpen)} className="flex items-center justify-between w-full text-left py-5">
             <div className="flex items-center gap-4">
               <svg width="36" height="22" viewBox="0 0 36 22" fill="none">
                 <rect width="36" height="22" rx="11" fill="#333" />
@@ -328,14 +353,11 @@ export default function TrackInfoPage() {
               </svg>
               <div>
                 <p className="text-sm font-bold text-white">Permissions</p>
-                <p className="text-sm text-[#666] mt-0.5">
-                  Control the visibility of engagements on your track, direct downloads, and more.
-                </p>
+                <p className="text-sm text-[#666] mt-0.5">Control the visibility of engagements on your track, direct downloads, and more.</p>
               </div>
             </div>
             <ChevronDown open={permissionsOpen} />
           </button>
-
           {permissionsOpen && (
             <div className="pb-8">
               <p className="text-sm font-bold text-white mb-4">Access settings</p>
@@ -350,7 +372,6 @@ export default function TrackInfoPage() {
                   </div>
                 ))}
               </div>
-
               <p className="text-sm font-bold text-white mt-6 mb-4">Engagement privacy</p>
               <div>
                 {engagementSettings.map(({ key, label }) => (
@@ -363,24 +384,16 @@ export default function TrackInfoPage() {
                   </div>
                 ))}
               </div>
-
               <div className="mt-6">
                 <div className="flex items-center gap-2 mb-1">
                   <LockIcon />
                   <p className="text-sm font-bold text-white">Geoblocking</p>
                 </div>
-                <p className="text-sm text-[#666] mb-4">
-                  Customize what countries your track will be available in.
-                </p>
+                <p className="text-sm text-[#666] mb-4">Customize what countries your track will be available in.</p>
                 <div className="space-y-3">
                   {(["Worldwide", "Exclusive regions", "Blocked regions"] as const).map((opt) => (
                     <label key={opt} className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="geo"
-                        defaultChecked={opt === "Worldwide"}
-                        className="w-4 h-4 accent-white"
-                      />
+                      <input type="radio" name="geo" defaultChecked={opt === "Worldwide"} className="w-4 h-4 accent-white" />
                       <span className="text-sm text-[#888]">{opt}</span>
                     </label>
                   ))}
@@ -392,10 +405,7 @@ export default function TrackInfoPage() {
 
         {/* Audio Clip */}
         <div className="border-t border-[#2a2a2a]">
-          <button
-            onClick={() => setAudioClipOpen(!audioClipOpen)}
-            className="flex items-center justify-between w-full text-left py-5"
-          >
+          <button onClick={() => setAudioClipOpen(!audioClipOpen)} className="flex items-center justify-between w-full text-left py-5">
             <div className="flex items-center gap-4">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="1.5">
                 <polygon points="11,5 6,9 2,9 2,15 6,15 11,19" fill="none" />
@@ -404,24 +414,17 @@ export default function TrackInfoPage() {
               </svg>
               <div>
                 <p className="text-sm font-bold text-white">Audio clip</p>
-                <p className="text-sm text-[#666] mt-0.5">
-                  Pick the 20 second clip you'd like to use as your track preview. This will live on your feed and socials.
-                </p>
+                <p className="text-sm text-[#666] mt-0.5">Pick the 20 second clip you'd like to use as your track preview.</p>
               </div>
             </div>
             <ChevronDown open={audioClipOpen} />
           </button>
-
           {audioClipOpen && (
             <div className="pb-8">
               <div className="relative w-full h-24 bg-[#161616] border border-[#2a2a2a] flex items-center justify-center overflow-hidden">
                 <div className="absolute inset-0 flex items-center px-4 gap-px opacity-40">
                   {waveformBars.map((h, i) => (
-                    <div
-                      key={i}
-                      className="flex-shrink-0 bg-[#aaa] rounded-sm"
-                      style={{ width: 3, height: h }}
-                    />
+                    <div key={i} className="flex-shrink-0 bg-[#aaa] rounded-sm" style={{ width: 3, height: h }} />
                   ))}
                 </div>
                 <p className="relative z-10 text-sm font-semibold text-white text-center px-4">
@@ -434,10 +437,7 @@ export default function TrackInfoPage() {
 
         {/* Licensing */}
         <div className="border-t border-[#2a2a2a]">
-          <button
-            onClick={() => setLicensingOpen(!licensingOpen)}
-            className="flex items-center justify-between w-full text-left py-5"
-          >
+          <button onClick={() => setLicensingOpen(!licensingOpen)} className="flex items-center justify-between w-full text-left py-5">
             <div className="flex items-center gap-4">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="1.5">
                 <circle cx="12" cy="12" r="10" />
@@ -450,40 +450,20 @@ export default function TrackInfoPage() {
             </div>
             <ChevronDown open={licensingOpen} />
           </button>
-
           {licensingOpen && (
             <div className="pb-8 space-y-6">
               <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="license"
-                  checked={license === "all"}
-                  onChange={() => setLicense("all")}
-                  className="mt-1 w-4 h-4 accent-white flex-shrink-0"
-                />
+                <input type="radio" name="license" checked={license === "all"} onChange={() => setLicense("all")} className="mt-1 w-4 h-4 accent-white flex-shrink-0" />
                 <div>
                   <p className="text-sm font-bold text-white">All rights reserved</p>
-                  <p className="text-sm text-[#666] mt-1">
-                    By choosing All Rights Reserved, you ask that other creators not use your material.
-                    Copyright is automatically granted to you when you begin creating your work.
-                  </p>
+                  <p className="text-sm text-[#666] mt-1">By choosing All Rights Reserved, you ask that other creators not use your material.</p>
                 </div>
               </label>
               <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="license"
-                  checked={license === "cc"}
-                  onChange={() => setLicense("cc")}
-                  className="mt-1 w-4 h-4 accent-white flex-shrink-0"
-                />
+                <input type="radio" name="license" checked={license === "cc"} onChange={() => setLicense("cc")} className="mt-1 w-4 h-4 accent-white flex-shrink-0" />
                 <div>
                   <p className="text-sm font-bold text-white">Creative Commons</p>
-                  <p className="text-sm text-[#666] mt-1">
-                    With Creative Commons licenses, creators have the choice to give up certain exclusive
-                    rights normally associated with copyright, while retaining others. There are six different
-                    licenses that provide users with different levels of freedom.
-                  </p>
+                  <p className="text-sm text-[#666] mt-1">With Creative Commons licenses, creators have the choice to give up certain exclusive rights normally associated with copyright, while retaining others.</p>
                 </div>
               </label>
             </div>

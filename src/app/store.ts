@@ -1,8 +1,9 @@
 import { configureStore } from "@reduxjs/toolkit";
+import audioSourceReducer from "../store/AudioSourceSlice";
 
 export const store = configureStore({
   reducer: {
-    // Add reducers here
+    audioSource: audioSourceReducer,
   },
 });
 

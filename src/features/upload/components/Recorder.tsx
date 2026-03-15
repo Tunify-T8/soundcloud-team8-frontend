@@ -1,10 +1,13 @@
 import { useRef, useState, useEffect } from "react"
 import type { RecorderProps } from "../types"
 import type { PermissionState } from "../types"
+import { useDispatch } from "react-redux"
+import { setAudioSource } from "../../../store/AudioSourceSlice"
 
 const MAX_SECONDS = 15
 
 export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
+  const dispatch = useDispatch()
   const [permission, setPermission] = useState<PermissionState>("idle")
   const [recordingState, setRecordingState] = useState<"idle" | "recording" | "paused" | "stopped">("idle")
   const [elapsed, setElapsed] = useState(0)
@@ -584,7 +587,18 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
                         </button>
                       </div>
                       <button
-                        onClick={() => { const b = latestBlobRef.current ?? audioBlob; console.log("Upload blob size:", b?.size); alert("Recording saved!") }}
+                        onClick={() => {
+                          const blob = latestBlobRef.current ?? audioBlob
+                          if (!blob) return
+                          // Create a fresh object URL — the slice will revoke the old one
+                          const url = URL.createObjectURL(blob)
+                          dispatch(setAudioSource({
+                            kind: "recorded",
+                            url,
+                            duration: playbackDuration,
+                            size: blob.size,
+                          }))
+                        }}
                         className="px-6 py-2 rounded-full bg-[#2a2a2a] hover:bg-[#333] text-white text-[14px] font-semibold transition-colors"
                       >Upload</button>
                     </div>
