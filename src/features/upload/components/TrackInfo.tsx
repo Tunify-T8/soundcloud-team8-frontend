@@ -173,7 +173,7 @@ const source = useAppSelector((s) => s.audioSource.source);
 
     uploadFile();
     return () => { cancelled = true };
-  }, []);
+  },[source.url]);
 
   // ── 2. Derived values ────────────────────────────────────────────────────────
   const fileName = source?.kind === "file"

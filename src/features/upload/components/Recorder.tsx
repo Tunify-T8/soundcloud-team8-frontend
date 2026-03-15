@@ -423,7 +423,7 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
       audio.play(); setIsPlaying(true)
       rafRef.current = requestAnimationFrame(tickRaf)
     }
-  }, [audioBlob, isPlaying, playbackDuration])
+  }, [audioBlob, isPlaying, playbackDuration,tickRaf])
 
   const handleScrub = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const t = parseFloat(e.target.value)
