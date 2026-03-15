@@ -1,9 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import Recorder from "../components/Recorder";
 import TrackInfoPage from "../components/TrackInfo";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
+import { useAppSelector } from "@/app/hooks"; // Add this import
 import { setAudioSource, clearNavigation } from "../../../store/AudioSourceSlice";
 import { SiSoundcloud } from "react-icons/si";
+
 
 export default function SoundCloudUpload() {
   const [isDragging, setIsDragging] = useState(false);
@@ -12,14 +14,14 @@ export default function SoundCloudUpload() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const dispatch = useDispatch();
-  const readyToNavigate = useSelector((s: any) => s.audioSource.readyToNavigate);
+  const readyToNavigate = useAppSelector((s) => s.audioSource.readyToNavigate);  // Changed this line
 
   useEffect(() => {
     if (readyToNavigate) {
       setShowTrackInfo(true);
       dispatch(clearNavigation());
     }
-  }, [readyToNavigate]);
+  }, [readyToNavigate, dispatch]);  // Added dispatch to dependencies
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();

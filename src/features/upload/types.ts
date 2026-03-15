@@ -19,4 +19,13 @@ export type TogglesState =  {
   showComments: boolean;
   insights: boolean;
 }
+export type  AudioSourceState =  {
+  readyToNavigate: boolean;
+  kind?: "file";
+  url?: string;
+  name?: string;
+  size?: number;
+  mimeType?: string;
+} 
 export type PermissionState = "idle" | "granted" | "denied" | "requesting"
+
