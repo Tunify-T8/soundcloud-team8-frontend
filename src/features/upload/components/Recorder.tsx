@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react"
+import { useRef, useState, useEffect, useCallback } from "react"
 import type { RecorderProps } from "../types"
 import type { PermissionState } from "../types"
 import { useDispatch } from "react-redux"
@@ -41,6 +41,26 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
   // Always-current committed blob (ref = never stale unlike React state)
   const latestBlobRef = useRef<Blob | null>(null)
 
+  // ─── timer helpers (MOVED BEFORE useEffect) ──────────────────────────────────
+
+  const clearTimerOnly = useCallback(() => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
+  }, [])
+
+  const freezeTimer = useCallback(() => {
+    if (!timerRef.current) return
+    accumulatedRef.current = accumulatedRef.current + (performance.now() - segmentStartRef.current)
+    clearTimerOnly()
+    setElapsed(accumulatedRef.current)
+  }, [clearTimerOnly])
+
+  const startTimer = useCallback(() => {
+    segmentStartRef.current = performance.now()
+    timerRef.current = setInterval(() => {
+      setElapsed(accumulatedRef.current + (performance.now() - segmentStartRef.current))
+    }, 50)
+  }, [])
+
   useEffect(() => {
     return () => {
       clearTimerOnly()
@@ -48,43 +68,7 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
       if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current)
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
     }
-  }, [])
-
-  useEffect(() => {
-    if (recordingState === "recording" && elapsed >= MAX_SECONDS * 1000) stopRecording()
-  }, [elapsed, recordingState])
-
-  useEffect(() => {
-    if (!finalized) return
-    const totalSecs = elapsed / 1000
-    playbackDurationRef.current = totalSecs
-    setPlaybackDuration(totalSecs)
-    setPlaybackCurrent(prev => {
-      const clamped = Math.min(prev, totalSecs)
-      if (audioRef.current) audioRef.current.currentTime = clamped
-      return clamped
-    })
-  }, [elapsed, finalized])
-
-  // ─── timer helpers ───────────────────────────────────────────────────────────
-
-  const clearTimerOnly = () => {
-    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
-  }
-
-  const startTimer = () => {
-    segmentStartRef.current = performance.now()
-    timerRef.current = setInterval(() => {
-      setElapsed(accumulatedRef.current + (performance.now() - segmentStartRef.current))
-    }, 50)
-  }
-
-  const freezeTimer = () => {
-    if (!timerRef.current) return
-    accumulatedRef.current = accumulatedRef.current + (performance.now() - segmentStartRef.current)
-    clearTimerOnly()
-    setElapsed(accumulatedRef.current)
-  }
+  }, [clearTimerOnly])
 
   const fmt = (s: number) => {
     if (!isFinite(s) || isNaN(s)) return "0:00"
@@ -93,9 +77,53 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
     return `${m}:${sec}`
   }
 
+  // ─── playback helpers (MOVED BEFORE they're used) ───────────────────────────
+
+  const resetPlayback = useCallback(() => {
+    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null }
+    setPlaybackCurrent(0)
+    setPlaybackDuration(0)
+    playbackDurationRef.current = 0
+  }, [])
+
+  const loadAudio = useCallback((blob: Blob) => {
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.src = ""
+      audioRef.current.onended = null
+      audioRef.current.load()
+    }
+    if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current)
+    audioUrlRef.current = URL.createObjectURL(blob)
+    const audio = new Audio(audioUrlRef.current)
+    audio.preload = "auto"
+    audioRef.current = audio
+    audio.onended = () => {
+      setIsPlaying(false)
+      setPlaybackCurrent(0)
+      if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null }
+    }
+  }, [])
+
+  const tickRaf = useCallback(function tick() {
+    const audio = audioRef.current
+    if (!audio) return
+    const t = audio.currentTime
+    const limit = playbackDurationRef.current
+    if (limit > 0 && t >= limit) {
+      audio.pause(); audio.currentTime = 0
+      setPlaybackCurrent(0); setIsPlaying(false)
+      if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null }
+      return
+    }
+    setPlaybackCurrent(t)
+    if (!audio.paused && !audio.ended) {
+      rafRef.current = requestAnimationFrame(tick)
+    }
+  }, [])
+
   // ─── THE KEY FIX: stop recorder and wait for ALL chunks to flush ─────────────
-  // MediaRecorder buffers data async — onstop fires AFTER the final ondataavailable.
-  // Never read chunksRef before this resolves or you'll get incomplete/empty audio.
+
   const stopRecorderAndGetBlob = (): Promise<Blob> => {
     return new Promise((resolve) => {
       const mr = mediaRecorder.current
@@ -112,7 +140,7 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
 
   // ─── recording actions ──────────────────────────────────────────────────────
 
-  const startRecording = () => {
+  const startRecording = useCallback(() => {
     if (!mediaStream.current) return
     if (mediaRecorder.current && mediaRecorder.current.state !== "inactive") {
       mediaRecorder.current.onstop = null
@@ -143,25 +171,29 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
     recorder.start(100)
     setRecordingState("recording")
     startTimer()
-  }
+  }, [startTimer, resetPlayback])
 
-  const pauseRecording = () => {
+  const pauseRecording = useCallback(() => {
     if (mediaRecorder.current?.state === "recording") {
       mediaRecorder.current.pause()
       setRecordingState("paused")
       freezeTimer()
     }
-  }
+  }, [freezeTimer])
 
-  // On undo+resume: stop current recorder, AWAIT full flush, save as splice
-  // original, then start a fresh recorder from the trim point onward.
-  const resumeRecording = async () => {
+  const stopRecording = useCallback(() => {
+    freezeTimer()
+    if (mediaRecorder.current && mediaRecorder.current.state !== "inactive") {
+      mediaRecorder.current.stop()
+    }
+    setRecordingState("stopped")
+  }, [freezeTimer])
+
+  const resumeRecording = useCallback(async () => {
     if (!mediaRecorder.current || !mediaStream.current) return
 
     if (undoMs > 0) {
       const trimPoint = accumulatedRef.current / 1000
-
-      // Wait for all buffered audio data before building the splice original
       const flushedBlob = await stopRecorderAndGetBlob()
       const originalForSplice = flushedBlob.size > 0 ? flushedBlob : latestBlobRef.current
 
@@ -185,8 +217,6 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
       setRecordingState("recording")
       startTimer()
     } else if (mediaRecorder.current.state === "inactive") {
-      // Coming back from finalized view — recorder was stopped during finalize.
-      // Splice new audio onto the committed blob from that point onward.
       const trimPoint = accumulatedRef.current / 1000
       const originalForSplice = latestBlobRef.current
       if (!originalForSplice) return
@@ -204,25 +234,16 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
       setRecordingState("recording")
       startTimer()
     }
-  }
+  }, [undoMs, startTimer])
 
-  const stopRecording = () => {
-    freezeTimer()
-    // Keep default onstop so latestBlobRef stays current
-    if (mediaRecorder.current && mediaRecorder.current.state !== "inactive") {
-      mediaRecorder.current.stop()
-    }
-    setRecordingState("stopped")
-  }
-
-  const handleMainButton = () => {
+  const handleMainButton = useCallback(() => {
     if      (recordingState === "idle")      startRecording()
     else if (recordingState === "recording") pauseRecording()
     else if (recordingState === "paused")    resumeRecording()
     else if (recordingState === "stopped")   startRecording()
-  }
+  }, [recordingState, startRecording, pauseRecording, resumeRecording])
 
-  const handleTrash = () => {
+  const handleTrash = useCallback(() => {
     clearTimerOnly()
     if (mediaRecorder.current && mediaRecorder.current.state !== "inactive") {
       mediaRecorder.current.onstop = null
@@ -242,7 +263,23 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
     spliceOriginalRef.current = null
     audioRef.current = null
     setRecordingState("idle")
-  }
+  }, [clearTimerOnly, resetPlayback])
+
+  useEffect(() => {
+    if (recordingState === "recording" && elapsed >= MAX_SECONDS * 1000) stopRecording()
+  }, [elapsed, recordingState, stopRecording])
+
+  useEffect(() => {
+    if (!finalized) return
+    const totalSecs = elapsed / 1000
+    playbackDurationRef.current = totalSecs
+    setPlaybackDuration(totalSecs)
+    setPlaybackCurrent(prev => {
+      const clamped = Math.min(prev, totalSecs)
+      if (audioRef.current) audioRef.current.currentTime = clamped
+      return clamped
+    })
+  }, [elapsed, finalized])
 
   // ─── WAV encoder ─────────────────────────────────────────────────────────────
 
@@ -270,23 +307,19 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
 
   // ─── checkmark / finalize ───────────────────────────────────────────────────
 
-  const handleCheck = async () => {
-    // ── Back from finalized view ──
+  const handleCheck = useCallback(async () => {
     if (finalized) {
       if (audioRef.current) { audioRef.current.pause(); audioRef.current.currentTime = 0 }
       if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null }
       setFinalized(false)
       setIsPlaying(false)
       setPlaybackCurrent(0)
-      // Return to paused so the user can still resume recording if time remains
       setRecordingState("paused")
       return
     }
 
-    // Freeze timer before anything async so elapsed is stable
     if (timerRef.current) freezeTimer()
 
-    // Show spinner and await full chunk flush
     setIsSplicing(true)
     const tailBlob = await stopRecorderAndGetBlob()
     setRecordingState("stopped")
@@ -306,7 +339,6 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
       setPlaybackCurrent(0)
       playbackDurationRef.current = durationSecs
       setPlaybackDuration(durationSecs)
-      // Always tear down old audio element and build fresh from the correct blob
       audioRef.current = null
       loadAudio(blob)
       setIsSplicing(false)
@@ -314,7 +346,6 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
       spliceOriginalRef.current = null
     }
 
-    // ── Splice path: merge trimmed original + new tail ──
     if (hasSpliceRef.current && spliceOriginalRef.current && tailBlob.size > 0) {
       const origBlob = spliceOriginalRef.current
       const trimSec  = spliceTrimSecRef.current
@@ -345,66 +376,21 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
           ctx.close()
         } catch (e) {
           console.error("Splice failed:", e)
-          // Degrade gracefully: just play the new tail
           finalize(tailBlob, totalSecs)
         }
       })()
       return
     }
 
-    // ── No splice: use tail if non-empty, else fall back to committed blob ──
     const blob = tailBlob.size > 0 ? tailBlob : latestBlobRef.current
     if (blob && blob.size > 0) {
       finalize(blob, totalSecs)
     } else {
       setIsSplicing(false)
     }
-  }
+  }, [finalized, freezeTimer, loadAudio])
 
-  // ─── playback ───────────────────────────────────────────────────────────────
-
-  const resetPlayback = () => {
-    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null }
-    setPlaybackCurrent(0)
-    setPlaybackDuration(0)
-    playbackDurationRef.current = 0
-  }
-
-  const loadAudio = (blob: Blob) => {
-    if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current.src = ""
-      audioRef.current.onended = null
-      audioRef.current.load()
-    }
-    if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current)
-    audioUrlRef.current = URL.createObjectURL(blob)
-    const audio = new Audio(audioUrlRef.current)
-    audio.preload = "auto"
-    audioRef.current = audio
-    audio.onended = () => {
-      setIsPlaying(false)
-      setPlaybackCurrent(0)
-      if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null }
-    }
-  }
-
-  const tickRaf = () => {
-    const audio = audioRef.current
-    if (!audio) return
-    const t = audio.currentTime
-    const limit = playbackDurationRef.current
-    if (limit > 0 && t >= limit) {
-      audio.pause(); audio.currentTime = 0
-      setPlaybackCurrent(0); setIsPlaying(false)
-      if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null }
-      return
-    }
-    setPlaybackCurrent(t)
-    if (!audio.paused && !audio.ended) rafRef.current = requestAnimationFrame(tickRaf)
-  }
-
-  const handlePlay = () => {
+  const handlePlay = useCallback(() => {
     if (!audioRef.current) {
       const blob = latestBlobRef.current ?? audioBlob
       if (blob) loadAudio(blob)
@@ -421,13 +407,13 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
       audio.play(); setIsPlaying(true)
       rafRef.current = requestAnimationFrame(tickRaf)
     }
-  }
+  }, [audioBlob, isPlaying, playbackDuration, tickRaf, loadAudio])
 
-  const handleScrub = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleScrub = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const t = parseFloat(e.target.value)
     setPlaybackCurrent(t)
     if (audioRef.current) audioRef.current.currentTime = t
-  }
+  }, [])
 
   // ─── undo / redo ────────────────────────────────────────────────────────────
 
@@ -440,7 +426,7 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
     setPlaybackCurrent(clamped)
   }
 
-  const handleUndo = () => {
+  const handleUndo = useCallback(() => {
     const rewindBy = Math.min(SEEK_MS, accumulatedRef.current)
     if (rewindBy <= 0) return
     const newElapsed = accumulatedRef.current - rewindBy
@@ -449,9 +435,9 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
     setUndoMs(prev => prev + rewindBy)
     setRedoBudget(prev => prev + rewindBy)
     if (finalized) seekAudioTo(newElapsed / 1000)
-  }
+  }, [finalized])
 
-  const handleRedo = () => {
+  const handleRedo = useCallback(() => {
     const forwardBy = Math.min(SEEK_MS, redoBudget)
     if (forwardBy <= 0) return
     const newElapsed = accumulatedRef.current + forwardBy
@@ -460,7 +446,7 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
     setRedoBudget(prev => prev - forwardBy)
     setUndoMs(prev => Math.max(0, prev - forwardBy))
     if (finalized) seekAudioTo(newElapsed / 1000)
-  }
+  }, [redoBudget, finalized])
 
   // ─── derived ─────────────────────────────────────────────────────────────────
 
@@ -590,7 +576,6 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
                         onClick={() => {
                           const blob = latestBlobRef.current ?? audioBlob
                           if (!blob) return
-                          // Create a fresh object URL — the slice will revoke the old one
                           const url = URL.createObjectURL(blob)
                           dispatch(setAudioSource({
                             kind: "recorded",
