@@ -44,7 +44,16 @@ export const profileService = {
   async getUserByUsername(username: string): Promise<User | null> {
     const target = username.trim().replace(/^@/, "");
 
-    // TODO: Remove fallback logic when mock API matches backend contract (single User from /users/:userIdOrUsername).
+    try {
+      const { data } = await api.get<UsersResponse>(
+        `/users?username=${encodeURIComponent(target)}`,
+      );
+      const matchedUser = findUserByUsername(toUsersArray(data), target);
+      if (matchedUser) {
+        return matchedUser;
+      }
+    } catch {}
+
     try {
       const { data } = await api.get<UsersResponse>(
         `/users/${encodeURIComponent(target)}`,
