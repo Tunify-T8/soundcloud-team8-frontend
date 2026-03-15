@@ -10,6 +10,7 @@
 // so ALL calls go to the mock functions below.
 // When your backend is ready, set VITE_USE_MOCK=false.
 
+import axiosInstance from '../services/axiosInstance';
 import type {
   LoginRequest,
   AuthResponse,
@@ -27,8 +28,8 @@ const delay = (ms = 800) =>
 const MOCK_AUTH_RESPONSE: AuthResponse = {
   user: {
     id: 'mock-user-001',
-    username: 'soundcloud_dev',
-    email: 'test@soundcloud.com',
+    username: 'tunify_dev',
+    email: 'test@tunify.com',
     avatarUrl: null,
     isVerified: true,
     role: 'user',
@@ -51,36 +52,22 @@ const mockError = (code: string, message: string, status: number) => {
 // ── Mock login ────────────────────────────────────────────────
 const mockLogin = async (data: LoginRequest): Promise<AuthResponse> => {
   await delay();
-  // Valid test credentials
   if (
-    data.email === 'test@soundcloud.com' &&
+    data.email === 'test@tunify.com' &&
     data.password === 'Password123'
   ) {
     return MOCK_AUTH_RESPONSE;
   }
-  // Wrong email
-  if (data.email !== 'test@soundcloud.com') {
+  if (data.email !== 'test@tunify.com') {
     throw mockError('USER_NOT_FOUND', 'No account with that email.', 404);
   }
-  // Wrong password
   throw mockError('INVALID_CREDENTIALS', 'Email or password is incorrect.', 401);
 };
 
-// ── Real login (calls your backend) ──────────────────────────
+// ── Real login (uses axiosInstance — token attached automatically) ──
 const realLogin = async (data: LoginRequest): Promise<AuthResponse> => {
-  const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api';
-  const res = await fetch(`${BASE_URL}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const errorData = await res.json();
-    const err = new Error('Login failed') as Error & { response: unknown };
-    err.response = { status: res.status, data: errorData };
-    throw err;
-  }
-  return res.json();
+  const res = await axiosInstance.post('/auth/login', data);
+  return res.data;
 };
 
 // ── Mock social login ─────────────────────────────────────────
@@ -95,22 +82,9 @@ const mockSocialLogin = async (
 const realSocialLogin = async (
   data: SocialLoginRequest
 ): Promise<AuthResponse> => {
-  const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api';
-  const res = await fetch(`${BASE_URL}/auth/social-login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const errorData = await res.json();
-    const err = new Error('Social login failed') as Error & { response: unknown };
-    err.response = { status: res.status, data: errorData };
-    throw err;
-  }
-  return res.json();
+  const res = await axiosInstance.post('/auth/social-login', data);
+  return res.data;
 };
-
-
 
 // ── Mock register ─────────────────────────────────────────────
 const mockRegister = async (_data: RegisterRequest): Promise<AuthResponse> => {
@@ -120,21 +94,9 @@ const mockRegister = async (_data: RegisterRequest): Promise<AuthResponse> => {
 
 // ── Real register ─────────────────────────────────────────────
 const realRegister = async (data: RegisterRequest): Promise<AuthResponse> => {
-  const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api';
-  const res = await fetch(`${BASE_URL}/auth/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const errorData = await res.json();
-    const err = new Error('Register failed') as Error & { response: unknown };
-    err.response = { status: res.status, data: errorData };
-    throw err;
-  }
-  return res.json();
+  const res = await axiosInstance.post('/auth/register', data);
+  return res.data;
 };
-
 
 // ── Exported functions (what your pages import) ───────────────
 export const login = IS_MOCK ? mockLogin : realLogin;

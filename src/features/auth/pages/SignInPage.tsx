@@ -212,12 +212,12 @@ const SignInPage: React.FC = () => {
         - On mobile (< sm): full-width, no border card, padded content
         - On sm+ (≥ 640px): centered card with double border
       */}
-      <main className="flex-1 flex items-start sm:items-center justify-center px-0 sm:px-4 py-0 sm:py-10">
-        <div className="w-full sm:max-w-[480px]">
+        <main className="flex-1 flex items-center justify-center px-4 py-10">
+        <div className="w-full max-w-[480px]">
 
           {/* Card wrapper — border only on sm+ */}
-          <div className="sm:border sm:border-[#3a3a3a] sm:rounded-sm sm:p-[3px] sm:bg-[#111]">
-            <div className="sm:border sm:border-[#555] sm:rounded-sm bg-[#181818] sm:min-h-[520px]">
+          <div className="border sm:border-[#3a3a3a] sm:rounded-sm sm:p-[3px] sm:bg-[#111]">
+            <div className="border sm:border-[#555] sm:rounded-sm bg-[#181818] sm:min-h-[520px]">
 
               {/* ══ STEP: social ══ */}
               {step === 'social' && (
@@ -267,7 +267,7 @@ const SignInPage: React.FC = () => {
 
               {/* ══ STEP: email focused ══ */}
               {step === 'email' && (
-                <div className="px-6 py-8 sm:p-8">
+                <div className="p-8">
                   <div className="flex items-center gap-4 mb-6">
                     <BackButton onClick={handleBack} />
                     <h1 className="text-white text-base font-bold">Sign in or create an account</h1>
@@ -308,7 +308,7 @@ const SignInPage: React.FC = () => {
 
               {/* ══ STEP: password ══ */}
               {step === 'password' && (
-                <div className="px-6 py-8 sm:p-8">
+                <div className="p-8">
                   <div className="flex items-center gap-4 mb-6">
                     <BackButton onClick={handleBack} />
                     <h1 className="text-white text-base font-bold">Welcome back!</h1>

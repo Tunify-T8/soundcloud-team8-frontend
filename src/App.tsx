@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom"
 import SideBar from "./components/layout/Sidebar"
 import SignInPage from "./features/auth/pages/SignInPage"
 import SignUpPage from "./features/auth/pages/SignUpPage"
+import ForgotPasswordPage from "./features/auth/pages/ForgotPasswordPage"
 
 const router = createBrowserRouter([
   {
@@ -13,6 +14,8 @@ const router = createBrowserRouter([
     path: '/create-account',
     element: <SignUpPage key={Math.random()} />,
   },
+  { path: '/forgot-password', 
+    element: <ForgotPasswordPage /> },
   {
     path: '/',
     element: <NavBar />,
