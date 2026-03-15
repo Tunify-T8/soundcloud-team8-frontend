@@ -18,7 +18,7 @@ const router = createBrowserRouter([
         element: <SideBar />,
       },
       {
-        path: "/username",
+        path: "/:username",
         element: <ProfilePage />,
         children: [
           { index: true },

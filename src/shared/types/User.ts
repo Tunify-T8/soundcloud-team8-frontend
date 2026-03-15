@@ -18,6 +18,7 @@ export interface User {
     followersCount: number;
     followingCount: number;
     tracksCount: number;
+    isEditable: boolean;
     // likesReceivedCount: number;
     // isFollowing: boolean;
     createdAt: string;

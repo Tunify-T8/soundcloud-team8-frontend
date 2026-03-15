@@ -20,9 +20,9 @@ export default function UserInfo({
   };
 }) {
   const userInfo = [
-    { label: "Followers", path: "/username/followers", value: followers },
-    { label: "Following", path: "/username/following", value: following },
-    { label: "Tracks", path: "/username/tracks", value: tracks },
+    { label: "Followers", path: "followers", value: followers },
+    { label: "Following", path: "following", value: following },
+    { label: "Tracks", path: "tracks", value: tracks },
   ];
 
   return (

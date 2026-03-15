@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 export default function EditInfo({
   onClick,
   displayName,
+  avatarUrl,
   country,
   city,
   bio,
 }: {
   onClick: () => void;
   displayName?: string;
+  avatarUrl?: string;
   country?: string;
   city?: string;
   bio?: string;
@@ -44,7 +46,7 @@ export default function EditInfo({
         <h2 className="text-lg font-bold mb-6">Edit your Profile</h2>
         <div className="grid gap-8 lg:grid-cols-[220px_1fr]">
           <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full bg-gray-300 overflow-hidden">
-            <Avatar />
+            <Avatar avatarUrl={avatarUrl} displayName={displayName} />
           </div>
 
           <div>
