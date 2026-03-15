@@ -1,8 +1,10 @@
 import { configureStore } from "@reduxjs/toolkit";
 
+const dummyReducer = (state = {}, action: any) => state;
+
 export const store = configureStore({
   reducer: {
-    // Add reducers here
+    dummy: dummyReducer,
   },
 });
 
