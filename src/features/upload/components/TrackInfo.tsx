@@ -90,6 +90,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
   const titleRef       = useRef<HTMLInputElement>(null);
   const genreRef       = useRef<HTMLInputElement>(null);
   const tagsRef        = useRef<HTMLInputElement>(null);
+  const artistsRef     = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const privacyRef     = useRef<string>("public");
 
@@ -152,7 +153,9 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
         tags: tagsRef.current?.value ? [tagsRef.current.value] : [],
         description: descriptionRef.current?.value || "",
         privacy: privacyRef.current,
-        artists: [],
+        artists: artistsRef.current?.value
+          ? artistsRef.current.value.split(",").map(a => a.trim())
+          : [],
         status: "uploaded",
         audioUrl,
         waveformUrl: null,
@@ -281,6 +284,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
               </div>
               <input
                 type="text"
+                ref={artistsRef}
                 defaultValue="amgad mohamed"
                 className="w-full bg-transparent text-white text-sm py-1 focus:outline-none"
               />

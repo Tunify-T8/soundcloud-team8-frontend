@@ -3,6 +3,7 @@ import Recorder from "../components/Recorder";
 import TrackInfoPage from "../components/TrackInfo";
 import { useDispatch, useSelector } from "react-redux";
 import { setAudioSource, clearNavigation } from "../../../store/AudioSourceSlice";
+import { SiSoundcloud } from "react-icons/si";
 
 export default function SoundCloudUpload() {
   const [isDragging, setIsDragging] = useState(false);
@@ -62,19 +63,10 @@ export default function SoundCloudUpload() {
 
       {/* HEADER */}
       <header className="flex items-center justify-between px-8 py-4 border-b border-[#222]">
-        <div className="flex items-center gap-3">
-          <svg viewBox="0 0 55 18" width="55" height="18" fill="white">
-            <path d="M6.5 17C3.46 17 1 14.54 1 11.5c0-2.3 1.4-4.27 3.43-5.1A6.5 6.5 0 0 1 11 1a6.49 6.49 0 0 1 6.13 4.3A4.5 4.5 0 0 1 22 9.75V17H6.5z"/>
-            <rect x="25" y="5" width="2.2" height="12" rx="1.1"/>
-            <rect x="29" y="3" width="2.2" height="14" rx="1.1"/>
-            <rect x="33" y="1" width="2.2" height="16" rx="1.1"/>
-            <rect x="37" y="4" width="2.2" height="13" rx="1.1"/>
-            <rect x="41" y="6" width="2.2" height="11" rx="1.1"/>
-            <rect x="45" y="3" width="2.2" height="14" rx="1.1"/>
-            <rect x="49" y="5" width="2.2" height="12" rx="1.1"/>
-          </svg>
+        <a href="/" className="flex items-center gap-3 hover:opacity-80 transition">
+          <SiSoundcloud size={36} color="white" />
           <span className="text-[15px] font-semibold">Upload</span>
-        </div>
+        </a>
         <button className="text-[#888] hover:text-white transition">
           <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18"/>
