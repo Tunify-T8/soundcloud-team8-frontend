@@ -14,13 +14,11 @@ export const SampleTracks: Track[] = [
     waveformData: [12, 18, 22, 30, 27, 25, 33, 40, 38, 29, 21, 18],
     duration: 214,
     date: "2026-03-10",
-    engagements: {
-      likes: 128,
+   likes: 128,
       comments: 24,
       reposts: 8,
       downloads: 15,
-      plays: 1240
-    },
+      plays: 1240,
     isHD: true,
     isPrivate: false,
     thumbnailUrl: "/images/tracks/midnight-echoes.jpg"
@@ -37,13 +35,11 @@ export const SampleTracks: Track[] = [
     waveformData: [8, 10, 14, 18, 16, 15, 20, 22, 19, 17, 13, 9],
     duration: 176,
     date: "2026-03-13",
-    engagements: {
-      likes: null,
-      comments: null,
+   likes: null,
+    comments: null,
       reposts: null,
       downloads: null,
-      plays: 12
-    },
+      plays: 12,
     isHD: false,
     isPrivate: true,
     thumbnailUrl: "/images/tracks/unreleased-horizon.jpg"
