@@ -72,99 +72,16 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadDone, setUploadDone] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [fileReady, setFileReady] = useState(false); // true once file is uploaded
-  const audioUrlRef = useRef<string | null>(null); // stores the uploaded audioUrl
+  const [fileReady, setFileReady] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Auto-start file upload as soon as TrackInfo mounts
-  useEffect(() => {
-    if (!source?.url) return;
-    let cancelled = false;
+  // Artwork state
+  const [artworkPreview, setArtworkPreview] = useState<string | null>(null);
+  const artworkBase64Ref = useRef<string | null>(null);
+  const artworkInputRef = useRef<HTMLInputElement>(null);
 
-    const uploadFile = async () => {
-      setIsUploading(true);
-      setUploadProgress(0);
-      try {
-        const blob = await axios.get(source.url, { responseType: "blob" }).then(r => r.data);
-        const MAX_MOCKAPI_SIZE = 1 * 1024 * 1024; // 1MB — MockAPI payload limit
+  const audioUrlRef = useRef<string | null>(null);
 
-        if (blob.size > MAX_MOCKAPI_SIZE) {
-          // File too large for MockAPI — show progress based on chunk processing
-          // but don't try to POST the base64 (MockAPI will reject it)
-          // TODO: replace with real multipart upload + onUploadProgress when backend is ready
-          const CHUNK_SIZE = 256 * 1024;
-          const totalChunks = Math.ceil(blob.size / CHUNK_SIZE);
-
-          for (let i = 0; i < totalChunks; i++) {
-            if (cancelled) return;
-            // Process each chunk (reads it) so progress reflects real work
-            const start = i * CHUNK_SIZE;
-            const chunk = blob.slice(start, start + CHUNK_SIZE);
-            await new Promise<void>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onloadend = () => resolve();
-              reader.onerror = reject;
-              reader.readAsArrayBuffer(chunk);
-            });
-            if (!cancelled) {
-              setUploadProgress(Math.round(((i + 1) / totalChunks) * 100));
-            }
-          }
-
-          if (!cancelled) {
-            audioUrlRef.current = null; // not stored — too large for MockAPI
-            setUploadProgress(100);
-            setFileReady(true);
-          }
-          return;
-        }
-
-        // Small files (under 1MB) — encode in chunks and store as base64 in MockAPI
-        const CHUNK_SIZE = 256 * 1024;
-        const totalChunks = Math.ceil(blob.size / CHUNK_SIZE);
-        const parts: string[] = [];
-
-        for (let i = 0; i < totalChunks; i++) {
-          if (cancelled) return;
-          const start = i * CHUNK_SIZE;
-          const chunk = blob.slice(start, start + CHUNK_SIZE);
-
-          const chunkBase64 = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              const result = reader.result as string;
-              resolve(result.split(",")[1]);
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(chunk);
-          });
-
-          parts.push(chunkBase64);
-          if (!cancelled) {
-            setUploadProgress(Math.round(((i + 1) / totalChunks) * 100));
-          }
-        }
-
-        if (cancelled) return;
-
-        const mimeType = blob.type || "audio/wav";
-        audioUrlRef.current = `data:${mimeType};base64,${parts.join("")}`;
-        setUploadProgress(100);
-        setFileReady(true);
-      } catch (err) {
-        console.error("File encoding failed:", err);
-        if (!cancelled) {
-          audioUrlRef.current = null;
-          setUploadProgress(100);
-          setFileReady(true);
-        }
-      } finally {
-        if (!cancelled) setIsUploading(false);
-      }
-    };
-
-    uploadFile();
-    return () => { cancelled = true };
-  }, []);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [permissionsOpen, setPermissionsOpen] = useState(false);
   const [audioClipOpen, setAudioClipOpen] = useState(false);
@@ -187,6 +104,76 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
   const artistsRef     = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const privacyRef     = useRef<string>("public");
+
+  // Auto-start file upload as soon as TrackInfo mounts
+  useEffect(() => {
+    if (!source?.url) return;
+    let cancelled = false;
+
+    const uploadFile = async () => {
+      setIsUploading(true);
+      setUploadProgress(0);
+      try {
+        const blob = await axios.get(source.url, { responseType: "blob" }).then(r => r.data);
+        const MAX_MOCKAPI_SIZE = 1 * 1024 * 1024; // 1MB — MockAPI payload limit
+
+        if (blob.size > MAX_MOCKAPI_SIZE) {
+          // TODO: replace with real multipart upload + onUploadProgress when backend is ready
+          const CHUNK_SIZE = 256 * 1024;
+          const totalChunks = Math.ceil(blob.size / CHUNK_SIZE);
+          for (let i = 0; i < totalChunks; i++) {
+            if (cancelled) return;
+            const start = i * CHUNK_SIZE;
+            const chunk = blob.slice(start, start + CHUNK_SIZE);
+            await new Promise<void>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve();
+              reader.onerror = reject;
+              reader.readAsArrayBuffer(chunk);
+            });
+            if (!cancelled) setUploadProgress(Math.round(((i + 1) / totalChunks) * 100));
+          }
+          if (!cancelled) {
+            audioUrlRef.current = null;
+            setUploadProgress(100);
+            setFileReady(true);
+          }
+          return;
+        }
+
+        // Small files (under 1MB) — encode as base64 for MockAPI
+        const CHUNK_SIZE = 256 * 1024;
+        const totalChunks = Math.ceil(blob.size / CHUNK_SIZE);
+        const parts: string[] = [];
+        for (let i = 0; i < totalChunks; i++) {
+          if (cancelled) return;
+          const start = i * CHUNK_SIZE;
+          const chunk = blob.slice(start, start + CHUNK_SIZE);
+          const chunkBase64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve((reader.result as string).split(",")[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(chunk);
+          });
+          parts.push(chunkBase64);
+          if (!cancelled) setUploadProgress(Math.round(((i + 1) / totalChunks) * 100));
+        }
+        if (cancelled) return;
+        const mimeType = blob.type || "audio/wav";
+        audioUrlRef.current = `data:${mimeType};base64,${parts.join("")}`;
+        setUploadProgress(100);
+        setFileReady(true);
+      } catch (err) {
+        console.error("File encoding failed:", err);
+        if (!cancelled) { audioUrlRef.current = null; setUploadProgress(100); setFileReady(true); }
+      } finally {
+        if (!cancelled) setIsUploading(false);
+      }
+    };
+
+    uploadFile();
+    return () => { cancelled = true };
+  }, []);
 
   // ── 2. Derived values ────────────────────────────────────────────────────────
   const fileName = source?.kind === "file"
@@ -224,9 +211,31 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
     10 + Math.abs(Math.sin(i * 0.4) * 28 + Math.sin(i * 0.13) * 18)
   );
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
   // ── 3. Handlers ──────────────────────────────────────────────────────────────
+
+  const handleArtworkSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Compress image via canvas before encoding to keep MockAPI payload small
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      const MAX_DIM = 400; // cap at 400x400 for MockAPI
+      const scale = Math.min(MAX_DIM / img.width, MAX_DIM / img.height, 1);
+      const canvas = document.createElement("canvas");
+      canvas.width  = Math.round(img.width  * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const compressed = canvas.toDataURL("image/jpeg", 0.7); // 70% quality JPEG
+      setArtworkPreview(compressed);
+      artworkBase64Ref.current = compressed;
+      URL.revokeObjectURL(objectUrl);
+    };
+    img.src = objectUrl;
+  };
+
   const handleUpload = async () => {
     if (!fileReady || isSubmitting) return;
     setIsSubmitting(true);
@@ -244,6 +253,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
           : [],
         status: "uploaded",
         audioUrl: audioUrlRef.current,
+        artworkUrl: artworkBase64Ref.current,   // base64 image or null
         waveformUrl: null,
         availability: "worldwide",
         licensing: license,
@@ -295,7 +305,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
             </div>
           )}
 
-          {/* ── Done state (not uploading, not showing success screen yet) ── */}
+          {/* ── Done state ── */}
           {!isUploading && uploadProgress === 100 && (
             <div className="flex items-center gap-3 text-sm text-[#aaa]">
               <button className="text-[#aaa] hover:text-white transition">
@@ -367,13 +377,46 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
                 />
               </div>
             )}
-            <div className="w-full aspect-square border border-dashed border-[#444] flex flex-col items-center justify-center text-[#888] hover:border-[#666] transition cursor-pointer max-w-[380px]">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
-                <rect x="3" y="3" width="18" height="18" rx="1" />
-                <circle cx="8.5" cy="8.5" r="1.5" />
-                <polyline points="21,15 16,10 5,21" />
-              </svg>
-              <p className="mt-3 text-sm text-[#999]">Add new artwork</p>
+
+            {/* Artwork picker */}
+            <input
+              ref={artworkInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleArtworkSelect}
+            />
+            <div
+              onClick={() => artworkInputRef.current?.click()}
+              className="w-full aspect-square border border-dashed border-[#444] flex flex-col items-center justify-center text-[#888] hover:border-[#666] transition cursor-pointer max-w-[380px] overflow-hidden relative group"
+            >
+              {artworkPreview ? (
+                <>
+                  <img
+                    src={artworkPreview}
+                    alt="Artwork"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="17 8 12 3 7 8"/>
+                      <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <p className="text-white text-sm font-semibold">Change artwork</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+                    <rect x="3" y="3" width="18" height="18" rx="1" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <polyline points="21,15 16,10 5,21" />
+                  </svg>
+                  <p className="mt-3 text-sm text-[#999]">Add new artwork</p>
+                  <p className="text-xs text-[#555] mt-1">Click to upload an image</p>
+                </>
+              )}
             </div>
           </div>
 
