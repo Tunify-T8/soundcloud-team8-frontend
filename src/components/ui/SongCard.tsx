@@ -2,13 +2,14 @@ import { useState, useMemo } from "react";
 import { Heart, Repeat2, Share2, Copy, MoreHorizontal, Play, Pause } from "lucide-react";
 import { SiSoundcloud } from "react-icons/si";
 import { waveGenerators } from "../Waveforms";
+import { Genre } from "@/shared/types/Genre";
 
 interface PlayerProps {
   artistName?: string;
   title?: string;
   coverUrl?: string;
   timeAgo?: string;
-  genre?: string;
+  genre?: Genre;
   likes?: string;
   reposts?: string;
   plays?: string;
@@ -22,7 +23,7 @@ export default function SongCard({
   title = "",
   coverUrl = "",
   timeAgo = "",
-  genre = "",
+  genre = Genre.POP,
   likes = "",
   reposts = "",
   plays = "",
