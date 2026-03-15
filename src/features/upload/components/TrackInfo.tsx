@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import type { ToggleProps } from "../types";
 import type { TogglesState } from "../types";
 import { useDispatch, useSelector } from "react-redux";
 import { clearAudioSource } from "../../../store/AudioSourceSlice";
+import UploadSuccessScreen from "./UploadSuccessScreen";
+import axios from "axios";
+import { SiSoundcloud } from "react-icons/si";
 
 function Toggle({ enabled, onChange }: ToggleProps) {
   return (
@@ -62,10 +65,35 @@ const inputClass =
   "w-full bg-[#181818] border border-[#333] text-white text-sm px-4 py-3 focus:outline-none focus:border-[#555] placeholder-[#555]";
 
 export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
+  // ── 1. All hooks first ───────────────────────────────────────────────────────
   const dispatch = useDispatch();
   const source = useSelector((s: any) => s.audioSource.source);
 
-  // Derive display values from the Redux source
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadDone, setUploadDone] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [permissionsOpen, setPermissionsOpen] = useState(false);
+  const [audioClipOpen, setAudioClipOpen] = useState(false);
+  const [licensingOpen, setLicensingOpen] = useState(false);
+  const [license, setLicense] = useState<"all" | "cc">("all");
+  const [toggles, setToggles] = useState<TogglesState>({
+    downloads: false,
+    offline: true,
+    rss: true,
+    embed: true,
+    appPlayback: true,
+    comments: true,
+    showComments: true,
+    insights: true,
+  });
+
+  const titleRef       = useRef<HTMLInputElement>(null);
+  const genreRef       = useRef<HTMLInputElement>(null);
+  const tagsRef        = useRef<HTMLInputElement>(null);
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
+  const privacyRef     = useRef<string>("public");
+
+  // ── 2. Derived values ────────────────────────────────────────────────────────
   const fileName = source?.kind === "file"
     ? source.name
     : source?.kind === "recorded"
@@ -78,25 +106,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
       : `${fmtBytes(source.size)} · ${fmtDuration(source.duration)} · WAV`
     : ""
 
-  // Default track title = filename without extension
   const defaultTitle = fileName.replace(/\.[^/.]+$/, "")
-
-  const [advancedOpen, setAdvancedOpen] = useState<boolean>(false);
-  const [permissionsOpen, setPermissionsOpen] = useState<boolean>(false);
-  const [audioClipOpen, setAudioClipOpen] = useState<boolean>(false);
-  const [licensingOpen, setLicensingOpen] = useState<boolean>(false);
-  const [license, setLicense] = useState<"all" | "cc">("all");
-
-  const [toggles, setToggles] = useState<TogglesState>({
-    downloads: false,
-    offline: true,
-    rss: true,
-    embed: true,
-    appPlayback: true,
-    comments: true,
-    showComments: true,
-    insights: true,
-  });
 
   const setToggle = (key: keyof TogglesState, val: boolean) =>
     setToggles((t) => ({ ...t, [key]: val }));
@@ -119,26 +129,64 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
     10 + Math.abs(Math.sin(i * 0.4) * 28 + Math.sin(i * 0.13) * 18)
   );
 
+  // ── 3. Handlers ──────────────────────────────────────────────────────────────
+  const handleUpload = async () => {
+    setIsUploading(true);
+    try {
+      const BASE_URL = "http://69b6043a583f543fbd9cc84e.mockapi.io";
+
+      // Convert audio to base64 so MockAPI can store it as a string
+      let audioUrl: string | null = null;
+      if (source?.url) {
+        const blob = await axios.get(source.url, { responseType: "blob" }).then(r => r.data);
+        audioUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+      }
+
+      const { data: track } = await axios.post(`${BASE_URL}/tracks`, {
+        title: titleRef.current?.value || "Untitled",
+        genre: genreRef.current?.value || "",
+        tags: tagsRef.current?.value ? [tagsRef.current.value] : [],
+        description: descriptionRef.current?.value || "",
+        privacy: privacyRef.current,
+        artists: [],
+        status: "uploaded",
+        audioUrl,
+        waveformUrl: null,
+        availability: "worldwide",
+        licensing: license,
+        scheduledReleaseDate: null,
+        contentWarning: "false",
+      });
+
+      console.log("Track created:", track.id);
+      setUploadDone(true);
+    } catch (err) {
+      console.error("Upload failed:", err);
+      setUploadDone(true);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // ── 4. Early return after all hooks ──────────────────────────────────────────
+  if (uploadDone) return <UploadSuccessScreen />;
+
+  // ── 5. Render ────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#0e0e0e] text-white font-sans">
 
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-3 border-b border-[#1a1a1a]">
-        <div className="flex items-center gap-3">
-          <svg width="34" height="16" viewBox="0 0 34 16" fill="white">
-            <ellipse cx="2" cy="12" rx="2" ry="4" />
-            <ellipse cx="7" cy="10" rx="2" ry="6" />
-            <ellipse cx="12" cy="8" rx="2" ry="8" />
-            <ellipse cx="17" cy="6" rx="2" ry="10" />
-            <ellipse cx="22" cy="8" rx="2" ry="8" />
-            <ellipse cx="27" cy="10" rx="2" ry="6" />
-            <ellipse cx="32" cy="12" rx="2" ry="4" />
-          </svg>
+        <a href="/" className="flex items-center gap-3 hover:opacity-80 transition">
+          <SiSoundcloud size={32} color="white" />
           <span className="font-semibold text-base">Track info</span>
-        </div>
+        </a>
 
         <div className="flex items-center gap-5">
-          {/* Audio source badge */}
           <div className="flex items-center gap-2 text-sm text-[#aaa]">
             {source?.kind === "recorded" ? (
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -161,7 +209,6 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
             Replace track
           </button>
 
-          {/* Close — goes back to upload page by clearing source */}
           <button
             onClick={() => onBack ? onBack() : dispatch(clearAudioSource())}
             className="text-[#aaa] hover:text-white transition"
@@ -177,12 +224,10 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
       {/* Main Content */}
       <div className="max-w-[1100px] mx-auto px-10 py-8 pb-28">
 
-        {/* 2-col grid */}
         <div className="grid grid-cols-2 gap-20 mb-8">
 
-          {/* LEFT: Artwork */}
+          {/* LEFT: Artwork + Preview */}
           <div>
-            {/* Show a mini audio player if we have a URL */}
             {source?.url && (
               <div className="mb-4">
                 <p className="text-xs text-[#555] mb-2 uppercase tracking-wider">Preview</p>
@@ -214,6 +259,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
               </div>
               <input
                 type="text"
+                ref={titleRef}
                 defaultValue={defaultTitle}
                 className="w-full bg-transparent text-white text-sm py-1 focus:outline-none"
               />
@@ -245,6 +291,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
               <label className="text-sm font-bold text-white block mb-1">Genre</label>
               <div className="flex items-center">
                 <input
+                  ref={genreRef}
                   placeholder="Add or search for genre"
                   className="w-full bg-transparent text-[#555] text-sm py-1 focus:outline-none placeholder-[#555]"
                 />
@@ -260,6 +307,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
                 <InfoIcon />
               </div>
               <input
+                ref={tagsRef}
                 placeholder="Add styles, moods, tempo."
                 className="w-full bg-transparent text-[#555] text-sm py-1 focus:outline-none placeholder-[#555]"
               />
@@ -268,6 +316,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
             <div className="border-b border-[#2a2a2a] pb-3 mb-4">
               <label className="text-sm font-bold text-white block mb-1">Description</label>
               <textarea
+                ref={descriptionRef}
                 rows={3}
                 placeholder="Tracks with descriptions tend to get more plays and engagements."
                 className="w-full bg-transparent text-[#555] text-sm py-1 resize-none focus:outline-none placeholder-[#555]"
@@ -279,7 +328,13 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
               <div className="flex gap-6 text-sm text-white">
                 {(["Public", "Private", "Schedule"] as const).map((opt) => (
                   <label key={opt} className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="privacy" defaultChecked={opt === "Public"} className="accent-white w-4 h-4" />
+                    <input
+                      type="radio"
+                      name="privacy"
+                      defaultChecked={opt === "Public"}
+                      onChange={() => { privacyRef.current = opt.toLowerCase() }}
+                      className="accent-white w-4 h-4"
+                    />
                     {opt}
                   </label>
                 ))}
@@ -480,8 +535,15 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
           <span className="underline cursor-pointer hover:text-[#888] transition">Terms of Use</span>{" "}
           and you don't infringe anyone else's rights.
         </p>
-        <button className="bg-[#169b45] hover:bg-[#1db954] text-white px-8 py-2.5 rounded-full font-semibold text-sm transition">
-          Upload
+        <button
+          onClick={handleUpload}
+          disabled={isUploading}
+          className="bg-[#169b45] hover:bg-[#1db954] disabled:opacity-60 disabled:cursor-not-allowed text-white px-8 py-2.5 rounded-full font-semibold text-sm transition flex items-center gap-2"
+        >
+          {isUploading && (
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          )}
+          {isUploading ? "Uploading…" : "Upload"}
         </button>
       </div>
     </div>
