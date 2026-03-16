@@ -1,6 +1,8 @@
-import NavBar from "./components/layout/Navbar";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import SideBar from "./components/layout/Sidebar";
+import NavBar from "./components/layout/Navbar"
+import { createBrowserRouter , RouterProvider } from "react-router-dom"
+import SideBar from "./components/layout/Sidebar"
+import UploadPage from "./features/upload/pages/UploadPage"
+import ArtistsPage from "./features/track-management/pages/ArtistsPage"
 import ProfilePage from "./features/profile/pages/ProfilePage";
 import PopularTracksPage from "./features/profile/pages/UserInfoBar/PopularTracksPage";
 import TracksPage from "./features/profile/pages/UserInfoBar/TracksPage";
@@ -10,12 +12,12 @@ import RepostsPage from "./features/profile/pages/UserInfoBar/RepostsPage";
 
 const router = createBrowserRouter([
   {
-    path: "/",
+    path: '/',
     element: <NavBar />,
     children: [
       {
-        path: "/",
-        element: <SideBar />,
+        path: '/',
+        element: <SideBar />
       },
       {
         path: "/:username",
@@ -31,7 +33,16 @@ const router = createBrowserRouter([
       },
     ],
   },
-]);
+  {
+    path: '/upload',
+    element: <UploadPage />
+  },
+  {
+    path: '/artists',
+    element: <ArtistsPage />
+  }
+])
+
 function App() {
   return (
     <>

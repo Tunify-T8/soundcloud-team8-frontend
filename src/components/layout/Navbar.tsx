@@ -13,27 +13,25 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="w-full h-12 bg-black text-white border-b border-zinc-800">
-        <div className="max-w-[1200px] mx-auto h-full flex items-center justify-between px-6">
-          {/* LEFT SECTION */}
-          <div className="flex items-center gap-6">
-            <Link to="/" className="text-orange-500">
-              <SiSoundcloud size={28} />
-            </Link>
+    <nav className="w-full h-12 bg-black text-white border-b border-zinc-800">
+      <div className="max-w-[1200px] mx-auto h-full flex items-center justify-between px-6">
 
-            <Link to="/" className="text-white text-sm font-medium">
-              Home
-            </Link>
-            <Link to="/feed" className="text-zinc-400 hover:text-white text-sm">
-              Feed
-            </Link>
-            <Link
-              to="/library"
-              className="text-zinc-400 hover:text-white text-sm"
-            >
-              Library
-            </Link>
-          </div>
+        {/* LEFT SECTION */}
+        <div className="flex items-center gap-6">
+          <Link to="/" className="text-orange-500">
+            <SiSoundcloud size={28} />
+          </Link>
+
+          <Link to="/" className="text-white text-sm font-medium">
+            Home
+          </Link>
+          <Link to="/feed" className="text-zinc-400 hover:text-white text-sm">
+            Feed
+          </Link>
+          <Link to="/library" className="text-zinc-400 hover:text-white text-sm">
+            Library
+          </Link>
+        </div>
 
           {/* SEARCH */}
           <div className="relative w-[420px]">
@@ -50,22 +48,22 @@ export default function Navbar() {
             />
           </div>
 
-          {/* RIGHT SECTION */}
-          <div className="flex items-center gap-5 text-sm">
-            <Link
-              to="/pro"
-              className="text-orange-500 hover:text-orange-400 font-medium"
-            >
-              Try Artist Pro
-            </Link>
+        {/* RIGHT SECTION */}
+        <div className="flex items-center gap-5 text-sm">
+          <Link
+            to="/pro"
+            className="text-orange-500 hover:text-orange-400 font-medium"
+          >
+            Try Artist Pro
+          </Link>
 
-            <Link to="/artists" className="text-zinc-400 hover:text-white">
-              For Artists
-            </Link>
+          <Link to="/artists" className="text-zinc-400 hover:text-white">
+            For Artists
+          </Link>
 
-            <Link to="/upload" className="text-zinc-400 hover:text-white">
-              Upload
-            </Link>
+          <Link to="/upload" className="text-zinc-400 hover:text-white">
+            Upload
+          </Link>
 
             <Bell
               size={18}
