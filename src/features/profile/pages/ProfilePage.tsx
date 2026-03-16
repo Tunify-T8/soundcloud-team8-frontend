@@ -4,10 +4,11 @@ import UserInfo from "../components/UserInfo/UserInfo";
 import { Outlet, useParams } from "react-router-dom";
 import { profileService } from "../profileService";
 import { useEffect, useState } from "react";
-import type { User } from "../../../shared/types/User";
+import type { FollowingUser, User } from "../../../shared/types/User";
 export default function ProfilePage() {
   const { username } = useParams<{ username: string }>();
   const [user, setUser] = useState<User | null>(null);
+  const [followingUsers, setFollowingUsers] = useState<FollowingUser[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,6 +24,23 @@ export default function ProfilePage() {
 
         if (isMounted) {
           setUser(userData);
+        }
+
+        if (userData?.username) {
+          try {
+            const followingResponse = await profileService.getFollowing(
+              userData.username,
+            );
+            if (isMounted) {
+              setFollowingUsers(followingResponse);
+            }
+          } catch {
+            if (isMounted) {
+              setFollowingUsers([]);
+            }
+          }
+        } else if (isMounted) {
+          setFollowingUsers([]);
         }
       } catch (error) {
         console.error("Failed to fetch user data:", error);
@@ -68,6 +86,7 @@ export default function ProfilePage() {
           country={user.country}
           city={user.city}
           bio={user.bio}
+          socialAccounts={user.socialAccounts}
           isEditable={user.isEditable}
         />
         <div className="absolute right-[8.333333%] top-full mt-4">
@@ -82,6 +101,7 @@ export default function ProfilePage() {
               twitter: user.socialAccounts?.twitter,
               youtube: user.socialAccounts?.youtube,
             }}
+            followingUsers={followingUsers}
           />
         </div>
       </div>

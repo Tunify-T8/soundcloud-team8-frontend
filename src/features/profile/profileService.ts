@@ -1,7 +1,9 @@
 import { api } from "../../services/api";
-import type { User } from "../../shared/types/User";
+import type { FollowingUser, User } from "../../shared/types/User";
 
 type UsersResponse = User | User[] | { users?: User[]; data?: User[] };
+type FollowingApiResponse = FollowingUser[] | { following?: FollowingUser[] };
+type UserWithFollowing = User & { following?: FollowingApiResponse };
 
 const normalizeUsername = (value: string) =>
   decodeURIComponent(value).trim().replace(/^@/, "").toLowerCase();
@@ -66,5 +68,54 @@ export const profileService = {
 
     const { data } = await api.get<UsersResponse>("/users");
     return findUserByUsername(toUsersArray(data), target);
+  },
+
+  async getFollowing(
+    username: string,
+    page = 1,
+    limit = 20,
+  ): Promise<FollowingUser[]> {
+    const target = username.trim().replace(/^@/, "");
+
+    try {
+      const { data } = await api.get<FollowingApiResponse>(
+        `/users/${encodeURIComponent(target)}/following`,
+        {
+          params: { page, limit },
+        },
+      );
+
+      if (Array.isArray(data)) {
+        return data;
+      }
+
+      if (data && Array.isArray(data.following)) {
+        return data.following;
+      }
+    } catch {}
+
+    try {
+      const { data } = await api.get<UsersResponse>(
+        `/users?username=${encodeURIComponent(target)}`,
+      );
+      const matchedUser = findUserByUsername(
+        toUsersArray(data),
+        target,
+      ) as UserWithFollowing | null;
+
+      if (!matchedUser?.following) {
+        return [];
+      }
+
+      if (Array.isArray(matchedUser.following)) {
+        return matchedUser.following;
+      }
+
+      if (Array.isArray(matchedUser.following.following)) {
+        return matchedUser.following.following;
+      }
+    } catch {}
+
+    return [];
   },
 };
