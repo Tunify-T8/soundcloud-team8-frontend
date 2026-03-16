@@ -58,16 +58,21 @@ export default function SoundCloudUpload() {
 
       {/* HEADER */}
       <header className="flex items-center justify-between px-8 py-4 border-b border-[#222]">
-        <a href="/" className="flex items-center gap-3 hover:opacity-80 transition">
+        <div className="flex items-center gap-3 hover:opacity-80 transition">
+          <a href="/">
           <SiSoundcloud size={36} color="white" />
+          </a>
           <span className="text-[15px] font-semibold">Upload</span>
-        </a>
+       </div>
+        
+        <a href="/artists">
         <button className="text-[#888] hover:text-white transition">
           <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18"/>
             <line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
         </button>
+        </a>
       </header>
 
       {/* MAIN */}
