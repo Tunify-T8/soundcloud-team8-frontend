@@ -1,23 +1,31 @@
-export interface ConversationParticipant {
+export interface User {
 	id: string;
-	username: string;
+	displayName: string;
 	avatarUrl?: string;
 }
 
 export interface ConversationSummary {
-	id: string;
-	participant: ConversationParticipant;
+	conversationId: string;
+	otherUser: User;
 	lastMessagePreview: string;
 	lastMessageAt: string;
 	unreadCount: number;
 }
 
 export interface GetConversationsResponse {
-	conversations: ConversationSummary[];
+	data: ConversationSummary[];
 }
 
-export interface FollowingUser {
-	id: string;
-	username: string;
-	avatarUrl?: string;
+export interface CreateConversationRequest {
+	userId: string;
+}
+
+export interface CreateConversationResponse {
+	conversationId: string;
+}
+
+export interface MessagePayload {
+	type: "TEXT" | "ATTACHMENT";
+	text?: string;
+	attachments?: Array<{ id: string; type: "TRACK" | "COLLECTION" | "ALBUM" }>;
 }

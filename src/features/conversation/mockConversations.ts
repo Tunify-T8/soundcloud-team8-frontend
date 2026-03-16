@@ -2,21 +2,21 @@ import type { ConversationSummary } from "./types";
 
 export const mockConversations: ConversationSummary[] = [
 	{
-		id: "conversation-1",
-		participant: {
-			id: "user-1",
-			username: "Test User",
+		conversationId: "conv-uuid-1",
+		otherUser: {
+			id: "user-uuid-1",
+			displayName: "Test User",
 			avatarUrl: "",
 		},
-		lastMessagePreview: "asadasd",
+		lastMessagePreview: "Shared 2 tracks",
 		lastMessageAt: "2026-03-14T18:00:00.000Z",
 		unreadCount: 1,
 	},
 	{
-		id: "conversation-2",
-		participant: {
-			id: "user-2",
-			username: "Jordan Beats",
+		conversationId: "conv-uuid-2",
+		otherUser: {
+			id: "user-uuid-2",
+			displayName: "Jordan Beats",
 			avatarUrl: "",
 		},
 		lastMessagePreview: "Can you send the updated track?",
@@ -24,10 +24,10 @@ export const mockConversations: ConversationSummary[] = [
 		unreadCount: 0,
 	},
 	{
-		id: "conversation-3",
-		participant: {
-			id: "user-3",
-			username: "Ava Mix",
+		conversationId: "conv-uuid-3",
+		otherUser: {
+			id: "user-uuid-3",
+			displayName: "Ava Mix",
 			avatarUrl: "",
 		},
 		lastMessagePreview: "Nice drop on that chorus.",
