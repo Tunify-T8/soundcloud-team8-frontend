@@ -2,8 +2,8 @@ import { useState, useRef, useCallback } from "react";
 import Recorder from "../components/Recorder";
 import TrackInfoPage from "../components/TrackInfo";
 import { useDispatch } from "react-redux";
-import { useAppSelector } from "@/app/hooks";
-import { setAudioSource, clearNavigation } from "../../../store/AudioSourceSlice";
+import { useAppSelector } from "@/app/hooks"; // Add this import
+import { setAudioSource } from "../../../store/AudioSourceSlice";
 import { SiSoundcloud } from "react-icons/si";
 
 
@@ -48,9 +48,8 @@ export default function SoundCloudUpload() {
     }));
   }, [dispatch]);
 
-  // Handle navigation through conditional rendering
+  // Just use readyToNavigate directly - no useEffect needed!
   if (readyToNavigate) {
-    dispatch(clearNavigation());
     return <TrackInfoPage />;
   }
 
