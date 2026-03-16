@@ -6,7 +6,7 @@ import UploadSuccessScreen from "./UploadSuccessScreen";
 import axios from "axios";
 import { SiSoundcloud } from "react-icons/si";
 import { useDispatch } from "react-redux";
-import { useAppSelector } from "@/app/hooks"; // Add this import
+import { useAppSelector } from "../../../app/hooks"; 
 
 function Toggle({ enabled, onChange }: ToggleProps) {
   return (

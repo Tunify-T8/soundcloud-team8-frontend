@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import Recorder from "../components/Recorder";
 import TrackInfoPage from "../components/TrackInfo";
 import { useDispatch } from "react-redux";
-import { useAppSelector } from "@/app/hooks"; // Add this import
+import { useAppSelector } from "../../../app/hooks"; // Add this import
 import { setAudioSource } from "../../../store/AudioSourceSlice";
 import { SiSoundcloud } from "react-icons/si";
 
