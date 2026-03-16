@@ -2,6 +2,7 @@ import { Search, Bell, Mail, MoreHorizontal } from "lucide-react";
 import { SiSoundcloud } from "react-icons/si";
 import { Link } from "react-router-dom";
 import { Outlet } from "react-router-dom";
+
 export default function Navbar() {
   return (
     <>
@@ -10,17 +11,17 @@ export default function Navbar() {
 
         {/* LEFT SECTION */}
         <div className="flex items-center gap-6">
-          <Link to="/" className="text-orange-500">
-            <SiSoundcloud size={28} />
+          <Link to="/" className="text-white-500">
+            <SiSoundcloud size={35} />
           </Link>
 
-          <Link to="/" className="text-white text-sm font-medium">
+          <Link to="/" className="text-zinc-400 hover:text-white font-bold tracking-tight">
             Home
           </Link>
-          <Link to="/feed" className="text-zinc-400 hover:text-white text-sm">
+          <Link to="/feed" className="text-zinc-400 hover:text-white font-bold tracking-tight">
             Feed
           </Link>
-          <Link to="/library" className="text-zinc-400 hover:text-white text-sm">
+          <Link to="/library" className="text-zinc-400 hover:text-white font-bold tracking-tight">
             Library
           </Link>
         </div>
@@ -44,16 +45,16 @@ export default function Navbar() {
         <div className="flex items-center gap-5 text-sm">
           <Link
             to="/pro"
-            className="text-orange-500 hover:text-orange-400 font-medium"
+            className="text-orange-500 hover:text-orange-400 font-bold tracking-tight"
           >
             Try Artist Pro
           </Link>
 
-          <Link to="/artists" className="text-zinc-400 hover:text-white">
+          <Link to="/artists" className="text-zinc-400 hover:text-white font-bold tracking-tight">
             For Artists
           </Link>
 
-          <Link to="/upload" className="text-zinc-400 hover:text-white">
+          <Link to="/upload" className="text-zinc-400 hover:text-white font-bold tracking-tight">
             Upload
           </Link>
 
