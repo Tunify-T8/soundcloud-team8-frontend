@@ -86,3 +86,31 @@ describe("UploadSuccessScreen — interactions", () => {
     expect(() => fireEvent.click(screen.getAllByRole("button")[0])).not.toThrow()
   })
 })
+
+// ─── Interactions: footer ─────────────────────────────────────────────────────
+
+describe("UploadSuccessScreen — interactions (footer)", () => {
+  it("footer links are clickable without throwing", () => {
+    render(<UploadSuccessScreen />)
+    expect(() => fireEvent.click(screen.getByText("Privacy"))).not.toThrow()
+  })
+
+  it("Learn more link is clickable without throwing", () => {
+    render(<UploadSuccessScreen />)
+    expect(() => fireEvent.click(screen.getByText("Learn more."))).not.toThrow()
+  })
+
+  it("Cookie Policy footer link is present and clickable", () => {
+    render(<UploadSuccessScreen />)
+    const link = screen.getByText("Cookie Policy")
+    expect(link).toBeInTheDocument()
+    expect(() => fireEvent.click(link)).not.toThrow()
+  })
+
+  it("Cookie Manager footer link is present and clickable", () => {
+    render(<UploadSuccessScreen />)
+    const link = screen.getByText("Cookie Manager")
+    expect(link).toBeInTheDocument()
+    expect(() => fireEvent.click(link)).not.toThrow()
+  })
+})
