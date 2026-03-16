@@ -5,6 +5,8 @@ import type {
 	CreateConversationRequest,
 	CreateConversationResponse,
 	MessagePayload,
+	Message,
+	GetMessagesResponse,
 } from "./types";
 
 export const conversationService = {
@@ -26,8 +28,11 @@ export const conversationService = {
 		await api.post(`/conversations/${conversationId}/messages`, payload);
 	},
 
-	async getMessages(conversationId: string, page = 1, limit = 20): Promise<void> {
-		await api.get(`/conversations/${conversationId}/messages?page=${page}&limit=${limit}`);
+	async getMessages(conversationId: string, page = 1, limit = 20): Promise<Message[]> {
+		const { data } = await api.get<GetMessagesResponse>(
+			`/conversations/${conversationId}/messages?page=${page}&limit=${limit}`,
+		);
+		return data.data;
 	},
 
 	async markConversationAsRead(conversationId: string): Promise<void> {
