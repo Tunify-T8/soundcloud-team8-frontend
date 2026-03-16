@@ -5,9 +5,6 @@ interface AuthInputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
 }
 
-// ─── AuthInput ─────────────────────────────────────────────────────────────────
-// A styled input matching SoundCloud's dark auth form aesthetic.
-// Uses forwardRef so React Hook Form can register it properly.
 export const AuthInput = forwardRef<HTMLInputElement, AuthInputProps>(
   ({ label, error, id, className = '', ...props }, ref) => {
     return (

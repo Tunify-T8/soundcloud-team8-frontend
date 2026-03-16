@@ -1,5 +1,3 @@
-// ── Error code → human message map ───────────────────────────
-// These match your backend's exact error codes from the API docs
 const ERROR_MESSAGES: Record<string, string> = {
   INVALID_CREDENTIALS: 'Your email or password is incorrect.',
   USER_NOT_FOUND: 'No account found with that email address.',
@@ -17,7 +15,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 // ── extractErrorMessage ───────────────────────────────────────
-// This is what your SignInPage imports:
+// This is what the SignInPage imports:
 //   import { extractErrorMessage } from '../hooks/useAuth';
 //
 // It takes an unknown error from a catch block and returns
@@ -29,7 +27,6 @@ const ERROR_MESSAGES: Record<string, string> = {
 //     setApiError(message);
 //   }
 export const extractErrorMessage = (error: unknown): string => {
-  // Try to read the error code from Axios error response
   if (
     error &&
     typeof error === 'object' &&
@@ -43,12 +40,9 @@ export const extractErrorMessage = (error: unknown): string => {
     if (code && ERROR_MESSAGES[code]) {
       return ERROR_MESSAGES[code];
     }
-    // Fall back to the message from the server if code not in our map
     if (data?.error?.message) {
       return data.error.message;
     }
   }
-
-  // Generic fallback
   return 'Something went wrong. Please try again.';
 };

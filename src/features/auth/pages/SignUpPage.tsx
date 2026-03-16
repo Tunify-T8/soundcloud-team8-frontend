@@ -58,7 +58,6 @@ const SignUpPage: React.FC = () => {
 
   const isPasswordReady = passwordValue.length >= 8;
 
-  // Profile form is valid when all fields are filled and no errors
   const isProfileReady =
     displayName.trim().length > 0 &&
     !displayNameError &&
@@ -159,7 +158,6 @@ const SignUpPage: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Email display */}
                   {prefillEmail ? (
                     <div className="mb-4">
                       <p className="text-[#aaa] text-xs mb-1">Your email address</p>
@@ -178,7 +176,6 @@ const SignUpPage: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Password */}
                   <div className="relative mb-4">
                     <input
                       type={showPassword ? 'text' : 'password'}
@@ -197,7 +194,6 @@ const SignUpPage: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Continue — dark/disabled until 8 chars, white when ready */}
                   <button
                     type="button"
                     onClick={handlePasswordContinue}

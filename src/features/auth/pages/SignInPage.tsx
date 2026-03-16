@@ -1,7 +1,3 @@
-// ============================================================
-// SIGN IN PAGE — Tunify
-// Responsive + multi-step including "Tell us more about you"
-// ============================================================
 
 import React, { useRef, useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
@@ -207,22 +203,17 @@ const SignInPage: React.FC = () => {
       </header>
 
       {/* ── Main ── */}
-      {/*
-        Responsive layout:
-        - On mobile (< sm): full-width, no border card, padded content
-        - On sm+ (≥ 640px): centered card with double border
-      */}
+      {/* Responsive layout*/}
         <main className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-[480px]">
 
-          {/* Card wrapper — border only on sm+ */}
           <div className="border sm:border-[#3a3a3a] sm:rounded-sm sm:p-[3px] sm:bg-[#111]">
             <div className="border sm:border-[#555] sm:rounded-sm bg-[#181818] sm:min-h-[520px]">
 
               {/* ══ STEP: social ══ */}
               {step === 'social' && (
                 <div className="px-6 py-8 sm:p-8 flex flex-col gap-3">
-                  {/* Title — left-aligned on mobile like screenshot, centered on desktop */}
+                  
                   <h1 className="text-white text-2xl sm:text-xl font-bold mb-1 text-left sm:text-center leading-tight">
                     Sign in or create an account
                   </h1>
@@ -357,7 +348,6 @@ const SignInPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Below card — hidden on mobile (no space), shown on sm+ */}
           <p className="hidden sm:block text-center text-[#777] text-sm mt-6">
             Don't have an account?{' '}
             <Link to="/create-account" className="text-white hover:underline font-medium">Create one for free</Link>

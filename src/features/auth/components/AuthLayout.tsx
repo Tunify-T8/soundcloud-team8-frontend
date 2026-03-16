@@ -4,13 +4,10 @@ interface AuthLayoutProps {
   children: ReactNode;
 }
 
-// ─── AuthLayout ────────────────────────────────────────────────────────────────
-// The black full-screen layout with the centered white-bordered card.
-// Matches SoundCloud's exact auth page visual style.
 export function AuthLayout({ children }: AuthLayoutProps) {
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
-      {/* Top nav bar — same as SoundCloud's auth pages */}
+      {/* Top nav bar */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-white/10">
         <a href="/" className="flex items-center gap-2">
           {/* SoundCloud logo */}

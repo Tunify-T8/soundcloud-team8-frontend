@@ -11,10 +11,8 @@ export const signInSchema = z.object({
     .min(1, 'Password is required'),
 });
 
-// This is the TypeScript type your SignInPage imports as SignInFormData
 export type SignInFormData = z.infer<typeof signInSchema>;
 
-// ── Sign Up schema ────────────────────────────────────────────
 export const signUpSchema = z
   .object({
     username: z

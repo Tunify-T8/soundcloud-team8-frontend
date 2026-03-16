@@ -28,7 +28,6 @@ const ForgotPasswordPage: React.FC = () => {
   // ── State ──────────────────────────────────────────────────
   const [email, setEmail] = useState(prefillEmail);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // error is null by default — only set on submit attempt
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
@@ -47,13 +46,11 @@ const ForgotPasswordPage: React.FC = () => {
     }
 
     // Rule 3: valid format — proceed
-    // (we clear error here just in case)
+    
     setError(null);
     setIsSubmitting(true);
     await new Promise((r) => setTimeout(r, 600));
 
-    // Mock: unknown email still shows success (real API would handle this)
-    // This matches real SoundCloud behavior — they don't reveal if email exists
     setSubmitted(true);
     setIsSubmitting(false);
   };
@@ -161,12 +158,12 @@ const ForgotPasswordPage: React.FC = () => {
                       <h1 className="text-white text-base font-bold">Reset password</h1>
                     </div>
                 
-                    {/* Check your email heading — left aligned like screenshot */}
+                    {/* Check your email heading */}
                     <h2 className="text-white text-lg font-bold mb-3">
                       Check your email
                     </h2>
                 
-                    {/* Body text — left aligned */}
+                    {/* Body text */}
                     <p className="text-[#ccc] text-sm leading-relaxed mb-6">
                       We've sent instructions on how to change your password to your email address.
                     </p>
@@ -180,7 +177,7 @@ const ForgotPasswordPage: React.FC = () => {
                       Back to login
                     </button>
                 
-                    {/* Footer help text — left aligned, same size as body */}
+                    {/* Footer help text */}
                     <p className="text-[#ccc] text-sm leading-relaxed">
                       Did not receive the email? Check your spam folder or{' '}
                       <a href="#" className="text-[#0066cc] hover:underline">visit our Help Center</a>.
