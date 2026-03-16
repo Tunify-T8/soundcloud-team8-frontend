@@ -29,3 +29,19 @@ export interface MessagePayload {
 	text?: string;
 	attachments?: Array<{ id: string; type: "TRACK" | "COLLECTION" | "ALBUM" }>;
 }
+
+export interface Message {
+	id: string;
+	conversationId: string;
+	senderId: string;
+	sender: User;
+	receiverId: string;
+	type: "TEXT" | "ATTACHMENT";
+	text?: string;
+	createdAt: string;
+	status: "SENT" | "DELIVERED" | "READ";
+}
+
+export interface GetMessagesResponse {
+	data: Message[];
+}
