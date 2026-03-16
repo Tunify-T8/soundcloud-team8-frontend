@@ -1,5 +1,5 @@
 import NavBar from "./components/layout/Navbar"
-import { createBrowserRouter , RouterProvider } from "react-router-dom"
+import { createBrowserRouter, RouterProvider } from "react-router-dom"
 import SideBar from "./components/layout/Sidebar"
 import UploadPage from "./features/upload/pages/UploadPage"
 import ArtistsPage from "./features/track-management/pages/ArtistsPage"
@@ -9,11 +9,38 @@ import TracksPage from "./features/profile/pages/UserInfoBar/TracksPage";
 import AlbumsPage from "./features/profile/pages/UserInfoBar/AlbumsPage";
 import PlaylistsPage from "./features/profile/pages/UserInfoBar/PlaylistsPage";
 import RepostsPage from "./features/profile/pages/UserInfoBar/RepostsPage";
+import SignInPage from "./features/auth/pages/SignInPage"
+import SignUpPage from "./features/auth/pages/SignUpPage"
+import ForgotPasswordPage from "./features/auth/pages/ForgotPasswordPage"
+import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage"
+import ProtectedRoute from "./routes/ProtectedRoute"
 
 const router = createBrowserRouter([
+ {
+    path: '/signin',
+    element: <SignInPage key={Math.random()} />,
+  },
   {
+    path: '/create-account',
+    element: <SignUpPage key={Math.random()} />,
+  },
+  {
+    path: '/forgot-password',
+    element: <ForgotPasswordPage />,
+  },
+  { path: '/reset-password',
+  element: <ResetPasswordPage /> },
+  {
+    path: '/reset-password',
+    element: <ResetPasswordPage />,
+  },
+   {
     path: '/',
-    element: <NavBar />,
+    element: (
+      <ProtectedRoute>
+        <NavBar />
+      </ProtectedRoute>
+    ),
     children: [
       {
         path: '/',
@@ -35,11 +62,19 @@ const router = createBrowserRouter([
   },
   {
     path: '/upload',
-    element: <UploadPage />
+    element: (
+      <ProtectedRoute>
+        <UploadPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/artists',
-    element: <ArtistsPage />
+    element: (
+      <ProtectedRoute>
+        <ArtistsPage />
+      </ProtectedRoute>
+    ),
   }
 ])
 
@@ -51,4 +86,4 @@ function App() {
   );
 }
 
-export default App;
+export default App
