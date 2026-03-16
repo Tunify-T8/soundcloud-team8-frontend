@@ -43,5 +43,47 @@ export const SampleTracks: Track[] = [
     isHD: false,
     isPrivate: true,
     thumbnailUrl: "/images/tracks/unreleased-horizon.jpg"
-  }
+  },
+  {
+    id: "trk_003",
+    title: "Midnighty Strolyl",
+    genre: Genre.ELECTRONIC,
+    tags: ["ambient", "synthwave", "night-drive"],
+    status: "uploading",
+    visibility: "public",
+    audioUrl: "/audio/midnight-stroll.mp3",
+    description: "Smooth synthwave vibes for late night drives through the city.",
+    waveformData: [12, 18, 25, 30, 28, 22, 19, 24, 29, 26, 20, 15],
+    duration: 245,
+    date: "2026-03-10",
+    likes: 342,
+    comments: 28,
+    reposts: 56,
+    downloads: 89,
+    plays: 15234,
+    isHD: true,
+    isPrivate: false,
+    thumbnailUrl: "/images/tracks/midnight-stroll.jpg"
+},
+{
+    id: "trk_004",
+    title: "Velvet Dreams",
+    genre: Genre.JAZZ_AND_BLUES,
+    tags: ["smooth-jazz", "nightclub", "saxophone"],
+    status: "finished",
+    visibility: "private",
+    audioUrl: "/audio/velvet-dreams.mp3",
+    description: "Late night jazz recording with a modern twist. Needs final mixing.",
+    waveformData: [6, 9, 15, 21, 24, 22, 18, 16, 19, 23, 17, 11],
+    duration: 312,
+    date: "2026-03-14",
+    likes: null,
+    comments: null,
+    reposts: null,
+    downloads: null,
+    plays: 5,
+    isHD: true,
+    isPrivate: true,
+    thumbnailUrl: "/images/tracks/velvet-dreams.jpg"
+}
 ];
