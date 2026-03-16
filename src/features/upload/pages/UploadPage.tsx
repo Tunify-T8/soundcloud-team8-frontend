@@ -1,27 +1,19 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import Recorder from "../components/Recorder";
 import TrackInfoPage from "../components/TrackInfo";
 import { useDispatch } from "react-redux";
-import { useAppSelector } from "@/app/hooks";
-import { setAudioSource, clearNavigation } from "../../../store/AudioSourceSlice";
+import { useAppSelector } from "@/app/hooks"; // Add this import
+import { setAudioSource } from "../../../store/AudioSourceSlice";
 import { SiSoundcloud } from "react-icons/si";
 
 
 export default function SoundCloudUpload() {
   const [isDragging, setIsDragging] = useState(false);
   const [micOpen, setMicOpen] = useState(false);
-  const [showTrackInfo, setShowTrackInfo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const dispatch = useDispatch();
   const readyToNavigate = useAppSelector((s) => s.audioSource.readyToNavigate);
-
-  useEffect(() => {
-    if (readyToNavigate) {
-      setShowTrackInfo(true);
-      dispatch(clearNavigation());
-    }
-  }, [readyToNavigate, dispatch]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -56,7 +48,8 @@ export default function SoundCloudUpload() {
     }));
   }, [dispatch]);
 
-  if (showTrackInfo) {
+  // Just use readyToNavigate directly - no useEffect needed!
+  if (readyToNavigate) {
     return <TrackInfoPage />;
   }
 
