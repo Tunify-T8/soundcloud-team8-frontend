@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFollowingSuggestions } from "../hooks/useFollowingSuggestions";
-import type { FollowingUser } from "../types";
+import { conversationService } from "../conversationService";
+import type { User } from "../types";
 
 type NewMessageDialogProps = {
   isOpen: boolean;
@@ -10,17 +11,51 @@ type NewMessageDialogProps = {
 
 export default function NewMessageDialog({ isOpen, onClose }: NewMessageDialogProps) {
   const [toQuery, setToQuery] = useState("");
-  const [selectedUser, setSelectedUser] = useState<FollowingUser | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [messageText, setMessageText] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const { suggestions, isLoading } = useFollowingSuggestions(selectedUser ? "" : toQuery);
 
-  function handleSelect(user: FollowingUser) {
+  function handleSelect(user: User) {
     setSelectedUser(user);
     setToQuery("");
   }
 
-  function handleClose() {
+  async function handleSendMessage() {
+    if (!selectedUser || !messageText.trim()) {
+      setSubmitError("Please select a recipient and write a message");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      // Step 1: Create or get conversation with the selected user
+      const conversationId = await conversationService.createOrGetConversation(selectedUser.id);
+
+      // Step 2: Send the message
+      await conversationService.sendMessage(conversationId, {
+        type: "TEXT",
+        text: messageText,
+      });
+
+      // Step 3: Close dialog and reset
+      handleDialogClose();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to send message";
+      setSubmitError(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  function handleDialogClose() {
     setToQuery("");
     setSelectedUser(null);
+    setMessageText("");
+    setSubmitError(null);
     onClose();
   }
 
@@ -29,7 +64,7 @@ export default function NewMessageDialog({ isOpen, onClose }: NewMessageDialogPr
       {isOpen && (
         <div
           className="fixed inset-0 z-50 flex items-start justify-center bg-white/35 backdrop-blur-[2px] p-4 pt-14"
-          onClick={handleClose}
+          onClick={handleDialogClose}
         >
           <motion.div
             className="min-h-[340px] w-full max-w-2xl rounded-md bg-zinc-900 p-3 text-white"
@@ -48,13 +83,13 @@ export default function NewMessageDialog({ isOpen, onClose }: NewMessageDialogPr
               <div className="mt-2 flex min-h-[34px] flex-wrap items-center gap-2 rounded-md border border-zinc-500 bg-zinc-700 px-3 py-1.5">
                 {selectedUser && (
                   <span className="flex items-center gap-1 rounded bg-zinc-500 px-2 py-0.5 text-sm text-zinc-100">
-                    {selectedUser.username}
+                    {selectedUser.displayName}
                     <button
                       type="button"
                       className="ml-1 leading-none text-zinc-300 hover:text-white"
                       onClick={() => setSelectedUser(null)}
                     >
-                      
+                      ×
                     </button>
                   </span>
                 )}
@@ -66,6 +101,7 @@ export default function NewMessageDialog({ isOpen, onClose }: NewMessageDialogPr
                     className="flex-1 bg-transparent text-sm text-zinc-100 outline-none placeholder:text-zinc-400"
                     placeholder="Search your followings…"
                     autoComplete="off"
+                    disabled={isSubmitting}
                   />
                 )}
               </div>
@@ -87,14 +123,14 @@ export default function NewMessageDialog({ isOpen, onClose }: NewMessageDialogPr
                           {user.avatarUrl ? (
                             <img
                               src={user.avatarUrl}
-                              alt={user.username}
+                              alt={user.displayName}
                               className="h-full w-full rounded-full object-cover"
                             />
                           ) : (
-                            user.username.charAt(0)
+                            user.displayName.charAt(0)
                           )}
                         </span>
-                        {user.username}
+                        {user.displayName}
                       </button>
                     </li>
                   ))}
@@ -108,24 +144,33 @@ export default function NewMessageDialog({ isOpen, onClose }: NewMessageDialogPr
               </label>
               <textarea
                 rows={3}
-                className="mt-2 w-full rounded-md border border-zinc-500 bg-zinc-700 px-3 py-1.5 text-sm text-zinc-100 outline-none"
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                disabled={isSubmitting}
+                className="mt-2 w-full rounded-md border border-zinc-500 bg-zinc-700 px-3 py-1.5 text-sm text-zinc-100 outline-none disabled:opacity-50"
               />
             </div>
+
+            {submitError && (
+              <p className="mt-2 text-sm text-red-400">{submitError}</p>
+            )}
 
             <div className="mt-3 flex items-center justify-between">
               <button
                 type="button"
-                className="rounded-md bg-zinc-700 px-3.5 py-1.5 text-sm font-semibold text-zinc-100 hover:bg-zinc-600"
+                className="rounded-md bg-zinc-700 px-3.5 py-1.5 text-sm font-semibold text-zinc-100 hover:bg-zinc-600 disabled:opacity-50"
+                disabled={isSubmitting}
               >
                 Add track or playlist
               </button>
 
               <button
                 type="button"
-                onClick={handleClose}
-                className="rounded-md bg-zinc-100 px-3.5 py-1.5 text-sm font-semibold text-zinc-900 hover:bg-zinc-200"
+                onClick={handleSendMessage}
+                disabled={isSubmitting || !selectedUser}
+                className="rounded-md bg-zinc-100 px-3.5 py-1.5 text-sm font-semibold text-zinc-900 hover:bg-zinc-200 disabled:opacity-50"
               >
-                Send
+                {isSubmitting ? "Sending..." : "Send"}
               </button>
             </div>
           </motion.div>

@@ -65,8 +65,8 @@ export default function ConversationListPanel() {
         {!isLoadingConversations && !conversationsError
           ? conversationList.map((conversation) => (
               <ConversationListItem
-                key={conversation.id}
-                name={conversation.participant.username}
+                key={conversation.conversationId}
+                name={conversation.otherUser.displayName}
                 preview={conversation.lastMessagePreview}
                 timeLabel={formatTime(conversation.lastMessageAt)}
                 unreadCount={conversation.unreadCount}
