@@ -13,13 +13,14 @@ export function useConversationMessages(conversationId: string | null) {
 			return;
 		}
 
+		const convoId = conversationId;
 		let isMounted = true;
 
 		async function fetchMessages() {
 			setIsLoading(true);
 			setError(null);
 			try {
-				const fetchedMessages = await conversationService.getMessages(conversationId);
+				const fetchedMessages = await conversationService.getMessages(convoId);
 				if (isMounted) {
 					setMessages(fetchedMessages);
 				}
