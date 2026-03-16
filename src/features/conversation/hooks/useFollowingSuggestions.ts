@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import type { FollowingUser } from "../types";
-import { conversationService } from "../conversationService";
+import type { User } from "../types";
 
 export function useFollowingSuggestions(query: string) {
-  const [suggestions, setSuggestions] = useState<FollowingUser[]>([]);
+  const [suggestions, setSuggestions] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -16,12 +15,9 @@ export function useFollowingSuggestions(query: string) {
     const timer = setTimeout(async () => {
       setIsLoading(true);
       try {
-        const all = await conversationService.getFollowings();
-        setSuggestions(
-          all.filter((u) =>
-            u.username.toLowerCase().includes(trimmed.toLowerCase()),
-          ),
-        );
+        // TODO: Replace with actual user search endpoint when available
+        // For now, this is a placeholder - the backend should provide a /search or /users endpoint
+        setSuggestions([]);
       } catch {
         setSuggestions([]);
       } finally {
