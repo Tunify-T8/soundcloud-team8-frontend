@@ -13,6 +13,7 @@ export default function UserInfoBar({
   country,
   city,
   bio,
+  socialAccounts,
   isEditable,
 }: {
   displayName?: string;
@@ -20,6 +21,12 @@ export default function UserInfoBar({
   country?: string;
   city?: string;
   bio?: string;
+  socialAccounts?: {
+    facebook?: string;
+    instagram?: string;
+    twitter?: string;
+    youtube?: string;
+  };
   isEditable?: boolean;
 }) {
   const tabs = [
@@ -144,6 +151,7 @@ export default function UserInfoBar({
           country={country}
           city={city}
           bio={bio}
+          socialAccounts={socialAccounts}
         />
       )}
     </div>
