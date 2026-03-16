@@ -2,6 +2,12 @@ import { useState } from "react";
 import { useConversationSummary } from "../hooks/useConversationSummary";
 import ConversationListItem from "./ConversationListItem";
 import NewMessageDialog from "./NewMessageDialog";
+import type { ConversationSummary } from "../types";
+
+interface ConversationListPanelProps {
+  selectedConversationId: string | null;
+  onSelectConversation: (conversation: ConversationSummary) => void;
+}
 
 function formatTime(isoTimestamp: string): string {
   const messageDate = new Date(isoTimestamp);
@@ -26,7 +32,10 @@ function formatTime(isoTimestamp: string): string {
   return `${elapsedDays} days ago`;
 }
 
-export default function ConversationListPanel() {
+export default function ConversationListPanel({
+  selectedConversationId,
+  onSelectConversation,
+}: ConversationListPanelProps) {
   const [isNewMessageDialogOpen, setIsNewMessageDialogOpen] = useState(false);
 
   const {
@@ -36,7 +45,7 @@ export default function ConversationListPanel() {
   } = useConversationSummary();
 
   return (
-    <section className="w-full max-w-[380px]">
+    <section className="w-full max-w-[380px] border-r border-zinc-800">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Messages</h1>
         <button
@@ -64,13 +73,22 @@ export default function ConversationListPanel() {
 
         {!isLoadingConversations && !conversationsError
           ? conversationList.map((conversation) => (
-              <ConversationListItem
+              <div
                 key={conversation.conversationId}
-                name={conversation.otherUser.displayName}
-                preview={conversation.lastMessagePreview}
-                timeLabel={formatTime(conversation.lastMessageAt)}
-                unreadCount={conversation.unreadCount}
-              />
+                className={`rounded-md p-2 cursor-pointer transition ${
+                  selectedConversationId === conversation.conversationId
+                    ? "bg-zinc-800"
+                    : "hover:bg-zinc-900"
+                }`}
+                onClick={() => onSelectConversation(conversation)}
+              >
+                <ConversationListItem
+                  name={conversation.otherUser.displayName}
+                  preview={conversation.lastMessagePreview}
+                  timeLabel={formatTime(conversation.lastMessageAt)}
+                  unreadCount={conversation.unreadCount}
+                />
+              </div>
             ))
           : null}
       </div>
