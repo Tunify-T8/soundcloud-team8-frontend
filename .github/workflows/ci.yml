@@ -2,15 +2,17 @@ name: CI/CD
 
 on:
   pull_request:
-    branches: [main, dev]
+    branches: [main , dev]
   push:
     branches: [main]
 
 jobs:
 
 
+
   docker:
     name: Docker Build (Test + Build)
+
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
