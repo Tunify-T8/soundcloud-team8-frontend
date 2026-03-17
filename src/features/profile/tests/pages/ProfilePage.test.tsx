@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { vi } from "vitest";
 import ProfilePage from "../../pages/ProfilePage";
@@ -5,10 +6,6 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import * as profileServiceModule from "../../profileService";
 
 describe("ProfilePage", () => {
-  afterEach(() => {
-    vi.resetAllMocks();
-  });
-
   it("renders user profile with all sections", async () => {
     vi.spyOn(
       profileServiceModule.profileService,

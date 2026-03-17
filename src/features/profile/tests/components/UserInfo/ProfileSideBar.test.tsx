@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import ProfileSideBar from "../../../components/UserInfo/ProfileSideBar";
 import { MemoryRouter } from "react-router-dom";
