@@ -1,4 +1,4 @@
-import Tab from "./Tab";
+import UserInfoBarTab from "./UsetInfoBarTab";
 import EditInfo from "./EditInfo";
 import { FaUser, FaPen, FaEnvelope } from "react-icons/fa";
 import { MdPodcasts, MdMoreHoriz } from "react-icons/md";
@@ -49,8 +49,10 @@ export default function UserInfoBar({
       <div className="relative w-10/12 mt-5 flex items-center justify-between">
         <div className="flex flex-row gap-6 cursor-pointer">
           {tabs.map(({ label, path }) => (
-            <NavLink to={path} end={path === "."}>
-              {({ isActive }) => <Tab label={label} isActive={isActive} />}
+            <NavLink key={label} to={path} end={path === "."}>
+              {({ isActive }) => (
+                <UserInfoBarTab label={label} isActive={isActive} />
+              )}
             </NavLink>
           ))}
         </div>

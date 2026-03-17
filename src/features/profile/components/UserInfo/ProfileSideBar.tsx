@@ -12,7 +12,7 @@ import { FiInfo } from "react-icons/fi";
 import { Ticket } from "lucide-react";
 import type { FollowingUser } from "../../../../shared/types/User";
 
-export default function UserInfo({
+export default function ProfileSideBar({
   followers,
   following,
   tracks,

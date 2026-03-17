@@ -3,7 +3,7 @@ type TabProps = {
   isActive?: boolean;
 };
 
-export default function Tab({ label, isActive = false }: TabProps) {
+export default function UserInfoBarTab({ label, isActive = false }: TabProps) {
   return (
     <div className={`pb-2 ${isActive ? "border-b-2 border-white" : ""}`}>
       <button
