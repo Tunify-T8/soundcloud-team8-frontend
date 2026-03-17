@@ -45,9 +45,9 @@ export default function ConversationListPanel({
   } = useConversationSummary();
 
   return (
-    <section className="w-full max-w-[380px] border-r border-zinc-800">
+    <section className="w-96 shrink-0 rounded-md border border-zinc-800 bg-zinc-950 p-4 overflow-y-auto">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Messages</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-white">Messages</h1>
         <button
           type="button"
           onClick={() => setIsNewMessageDialogOpen(true)}

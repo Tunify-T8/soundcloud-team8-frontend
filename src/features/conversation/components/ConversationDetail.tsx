@@ -3,23 +3,24 @@ import type { ConversationSummary } from "../types";
 
 interface ConversationDetailProps {
 	conversation: ConversationSummary | null;
+	className?: string;
 }
 
-export default function ConversationDetail({ conversation }: ConversationDetailProps) {
+export default function ConversationDetail({ conversation, className = "" }: ConversationDetailProps) {
 	const { messages, isLoading, error } = useConversationMessages(
 		conversation?.conversationId || null,
 	);
 
 	if (!conversation) {
 		return (
-			<div className="flex flex-1 flex-col items-center justify-center bg-zinc-950 text-center">
+			<div className={`flex flex-1 flex-col items-center justify-center rounded-md border border-zinc-800 bg-zinc-950 text-center ${className}`}>
 				<p className="text-sm text-zinc-400">Select a conversation to start messaging</p>
 			</div>
 		);
 	}
 
 	return (
-		<div className="flex flex-1 flex-col bg-zinc-950">
+		<div className={`flex flex-1 flex-col rounded-md border border-zinc-800 bg-zinc-950 ${className}`}>
 			{/* Header */}
 			<div className="border-b border-zinc-800 px-4 py-3">
 				<h2 className="text-base font-semibold text-white">{conversation.otherUser.displayName}</h2>
@@ -69,11 +70,11 @@ export default function ConversationDetail({ conversation }: ConversationDetailP
 					className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-500"
 					rows={2}
 				/>
-				<div className="mt-2 flex justify-end gap-2">
+				<div className="mt-2 flex items-center justify-between gap-2">
 					<button className="rounded-md bg-zinc-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-600">
-						Add track
+						Add track or playlist
 					</button>
-					<button className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">
+					<button className="rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-black hover:bg-zinc-300">
 						Send
 					</button>
 				</div>

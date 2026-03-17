@@ -7,12 +7,12 @@ export default function MessagesPage() {
   const [selectedConversation, setSelectedConversation] = useState<ConversationSummary | null>(null);
 
   return (
-    <main className="mx-auto flex h-screen w-full max-w-[1400px] gap-4 bg-zinc-950 px-6 py-4">
+    <main className="flex h-screen w-full justify-center gap-4 bg-zinc-950 px-4 py-4">
       <ConversationListPanel
         selectedConversationId={selectedConversation?.conversationId || null}
         onSelectConversation={setSelectedConversation}
       />
-      <ConversationDetail conversation={selectedConversation} />
+      <ConversationDetail conversation={selectedConversation} className="max-w-3xl" />
     </main>
   );
 }
