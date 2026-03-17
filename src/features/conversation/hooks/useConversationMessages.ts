@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import type { Message } from "../types";
 import { conversationService } from "../conversationService";
+import { getMockMessagesByConversationId } from "../mockMessages";
 
 export function useConversationMessages(conversationId: string | null) {
 	const [messages, setMessages] = useState<Message[]>([]);
@@ -26,9 +27,8 @@ export function useConversationMessages(conversationId: string | null) {
 				}
 			} catch (err) {
 				if (isMounted) {
-					const errorMessage = err instanceof Error ? err.message : "Failed to load messages";
-					setError(errorMessage);
-					setMessages([]);
+					setMessages(getMockMessagesByConversationId(convoId));
+					setError(null);
 				}
 			} finally {
 				if (isMounted) {
