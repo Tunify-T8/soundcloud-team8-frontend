@@ -55,7 +55,10 @@ export default function ConversationDetail({ conversation, className = "" }: Con
 								>
 									<p>{message.text || "[Attachment]"}</p>
 									<p className="mt-1 text-xs opacity-70">
-										{new Date(message.createdAt).toLocaleTimeString()}
+										{new Date(message.createdAt).toLocaleTimeString([], {
+											hour: "2-digit",
+											minute: "2-digit",
+										})}
 									</p>
 								</div>
 							</div>
