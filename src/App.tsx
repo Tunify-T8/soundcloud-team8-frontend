@@ -47,6 +47,10 @@ const router = createBrowserRouter([
         element: <SideBar />
       },
       {
+    path:'/messages',
+    element:<MessagesPage/>
+      },
+      {
         path: "/:username",
         element: <ProfilePage />,
         children: [
@@ -56,7 +60,7 @@ const router = createBrowserRouter([
           { path: "albums", element: <AlbumsPage /> },
           { path: "playlists", element: <PlaylistsPage /> },
           { path: "reposts", element: <RepostsPage /> },
-        ],
+                  ],
       },
     ],
   },
