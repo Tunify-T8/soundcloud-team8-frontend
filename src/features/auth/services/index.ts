@@ -91,6 +91,19 @@ const realLogout = async (): Promise<void> => {
   }
   clearTokens();
 };
+// ── Google OAuth — send code to backend ───────────────────────
+const sendGoogleCode = async (code: string) => {
+  const res = await axiosInstance.post('/auth/google', { code });
+  return res.data;
+};
+
+// ── Google OAuth — complete account linking ───────────────────
+const linkGoogleAccount = async (linkingToken: string, password: string) => {
+  const res = await axiosInstance.post('/auth/google/link', { linkingToken, password });
+  return res.data;
+};
+export const googleSignIn = sendGoogleCode;
+export const googleLink = linkGoogleAccount;
 
 export const logout = IS_MOCK ? mockLogout : realLogout;
 
