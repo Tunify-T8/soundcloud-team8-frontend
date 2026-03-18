@@ -2,7 +2,7 @@ import type { Track } from '../../../shared/types/Track';
 
 export const mockTracks: Track[] = [
   {
-    id: '1',
+    id: 'dj-sunshine/summer-vibes',
     title: 'Summer Vibes',
     artist: 'DJ Sunshine',
     artistId: 'user1',
@@ -18,7 +18,7 @@ export const mockTracks: Track[] = [
     reposts: 45,
   },
   {
-    id: '2',
+    id: 'midnight-runners/night-drive',
     title: 'Night Drive',
     artist: 'Midnight Runners',
     artistId: 'user2',

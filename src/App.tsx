@@ -15,15 +15,15 @@ const router = createBrowserRouter([
         element:<SideBar/>
       },
       {
-        path: '/tracks/:trackId',
+        path: '/:artist/:songName',
         element: <TrackPage />
       },
       {
-        path: '/tracks/:trackId/likes',
+        path: '/:artist/:songName/likes',
         element: <LikesPage />
       },
       {
-        path: '/tracks/:trackId/reposts',
+        path: '/:artist/:songName/reposts',
         element: <RepostsPage />
       }
     ]

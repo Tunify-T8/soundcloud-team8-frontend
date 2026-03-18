@@ -11,24 +11,23 @@ export const mockLikes: Like[] = [
   {
     id: 'like1',
     userId: 'user3',
-    trackId: '1',
+    trackId: 'dj-sunshine/summer-vibes',
     createdAt: '2023-06-02T00:00:00Z',
-    user: {
-      id: 'user3',
-      username: 'musiclover',
-      avatarUrl: makeAvatar('ML'),
-    },
+    user: { id: 'user3', username: 'musiclover', avatarUrl: makeAvatar('ML') },
   },
   {
     id: 'like2',
     userId: 'user4',
-    trackId: '1',
+    trackId: 'dj-sunshine/summer-vibes',
     createdAt: '2023-06-03T00:00:00Z',
-    user: {
-      id: 'user4',
-      username: 'beatfan',
-      avatarUrl: makeAvatar('BF'),
-    },
+    user: { id: 'user4', username: 'beatfan', avatarUrl: makeAvatar('BF') },
+  },
+  {
+    id: 'like3',
+    userId: 'user6',
+    trackId: 'midnight-runners/night-drive',
+    createdAt: '2023-06-05T00:00:00Z',
+    user: { id: 'user6', username: 'nightowl', avatarUrl: makeAvatar('NO') },
   },
 ];
 
@@ -36,31 +35,28 @@ export const mockReposts: Repost[] = [
   {
     id: 'repost1',
     userId: 'user5',
-    trackId: '1',
+    trackId: 'dj-sunshine/summer-vibes',
     createdAt: '2023-06-04T00:00:00Z',
-    user: {
-      id: 'user5',
-      username: 'shareguru',
-      avatarUrl: makeAvatar('SG'),
-    },
+    user: { id: 'user5', username: 'shareguru', avatarUrl: makeAvatar('SG') },
+  },
+  {
+    id: 'repost2',
+    userId: 'user7',
+    trackId: 'midnight-runners/night-drive',
+    createdAt: '2023-06-06T00:00:00Z',
+    user: { id: 'user7', username: 'wavyrider', avatarUrl: makeAvatar('WR') },
   },
 ];
 
-export const getMockTrackLikes = (trackId: string): Like[] => {
-  return mockLikes.filter(like => like.trackId === trackId);
-};
+export const getMockTrackLikes = (trackId: string): Like[] =>
+  mockLikes.filter(like => like.trackId === trackId);
 
-export const getMockTrackReposts = (trackId: string): Repost[] => {
-  return mockReposts.filter(repost => repost.trackId === trackId);
-};
+export const getMockTrackReposts = (trackId: string): Repost[] =>
+  mockReposts.filter(repost => repost.trackId === trackId);
 
-export const getMockEngagementCounts = (trackId: string): EngagementCounts => {
-  const likes = getMockTrackLikes(trackId).length;
-  const reposts = getMockTrackReposts(trackId).length;
-  return {
-    likes,
-    reposts,
-    plays: 1500, // Mock 
-    comments: 23, // Mock 
-  };
-};
+export const getMockEngagementCounts = (trackId: string): EngagementCounts => ({
+  likes: getMockTrackLikes(trackId).length,
+  reposts: getMockTrackReposts(trackId).length,
+  plays: 1500,
+  comments: 23,
+});

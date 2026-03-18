@@ -1,18 +1,16 @@
+
 import { api } from '../../../services/api';
 import type { Like, Repost, EngagementCounts } from '../types';
 import type { Track } from '../../../shared/types/Track';
 import { getMockTrack } from './mockTracks';
 import { mockLikes, mockReposts, makeAvatar } from './mockEngagement';
 
-
 const LIKES_KEY = 'soundcloud_likes';
 const REPOSTS_KEY = 'soundcloud_reposts';
-
 
 const getStoredLikes = (): Like[] => {
   const stored = localStorage.getItem(LIKES_KEY);
   if (!stored) return mockLikes;
-
   try {
     const parsed = JSON.parse(stored);
     return Array.isArray(parsed) ? parsed : mockLikes;
@@ -24,7 +22,6 @@ const getStoredLikes = (): Like[] => {
 const getStoredReposts = (): Repost[] => {
   const stored = localStorage.getItem(REPOSTS_KEY);
   if (!stored) return mockReposts;
-
   try {
     const parsed = JSON.parse(stored);
     return Array.isArray(parsed) ? parsed : mockReposts;
@@ -33,7 +30,6 @@ const getStoredReposts = (): Repost[] => {
   }
 };
 
-
 const saveLikes = (likes: Like[]) => {
   localStorage.setItem(LIKES_KEY, JSON.stringify(likes));
 };
@@ -41,7 +37,6 @@ const saveLikes = (likes: Like[]) => {
 const saveReposts = (reposts: Repost[]) => {
   localStorage.setItem(REPOSTS_KEY, JSON.stringify(reposts));
 };
-
 
 export const mockApi = {
   getTrackDetails: (trackId: string): Promise<Track> => {
@@ -60,7 +55,6 @@ export const mockApi = {
   getTrackLikes: (trackId: string): Promise<Like[]> => {
     return new Promise((resolve) => {
       setTimeout(() => {
-        
         const likes = getStoredLikes().filter(like => like.trackId === trackId);
         console.debug('[mockApi] getTrackLikes', trackId, likes.length);
         resolve(likes);
@@ -71,7 +65,6 @@ export const mockApi = {
   getTrackReposts: (trackId: string): Promise<Repost[]> => {
     return new Promise((resolve) => {
       setTimeout(() => {
-        
         const reposts = getStoredReposts().filter(repost => repost.trackId === trackId);
         console.debug('[mockApi] getTrackReposts', trackId, reposts.length);
         resolve(reposts);
@@ -87,8 +80,8 @@ export const mockApi = {
         resolve({
           likes,
           reposts,
-          plays: 1500, // Mock
-          comments: 23, // Mock
+          plays: 1500,
+          comments: 23,
         });
       }, 200);
     });
@@ -164,7 +157,6 @@ export const mockApi = {
   },
 };
 
-
 export const setupMockApi = () => {
   const makeAxiosResponse = <T>(data: T, config: any) =>
     Promise.resolve({
@@ -177,78 +169,67 @@ export const setupMockApi = () => {
     });
 
   api.interceptors.request.use((config) => {
-    
-    const base = config.baseURL && config.baseURL !== '' ? config.baseURL : window.location.origin;
+    const base = config.baseURL && config.baseURL !== ''
+      ? config.baseURL
+      : window.location.origin;
     const url = new URL(config.url ?? '', base);
-    const rawPath = url.pathname;
+    const path = url.pathname.replace(/^\/api(\/|$)/, '/');
 
-    
-    const path = rawPath.replace(/^\/api(\/|$)/, '/');
+    const parts = path.split('/').filter(Boolean);
 
-    
-    if (path.startsWith('/track')) {
-      console.debug('[mockApi] intercepted', config.method, path);
+  
+    if (parts.length < 2) return config;
+
+    const knownEndpoints = ['likes', 'reposts', 'engagement'];
+    const isEndpoint3 = parts.length === 3 && knownEndpoints.includes(parts[2]);
+    const isEndpoint4 = parts.length === 4 && knownEndpoints.includes(parts[2]);
+    const isTrackOnly = parts.length === 2;
+
+    if (!isTrackOnly && !isEndpoint3 && !isEndpoint4) return config;
+
+    const trackId = `${parts[0]}/${parts[1]}`;
+    const endpoint = isEndpoint3 || isEndpoint4 ? parts[2] : undefined;
+    const resourceId = isEndpoint4 ? parts[3] : undefined;
+
+    console.debug('[mockApi] matched', config.method, path, { trackId, endpoint, resourceId });
+
+    let body: any = {};
+    if (config.data) {
+      try {
+        body = typeof config.data === 'string' ? JSON.parse(config.data) : config.data;
+      } catch {
+        body = {};
+      }
     }
 
-    
-    if (path.startsWith('/tracks/')) {
-      const parts = path.split('/');
-      const trackId = parts[2];
-      const endpoint = parts[3];
+    switch (config.method) {
+      case 'get':
+        if (!endpoint) {
+          config.adapter = () => mockApi.getTrackDetails(trackId).then(d => makeAxiosResponse(d, config));
+        } else if (endpoint === 'likes') {
+          config.adapter = () => mockApi.getTrackLikes(trackId).then(d => makeAxiosResponse(d, config));
+        } else if (endpoint === 'reposts') {
+          config.adapter = () => mockApi.getTrackReposts(trackId).then(d => makeAxiosResponse(d, config));
+        } else if (endpoint === 'engagement') {
+          config.adapter = () => mockApi.getEngagementCounts(trackId).then(d => makeAxiosResponse(d, config));
+        }
+        break;
 
-      switch (config.method) {
-        case 'get':
-          if (!endpoint) {
-            config.adapter = () => mockApi.getTrackDetails(trackId).then(data => makeAxiosResponse(data, config));
-          } else if (endpoint === 'likes') {
-            config.adapter = () => mockApi.getTrackLikes(trackId).then(data => makeAxiosResponse(data, config));
-          } else if (endpoint === 'reposts') {
-            config.adapter = () => mockApi.getTrackReposts(trackId).then(data => makeAxiosResponse(data, config));
-          } else if (endpoint === 'engagement') {
-            config.adapter = () => mockApi.getEngagementCounts(trackId).then(data => makeAxiosResponse(data, config));
-          }
-          break;
-        case 'post':
-          if (endpoint === 'likes') {
-            const { userId } = config.data;
-            config.adapter = () => mockApi.likeTrack(userId, trackId).then(data => makeAxiosResponse(data, config));
-          } else if (endpoint === 'reposts') {
-            const { userId } = config.data;
-            config.adapter = () => mockApi.repostTrack(userId, trackId).then(data => makeAxiosResponse(data, config));
-          }
-          break;
-        case 'delete':
-          if (endpoint === 'likes') {
-            const likeId = parts[4];
-            config.adapter = () => mockApi.unlikeTrack(likeId).then(() => makeAxiosResponse(null, config));
-          } else if (endpoint === 'reposts') {
-            const repostId = parts[4];
-            config.adapter = () => mockApi.unrepostTrack(repostId).then(() => makeAxiosResponse(null, config));
-          }
-          break;
-      }
-    } else if (path === '/tracklikes') {
-      if (config.method === 'get') {
-        config.adapter = () => makeAxiosResponse(getStoredLikes(), config);
-      } else if (config.method === 'post') {
-        config.adapter = () => mockApi.likeTrack(config.data.userId, config.data.trackId).then(data => makeAxiosResponse(data, config));
-      }
-    } else if (path.startsWith('/tracklikes/')) {
-      const likeId = path.split('/')[2];
-      if (config.method === 'delete') {
-        config.adapter = () => mockApi.unlikeTrack(likeId).then(() => makeAxiosResponse(null, config));
-      }
-    } else if (path === '/trackreposts') {
-      if (config.method === 'get') {
-        config.adapter = () => makeAxiosResponse(getStoredReposts(), config);
-      } else if (config.method === 'post') {
-        config.adapter = () => mockApi.repostTrack(config.data.userId, config.data.trackId).then(data => makeAxiosResponse(data, config));
-      }
-    } else if (path.startsWith('/trackreposts/')) {
-      const repostId = path.split('/')[2];
-      if (config.method === 'delete') {
-        config.adapter = () => mockApi.unrepostTrack(repostId).then(() => makeAxiosResponse(null, config));
-      }
+      case 'post':
+        if (endpoint === 'likes') {
+          config.adapter = () => mockApi.likeTrack(body.userId ?? 'user1', trackId).then(d => makeAxiosResponse(d, config));
+        } else if (endpoint === 'reposts') {
+          config.adapter = () => mockApi.repostTrack(body.userId ?? 'user1', trackId).then(d => makeAxiosResponse(d, config));
+        }
+        break;
+
+      case 'delete':
+        if (endpoint === 'likes' && resourceId) {
+          config.adapter = () => mockApi.unlikeTrack(resourceId).then(() => makeAxiosResponse(null, config));
+        } else if (endpoint === 'reposts' && resourceId) {
+          config.adapter = () => mockApi.unrepostTrack(resourceId).then(() => makeAxiosResponse(null, config));
+        }
+        break;
     }
 
     return config;

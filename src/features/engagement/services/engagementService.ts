@@ -4,31 +4,27 @@ import type { Track } from '../../../shared/types/Track';
 
 export const engagementService = {
 
-  
   getTrackDetails: async (trackId: string): Promise<Track> =>
-    (await api.get<Track>(`/tracks/${trackId}`)).data,
+    (await api.get<Track>(`/${trackId}`)).data,
 
-  
   getTrackLikes: async (trackId: string): Promise<Like[]> =>
-    (await api.get<Like[]>(`/tracks/${trackId}/likes`)).data,
+    (await api.get<Like[]>(`/${trackId}/likes`)).data,
 
   likeTrack: async (userId: string, trackId: string): Promise<Like> =>
-    (await api.post<Like>(`/tracks/${trackId}/likes`, { userId })).data,
+    (await api.post<Like>(`/${trackId}/likes`, { userId })).data,
 
   unlikeTrack: async (likeId: string, trackId: string): Promise<void> =>
-    (await api.delete(`/tracks/${trackId}/likes/${likeId}`)).data,
+    (await api.delete(`/${trackId}/likes/${likeId}`)).data,
 
-  
   getTrackReposts: async (trackId: string): Promise<Repost[]> =>
-    (await api.get<Repost[]>(`/tracks/${trackId}/reposts`)).data,
+    (await api.get<Repost[]>(`/${trackId}/reposts`)).data,
 
   repostTrack: async (userId: string, trackId: string): Promise<Repost> =>
-    (await api.post<Repost>(`/tracks/${trackId}/reposts`, { userId })).data,
+    (await api.post<Repost>(`/${trackId}/reposts`, { userId })).data,
 
   unrepostTrack: async (repostId: string, trackId: string): Promise<void> =>
-    (await api.delete(`/tracks/${trackId}/reposts/${repostId}`)).data,
+    (await api.delete(`/${trackId}/reposts/${repostId}`)).data,
 
-  
   getEngagementCounts: async (trackId: string): Promise<EngagementCounts> =>
-    (await api.get<EngagementCounts>(`/tracks/${trackId}/engagement`)).data,
+    (await api.get<EngagementCounts>(`/${trackId}/engagement`)).data,
 };

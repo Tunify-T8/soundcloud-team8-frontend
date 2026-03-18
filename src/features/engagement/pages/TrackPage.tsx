@@ -9,7 +9,8 @@ import {
 } from 'lucide-react';
 
 const TrackPage = () => {
-  const { trackId } = useParams<{ trackId: string }>();
+  const { artist, songName } = useParams<{ artist: string; songName: string }>();
+  const trackId = `${artist}/${songName}`;
   const [track, setTrack] = useState<Track | null>(null);
   const [trackLoading, setTrackLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,13 +46,12 @@ const TrackPage = () => {
     <div className="min-h-screen bg-zinc-900 text-white">
       <div className="max-w-5xl mx-auto">
 
-        
         <div className="flex bg-zinc-900">
 
           
           <div className="flex-1 p-6 space-y-4">
 
-            
+           
             <div className="flex items-center gap-4">
               <button className="w-14 h-14 shrink-0 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition">
                 <Play className="w-6 h-6 fill-black" />
@@ -78,30 +78,29 @@ const TrackPage = () => {
               </div>
             </div>
 
-            
+           
             <div className="flex items-center gap-6 text-xs text-zinc-400">
               <span className="flex items-center gap-1">
                 <Play className="w-3 h-3" />
                 {(track.plays ?? 0).toLocaleString()}
               </span>
               <Link
-                to={`/tracks/${trackId}/likes`}
+                to={`/${artist}/${songName}/likes`}
                 className="flex items-center gap-1 hover:text-white transition"
               >
                 <Heart className="w-3 h-3" />
                 {engagementLoading ? '...' : counts.likes.toLocaleString()}
               </Link>
               <Link
-                to={`/tracks/${trackId}/reposts`}
+                to={`/${artist}/${songName}/reposts`}
                 className="flex items-center gap-1 hover:text-white transition"
               >
                 <Repeat2 className="w-3 h-3" />
                 {engagementLoading ? '...' : counts.reposts.toLocaleString()}
               </Link>
             </div>
-
-            
             <div className="flex items-center gap-2">
+
               
               <button
                 onClick={toggleLike}
@@ -128,29 +127,24 @@ const TrackPage = () => {
                 <Repeat2 className={`w-4 h-4 ${isReposted ? 'text-orange-500' : ''}`} />
               </button>
 
-              
               <button className="w-10 h-10 rounded bg-zinc-800 text-white hover:bg-zinc-700 flex items-center justify-center transition">
                 <Share2 className="w-4 h-4" />
               </button>
 
-              
               <button className="w-10 h-10 rounded bg-zinc-800 text-white hover:bg-zinc-700 flex items-center justify-center transition">
                 <Copy className="w-4 h-4" />
               </button>
 
-              
               <button className="w-10 h-10 rounded bg-zinc-800 text-white hover:bg-zinc-700 flex items-center justify-center transition">
                 <ListPlus className="w-4 h-4" />
               </button>
 
-              
               <button className="w-10 h-10 rounded bg-zinc-800 text-white hover:bg-zinc-700 flex items-center justify-center transition">
                 <MoreHorizontal className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          
           <div className="w-48 h-48 shrink-0 self-start mt-6 mr-6">
             <img
               src={track.artworkUrl}
@@ -160,8 +154,7 @@ const TrackPage = () => {
           </div>
         </div>
 
-        
-        <CommentsSection trackId={trackId ?? ''} commentCount={counts.comments} />
+        <CommentsSection trackId={trackId} commentCount={counts.comments} />
       </div>
     </div>
   );
@@ -180,10 +173,10 @@ interface Comment {
 }
 
 const mockComments: Comment[] = [
-  { id: 'c1', userId: 'u1', username: 'Jad Saadeh', avatarUrl: '', body: 'It hits different when', timestamp: 32, createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(), likes: 0 },
-  { id: 'c2', userId: 'u2', username: 'Hagar El Soudi', avatarUrl: '', body: '💗', timestamp: 88, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 13).toISOString(), likes: 1 },
-  { id: 'c3', userId: 'u3', username: 'Hagar El Soudi', avatarUrl: '', body: 'انا حالي ميسرش عدو ولا حبيب', timestamp: 2, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 13).toISOString(), likes: 1 },
-  { id: 'c4', userId: 'u4', username: 'dr hala', avatarUrl: '', body: 'ولو نسياني ميضرش', timestamp: 26, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 20).toISOString(), likes: 0 },
+  { id: 'c1', userId: 'u1', username: 'Jad Saadeh',     avatarUrl: '', body: 'It hits different when',            timestamp: 32, createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),          likes: 0 },
+  { id: 'c2', userId: 'u2', username: 'Hagar El Soudi', avatarUrl: '', body: '💗',                                timestamp: 88, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 13).toISOString(), likes: 1 },
+  { id: 'c3', userId: 'u3', username: 'Hagar El Soudi', avatarUrl: '', body: 'انا حالي ميسرش عدو ولا حبيب',     timestamp: 2,  createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 13).toISOString(), likes: 1 },
+  { id: 'c4', userId: 'u4', username: 'dr hala',        avatarUrl: '', body: 'ولو نسياني ميضرش',                timestamp: 26, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 20).toISOString(), likes: 0 },
 ];
 
 const timeAgo = (dateStr: string) => {
@@ -228,6 +221,7 @@ const CommentsSection = ({ trackId: _trackId, commentCount }: { trackId: string;
 
   return (
     <div className="border-t border-zinc-700 px-6 py-6">
+
       
       <div className="flex items-center gap-3 mb-6">
         <img
@@ -249,7 +243,6 @@ const CommentsSection = ({ trackId: _trackId, commentCount }: { trackId: string;
         </div>
       </div>
 
-      
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-semibold">
           {commentCount > 0 ? commentCount : comments.length} comments
@@ -260,7 +253,6 @@ const CommentsSection = ({ trackId: _trackId, commentCount }: { trackId: string;
         </button>
       </div>
 
-      
       <div className="space-y-5">
         {comments.map((c) => (
           <div key={c.id} className="flex gap-3">
