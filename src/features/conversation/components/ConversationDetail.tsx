@@ -6,6 +6,36 @@ interface ConversationDetailProps {
 	className?: string;
 }
 
+function getDisplaySenderName(senderId: string, otherUserId: string, senderName?: string): string {
+	if (senderId === otherUserId) {
+		return senderName || "User";
+	}
+
+	return "Me";
+}
+
+function formatRelativeTime(dateIso: string): string {
+	const timestamp = new Date(dateIso).getTime();
+	if (Number.isNaN(timestamp)) {
+		return "";
+	}
+
+	const elapsedMs = Date.now() - timestamp;
+	const elapsedMinutes = Math.max(1, Math.floor(elapsedMs / 60000));
+
+	if (elapsedMinutes < 60) {
+		return `${elapsedMinutes} minute${elapsedMinutes > 1 ? "s" : ""} ago`;
+	}
+
+	const elapsedHours = Math.floor(elapsedMinutes / 60);
+	if (elapsedHours < 24) {
+		return `${elapsedHours} hour${elapsedHours > 1 ? "s" : ""} ago`;
+	}
+
+	const elapsedDays = Math.floor(elapsedHours / 24);
+	return `${elapsedDays} day${elapsedDays > 1 ? "s" : ""} ago`;
+}
+
 export default function ConversationDetail({ conversation, className = "" }: ConversationDetailProps) {
 	const { messages, isLoading, error } = useConversationMessages(
 		conversation?.conversationId || null,
@@ -40,27 +70,41 @@ export default function ConversationDetail({ conversation, className = "" }: Con
 					{!isLoading &&
 						!error &&
 						messages.map((message) => (
-							<div
-								key={message.id}
-								className={`flex gap-2 ${
-									message.senderId === conversation.otherUser.id ? "justify-start" : "justify-end"
-								}`}
-							>
-								<div
-									className={`max-w-xs rounded-lg px-3 py-2 text-sm ${
-										message.senderId === conversation.otherUser.id
-											? "bg-zinc-800 text-zinc-100"
-											: "bg-blue-600 text-white"
-									}`}
-								>
-									<p>{message.text || "[Attachment]"}</p>
-									<p className="mt-1 text-xs opacity-70">
-										{new Date(message.createdAt).toLocaleTimeString([], {
-											hour: "2-digit",
-											minute: "2-digit",
-										})}
-									</p>
+							<div key={message.id} className="flex items-start justify-between gap-4 py-1">
+								<div className="flex min-w-0 items-start gap-3">
+									{message.sender.avatarUrl ? (
+										<img
+											src={message.sender.avatarUrl}
+											alt={message.sender.displayName}
+											className="h-11 w-11 shrink-0 rounded-full object-cover"
+										/>
+									) : (
+										<div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-zinc-500 text-xs font-semibold text-zinc-100">
+											{getDisplaySenderName(
+												message.senderId,
+												conversation.otherUser.id,
+												message.sender.displayName,
+											)
+												.charAt(0)
+												.toUpperCase()}
+										</div>
+									)}
+
+									<div className="min-w-0 text-sm text-zinc-200">
+										<p className="font-semibold text-white">
+											{getDisplaySenderName(
+												message.senderId,
+												conversation.otherUser.id,
+												message.sender.displayName,
+											)}
+										</p>
+										<p className="break-words text-zinc-300">{message.text || "[Attachment]"}</p>
+									</div>
 								</div>
+
+								<p className="shrink-0 pt-1 text-xs text-zinc-500">
+									{formatRelativeTime(message.createdAt)}
+								</p>
 							</div>
 						))}
 				</div>
