@@ -1,7 +1,7 @@
 
 import { api } from '../../../services/api';
 import type { Like, Repost, EngagementCounts } from '../types';
-import type { Track } from '../types/Track';
+import type { Track } from "../../../shared/types/Track";
 import { getMockTrack } from './mockTracks';
 import { mockLikes, mockReposts, makeAvatar } from './mockEngagement';
 
