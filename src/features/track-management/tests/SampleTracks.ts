@@ -14,13 +14,11 @@ export const SampleTracks: Track[] = [
     waveformData: [12, 18, 22, 30, 27, 25, 33, 40, 38, 29, 21, 18],
     duration: 214,
     date: "2026-03-10",
-    engagements: {
-      likes: 128,
+   likes: 128,
       comments: 24,
       reposts: 8,
       downloads: 15,
-      plays: 1240
-    },
+      plays: 1240,
     isHD: true,
     isPrivate: false,
     thumbnailUrl: "/images/tracks/midnight-echoes.jpg"
@@ -37,15 +35,55 @@ export const SampleTracks: Track[] = [
     waveformData: [8, 10, 14, 18, 16, 15, 20, 22, 19, 17, 13, 9],
     duration: 176,
     date: "2026-03-13",
-    engagements: {
-      likes: null,
-      comments: null,
+   likes: null,
+    comments: null,
       reposts: null,
       downloads: null,
-      plays: 12
-    },
+      plays: 12,
     isHD: false,
     isPrivate: true,
     thumbnailUrl: "/images/tracks/unreleased-horizon.jpg"
-  }
+  },
+  {
+    id: "trk_003",
+    title: "Midnighty Strolyl",
+    genre: Genre.ELECTRONIC,
+    tags: ["ambient", "synthwave", "night-drive"],
+    status: "uploading",
+    visibility: "public",
+    audioUrl: "/audio/midnight-stroll.mp3",
+    description: "Smooth synthwave vibes for late night drives through the city.",
+    waveformData: [12, 18, 25, 30, 28, 22, 19, 24, 29, 26, 20, 15],
+    duration: 245,
+    date: "2026-03-10",
+    likes: 342,
+    comments: 28,
+    reposts: 56,
+    downloads: 89,
+    plays: 15234,
+    isHD: true,
+    isPrivate: false,
+    thumbnailUrl: "/images/tracks/midnight-stroll.jpg"
+},
+{
+    id: "trk_004",
+    title: "Velvet Dreams",
+    genre: Genre.JAZZ_AND_BLUES,
+    tags: ["smooth-jazz", "nightclub", "saxophone"],
+    status: "finished",
+    visibility: "private",
+    audioUrl: "/audio/velvet-dreams.mp3",
+    description: "Late night jazz recording with a modern twist. Needs final mixing.",
+    waveformData: [6, 9, 15, 21, 24, 22, 18, 16, 19, 23, 17, 11],
+    duration: 312,
+    date: "2026-03-14",
+    likes: null,
+    comments: null,
+    reposts: null,
+    downloads: null,
+    plays: 5,
+    isHD: true,
+    isPrivate: true,
+    thumbnailUrl: "/images/tracks/velvet-dreams.jpg"
+}
 ];

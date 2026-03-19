@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import type { ToggleProps } from "../types";
 import type { TogglesState } from "../types";
-import { useDispatch, useSelector } from "react-redux";
 import { clearAudioSource } from "../../../store/AudioSourceSlice";
 import UploadSuccessScreen from "./UploadSuccessScreen";
 import axios from "axios";
 import { SiSoundcloud } from "react-icons/si";
+import { useDispatch } from "react-redux";
+import { useAppSelector } from "../../../app/hooks"; 
 
 function Toggle({ enabled, onChange }: ToggleProps) {
   return (
@@ -67,8 +68,7 @@ const inputClass =
 export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
   // ── 1. All hooks first ───────────────────────────────────────────────────────
   const dispatch = useDispatch();
-  const source = useSelector((s: any) => s.audioSource.source);
-
+const source = useAppSelector((s) => s.audioSource.source);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadDone, setUploadDone] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -173,7 +173,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
 
     uploadFile();
     return () => { cancelled = true };
-  }, []);
+  },[source.url]);
 
   // ── 2. Derived values ────────────────────────────────────────────────────────
   const fileName = source?.kind === "file"

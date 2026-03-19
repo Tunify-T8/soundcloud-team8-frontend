@@ -1,25 +1,19 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import Recorder from "../components/Recorder";
 import TrackInfoPage from "../components/TrackInfo";
-import { useDispatch, useSelector } from "react-redux";
-import { setAudioSource, clearNavigation } from "../../../store/AudioSourceSlice";
+import { useDispatch } from "react-redux";
+import { useAppSelector } from "../../../app/hooks"; // Add this import
+import { setAudioSource } from "../../../store/AudioSourceSlice";
 import { SiSoundcloud } from "react-icons/si";
+
 
 export default function SoundCloudUpload() {
   const [isDragging, setIsDragging] = useState(false);
   const [micOpen, setMicOpen] = useState(false);
-  const [showTrackInfo, setShowTrackInfo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const dispatch = useDispatch();
-  const readyToNavigate = useSelector((s: any) => s.audioSource.readyToNavigate);
-
-  useEffect(() => {
-    if (readyToNavigate) {
-      setShowTrackInfo(true);
-      dispatch(clearNavigation());
-    }
-  }, [readyToNavigate]);
+  const readyToNavigate = useAppSelector((s) => s.audioSource.readyToNavigate);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -54,7 +48,8 @@ export default function SoundCloudUpload() {
     }));
   }, [dispatch]);
 
-  if (showTrackInfo) {
+  // Just use readyToNavigate directly - no useEffect needed!
+  if (readyToNavigate) {
     return <TrackInfoPage />;
   }
 
@@ -63,16 +58,21 @@ export default function SoundCloudUpload() {
 
       {/* HEADER */}
       <header className="flex items-center justify-between px-8 py-4 border-b border-[#222]">
-        <a href="/" className="flex items-center gap-3 hover:opacity-80 transition">
+        <div className="flex items-center gap-3 hover:opacity-80 transition">
+          <a href="/">
           <SiSoundcloud size={36} color="white" />
+          </a>
           <span className="text-[15px] font-semibold">Upload</span>
-        </a>
+       </div>
+        
+        <a href="/artists">
         <button className="text-[#888] hover:text-white transition">
           <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18"/>
             <line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
         </button>
+        </a>
       </header>
 
       {/* MAIN */}
