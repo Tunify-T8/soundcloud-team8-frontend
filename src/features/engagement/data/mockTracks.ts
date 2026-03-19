@@ -1,4 +1,4 @@
-import type { Track } from '../../../shared/types/Track';
+import type { Track } from '../types/Track';
 
 export const mockTracks: Track[] = [
   {
