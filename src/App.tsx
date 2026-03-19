@@ -12,6 +12,7 @@ import RepostsPage from "./features/profile/pages/UserInfoBar/RepostsPage";
 import SignInPage from "./features/auth/pages/SignInPage"
 import SignUpPage from "./features/auth/pages/SignUpPage"
 import ForgotPasswordPage from "./features/auth/pages/ForgotPasswordPage"
+import MessagesPage from "./features/conversation/pages/MessagesPage"
 import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage"
 import ProtectedRoute from "./routes/ProtectedRoute"
 
