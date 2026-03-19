@@ -11,11 +11,13 @@ import PopularTracksPage from "./features/profile/pages/UserInfoBar/PopularTrack
 import TracksPage from "./features/profile/pages/UserInfoBar/TracksPage"
 import AlbumsPage from "./features/profile/pages/UserInfoBar/AlbumsPage"
 import PlaylistsPage from "./features/profile/pages/UserInfoBar/PlaylistsPage"
+import ProfileRepostsPage from "./features/profile/pages/UserInfoBar/RepostsPage"
 import SignInPage from "./features/auth/pages/SignInPage"
 import SignUpPage from "./features/auth/pages/SignUpPage"
 import ForgotPasswordPage from "./features/auth/pages/ForgotPasswordPage"
 import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage"
 import ProtectedRoute from "./routes/ProtectedRoute"
+import MessagesPage from "./features/conversation/pages/MessagesPage"
 
 const router = createBrowserRouter([
   {
@@ -47,6 +49,10 @@ const router = createBrowserRouter([
         element: <SideBar />
       },
       {
+        path: '/messages',
+        element: <MessagesPage />
+      },
+      {
         path: '/:artist/:songName',
         element: <TrackPage />
       },
@@ -67,6 +73,7 @@ const router = createBrowserRouter([
           { path: "tracks", element: <TracksPage /> },
           { path: "albums", element: <AlbumsPage /> },
           { path: "playlists", element: <PlaylistsPage /> },
+          { path: "reposts", element: <ProfileRepostsPage /> },
         ],
       },
     ],
