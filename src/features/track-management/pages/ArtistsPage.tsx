@@ -5,7 +5,7 @@ import TrackList from "../components/TrackList";
 import ArtistsNavbar from "../components/ArtistsNavbar";
 import ArtistsSidebar from "../components/ArtistsSidebar";
 import { trackService } from "../trackService";
-import type { Track } from "../types";
+import type { Track } from "../../../shared/types/Track";
 
 function UploadBanner() {
   return (

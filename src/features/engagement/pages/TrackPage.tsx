@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { engagementService } from '../services/engagementService';
 import { useEngagement } from '../hooks/useEngagement';
-import type { Track } from '../types/Track';
+import type { Track } from "../../../shared/types/Track";
+
 import {
   Heart, Repeat2, Play, Share2,
   Copy, ListPlus, MoreHorizontal
@@ -61,7 +62,7 @@ const TrackPage = () => {
                 <h1 className="text-xl font-bold leading-tight">{track.title}</h1>
               </div>
               <span className="ml-auto text-xs text-zinc-500">
-                {new Date(track.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
+                {new Date(track.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
               </span>
             </div>
 
@@ -147,7 +148,7 @@ const TrackPage = () => {
 
           <div className="w-48 h-48 shrink-0 self-start mt-6 mr-6">
             <img
-              src={track.artworkUrl}
+              src={track.thumbnailUrl}
               alt={track.title}
               className="w-full h-full object-cover"
             />

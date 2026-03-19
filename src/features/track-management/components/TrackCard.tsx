@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Play, Lock, MoreVertical, Heart, MessageSquare, Repeat2, Download } from "lucide-react";
-import type { Track } from "../types";
+import type { Track } from "../../../shared/types/Track";
 
 interface TrackCardProps {
   track: Track;
