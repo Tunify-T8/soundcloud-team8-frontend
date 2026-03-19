@@ -14,6 +14,7 @@ import SignUpPage from "./features/auth/pages/SignUpPage"
 import ForgotPasswordPage from "./features/auth/pages/ForgotPasswordPage"
 import MessagesPage from "./features/conversation/pages/MessagesPage"
 import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage"
+import MessagesPage from "./features/conversation/pages/MessagesPage"
 import ProtectedRoute from "./routes/ProtectedRoute"
 
 const router = createBrowserRouter([
