@@ -68,7 +68,7 @@ const inputClass =
 export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
   // ── 1. All hooks first ───────────────────────────────────────────────────────
   const dispatch = useDispatch();
-const source = useAppSelector((s) => s.audioSource.source);
+  const source = useAppSelector((s) => s.audioSource.source);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadDone, setUploadDone] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -80,7 +80,7 @@ const source = useAppSelector((s) => s.audioSource.source);
   const artworkBase64Ref = useRef<string | null>(null);
   const artworkInputRef = useRef<HTMLInputElement>(null);
 
-  const audioUrlRef = useRef<string | null>(null);
+  const audioBlobRef = useRef<Blob | null>(null);
 
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [permissionsOpen, setPermissionsOpen] = useState(false);
@@ -98,6 +98,17 @@ const source = useAppSelector((s) => s.audioSource.source);
     insights: true,
   });
 
+  // ── NEW: data-shape state (no UI changes) ────────────────────────────────────
+  const [geoMode, setGeoMode] = useState<"worldwide" | "exclusive" | "blocked">("worldwide");
+  const [regions] = useState<string[]>([]);
+  const [contentWarning, setContentWarning] = useState(false);
+  const [ccOptions] = useState({
+    allowAttribution: true,
+    nonCommercial: false,
+    noDerivatives: false,
+    shareAlike: false,
+  });
+
   const titleRef       = useRef<HTMLInputElement>(null);
   const genreRef       = useRef<HTMLInputElement>(null);
   const tagsRef        = useRef<HTMLInputElement>(null);
@@ -105,75 +116,39 @@ const source = useAppSelector((s) => s.audioSource.source);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const privacyRef     = useRef<string>("public");
 
-  // Auto-start file upload as soon as TrackInfo mounts
+  // Auto-start: fetch the audio blob as soon as TrackInfo mounts
   useEffect(() => {
     if (!source?.url) return;
     let cancelled = false;
 
-    const uploadFile = async () => {
+    const fetchBlob = async () => {
       setIsUploading(true);
       setUploadProgress(0);
       try {
-        const blob = await axios.get(source.url, { responseType: "blob" }).then(r => r.data);
-        const MAX_MOCKAPI_SIZE = 1 * 1024 * 1024; // 1MB — MockAPI payload limit
+        const blob = await axios.get(source.url, {
+          responseType: "blob",
+          onDownloadProgress: (e) => {
+            if (e.total) {
+              setUploadProgress(Math.round((e.loaded / e.total) * 100));
+            }
+          },
+        }).then(r => r.data);
 
-        if (blob.size > MAX_MOCKAPI_SIZE) {
-          // TODO: replace with real multipart upload + onUploadProgress when backend is ready
-          const CHUNK_SIZE = 256 * 1024;
-          const totalChunks = Math.ceil(blob.size / CHUNK_SIZE);
-          for (let i = 0; i < totalChunks; i++) {
-            if (cancelled) return;
-            const start = i * CHUNK_SIZE;
-            const chunk = blob.slice(start, start + CHUNK_SIZE);
-            await new Promise<void>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onloadend = () => resolve();
-              reader.onerror = reject;
-              reader.readAsArrayBuffer(chunk);
-            });
-            if (!cancelled) setUploadProgress(Math.round(((i + 1) / totalChunks) * 100));
-          }
-          if (!cancelled) {
-            audioUrlRef.current = null;
-            setUploadProgress(100);
-            setFileReady(true);
-          }
-          return;
-        }
-
-        // Small files (under 1MB) — encode as base64 for MockAPI
-        const CHUNK_SIZE = 256 * 1024;
-        const totalChunks = Math.ceil(blob.size / CHUNK_SIZE);
-        const parts: string[] = [];
-        for (let i = 0; i < totalChunks; i++) {
-          if (cancelled) return;
-          const start = i * CHUNK_SIZE;
-          const chunk = blob.slice(start, start + CHUNK_SIZE);
-          const chunkBase64 = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve((reader.result as string).split(",")[1]);
-            reader.onerror = reject;
-            reader.readAsDataURL(chunk);
-          });
-          parts.push(chunkBase64);
-          if (!cancelled) setUploadProgress(Math.round(((i + 1) / totalChunks) * 100));
-        }
         if (cancelled) return;
-        const mimeType = blob.type || "audio/wav";
-        audioUrlRef.current = `data:${mimeType};base64,${parts.join("")}`;
+        audioBlobRef.current = blob;
         setUploadProgress(100);
         setFileReady(true);
       } catch (err) {
-        console.error("File encoding failed:", err);
-        if (!cancelled) { audioUrlRef.current = null; setUploadProgress(100); setFileReady(true); }
+        console.error("Failed to fetch audio blob:", err);
+        if (!cancelled) { audioBlobRef.current = null; setUploadProgress(100); setFileReady(true); }
       } finally {
         if (!cancelled) setIsUploading(false);
       }
     };
 
-    uploadFile();
+    fetchBlob();
     return () => { cancelled = true };
-  },[source.url]);
+  }, [source.url]);
 
   // ── 2. Derived values ────────────────────────────────────────────────────────
   const fileName = source?.kind === "file"
@@ -236,35 +211,76 @@ const source = useAppSelector((s) => s.audioSource.source);
     img.src = objectUrl;
   };
 
+  const GENRE_MAP: Record<string, string> = {
+    "hip-hop":    "music_hiphop",
+    "hiphop":     "music_hiphop",
+    "hip hop":    "music_hiphop",
+    "pop":        "music_pop",
+    "rock":       "music_rock",
+    "electronic": "music_electronic",
+    "jazz":       "music_jazz",
+    "classical":  "music_classical",
+    "r&b":        "music_rnb",
+    "rnb":        "music_rnb",
+    "country":    "music_country",
+    "metal":      "music_metal",
+    "folk":       "music_folk",
+    "reggae":     "music_reggae",
+    "blues":      "music_blues",
+    "soul":       "music_soul",
+    "latin":      "music_latin",
+    "dance":      "music_dance",
+    "house":      "music_house",
+    "techno":     "music_techno",
+  };
+
   const handleUpload = async () => {
     if (!fileReady || isSubmitting) return;
     setIsSubmitting(true);
     try {
       const BASE_URL = "http://69b6043a583f543fbd9cc84e.mockapi.io";
+      const rawGenre = genreRef.current?.value?.toLowerCase().trim() ?? "";
 
+      // ── Step 1: POST metadata → get trackId ─────────────────────
       const { data: track } = await axios.post(`${BASE_URL}/tracks`, {
-        title: titleRef.current?.value || "Untitled",
-        genre: genreRef.current?.value || "",
-        tags: tagsRef.current?.value ? [tagsRef.current.value] : [],
-        description: descriptionRef.current?.value || "",
-        privacy: privacyRef.current,
-        artists: artistsRef.current?.value
-          ? artistsRef.current.value.split(",").map(a => a.trim())
-          : [],
-        status: "uploaded",
-        audioUrl: audioUrlRef.current,
-        artworkUrl: artworkBase64Ref.current,   // base64 image or null
-        waveformUrl: null,
-        availability: "worldwide",
-        licensing: license,
+        title:               titleRef.current?.value || "Untitled",
+        genre:               GENRE_MAP[rawGenre] ?? rawGenre,
+        tags:                tagsRef.current?.value ? [tagsRef.current.value] : [],
+        description:         descriptionRef.current?.value || "",
+        privacy:             privacyRef.current,
+        artists:             artistsRef.current?.value
+                               ? artistsRef.current.value.split(",").map(a => a.trim())
+                               : [],
+        availability:        { type: geoMode, regions },
+        licensing:           license === "all"
+                               ? { type: "all_rights_reserved", allowAttribution: false, nonCommercial: false, noDerivatives: false, shareAlike: false }
+                               : { type: "creative_commons", ...ccOptions },
         scheduledReleaseDate: null,
-        contentWarning: "false",
+        contentWarning:      contentWarning,
       });
 
-      console.log("Track created:", track.id);
+      const { trackId } = track;
+      console.log("Track created:", trackId);
+
+      // ── Step 2: POST audio binary to /tracks/{trackId}/audio ────
+      if (audioBlobRef.current) {
+        const mimeType = audioBlobRef.current.type || "audio/wav";
+        const ext = mimeType.split("/")[1] ?? "wav";
+        const fileName = source?.kind === "file" ? (source.name ?? `audio.${ext}`) : `recording.${ext}`;
+
+        const formData = new FormData();
+        formData.append("audio", audioBlobRef.current, fileName);
+
+        await axios.post(`${BASE_URL}/tracks/${trackId}/audio`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+
+        console.log("Audio uploaded for track:", trackId);
+      }
+
       setUploadDone(true);
     } catch (err) {
-      console.error("Metadata POST failed:", err);
+      console.error("Upload failed:", err);
       setUploadDone(true);
     } finally {
       setIsSubmitting(false);
@@ -553,7 +569,12 @@ const source = useAppSelector((s) => s.audioSource.source);
                 <label className="text-sm font-bold text-white block mb-1">Contains explicit content</label>
                 <p className="text-sm text-[#666] mb-3">Please check this if your track contains explicit content.</p>
                 <label className="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" className="w-4 h-4 accent-white" />
+                  {/* ✅ wired to boolean state */}
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 accent-white"
+                    onChange={e => setContentWarning(e.target.checked)}
+                  />
                   <span className="text-sm text-white">Explicit content</span>
                   <span className="text-xs bg-[#333] text-white px-1.5 py-0.5 font-bold">E</span>
                 </label>
@@ -620,7 +641,17 @@ const source = useAppSelector((s) => s.audioSource.source);
                 <div className="space-y-3">
                   {(["Worldwide", "Exclusive regions", "Blocked regions"] as const).map((opt) => (
                     <label key={opt} className="flex items-center gap-3 cursor-pointer">
-                      <input type="radio" name="geo" defaultChecked={opt === "Worldwide"} className="w-4 h-4 accent-white" />
+                      <input
+                        type="radio"
+                        name="geo"
+                        defaultChecked={opt === "Worldwide"}
+                        className="w-4 h-4 accent-white"
+                        // ✅ wired to geoMode state
+                        onChange={() => setGeoMode(
+                          opt === "Worldwide" ? "worldwide" :
+                          opt === "Exclusive regions" ? "exclusive" : "blocked"
+                        )}
+                      />
                       <span className="text-sm text-[#888]">{opt}</span>
                     </label>
                   ))}
