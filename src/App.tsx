@@ -19,7 +19,6 @@ import ForgotPasswordPage from "./features/auth/pages/ForgotPasswordPage"
 import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage"
 import MessagesPage from "./features/conversation/pages/MessagesPage"
 import ProtectedRoute from "./routes/ProtectedRoute"
-import MessagesPage from "./features/conversation/pages/MessagesPage"
 
 const router = createBrowserRouter([
   {
