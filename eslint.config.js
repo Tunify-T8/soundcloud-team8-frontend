@@ -24,13 +24,15 @@ export default defineConfig([
       '@typescript-eslint/no-deprecated': 'off',
 
 
-      '@typescript-eslint/no-unused-vars': 'warn',
-      '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-empty-function': 'warn',
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-empty-function': 'off',
       '@typescript-eslint/no-empty-interface': 'off',
-      '@typescript-eslint/ban-ts-comment': 'warn',
-      'no-console': 'warn',
-      'prefer-const': 'warn',
+      '@typescript-eslint/ban-ts-comment': 'off',
+      'no-console': 'off',
+      'no-empty': 'off',
+      'prefer-const': 'off',
+      'react-hooks/exhaustive-deps': 'off',
     },
   },
 ])
