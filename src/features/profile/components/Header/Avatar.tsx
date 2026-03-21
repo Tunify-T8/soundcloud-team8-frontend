@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { profileService } from "../../profileService";
 
 export default function Avatar({
   avatarUrl,
@@ -13,11 +14,20 @@ export default function Avatar({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showActions, setShowActions] = useState(false);
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) {
       setPreviewUrl(URL.createObjectURL(file));
       setShowActions(false);
+      try {
+        const formData = new FormData();
+        formData.append("avatar", file);
+        await profileService.updateMeProfile({
+          avatarUrl: URL.createObjectURL(file),
+        });
+      } catch (err) {
+        console.error("Failed to update avatar", err);
+      }
     }
   }
 
@@ -25,9 +35,14 @@ export default function Avatar({
     fileInputRef.current?.click();
   };
 
-  const handleRemoveImage = () => {
+  const handleRemoveImage = async () => {
     setPreviewUrl(null);
     setShowActions(false);
+    try {
+      await profileService.updateMeProfile({ avatarUrl: null });
+    } catch (err) {
+      console.error("Failed to remove avatar", err);
+    }
   };
 
   const src = previewUrl ?? avatarUrl;
@@ -61,9 +76,7 @@ export default function Avatar({
             type="button"
             onClick={() => setShowActions((prev) => !prev)}
             className={`w-32 bg-zinc-800 font-bold text-[14px] px-3 py-1 rounded-sm transition-colors cursor-pointer ${
-              showActions
-                ? "text-orange-500"
-                : "text-white hover:text-zinc-500"
+              showActions ? "text-orange-500" : "text-white hover:text-zinc-500"
             }`}
           >
             Update image
@@ -80,7 +93,7 @@ export default function Avatar({
               <button
                 type="button"
                 onClick={handleRemoveImage}
-                className="w-full  text-left text-white font-bold text-[14px] px-3 py-2 hover:text-gray-300 transition-colors cursor-pointer"
+                className="w-full text-left text-white font-bold text-[14px] px-3 py-2 hover:text-gray-300 transition-colors cursor-pointer"
               >
                 Delete image
               </button>

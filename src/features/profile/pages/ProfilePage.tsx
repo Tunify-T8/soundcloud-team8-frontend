@@ -10,6 +10,12 @@ import type {
   UserFollowing,
 } from "../../../shared/types/User";
 
+function isMeProfile(
+  user: MeUserProfile | PublicUserProfile,
+): user is MeUserProfile {
+  return "email" in user;
+}
+
 export default function ProfilePage() {
   const { username } = useParams<{ username: string }>();
   const [user, setUser] = useState<MeUserProfile | PublicUserProfile | null>(
@@ -80,38 +86,51 @@ export default function ProfilePage() {
       </div>
     );
   }
+
+  const isMe = isMeProfile(user);
+  const location = user.location ?? "";
+  const locationParts = location.split(",");
+  const city = locationParts[0]?.trim() ?? undefined;
+  const country = locationParts[1]?.trim() ?? undefined;
+
   return (
     <div className="min-h-screen text-white">
       <Header
-        displayName={"displayName" in user ? user.displayName : user.username}
+        displayName={user.username}
         username={user.username}
-        country={"country" in user ? user.country : undefined}
-        city={"city" in user ? user.city : undefined}
-        isVerified={user.isVerified}
+        country={country}
+        city={city}
+        isVerified={isMe ? user.isVerified : false}
         avatarUrl={user.avatarUrl || ""}
-        coverUrl={"coverUrl" in user ? user.coverUrl || "" : ""}
-        isEditable={"isEditable" in user ? user.isEditable : false}
+        coverUrl={user.coverUrl || ""}
+        isEditable={isMe}
       />
       <div className="relative">
         <UserInfoBar
-          displayName={"displayName" in user ? user.displayName : user.username}
+          displayName={user.username}
           avatarUrl={user.avatarUrl || ""}
-          country={"country" in user ? user.country : undefined}
-          city={"city" in user ? user.city : undefined}
-          bio={"bio" in user ? user.bio : undefined}
-          socialAccounts={
-            "socialAccounts" in user ? user.socialAccounts : undefined
-          }
-          isEditable={"isEditable" in user ? user.isEditable : false}
+          country={country}
+          city={city}
+          bio={user.bio ?? undefined}
+          socialAccounts={undefined}
+          isEditable={isMe}
         />
         <div className="absolute right-[8.333333%] top-full mt-4">
           <ProfileSideBar
-            followers={"followersCount" in user ? user.followersCount : 0}
-            following={"followingCount" in user ? user.followingCount : 0}
-            tracks={"tracksCount" in user ? user.tracksCount : 0}
-            bio={"bio" in user ? user.bio : undefined}
-            socialAccounts={"socialAccounts" in user ? user.socialAccounts : {}}
-            followingUsers={followingUsers}
+            followers={user.followersCount}
+            following={user.followingCount}
+            tracks={
+              "tracksUploadedCount" in user ? user.tracksUploadedCount : 0
+            }
+            bio={user.bio ?? undefined}
+            socialAccounts={undefined}
+            followingUsers={followingUsers.map((u) => ({
+              id: u.id,
+              username: u.username,
+              avatarUrl: u.avatarUrl ?? "",
+              isVerified: u.isVerified ?? false,
+              followersCount: undefined,
+            }))}
           />
         </div>
       </div>
