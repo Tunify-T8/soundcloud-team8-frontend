@@ -7,6 +7,7 @@ import axios from "axios";
 import { SiSoundcloud } from "react-icons/si";
 import { useDispatch } from "react-redux";
 import { useAppSelector } from "../../../app/hooks"; 
+import { BASE_URL } from "../../../config/env.ts";
 
 function Toggle({ enabled, onChange }: ToggleProps) {
   return (
@@ -18,7 +19,6 @@ function Toggle({ enabled, onChange }: ToggleProps) {
     </div>
   );
 }
-
 function InfoIcon() {
   return (
     <svg className="ml-1" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2">
@@ -238,7 +238,6 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
     if (!fileReady || isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const BASE_URL = "http://69b6043a583f543fbd9cc84e.mockapi.io";
       const rawGenre = genreRef.current?.value?.toLowerCase().trim() ?? "";
 
       // ── Step 1: POST metadata → get trackId ─────────────────────
