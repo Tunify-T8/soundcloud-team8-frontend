@@ -1,121 +1,88 @@
-import { api } from "../../services/api";
-import type { FollowingUser, User } from "../../shared/types/User";
-
-type UsersResponse = User | User[] | { users?: User[]; data?: User[] };
-type FollowingApiResponse = FollowingUser[] | { following?: FollowingUser[] };
-type UserWithFollowing = User & { following?: FollowingApiResponse };
-
-const normalizeUsername = (value: string) =>
-  decodeURIComponent(value).trim().replace(/^@/, "").toLowerCase();
-
-const toUsersArray = (payload: UsersResponse): User[] => {
-  if (Array.isArray(payload)) {
-    return payload;
-  }
-
-  if (payload && typeof payload === "object") {
-    if ("username" in payload) {
-      return [payload as User];
-    }
-
-    if (Array.isArray(payload.users)) {
-      return payload.users;
-    }
-
-    if (Array.isArray(payload.data)) {
-      return payload.data;
-    }
-  }
-
-  return [];
-};
-
-const findUserByUsername = (users: User[], username: string): User | null => {
-  const target = normalizeUsername(username);
-  return (
-    users.find((user) => normalizeUsername(user.username) === target) ?? null
-  );
-};
+import axiosInstance from "../auth/services/axiosInstance";
+import type {
+  MeUserProfile,
+  PublicUserProfile,
+  UpdateUserProfileRequest,
+  UserSocialLinks,
+  UserGenres,
+  UserTracksResponse,
+  UserFollowingResponse,
+} from "../../shared/types/User";
 
 export const profileService = {
-  async getCurrentUser(): Promise<User | null> {
-    const { data } = await api.get<User>("/my-profile");
-    return data ?? null;
+  async getMeProfile(): Promise<MeUserProfile> {
+    const { data } = await axiosInstance.get<{ user: MeUserProfile }>(
+      "/users/me",
+    );
+    return data.user;
   },
 
-  async getUserByUsername(username: string): Promise<User | null> {
-    const target = username.trim().replace(/^@/, "");
-
-    try {
-      const { data } = await api.get<UsersResponse>(
-        `/users?username=${encodeURIComponent(target)}`,
-      );
-      const matchedUser = findUserByUsername(toUsersArray(data), target);
-      if (matchedUser) {
-        return matchedUser;
-      }
-    } catch {}
-
-    try {
-      const { data } = await api.get<UsersResponse>(
-        `/users/${encodeURIComponent(target)}`,
-      );
-      const directUser = findUserByUsername(toUsersArray(data), target);
-      if (directUser) {
-        return directUser;
-      }
-    } catch {}
-
-    const { data } = await api.get<UsersResponse>("/users");
-    return findUserByUsername(toUsersArray(data), target);
+  async getPublicProfile(userIdOrUsername: string): Promise<PublicUserProfile> {
+    const { data } = await axiosInstance.get<{ user: PublicUserProfile }>(
+      `/users/${encodeURIComponent(userIdOrUsername)}`,
+    );
+    return data.user;
   },
 
-  async getFollowing(
-    username: string,
+  async updateMeProfile(
+    payload: UpdateUserProfileRequest,
+  ): Promise<MeUserProfile> {
+    const { data } = await axiosInstance.patch<{ user: MeUserProfile }>(
+      "/users/me/profile",
+      payload,
+    );
+    return data.user;
+  },
+
+  async getMeSocialLinks(): Promise<UserSocialLinks> {
+    const { data } = await axiosInstance.get<{ socialLinks: UserSocialLinks }>(
+      "/users/me/social-links",
+    );
+    return data.socialLinks;
+  },
+
+  async updateMeSocialLinks(
+    payload: UserSocialLinks,
+  ): Promise<UserSocialLinks> {
+    const { data } = await axiosInstance.patch<{
+      socialLinks: UserSocialLinks;
+    }>("/users/me/social-links_update", payload);
+    return data.socialLinks;
+  },
+
+  async getMeGenres(): Promise<UserGenres> {
+    const { data } = await axiosInstance.get<UserGenres>("/users/me/genres");
+    return data;
+  },
+
+  async updateMeGenres(payload: UserGenres): Promise<UserGenres> {
+    const { data } = await axiosInstance.patch<UserGenres>(
+      "/users/me/genres-update",
+      payload,
+    );
+    return data;
+  },
+
+  async getMeTracks(page = 1, limit = 20): Promise<UserTracksResponse> {
+    const { data } = await axiosInstance.get<UserTracksResponse>(
+      `/users/me/tracks?page=${page}&limit=${limit}`,
+    );
+    return data;
+  },
+  async getMeFollowing(page = 1, limit = 20): Promise<UserFollowingResponse> {
+    const { data } = await axiosInstance.get<UserFollowingResponse>(
+      `/users/me/following?page=${page}&limit=${limit}`,
+    );
+    return data;
+  },
+  async getUserFollowing(
+    userId: string,
     page = 1,
     limit = 20,
-  ): Promise<FollowingUser[]> {
-    const target = username.trim().replace(/^@/, "");
-
-    try {
-      const { data } = await api.get<FollowingApiResponse>(
-        `/users/${encodeURIComponent(target)}/following`,
-        {
-          params: { page, limit },
-        },
-      );
-
-      if (Array.isArray(data)) {
-        return data;
-      }
-
-      if (data && Array.isArray(data.following)) {
-        return data.following;
-      }
-    } catch {}
-
-    try {
-      const { data } = await api.get<UsersResponse>(
-        `/users?username=${encodeURIComponent(target)}`,
-      );
-      const matchedUser = findUserByUsername(
-        toUsersArray(data),
-        target,
-      ) as UserWithFollowing | null;
-
-      if (!matchedUser?.following) {
-        return [];
-      }
-
-      if (Array.isArray(matchedUser.following)) {
-        return matchedUser.following;
-      }
-
-      if (Array.isArray(matchedUser.following.following)) {
-        return matchedUser.following.following;
-      }
-    } catch {}
-
-    return [];
+  ): Promise<UserFollowingResponse> {
+    const { data } = await axiosInstance.get<UserFollowingResponse>(
+      `/users/${encodeURIComponent(userId)}/following?page=${page}&limit=${limit}`,
+    );
+    return data;
   },
 };
