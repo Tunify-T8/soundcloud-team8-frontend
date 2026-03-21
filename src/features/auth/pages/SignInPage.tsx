@@ -1,12 +1,12 @@
-
 import React, { useRef, useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Eye, EyeOff, Loader2, ChevronLeft, AlertCircle } from 'lucide-react';
 import { SiSoundcloud } from "react-icons/si";
+import { useGoogleLogin } from '@react-oauth/google';
 import { signInSchema, type SignInFormData } from '../schemas/auth.schemas';
-import { login, socialLogin } from '../services/index';
+import { login, socialLogin, googleSignIn, googleLink } from '../services/index';
 import { storeTokens } from '../utils/token.utils';
 import { extractErrorMessage } from '../hooks/useAuth';
 import type { SocialProvider } from '../types/auth.types';
@@ -72,11 +72,6 @@ type Step = 'social' | 'email' | 'password';
 
 const isValidEmail = (val: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
 
-// const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-// const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
-// const currentYear = new Date().getFullYear();
-// const YEARS = Array.from({ length: 100 }, (_, i) => currentYear - 13 - i);
-
 const SignInPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -90,6 +85,10 @@ const SignInPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [socialLoading, setSocialLoading] = useState<SocialProvider | null>(null);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [linkingToken, setLinkingToken] = useState<string | null>(null);
+  const [showLinkPassword, setShowLinkPassword] = useState(false);
+  const [linkPassword, setLinkPassword] = useState('');
+  const [isLinking, setIsLinking] = useState(false);
 
   const emailRef = useRef<HTMLInputElement>(null);
 
@@ -107,6 +106,55 @@ const SignInPage: React.FC = () => {
       reset();
     };
   }, []);
+
+  // ── Google OAuth hook ──────────────────────────────────────────
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (response) => {
+      setApiError(null);
+      setSocialLoading('google');
+      try {
+        const res = await googleSignIn(response.code);
+
+        // Scenario 3 — email already registered locally, needs linking
+        if (res.requiresLinking) {
+          setLinkingToken(res.linkingToken);
+          setShowLinkPassword(true);
+          setSocialLoading(null);
+          return;
+        }
+
+        // Scenario 1 & 2 — new or returning Google user
+        storeTokens(res.accessToken, res.refreshToken, 3600);
+        navigate(from, { replace: true });
+      } catch (error) {
+        setApiError(extractErrorMessage(error));
+      } finally {
+        setSocialLoading(null);
+      }
+    },
+    onError: () => {
+      setApiError('Google sign-in failed. Please try again.');
+      setSocialLoading(null);
+    },
+    flow: 'auth-code',
+    redirect_uri: 'http://localhost:3333/auth/google/callback',
+  });
+
+  // ── Google account linking ─────────────────────────────────────
+  const handleGoogleLink = async () => {
+    if (!linkingToken || !linkPassword) return;
+    setIsLinking(true);
+    setApiError(null);
+    try {
+      const res = await googleLink(linkingToken, linkPassword);
+      storeTokens(res.accessToken, res.refreshToken, 3600);
+      navigate(from, { replace: true });
+    } catch (error) {
+      setApiError(extractErrorMessage(error));
+    } finally {
+      setIsLinking(false);
+    }
+  };
 
   const handleEmailFocus = () => { if (step === 'social') setStep('email'); };
 
@@ -170,7 +218,6 @@ const SignInPage: React.FC = () => {
 
   const isSocialDisabled = socialLoading !== null || isSubmitting || isCheckingEmail;
 
-  // ── Shared back button ──
   const BackButton = ({ onClick }: { onClick: () => void }) => (
     <button
       type="button"
@@ -184,10 +231,9 @@ const SignInPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#0d0d0d] flex flex-col">
 
-      {/* ── Responsive Navbar ── */}
+      {/* ── Navbar ── */}
       <header className="flex items-center justify-between px-4 sm:px-6 py-3 bg-[#0d0d0d] border-b border-[#222]">
         <TunifyLogo />
-        {/* Nav links — hidden on mobile */}
         <nav className="hidden md:flex items-center gap-8">
           <Link to="/" className="text-white text-sm font-medium hover:text-white/80">Home</Link>
           <Link to="/stream" className="text-white/60 text-sm hover:text-white">Feed</Link>
@@ -203,8 +249,7 @@ const SignInPage: React.FC = () => {
       </header>
 
       {/* ── Main ── */}
-      {/* Responsive layout*/}
-        <main className="flex-1 flex items-center justify-center px-4 py-10">
+      <main className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-[480px]">
 
           <div className="border sm:border-[#3a3a3a] sm:rounded-sm sm:p-[3px] sm:bg-[#111]">
@@ -213,7 +258,6 @@ const SignInPage: React.FC = () => {
               {/* ══ STEP: social ══ */}
               {step === 'social' && (
                 <div className="px-6 py-8 sm:p-8 flex flex-col gap-3">
-                  
                   <h1 className="text-white text-2xl sm:text-xl font-bold mb-1 text-left sm:text-center leading-tight">
                     Sign in or create an account
                   </h1>
@@ -225,8 +269,56 @@ const SignInPage: React.FC = () => {
                   </p>
 
                   <SocialButton provider="facebook" label="Continue with Facebook" icon={<FacebookIcon />} bgColor="bg-[#1877f2]" hoverColor="hover:bg-[#1565d8]" onClick={handleSocialLogin} disabled={isSocialDisabled} />
-                  <SocialButton provider="google" label="Continue with Google" icon={<GoogleIcon />} bgColor="bg-[#3c3c3c]" hoverColor="hover:bg-[#4a4a4a]" onClick={handleSocialLogin} disabled={isSocialDisabled} />
+
+                  {/* Google button uses real OAuth, not handleSocialLogin */}
+                  <button
+                    type="button"
+                    disabled={isSocialDisabled}
+                    onClick={() => googleLogin()}
+                    className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-sm font-medium text-sm text-white transition-colors duration-150 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed bg-[#3c3c3c] hover:bg-[#4a4a4a]"
+                  >
+                    <GoogleIcon />
+                    <span>Continue with Google</span>
+                  </button>
+
                   <SocialButton provider="apple" label="Continue with Apple" icon={<AppleIcon />} bgColor="bg-black" hoverColor="hover:bg-[#1a1a1a]" borderColor="border-[#555]" onClick={handleSocialLogin} disabled={isSocialDisabled} />
+
+                  {/* Account linking card — only shows when Google email already exists locally */}
+                  {showLinkPassword && (
+                    <div className="bg-[#2a2a2a] border border-[#555] rounded-sm p-4 flex flex-col gap-3">
+                      <p className="text-white text-sm font-medium">This email is already registered.</p>
+                      <p className="text-[#aaa] text-xs">Enter your Tunify password to link your Google account.</p>
+                      {apiError && (
+                        <p className="text-red-400 text-xs">{apiError}</p>
+                      )}
+                      <input
+                        type="password"
+                        value={linkPassword}
+                        onChange={(e) => setLinkPassword(e.target.value)}
+                        placeholder="Your Tunify password"
+                        className="w-full bg-[#1a1a1a] border border-[#555] rounded-sm px-4 py-3 text-white text-sm placeholder-[#666] focus:outline-none focus:border-[#888]"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleGoogleLink}
+                        disabled={!linkPassword || isLinking}
+                        className={`w-full py-3 rounded-sm text-sm font-semibold transition-all ${
+                          linkPassword && !isLinking
+                            ? 'bg-white text-black hover:bg-gray-100 cursor-pointer'
+                            : 'bg-[#333] text-[#888] cursor-not-allowed border border-[#444]'
+                        }`}
+                      >
+                        {isLinking ? 'Linking...' : 'Link Google account'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowLinkPassword(false); setLinkPassword(''); setApiError(null); }}
+                        className="text-[#0066cc] text-xs hover:underline text-left"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
 
                   <div className="flex items-center gap-3 my-1">
                     <div className="flex-1 h-px bg-[#444]" />

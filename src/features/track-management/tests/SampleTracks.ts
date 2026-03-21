@@ -1,10 +1,11 @@
-import type { Track } from "../types";
+import type { Track } from "../../../shared/types/Track";
 import { Genre } from "../../../shared/types/Genre";
 
 export const SampleTracks: Track[] = [
   {
     id: "trk_001",
     title: "Midnight Echoes",
+    artist: "-",
     genre: Genre.AMBIENT,
     tags: ["synthwave", "night", "ambient"],
     status: "finished",
@@ -26,6 +27,7 @@ export const SampleTracks: Track[] = [
   {
     id: "trk_002",
     title: "Unreleased Horizon",
+    artist: "-",
     genre: Genre.CLASSICAL,
     tags: ["lofi", "chill", "study"],
     status: "finished",
@@ -47,6 +49,7 @@ export const SampleTracks: Track[] = [
   {
     id: "trk_003",
     title: "Midnighty Strolyl",
+    artist: "-",
     genre: Genre.ELECTRONIC,
     tags: ["ambient", "synthwave", "night-drive"],
     status: "uploading",
@@ -68,6 +71,7 @@ export const SampleTracks: Track[] = [
 {
     id: "trk_004",
     title: "Velvet Dreams",
+    artist: "-",
     genre: Genre.JAZZ_AND_BLUES,
     tags: ["smooth-jazz", "nightclub", "saxophone"],
     status: "finished",

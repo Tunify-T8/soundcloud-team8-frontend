@@ -5,6 +5,7 @@ export type TrackVisibility = 'public' | 'private';
 export interface Track {
   id: string;
   title: string;
+  artist: string;
   genre: Genre;
   tags: string[];
   status: TrackStatus;
