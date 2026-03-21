@@ -1,8 +1,3 @@
-// ============================================================
-// SIGN UP PAGE — Tunify
-// Responsive + Tell us more about you step
-// ============================================================
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
