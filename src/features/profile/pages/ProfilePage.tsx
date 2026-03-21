@@ -1,6 +1,6 @@
 import Header from "../components/Header/Header";
 import UserInfoBar from "../components/UserInfo/UserInfoBar";
-import UserInfo from "../components/UserInfo/UserInfo";
+import ProfileSideBar from "../components/UserInfo/ProfileSideBar";
 import { Outlet, useParams } from "react-router-dom";
 import { profileService } from "../profileService";
 import { useEffect, useState } from "react";
@@ -90,7 +90,7 @@ export default function ProfilePage() {
           isEditable={user.isEditable}
         />
         <div className="absolute right-[8.333333%] top-full mt-4">
-          <UserInfo
+          <ProfileSideBar
             followers={user.followersCount}
             following={user.followingCount}
             tracks={user.tracksCount}

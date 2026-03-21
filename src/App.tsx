@@ -1,22 +1,26 @@
 import NavBar from "./components/layout/Navbar"
 import { createBrowserRouter, RouterProvider } from "react-router-dom"
 import SideBar from "./components/layout/Sidebar"
+import TrackPage from "./features/engagement/pages/TrackPage"
+import LikesPage from "./features/engagement/pages/LikesPage"
+import RepostsPage from "./features/engagement/pages/RepostsPage"
 import UploadPage from "./features/upload/pages/UploadPage"
 import ArtistsPage from "./features/track-management/pages/ArtistsPage"
-import ProfilePage from "./features/profile/pages/ProfilePage";
-import PopularTracksPage from "./features/profile/pages/UserInfoBar/PopularTracksPage";
-import TracksPage from "./features/profile/pages/UserInfoBar/TracksPage";
-import AlbumsPage from "./features/profile/pages/UserInfoBar/AlbumsPage";
-import PlaylistsPage from "./features/profile/pages/UserInfoBar/PlaylistsPage";
-import RepostsPage from "./features/profile/pages/UserInfoBar/RepostsPage";
+import ProfilePage from "./features/profile/pages/ProfilePage"
+import PopularTracksPage from "./features/profile/pages/UserInfoBar/PopularTracksPage"
+import TracksPage from "./features/profile/pages/UserInfoBar/TracksPage"
+import AlbumsPage from "./features/profile/pages/UserInfoBar/AlbumsPage"
+import PlaylistsPage from "./features/profile/pages/UserInfoBar/PlaylistsPage"
+import ProfileRepostsPage from "./features/profile/pages/UserInfoBar/RepostsPage"
 import SignInPage from "./features/auth/pages/SignInPage"
 import SignUpPage from "./features/auth/pages/SignUpPage"
 import ForgotPasswordPage from "./features/auth/pages/ForgotPasswordPage"
 import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage"
 import ProtectedRoute from "./routes/ProtectedRoute"
+import MessagesPage from "./features/conversation/pages/MessagesPage"
 
 const router = createBrowserRouter([
- {
+  {
     path: '/signin',
     element: <SignInPage key={Math.random()} />,
   },
@@ -28,13 +32,11 @@ const router = createBrowserRouter([
     path: '/forgot-password',
     element: <ForgotPasswordPage />,
   },
-  { path: '/reset-password',
-  element: <ResetPasswordPage /> },
   {
     path: '/reset-password',
     element: <ResetPasswordPage />,
   },
-   {
+  {
     path: '/',
     element: (
       <ProtectedRoute>
@@ -47,6 +49,22 @@ const router = createBrowserRouter([
         element: <SideBar />
       },
       {
+        path: '/messages',
+        element: <MessagesPage />
+      },
+      {
+        path: '/:artist/:songName',
+        element: <TrackPage />
+      },
+      {
+        path: '/:artist/:songName/likes',
+        element: <LikesPage />
+      },
+      {
+        path: '/:artist/:songName/reposts',
+        element: <RepostsPage />
+      },
+      {
         path: "/:username",
         element: <ProfilePage />,
         children: [
@@ -55,7 +73,7 @@ const router = createBrowserRouter([
           { path: "tracks", element: <TracksPage /> },
           { path: "albums", element: <AlbumsPage /> },
           { path: "playlists", element: <PlaylistsPage /> },
-          { path: "reposts", element: <RepostsPage /> },
+          { path: "reposts", element: <ProfileRepostsPage /> },
         ],
       },
     ],
@@ -83,7 +101,7 @@ function App() {
     <>
       <RouterProvider router={router} />
     </>
-  );
+  )
 }
 
 export default App

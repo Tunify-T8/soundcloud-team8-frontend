@@ -1,11 +1,11 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Search, Upload, Plus, Globe, DollarSign, SlidersHorizontal, ArrowUpDown, BarChart, Users, Gift } from "lucide-react";
 import TrackList from "../components/TrackList";
-//import { SampleTracks } from "../tests/SampleTracks"; // for testing before API integration
 import ArtistsNavbar from "../components/ArtistsNavbar";
 import ArtistsSidebar from "../components/ArtistsSidebar";
-import { trackService } from "../trackService";
-import type { Track } from "../types";
+// import { trackService } from "../trackService";
+// import type { Track } from "../types";
+import { SampleTracks } from "../tests/SampleTracks";
 
 function UploadBanner() {
   return (
@@ -16,11 +16,11 @@ function UploadBanner() {
         <div className="w-44 h-1.5 bg-[hsl(0,0%,23%)] rounded-full overflow-hidden">
           <div className="h-full bg-[hsl(0,0%,50%)] rounded-full" style={{ width: "0%" }} />
         </div>
-        <span className="text-[hsl(0, 100%, 99%)] text-sm font-semibold">0 of 180 minutes</span>
+        <span className="text-[hsl(0,100%,99%)] text-sm font-semibold">0 of 180 minutes</span>
       </div>
-     <button className="bg-black text-white text-sm font-bold tracking-tighter px-5 py-2 rounded-full hover:bg-[hsl(0,0%,20%)] transition-colors">
-      Get unlimited uploads
-    </button>
+      <button className="bg-black text-white text-sm font-bold tracking-tighter px-5 py-2 rounded-full hover:bg-[hsl(0,0%,20%)] transition-colors">
+        Get unlimited uploads
+      </button>
     </div>
   );
 }
@@ -33,36 +33,29 @@ function StudioHeader() {
         <span className="text-[hsl(0,0%,45%)] text-sm">All time stats updated daily.</span>
       </div>
       <div className="flex items-center">
-        {/* SC plays */}
         <div className="flex flex-col gap-1 pr-7">
           <span className="text-white text-2xl font-semibold tabular-nums">0</span>
           <span className="text-[hsl(0,0%,42%)] text-xs">SC plays</span>
         </div>
-        {/* Reposts */}
         <div className="flex flex-col gap-1 px-7 border-l border-[hsl(0,0%,20%)]">
           <span className="text-white text-2xl font-semibold tabular-nums">0</span>
           <span className="text-[hsl(0,0%,42%)] text-xs">Reposts</span>
         </div>
-        {/* Downloads */}
         <div className="flex flex-col gap-1 px-7 border-l border-[hsl(0,0%,20%)]">
           <span className="text-white text-2xl font-semibold tabular-nums">0</span>
           <span className="text-[hsl(0,0%,42%)] text-xs">Downloads</span>
         </div>
-        {/* Likes */}
         <div className="flex flex-col gap-1 px-7 border-l border-[hsl(0,0%,20%)]">
           <span className="text-white text-2xl font-semibold tabular-nums">0</span>
           <span className="text-[hsl(0,0%,42%)] text-xs">Likes</span>
         </div>
-        {/* Comments */}
         <div className="flex flex-col gap-1 pl-7 border-l border-[hsl(0,0%,20%)]">
           <span className="text-white text-2xl font-semibold tabular-nums">0</span>
           <span className="text-[hsl(0,0%,42%)] text-xs">Comments</span>
         </div>
 
-        {/* Vertical divider */}
         <div className="w-px bg-[hsl(0,0%,20%)] self-stretch mx-7" />
 
-        {/* Icon actions */}
         <div className="flex items-center gap-7">
           <button className="flex flex-col items-center gap-1.5 text-[hsl(0,0%,65%)] hover:text-white transition-colors">
             <BarChart className="w-6 h-6" />
@@ -98,20 +91,18 @@ export default function ArtistsPage() {
   const [activeTab, setActiveTab] = useState("SoundCloud Tracks");
   const [searchQuery, setSearchQuery] = useState("");
   const [visibilityFilter, setVisibilityFilter] = useState<"all" | "public" | "private">("all");
+  // const [tracks, setTracks] = useState<Track[]>([]);
 
-  const [tracks, setTracks] = useState<Track[]>([])
-
-useEffect(() => {
-  const fetchTracks = async () => {
-    const data = await trackService.getUploadedTracks()
-    setTracks(data)
-  }
-
-  fetchTracks()
-}, [])
+  // useEffect(() => {
+  //   const fetchTracks = async () => {
+  //     const data = await trackService.getUploadedTracks();
+  //     setTracks(Array.isArray(data) ? data : data?.data ?? []);
+  //   };
+  //   fetchTracks();
+  // }, []);
 
   const filteredTracks = useMemo(() => {
-    return tracks.filter((track) => {
+    return SampleTracks.filter((track) => {
       const matchesSearch = track.title.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesVisibility =
         visibilityFilter === "all" ||
@@ -119,7 +110,7 @@ useEffect(() => {
         (visibilityFilter === "private" && track.isPrivate);
       return matchesSearch && matchesVisibility;
     });
-  }, [tracks, searchQuery, visibilityFilter])
+  }, [searchQuery, visibilityFilter]);
 
   const handleVisibilityChange = (v: "public" | "private") => {
     setVisibilityFilter((prev) => (prev === v ? "all" : v));
@@ -127,16 +118,14 @@ useEffect(() => {
 
   return (
     <div className="flex min-h-screen bg-black text-white font-sans">
-      {/* Left sidebar */}
       <ArtistsSidebar />
 
-      {/* Main content */}
       <div className="flex flex-col flex-1 min-w-0">
         <ArtistsNavbar />
         <UploadBanner />
 
-        {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto">
+       
+       <div className="flex-1 overflow-y-auto [overflow-x:clip]">
           <StudioHeader />
 
           {/* Tabs */}
@@ -189,28 +178,28 @@ useEffect(() => {
                   />
                 </div>
 
-               <div className="flex gap-2">
-                <button
-                  onClick={() => handleVisibilityChange("public")}
-                  className={`px-5 py-2 text-sm border font-semibold rounded-full transition-colors
-                    ${visibilityFilter === "public"
-                      ? "bg-[hsl(0,0%,23%)] text-white tracking-tighter border-[hsl(0,0%,38%)]"
-                      : "bg-transparent text-[hsl(0,0%,65%)] border-[hsl(0,0%,26%)] hover:bg-[hsl(0,0%,16%)]"
-                    }`}
-                >
-                  Public
-                </button>
-                <button
-                  onClick={() => handleVisibilityChange("private")}
-                  className={`px-5 py-2 text-sm border font-semibold rounded-full transition-colors
-                    ${visibilityFilter === "private"
-                      ? "bg-[hsl(0,0%,23%)] text-white tracking-tighter border-[hsl(0,0%,38%)]"
-                      : "bg-transparent text-[hsl(0,0%,65%)] border-[hsl(0,0%,26%)] hover:bg-[hsl(0,0%,16%)]"
-                    }`}
-                >
-                  Private
-                </button>
-              </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleVisibilityChange("public")}
+                    className={`px-5 py-2 text-sm border font-semibold rounded-full transition-colors
+                      ${visibilityFilter === "public"
+                        ? "bg-[hsl(0,0%,23%)] text-white tracking-tighter border-[hsl(0,0%,38%)]"
+                        : "bg-transparent text-[hsl(0,0%,65%)] border-[hsl(0,0%,26%)] hover:bg-[hsl(0,0%,16%)]"
+                      }`}
+                  >
+                    Public
+                  </button>
+                  <button
+                    onClick={() => handleVisibilityChange("private")}
+                    className={`px-5 py-2 text-sm border font-semibold rounded-full transition-colors
+                      ${visibilityFilter === "private"
+                        ? "bg-[hsl(0,0%,23%)] text-white tracking-tighter border-[hsl(0,0%,38%)]"
+                        : "bg-transparent text-[hsl(0,0%,65%)] border-[hsl(0,0%,26%)] hover:bg-[hsl(0,0%,16%)]"
+                      }`}
+                  >
+                    Private
+                  </button>
+                </div>
 
                 <div className="ml-auto flex items-center gap-2 text-[hsl(0,0%,50%)] text-sm">
                   <span>{filteredTracks.length} tracks</span>
