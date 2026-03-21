@@ -1,0 +1,57 @@
+// ── Social provider type ──────────────────────────────────────
+export type SocialProvider = 'google' | 'facebook' | 'apple';
+
+// ── User ─────────────────────────────────────────────────────
+export type UserRole = 'user' | 'artist' | 'admin';
+
+export interface User {
+  id: string;
+  username: string;
+  email: string;
+  avatarUrl: string | null;
+  isVerified: boolean;
+  role: UserRole;
+  isDeleted?: boolean;
+}
+
+// ── API Request types ─────────────────────────────────────────
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  username: string;
+  email: string;
+  password: string;
+}
+
+export interface SocialLoginRequest {
+  provider: SocialProvider;
+  providerToken: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  newPassword: string;
+}
+
+export interface VerifyEmailRequest {
+  token: string;
+}
+
+// ── API Response types ────────────────────────────────────────
+export interface AuthResponse {
+  user: User;
+  accessToken: string;
+  refreshToken: string;
+  expiresIn?: number;
+}
+
+export interface MessageResponse {
+  message: string;
+}

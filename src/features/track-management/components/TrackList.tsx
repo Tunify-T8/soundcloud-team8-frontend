@@ -1,6 +1,6 @@
 import { useState } from "react";
 import TrackCard from "./TrackCard";
-import type { Track } from "../types";
+import type { Track } from "../../../shared/types/Track";
 
 interface TrackListProps {
   tracks: Track[];
