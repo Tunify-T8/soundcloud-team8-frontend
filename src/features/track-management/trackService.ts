@@ -1,5 +1,5 @@
 import { api } from "../../services/api";
-import type { Track } from "./types";
+import type { Track } from "../../shared/types/Track";
 
 export const trackService = {
   async getUploadedTracks(): Promise<Track[]> {
