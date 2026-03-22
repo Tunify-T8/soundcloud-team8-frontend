@@ -10,7 +10,7 @@ import { storeTokens } from '../utils/token.utils';
 import { extractErrorMessage } from '../hooks/useAuth';
 import type { SocialProvider } from '../types/auth.types';
 import { checkEmail } from '../services/index';
-
+import AuthNavbar from '../components/AuthNavBar';
 const GoogleIcon: React.FC = () => (
   <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -243,22 +243,7 @@ const SignInPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#0d0d0d] flex flex-col">
 
-      {/* ── Navbar ── */}
-      <header className="flex items-center justify-between px-4 sm:px-6 py-3 bg-[#0d0d0d] border-b border-[#222]">
-        <TunifyLogo />
-        <nav className="hidden md:flex items-center gap-8">
-          <Link to="/" className="text-white text-sm font-medium hover:text-white/80">Home</Link>
-          <Link to="/stream" className="text-white/60 text-sm hover:text-white">Feed</Link>
-          <Link to="/discover" className="text-white/60 text-sm hover:text-white">Library</Link>
-        </nav>
-        <div className="flex items-center gap-2 sm:gap-4">
-          <Link to="/signin" className="text-white text-sm font-medium hover:text-white/80">Sign in</Link>
-          <Link to="/create-account" className="hidden sm:inline-flex border border-white text-white text-sm font-medium px-5 py-1.5 rounded-full hover:bg-white hover:text-black transition-all">
-            Create account
-          </Link>
-          <button className="text-white/60 text-lg hover:text-white hidden sm:block">···</button>
-        </div>
-      </header>
+      <AuthNavbar />
 
       {/* ── Main ── */}
       <main className="flex-1 flex items-center justify-center px-4 py-10">

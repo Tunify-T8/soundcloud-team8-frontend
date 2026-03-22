@@ -5,6 +5,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import AuthNavbar from '../components/AuthNavBar';
 import { ChevronLeft, Loader2 } from 'lucide-react';
 import { verifyEmail, resendVerification } from '../services/index';
 import { storeTokens } from '../utils/token.utils';
@@ -99,21 +100,7 @@ const VerifyEmailPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#0d0d0d] flex flex-col">
 
-      {/* ── Navbar ── */}
-      <header className="flex items-center justify-between px-4 sm:px-6 py-3 bg-[#0d0d0d] border-b border-[#222]">
-        <SoundCloudLogo />
-        <nav className="hidden md:flex items-center gap-8">
-          <Link to="/" className="text-white text-sm font-medium hover:text-white/80">Home</Link>
-          <Link to="/stream" className="text-white/60 text-sm hover:text-white">Feed</Link>
-          <Link to="/discover" className="text-white/60 text-sm hover:text-white">Library</Link>
-        </nav>
-        <div className="flex items-center gap-2 sm:gap-4">
-          <Link to="/signin" className="text-white text-sm font-medium hover:text-white/80">Sign in</Link>
-          <Link to="/create-account" className="hidden sm:inline-flex border border-white text-white text-sm font-medium px-5 py-1.5 rounded-full hover:bg-white hover:text-black transition-all">
-            Create account
-          </Link>
-        </div>
-      </header>
+      <AuthNavbar />
 
       {/* ── Main ── */}
       <main className="flex-1 flex items-center justify-center px-4 py-10">

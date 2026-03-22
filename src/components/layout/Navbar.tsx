@@ -1,15 +1,38 @@
-import { Search, Bell, Mail, MoreHorizontal } from "lucide-react";
+import { Search, Bell, Mail, MoreHorizontal, LogOut } from "lucide-react";
 import { SiSoundcloud } from "react-icons/si";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Outlet } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { profileService } from "../../features/profile/profileService";
+import { logout } from "../../features/auth/services/index";
 
 export default function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSignOut = async () => {
+    try {
+      await logout();
+    } catch {
+      // clear tokens regardless
+    }
+    navigate('/signin');
+  };
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
@@ -100,10 +123,25 @@ export default function Navbar() {
             <Link to="/messages" className="text-zinc-400 hover:text-white">
               <Mail size={18} className="cursor-pointer" />
             </Link>
-            <MoreHorizontal
-              size={18}
-              className="text-zinc-400 hover:text-white cursor-pointer"
-            />
+            <div className="relative" ref={menuRef}>
+              <MoreHorizontal
+                size={18}
+                className="text-zinc-400 hover:text-white cursor-pointer"
+                onClick={() => setMenuOpen((v) => !v)}
+              />
+              {menuOpen && (
+                <div className="absolute right-0 top-7 w-40 bg-zinc-900 border border-zinc-700 rounded shadow-lg z-50">
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors"
+                  >
+                    <LogOut size={15} />
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
 
             <Link
               to={username ? `/${username}` : "/me"}
