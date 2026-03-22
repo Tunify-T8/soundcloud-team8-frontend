@@ -254,6 +254,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
 
       const { id } =  track;
       console.log("Track created:", track);
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       // ── Step 2: POST audio to /tracks/{trackId}/audio ────────────────────────
       if (audioBlobRef.current) {
