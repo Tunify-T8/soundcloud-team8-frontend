@@ -19,7 +19,7 @@ describe("ProfilePage", () => {
       isVerified: true,
       avatarUrl: "avatar.jpg",
       coverUrl: "cover.jpg",
-      isEditable: true,
+      isMe: true,
       followersCount: 10,
       followingCount: 5,
       tracksCount: 3,

@@ -11,7 +11,7 @@ describe("HeaderImg", () => {
   });
 
   it("shows upload label if editable", () => {
-    render(<HeaderImg isEditable />);
+    render(<HeaderImg isMe />);
     expect(screen.getByText(/upload header image/i)).toBeInTheDocument();
   });
 });

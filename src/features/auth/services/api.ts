@@ -1,7 +1,8 @@
 import axios from 'axios';
-import { BASE_URL } from '@/config/env';
 import { getAccessToken, getRefreshToken, storeTokens, clearTokens } from '@/features/auth/utils/token.utils';
  
+import { BASE_URL } from '../../../config/env';
+
 export const api = axios.create({
   baseURL: BASE_URL,
  headers: {
@@ -48,7 +49,7 @@ api.interceptors.response.use(
  
   async (error) => {
     const originalRequest = error.config;
- 
+  
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
@@ -73,7 +74,7 @@ api.interceptors.response.use(
       }
  
       try {
-        const response = await axios.post(`${BASE_URL}/auth/refresh`, {
+        const response = await axios.post(`${BASE_URL}/auth/refresh-token`, {
           refreshToken,
         });
  
