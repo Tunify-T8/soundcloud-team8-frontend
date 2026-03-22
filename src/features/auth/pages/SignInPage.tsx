@@ -63,7 +63,7 @@ const TunifyLogo: React.FC = () => (
     <svg viewBox="0 0 33 15" className="h-6 w-auto sm:h-7" fill="white" aria-hidden="true">
       <path d="M0 11.5c0 .8.7 1.5 1.5 1.5s1.5-.7 1.5-1.5V6c0-.8-.7-1.5-1.5-1.5S0 5.2 0 6v5.5zm4.5 1.5c.8 0 1.5-.7 1.5-1.5V3.5C6 2.7 5.3 2 4.5 2S3 2.7 3 3.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V1.5C10.5.7 9.8 0 9 0S7.5.7 7.5 1.5V11.5C7.5 12.3 8.2 13 9 13zm4.5 0c.8 0 1.5-.7 1.5-1.5V3.5C15 2.7 14.3 2 13.5 2S12 2.7 12 3.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V2.5C19.5 1.7 18.8 1 18 1s-1.5.7-1.5 1.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V4.5C24 3.7 23.3 3 22.5 3S21 3.7 21 4.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V4.5C27 3.7 26.3 3 25.5 3S24 3.7 24 4.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V2.5C33 1.7 32.3 1 31.5 1S30 1.7 30 2.5V11.5c0 .8.7 1.5 1.5 1.5z" />
    </svg>
-    <span className="text-white font-bold text-sm sm:text-base tracking-widest uppercase">SOUNDCLOUD</span>
+    <span className="text-white font-bold text-sm sm:text-base tracking-widest uppercase">SoundCloud</span>
   </Link>
 );
 
@@ -267,9 +267,9 @@ const SignInPage: React.FC = () => {
                   </h1>
                   <p className="text-[#999] text-xs mb-2 leading-relaxed text-left sm:text-center">
                     By clicking "Continue" you agree to SoundCloud's{' '}
-                    <a href="#" className="text-[#0066cc] hover:underline">Terms of Use</a>{' '}
+                    <a href="https://soundcloud.com/terms-of-use" target="_blank" rel="noreferrer" className="text-[#0066cc] hover:underline">Terms of Use</a>{' '}
                     and acknowledge our{' '}
-                    <a href="#" className="text-[#0066cc] hover:underline">Privacy Policy</a>.
+                    <a href="https://soundcloud.com/pages/privacy" target="_blank" rel="noreferrer" className="text-[#0066cc] hover:underline">Privacy Policy</a>.
                   </p>
 
                   <SocialButton provider="facebook" label="Continue with Facebook" icon={<FacebookIcon />} bgColor="bg-[#1877f2]" hoverColor="hover:bg-[#1565d8]" onClick={handleSocialLogin} disabled={isSocialDisabled} />
@@ -347,8 +347,7 @@ const SignInPage: React.FC = () => {
                     Continue
                   </button>
                   <div className="text-left sm:text-center">
-                    <Link to="/forgot-password" className="text-[#0066cc] text-sm hover:underline">Need help?</Link>
-                  </div>
+                  <a href="https://help.soundcloud.com/hc/en-us/sections/46266771825691" target="_blank" rel="noreferrer" className="text-[#0066cc] text-sm hover:underline">Need help?</a>                   </div>
                 </div>
               )}
 
@@ -388,8 +387,7 @@ const SignInPage: React.FC = () => {
                   >
                     {isCheckingEmail ? <><Loader2 className="h-4 w-4 animate-spin" /> Checking…</> : 'Continue'}
                   </button>
-
-                  <Link to="/forgot-password" className="text-[#0066cc] text-sm hover:underline">Need help?</Link>
+                  <a href="https://help.soundcloud.com/hc/en-us/sections/46266771825691" target="_blank" rel="noreferrer" className="text-[#0066cc] text-sm hover:underline">Need help?</a>
                 </div>
               )}
 
