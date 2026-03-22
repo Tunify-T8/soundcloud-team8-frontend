@@ -19,6 +19,7 @@ function Toggle({ enabled, onChange }: ToggleProps) {
     </div>
   );
 }
+
 function InfoIcon() {
   return (
     <svg className="ml-1" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2">
@@ -240,7 +241,6 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
       const rawGenre = genreRef.current?.value?.toLowerCase().trim() ?? "";
 
       // ── Step 1: POST metadata → get trackId ─────────────────────────────────
-      // axiosInstance handles baseURL + auth token automatically
       const { data: track } = await axiosInstance.post("/tracks", {
         title:               titleRef.current?.value || "Untitled",
         genre:               GENRE_MAP[rawGenre] ?? rawGenre,
@@ -261,21 +261,34 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
       const { trackId } = track;
       console.log("Track created:", trackId);
 
-      // ── Step 2: POST audio binary to /tracks/{trackId}/audio ────────────────
-      // axiosInstance handles baseURL + auth token automatically
+      // ── Step 2: POST audio to /tracks/{trackId}/audio ────────────────────────
       if (audioBlobRef.current) {
         const mimeType = audioBlobRef.current.type || "audio/wav";
         const ext = mimeType.split("/")[1] ?? "wav";
         const audioFileName = source?.kind === "file" ? (source.name ?? `audio.${ext}`) : `recording.${ext}`;
 
-        const formData = new FormData();
-        formData.append("audio", audioBlobRef.current, audioFileName);
+        const audioForm = new FormData();
+        audioForm.append("audio", audioBlobRef.current, audioFileName);
 
-        await axiosInstance.post(`/tracks/${trackId}/audio`, formData, {
+        await axiosInstance.post(`/tracks/${trackId}/audio`, audioForm, {
           headers: { "Content-Type": "multipart/form-data" },
         });
 
         console.log("Audio uploaded for track:", trackId);
+      }
+
+      // ── Step 3: PATCH artwork to /tracks/{trackId} ───────────────────────────
+      if (artworkBase64Ref.current) {
+        const artworkBlob = await fetch(artworkBase64Ref.current).then(r => r.blob());
+
+        const artworkForm = new FormData();
+        artworkForm.append("artwork", artworkBlob, "artwork.jpg");
+
+        await axiosInstance.patch(`/tracks/${trackId}`, artworkForm, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+
+        console.log("Artwork uploaded for track:", trackId);
       }
 
       setUploadDone(true);
