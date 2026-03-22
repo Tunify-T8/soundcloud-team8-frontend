@@ -251,9 +251,6 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
                                ? artistsRef.current.value.split(",").map(a => a.trim())
                                : [],
         availability:        { type: geoMode, regions },
-        licensing:           license === "all"
-                               ? { type: "all_rights_reserved", allowAttribution: false, nonCommercial: false, noDerivatives: false, shareAlike: false }
-                               : { type: "creative_commons", ...ccOptions },
         scheduledReleaseDate: null,
         contentWarning,
       });
