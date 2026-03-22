@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { BASE_URL } from '../config/env';
+import { BASE_URL } from '@/config/env';
 import { getAccessToken, getRefreshToken, storeTokens, clearTokens } from '@/features/auth/utils/token.utils';
  
 export const api = axios.create({
