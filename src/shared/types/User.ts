@@ -143,7 +143,7 @@ export interface UserFollowing {
 export interface UserFollowingResponse {
   page: number;
   limit: number;
-  total: number;
+  hasMore: boolean;
   following: UserFollowing[];
 }
 
