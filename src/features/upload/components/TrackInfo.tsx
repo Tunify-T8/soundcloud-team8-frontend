@@ -243,13 +243,10 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
       // ── Step 1: POST metadata → get trackId ─────────────────────────────────
       const { data: track } = await axiosInstance.post("/tracks", {
         title:               titleRef.current?.value || "Untitled",
-        genre:               GENRE_MAP[rawGenre] ?? rawGenre,
+
         tags:                tagsRef.current?.value ? [tagsRef.current.value] : [],
         description:         descriptionRef.current?.value || "",
         privacy:             privacyRef.current,
-        artists:             artistsRef.current?.value
-                               ? artistsRef.current.value.split(",").map(a => a.trim())
-                               : [],
         availability:        { type: geoMode, regions },
         scheduledReleaseDate: null,
         contentWarning,
