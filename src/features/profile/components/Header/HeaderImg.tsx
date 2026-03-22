@@ -21,7 +21,7 @@ export default function HeaderImg({
         formData.append("file", file);
         formData.append("upload_preset", "tunify_avatars_coverImgs");
         const cloudRes = await fetch(
-          "https://api.cloudinary.com/v1_1/denreb1dd/image/upload",
+          "https://api.cloudinary.com/v1_1/dcctvg2ay/image/upload",
           { method: "POST", body: formData },
         );
         const cloudData = await cloudRes.json();
