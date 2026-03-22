@@ -3,7 +3,6 @@ import type {
   MeUserProfile,
   PublicUserProfile,
   UpdateUserProfileRequest,
-  UserSocialLinks,
   UserGenres,
   UserTracksResponse,
   UserFollowingResponse,
@@ -32,21 +31,28 @@ export const profileService = {
     return data;
   },
 
-  async getMeSocialLinks(): Promise<UserSocialLinks> {
-    const { data } = await axiosInstance.get<UserSocialLinks>(
-      "/users/me/social-links",
-    );
-    return data;
+  async getMeSocialLinks(): Promise<{
+    instagram?: string;
+    twitter?: string;
+    website?: string;
+  }> {
+    const { data } = await axiosInstance.get<
+      { platform: string; url: string }[]
+    >("/users/me/social-links");
+    const result: { instagram?: string; twitter?: string; website?: string } =
+      {};
+    for (const link of data ?? []) {
+      if (link.platform === "INSTAGRAM") result.instagram = link.url;
+      if (link.platform === "TWITTER") result.twitter = link.url;
+      if (link.platform === "WEBSITE") result.website = link.url;
+    }
+    return result;
   },
 
-  async updateMeSocialLinks(
-    payload: UserSocialLinks,
-  ): Promise<UserSocialLinks> {
-    const { data } = await axiosInstance.patch<UserSocialLinks>(
-      "/users/me/social-links",
-      payload,
-    );
-    return data;
+  async updateMeSocialLinks(payload: {
+    links: { platform: string; url: string }[];
+  }): Promise<void> {
+    await axiosInstance.patch("/users/me/social-links", payload);
   },
 
   async getMeGenres(): Promise<UserGenres> {
