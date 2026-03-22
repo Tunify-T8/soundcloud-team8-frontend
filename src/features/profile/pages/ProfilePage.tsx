@@ -101,7 +101,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen text-white">
       <Header
-        displayName={user.username}
+        displayName={user.displayName ?? undefined}
         username={user.username}
         country={country}
         city={city}

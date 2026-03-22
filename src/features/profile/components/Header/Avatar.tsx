@@ -94,7 +94,7 @@ export default function Avatar({
           <button
             type="button"
             onClick={() => setShowActions((prev) => !prev)}
-            className={`w-32 bg-zinc-800 font-bold text-[14px] px-3 py-1 rounded-sm transition-colors cursor-pointer ${
+            className={`w-32 bg-zinc-800 font-bold text-[14px] px-2 py-0.75 rounded-sm transition-colors cursor-pointer ${
               showActions ? "text-orange-500" : "text-white hover:text-zinc-500"
             }`}
           >
