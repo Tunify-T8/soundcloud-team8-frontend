@@ -83,7 +83,7 @@ const router = createBrowserRouter([
         element: <RepostsPage />
       },
       {
-        path: "/me",
+        path: "/:username",
         element: <ProfilePage />,
         children: [
           { index: true },
