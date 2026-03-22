@@ -4,6 +4,7 @@ import {
   FaTwitter,
   FaYoutube,
   FaInstagram,
+  FaGlobe,
   FaUser,
   FaGooglePlay,
   FaApple,
@@ -28,6 +29,7 @@ export default function ProfileSideBar({
     facebook?: string;
     instagram?: string;
     twitter?: string;
+    website?: string;
     youtube?: string;
   };
   followingUsers?: FollowingUser[];
@@ -38,6 +40,7 @@ export default function ProfileSideBar({
     socialAccounts?.facebook ||
     socialAccounts?.instagram ||
     socialAccounts?.twitter ||
+    socialAccounts?.website ||
     socialAccounts?.youtube,
   );
 
@@ -96,6 +99,15 @@ export default function ProfileSideBar({
               >
                 <FaTwitter size={16} />
                 Twitter
+              </a>
+            )}
+            {socialAccounts?.website && (
+              <a
+                href={socialAccounts?.website}
+                className="flex items-center gap-2 text-[14px] text-zinc-400 hover:text-zinc-600 font-bold"
+              >
+                <FaGlobe size={16} />
+                Website
               </a>
             )}
             {socialAccounts?.youtube && (
