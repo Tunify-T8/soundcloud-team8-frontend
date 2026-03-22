@@ -20,7 +20,7 @@ const TunifyLogo: React.FC = () => (
     <svg viewBox="0 0 33 15" className="h-6 w-auto sm:h-7" fill="white" aria-hidden="true">
       <path d="M0 11.5c0 .8.7 1.5 1.5 1.5s1.5-.7 1.5-1.5V6c0-.8-.7-1.5-1.5-1.5S0 5.2 0 6v5.5zm4.5 1.5c.8 0 1.5-.7 1.5-1.5V3.5C6 2.7 5.3 2 4.5 2S3 2.7 3 3.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V1.5C10.5.7 9.8 0 9 0S7.5.7 7.5 1.5V11.5C7.5 12.3 8.2 13 9 13zm4.5 0c.8 0 1.5-.7 1.5-1.5V3.5C15 2.7 14.3 2 13.5 2S12 2.7 12 3.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V2.5C19.5 1.7 18.8 1 18 1s-1.5.7-1.5 1.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V4.5C24 3.7 23.3 3 22.5 3S21 3.7 21 4.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V4.5C27 3.7 26.3 3 25.5 3S24 3.7 24 4.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V2.5C33 1.7 32.3 1 31.5 1S30 1.7 30 2.5V11.5c0 .8.7 1.5 1.5 1.5z" />
     </svg>
-    <span className="text-white font-bold text-sm sm:text-base tracking-widest uppercase">Tunify</span>
+    <span className="text-white font-bold text-sm sm:text-base tracking-widest uppercase">SoundCloud</span>
   </Link>
 );
 
@@ -56,8 +56,12 @@ const SignUpPage: React.FC = () => {
   const [dobYear, setDobYear] = useState('');
   const [gender, setGender] = useState('');
 
-  const isPasswordReady = passwordValue.length >= 8;
-
+  const isPasswordReady =
+  passwordValue.length >= 8 &&
+  /[A-Z]/.test(passwordValue) &&
+  /[a-z]/.test(passwordValue) &&
+  /[0-9]/.test(passwordValue) &&
+  /[^A-Za-z0-9]/.test(passwordValue);
   const isProfileReady =
     displayName.trim().length > 0 &&
     !displayNameError &&
@@ -91,24 +95,30 @@ const SignUpPage: React.FC = () => {
     setSignUpStep('profile');
   };
 
-  const handleProfileContinue = async () => {
-    if (!isProfileReady) return;
-    setApiError(null);
-    setIsSubmitting(true);
-    try {
-      const res = await registerUser({
-        username: displayName,
-        email: prefillEmail,
-        password: passwordValue,
-      });
-      storeTokens(res.accessToken, res.refreshToken, 3600);
-      navigate('/');
-    } catch (error) {
-      setApiError(extractErrorMessage(error));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+const handleProfileContinue = async () => {
+  if (!isProfileReady) return;
+  setApiError(null);
+  setIsSubmitting(true);
+  try {
+    const month = dobMonth.padStart(2, '0');
+    const day = dobDay.padStart(2, '0');
+    const isoDate = `${dobYear}-${month}-${day}`;
+
+    await registerUser({
+      username: displayName,
+      email: prefillEmail,
+      password: passwordValue,
+      gender: gender as 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY',
+      date_of_birth: isoDate,
+    });
+
+    navigate('/verify-email', { state: { email: prefillEmail } });
+  } catch (error) {
+    setApiError(extractErrorMessage(error));
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const selectClass = "w-full bg-white text-black text-sm px-3 py-3 rounded-sm border border-[#555] focus:outline-none focus:border-[#888] appearance-none cursor-pointer";
 
@@ -176,7 +186,8 @@ const SignUpPage: React.FC = () => {
                     </div>
                   )}
 
-                  <div className="relative mb-4">
+                  {/* Password */}
+                  <div className="relative">
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={passwordValue}
@@ -194,6 +205,32 @@ const SignUpPage: React.FC = () => {
                     </button>
                   </div>
 
+                  {/* Password rules checklist — shows when user starts typing */}
+                  {passwordValue.length > 0 && (
+                    <div className="bg-[#1a1a1a] border border-[#333] rounded-sm px-4 py-3 flex flex-col gap-1.5">
+                      {[
+                        { label: 'At least 8 characters', met: passwordValue.length >= 8 },
+                        { label: 'At least one uppercase letter', met: /[A-Z]/.test(passwordValue) },
+                        { label: 'At least one lowercase letter', met: /[a-z]/.test(passwordValue) },
+                        { label: 'At least one number', met: /[0-9]/.test(passwordValue) },
+                        { label: 'At least one special character', met: /[^A-Za-z0-9]/.test(passwordValue) },
+                      ].map((rule) => (
+                        <div key={rule.label} className="flex items-center gap-2">
+                          <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 ${rule.met ? 'bg-green-500' : 'bg-[#444]'}`}>
+                            {rule.met && (
+                              <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                          <span className={`text-xs ${rule.met ? 'text-green-400' : 'text-[#888]'}`}>
+                            {rule.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <button
                     type="button"
                     onClick={handlePasswordContinue}
@@ -206,8 +243,7 @@ const SignUpPage: React.FC = () => {
                   >
                     Continue
                   </button>
-
-                  <Link to="/forgot-password" className="text-[#0066cc] text-sm hover:underline">Need help?</Link>
+                    <a href="https://help.soundcloud.com/hc/en-us/sections/46266771825691" target="_blank" rel="noreferrer" className="text-[#0066cc] text-sm hover:underline">Need help?</a>
                 </div>
               )}
 
@@ -310,8 +346,10 @@ const SignUpPage: React.FC = () => {
                           className={`w-full bg-[#2a2a2a] border text-sm px-4 py-3 rounded-sm focus:outline-none transition-colors appearance-none cursor-pointer ${gender === '' ? 'text-[#666] border-[#555]' : 'text-white border-[#555]'} focus:border-[#888]`}
                         >
                           <option value="" disabled>Gender (required)</option>
-                          <option value="Male">Male</option>
-                          <option value="Female">Female</option>
+                          <option value="MALE">Male</option>
+                          <option value="FEMALE">Female</option>
+                          <option value="OTHER">Other</option>
+                          <option value="PREFER_NOT_TO_SAY">Prefer not to say</option>
                         </select>
                         <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#777] text-xs">▼</div>
                       </div>
@@ -333,8 +371,7 @@ const SignUpPage: React.FC = () => {
                         : 'Continue'
                       }
                     </button>
-
-                    <Link to="/forgot-password" className="text-[#0066cc] text-sm hover:underline">Need help?</Link>
+                      <a href="https://help.soundcloud.com/hc/en-us/sections/46266771825691" target="_blank" rel="noreferrer" className="text-[#0066cc] text-sm hover:underline">Need help?</a>
                   </div>
                 </div>
               )}
