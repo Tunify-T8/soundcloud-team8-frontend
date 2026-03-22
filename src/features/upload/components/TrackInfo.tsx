@@ -242,10 +242,10 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
       // ── Step 1: POST metadata → get trackId ─────────────────────────────────
       const { data: track } = await api.post("/tracks", {
         title:               titleRef.current?.value || "Untitled",
+
         tags:                tagsRef.current?.value ? [tagsRef.current.value] : [],
         description:         descriptionRef.current?.value || "",
         privacy:             privacyRef.current,
-
         availability:        { type: geoMode, regions },
         scheduledReleaseDate: null,
         contentWarning,
