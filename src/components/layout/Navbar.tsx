@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Outlet } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { profileService } from "../features/profile/profileService";
+import { profileService } from "../../features/profile/profileService";
 
 export default function Navbar() {
   const location = useLocation();
