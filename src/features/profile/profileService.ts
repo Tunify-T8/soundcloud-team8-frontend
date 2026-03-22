@@ -11,43 +11,42 @@ import type {
 
 export const profileService = {
   async getMeProfile(): Promise<MeUserProfile> {
-    const { data } = await axiosInstance.get<{ user: MeUserProfile }>(
-      "/users/me",
-    );
-    return data.user;
+    const { data } = await axiosInstance.get<MeUserProfile>("/users/me");
+    return data;
   },
 
   async getPublicProfile(userIdOrUsername: string): Promise<PublicUserProfile> {
-    const { data } = await axiosInstance.get<{ user: PublicUserProfile }>(
+    const { data } = await axiosInstance.get<PublicUserProfile>(
       `/users/${encodeURIComponent(userIdOrUsername)}`,
     );
-    return data.user;
+    return data;
   },
 
   async updateMeProfile(
     payload: UpdateUserProfileRequest,
   ): Promise<MeUserProfile> {
-    const { data } = await axiosInstance.patch<{ user: MeUserProfile }>(
+    const { data } = await axiosInstance.patch<MeUserProfile>(
       "/users/me/profile",
       payload,
     );
-    return data.user;
+    return data;
   },
 
   async getMeSocialLinks(): Promise<UserSocialLinks> {
-    const { data } = await axiosInstance.get<{ socialLinks: UserSocialLinks }>(
+    const { data } = await axiosInstance.get<UserSocialLinks>(
       "/users/me/social-links",
     );
-    return data.socialLinks;
+    return data;
   },
 
   async updateMeSocialLinks(
     payload: UserSocialLinks,
   ): Promise<UserSocialLinks> {
-    const { data } = await axiosInstance.patch<{
-      socialLinks: UserSocialLinks;
-    }>("/users/me/social-links_update", payload);
-    return data.socialLinks;
+    const { data } = await axiosInstance.patch<UserSocialLinks>(
+      "/users/me/social-links",
+      payload,
+    );
+    return data;
   },
 
   async getMeGenres(): Promise<UserGenres> {
@@ -57,7 +56,7 @@ export const profileService = {
 
   async updateMeGenres(payload: UserGenres): Promise<UserGenres> {
     const { data } = await axiosInstance.patch<UserGenres>(
-      "/users/me/genres-update",
+      "/users/me/genres",
       payload,
     );
     return data;
@@ -69,12 +68,14 @@ export const profileService = {
     );
     return data;
   },
+
   async getMeFollowing(page = 1, limit = 20): Promise<UserFollowingResponse> {
     const { data } = await axiosInstance.get<UserFollowingResponse>(
       `/users/me/following?page=${page}&limit=${limit}`,
     );
     return data;
   },
+
   async getUserFollowing(
     userId: string,
     page = 1,

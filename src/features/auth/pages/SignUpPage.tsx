@@ -1,6 +1,5 @@
 // ============================================================
 // SIGN UP PAGE — Tunify
-// Responsive + Tell us more about you step
 // ============================================================
 
 import React, { useState, useEffect } from 'react';
@@ -24,7 +23,6 @@ const TunifyLogo: React.FC = () => (
   </Link>
 );
 
-// ── Date of birth constants ──
 const MONTHS = [
   'January','February','March','April','May','June',
   'July','August','September','October','November','December'
@@ -40,14 +38,12 @@ const SignUpPage: React.FC = () => {
   const location = useLocation();
   const prefillEmail = (location.state as { email?: string })?.email ?? '';
 
-  // ── password step state ──
   const [signUpStep, setSignUpStep] = useState<SignUpStep>('password');
   const [showPassword, setShowPassword] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [passwordValue, setPasswordValue] = useState('');
 
-  // ── profile step state ──
   const defaultDisplayName = prefillEmail.split('@')[0] ?? '';
   const [displayName, setDisplayName] = useState(defaultDisplayName);
   const [displayNameError, setDisplayNameError] = useState<string | null>(null);
@@ -57,11 +53,12 @@ const SignUpPage: React.FC = () => {
   const [gender, setGender] = useState('');
 
   const isPasswordReady =
-  passwordValue.length >= 8 &&
-  /[A-Z]/.test(passwordValue) &&
-  /[a-z]/.test(passwordValue) &&
-  /[0-9]/.test(passwordValue) &&
-  /[^A-Za-z0-9]/.test(passwordValue);
+    passwordValue.length >= 8 &&
+    /[A-Z]/.test(passwordValue) &&
+    /[a-z]/.test(passwordValue) &&
+    /[0-9]/.test(passwordValue) &&
+    /[^A-Za-z0-9]/.test(passwordValue);
+
   const isProfileReady =
     displayName.trim().length > 0 &&
     !displayNameError &&
@@ -70,7 +67,8 @@ const SignUpPage: React.FC = () => {
     dobYear !== '' &&
     gender !== '';
 
-  const { register, formState: { errors }, reset } = useForm<SignUpFormData>({
+  // ── Added getValues to read the typed email when prefillEmail is empty ──
+  const { register, formState: { errors }, reset, getValues } = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
     defaultValues: { email: prefillEmail, agreeToTerms: false },
   });
@@ -79,10 +77,13 @@ const SignUpPage: React.FC = () => {
     return () => { reset(); };
   }, []);
 
+  // ── Username validation: letters, numbers, underscores only ──
   const handleDisplayNameChange = (val: string) => {
     setDisplayName(val);
     if (val.trim().length === 0) {
       setDisplayNameError('Display name is required');
+    } else if (/[^a-zA-Z0-9_]/.test(val.trim())) {
+      setDisplayNameError('Username can only contain letters, numbers, and underscores');
     } else if (isDisplayNameTaken(val.trim()) && val.trim().toLowerCase() !== defaultDisplayName.toLowerCase()) {
       setDisplayNameError('This display name is already taken');
     } else {
@@ -95,37 +96,40 @@ const SignUpPage: React.FC = () => {
     setSignUpStep('profile');
   };
 
-const handleProfileContinue = async () => {
-  if (!isProfileReady) return;
-  setApiError(null);
-  setIsSubmitting(true);
-  try {
-    const month = dobMonth.padStart(2, '0');
-    const day = dobDay.padStart(2, '0');
-    const isoDate = `${dobYear}-${month}-${day}`;
+  const handleProfileContinue = async () => {
+    if (!isProfileReady) return;
+    setApiError(null);
+    setIsSubmitting(true);
+    try {
+      const month = dobMonth.padStart(2, '0');
+      const day = dobDay.padStart(2, '0');
+      const isoDate = `${dobYear}-${month}-${day}`;
 
-    await registerUser({
-      username: displayName,
-      email: prefillEmail,
-      password: passwordValue,
-      gender: gender as 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY',
-      date_of_birth: isoDate,
-    });
+      // ── Use prefillEmail if available, otherwise read from the form field ──
+      const emailToUse = prefillEmail || getValues('email');
 
-    navigate('/verify-email', { state: { email: prefillEmail } });
-  } catch (error) {
-    setApiError(extractErrorMessage(error));
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+      await registerUser({
+        username: displayName,
+        email: emailToUse,
+        password: passwordValue,
+        gender: gender as 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY',
+        date_of_birth: isoDate,
+      });
+
+      navigate('/verify-email', { state: { email: emailToUse } });
+    } catch (error) {
+      setApiError(extractErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const selectClass = "w-full bg-white text-black text-sm px-3 py-3 rounded-sm border border-[#555] focus:outline-none focus:border-[#888] appearance-none cursor-pointer";
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] flex flex-col">
 
-      {/* ── Responsive Navbar ── */}
+      {/* ── Navbar ── */}
       <header className="flex items-center justify-between px-4 sm:px-6 py-3 bg-[#0d0d0d] border-b border-[#222]">
         <TunifyLogo />
         <nav className="hidden md:flex items-center gap-8">
@@ -144,7 +148,6 @@ const handleProfileContinue = async () => {
 
       <main className="flex-1 flex items-start sm:items-center justify-center px-0 sm:px-4 py-0 sm:py-10">
         <div className="w-full sm:max-w-[480px]">
-
           <div className="sm:border sm:border-[#3a3a3a] sm:rounded-sm sm:p-[3px] sm:bg-[#111]">
             <div className="sm:border sm:border-[#555] sm:rounded-sm bg-[#181818] sm:min-h-[520px]">
 
@@ -205,7 +208,6 @@ const handleProfileContinue = async () => {
                     </button>
                   </div>
 
-                  {/* Password rules checklist — shows when user starts typing */}
                   {passwordValue.length > 0 && (
                     <div className="bg-[#1a1a1a] border border-[#333] rounded-sm px-4 py-3 flex flex-col gap-1.5">
                       {[
@@ -243,11 +245,11 @@ const handleProfileContinue = async () => {
                   >
                     Continue
                   </button>
-                    <a href="https://help.soundcloud.com/hc/en-us/sections/46266771825691" target="_blank" rel="noreferrer" className="text-[#0066cc] text-sm hover:underline">Need help?</a>
+                  <a href="https://help.soundcloud.com/hc/en-us/sections/46266771825691" target="_blank" rel="noreferrer" className="text-[#0066cc] text-sm hover:underline">Need help?</a>
                 </div>
               )}
 
-              {/* ══ PROFILE STEP — Tell us more about you ══ */}
+              {/* ══ PROFILE STEP ══ */}
               {signUpStep === 'profile' && (
                 <div className="px-6 py-8 sm:p-8">
                   <div className="flex items-center gap-4 mb-6">
@@ -283,7 +285,7 @@ const handleProfileContinue = async () => {
                       </div>
                       {displayNameError
                         ? <p className="text-red-400 text-xs mt-1">{displayNameError}</p>
-                        : <p className="text-[#777] text-xs mt-1">Your display name can be anything you like. Your name or artist name are good choices.</p>
+                        : <p className="text-[#777] text-xs mt-1">Letters, numbers, and underscores only.</p>
                       }
                     </div>
 
@@ -291,13 +293,8 @@ const handleProfileContinue = async () => {
                     <div>
                       <p className="text-white text-sm font-medium mb-2">Date of birth <span className="text-[#aaa] font-normal">(required)</span></p>
                       <div className="grid grid-cols-3 gap-2">
-                        {/* Month */}
                         <div className="relative">
-                          <select
-                            value={dobMonth}
-                            onChange={(e) => setDobMonth(e.target.value)}
-                            className={selectClass}
-                          >
+                          <select value={dobMonth} onChange={(e) => setDobMonth(e.target.value)} className={selectClass}>
                             <option value="" disabled>Month</option>
                             {MONTHS.map((m, i) => (
                               <option key={m} value={String(i + 1)}>{m}</option>
@@ -305,13 +302,8 @@ const handleProfileContinue = async () => {
                           </select>
                           <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-black text-xs">▼</div>
                         </div>
-                        {/* Day */}
                         <div className="relative">
-                          <select
-                            value={dobDay}
-                            onChange={(e) => setDobDay(e.target.value)}
-                            className={selectClass}
-                          >
+                          <select value={dobDay} onChange={(e) => setDobDay(e.target.value)} className={selectClass}>
                             <option value="" disabled>Day</option>
                             {DAYS.map((d) => (
                               <option key={d} value={String(d)}>{d}</option>
@@ -319,13 +311,8 @@ const handleProfileContinue = async () => {
                           </select>
                           <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-black text-xs">▼</div>
                         </div>
-                        {/* Year */}
                         <div className="relative">
-                          <select
-                            value={dobYear}
-                            onChange={(e) => setDobYear(e.target.value)}
-                            className={selectClass}
-                          >
+                          <select value={dobYear} onChange={(e) => setDobYear(e.target.value)} className={selectClass}>
                             <option value="" disabled>Year</option>
                             {YEARS.map((y) => (
                               <option key={y} value={String(y)}>{y}</option>
@@ -355,7 +342,6 @@ const handleProfileContinue = async () => {
                       </div>
                     </div>
 
-                    {/* Continue button */}
                     <button
                       type="button"
                       onClick={handleProfileContinue}
@@ -371,7 +357,7 @@ const handleProfileContinue = async () => {
                         : 'Continue'
                       }
                     </button>
-                      <a href="https://help.soundcloud.com/hc/en-us/sections/46266771825691" target="_blank" rel="noreferrer" className="text-[#0066cc] text-sm hover:underline">Need help?</a>
+                    <a href="https://help.soundcloud.com/hc/en-us/sections/46266771825691" target="_blank" rel="noreferrer" className="text-[#0066cc] text-sm hover:underline">Need help?</a>
                   </div>
                 </div>
               )}
