@@ -2,9 +2,22 @@ import Avatar from "../Header/Avatar";
 import { useEffect, useState } from "react";
 import { FiInfo } from "react-icons/fi";
 import { profileService } from "../../profileService";
+import type { SocialPlatform, UserSocialLink } from "../../../../shared/types/User";
+
+const PLATFORM_OPTIONS: SocialPlatform[] = ["INSTAGRAM", "TWITTER", "WEBSITE"];
+
+function normalizeLinks(links: UserSocialLink[]): UserSocialLink[] {
+  return links
+    .map((link) => ({
+      platform: link.platform,
+      url: link.url.trim(),
+    }))
+    .filter((link) => link.url.length > 0);
+}
 
 export default function EditInfo({
   onClick,
+  onSaved,
   displayName,
   avatarUrl,
   country,
@@ -13,6 +26,7 @@ export default function EditInfo({
   socialAccounts,
 }: {
   onClick: () => void;
+  onSaved?: () => void;
   displayName?: string;
   avatarUrl?: string;
   country?: string;
@@ -22,6 +36,7 @@ export default function EditInfo({
     facebook?: string;
     instagram?: string;
     twitter?: string;
+    website?: string;
     youtube?: string;
   };
 }) {
@@ -29,32 +44,45 @@ export default function EditInfo({
   const initialCountry = country ?? "";
   const initialCity = city ?? "";
   const initialBio = bio ?? "";
-  const initialInstagram = socialAccounts?.instagram ?? "";
-  const initialTwitter = socialAccounts?.twitter ?? "";
+  const initialLinks = [
+    {
+      platform: "INSTAGRAM",
+      url: socialAccounts?.instagram ?? "",
+    },
+    {
+      platform: "TWITTER",
+      url: socialAccounts?.twitter ?? "",
+    },
+    {
+      platform: "WEBSITE",
+      url: socialAccounts?.website ?? "",
+    },
+  ].filter((link): link is UserSocialLink => link.url.trim().length > 0);
+  const normalizedInitialLinks = normalizeLinks(initialLinks);
 
   const [displayNameState, setDisplayNameState] = useState(initialDisplayName);
   const [countryState, setCountryState] = useState(initialCountry);
   const [cityState, setCityState] = useState(initialCity);
   const [bioState, setBioState] = useState(initialBio);
-  const [instagramState, setInstagramState] = useState(initialInstagram);
-  const [twitterState, setTwitterState] = useState(initialTwitter);
-  const [websiteState, setWebsiteState] = useState("");
+  const [linksState, setLinksState] = useState<UserSocialLink[]>(initialLinks);
   const [visibilityState, setVisibilityState] = useState<"PUBLIC" | "PRIVATE">(
     "PUBLIC",
   );
   const [roleState, setroleState] = useState<"ARTIST" | "LISTENER">("ARTIST");
-  const [showLinkInputs, setShowLinkInputs] = useState(false);
+  const [showLinkInputs, setShowLinkInputs] = useState(initialLinks.length > 0);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const normalizedCurrentLinks = normalizeLinks(linksState);
+  const hasSocialLinksChanges =
+    JSON.stringify(normalizedCurrentLinks) !==
+    JSON.stringify(normalizedInitialLinks);
 
   const hasChanges =
     displayNameState !== initialDisplayName ||
     countryState !== initialCountry ||
     cityState !== initialCity ||
     bioState !== initialBio ||
-    instagramState !== initialInstagram ||
-    twitterState !== initialTwitter ||
-    websiteState !== "";
+    hasSocialLinksChanges;
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -71,19 +99,26 @@ export default function EditInfo({
         [cityState, countryState].filter(Boolean).join(", ") || null;
 
       await profileService.updateMeProfile({
-        username: displayNameState || undefined,
+        displayName: displayNameState || undefined,
         bio: bioState || null,
         location,
         visibility: visibilityState,
         role: roleState,
       });
 
-      await profileService.updateMeSocialLinks({
-        instagram: instagramState || null,
-        twitter: twitterState || null,
-        website: websiteState || null,
-      });
+      if (hasSocialLinksChanges) {
+        if (normalizedCurrentLinks.length === 0) {
+          setErrorMsg("Please add at least one social link before saving.");
+          setIsSaving(false);
+          return;
+        }
 
+        await profileService.updateMeSocialLinks({
+          links: normalizedCurrentLinks,
+        });
+      }
+
+      onSaved?.();
       onClick();
     } catch (err: any) {
       console.error("Failed to save profile", err);
@@ -126,7 +161,12 @@ export default function EditInfo({
               <div className="mt-3 flex gap-3">
                 <button
                   type="button"
-                  onClick={() => setShowLinkInputs((prev) => !prev)}
+                  onClick={() => {
+                    if (linksState.length === 0) {
+                      setLinksState([{ platform: "INSTAGRAM", url: "" }]);
+                    }
+                    setShowLinkInputs((prev) => !prev);
+                  }}
                   className="rounded-sm bg-zinc-800 px-4 py-2 text-sm font-bold text-white hover:text-zinc-400 cursor-pointer"
                 >
                   {showLinkInputs ? "Hide links" : "Add link"}
@@ -135,24 +175,73 @@ export default function EditInfo({
 
               {showLinkInputs && (
                 <div className="mt-4 grid gap-3">
-                  <input
-                    value={instagramState}
-                    onChange={(e) => setInstagramState(e.target.value)}
-                    className="w-full rounded-sm border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white outline-none focus:border-zinc-500"
-                    placeholder="Instagram URL"
-                  />
-                  <input
-                    value={twitterState}
-                    onChange={(e) => setTwitterState(e.target.value)}
-                    className="w-full rounded-sm border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white outline-none focus:border-zinc-500"
-                    placeholder="Twitter URL"
-                  />
-                  <input
-                    value={websiteState}
-                    onChange={(e) => setWebsiteState(e.target.value)}
-                    className="w-full rounded-sm border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white outline-none focus:border-zinc-500"
-                    placeholder="Website URL"
-                  />
+                  {linksState.map((link, index) => (
+                    <div
+                      key={`${link.platform}-${index}`}
+                      className="grid gap-2"
+                    >
+                      <select
+                        value={link.platform}
+                        onChange={(e) => {
+                          const nextLinks = [...linksState];
+                          nextLinks[index] = {
+                            ...nextLinks[index],
+                            platform: e.target.value as SocialPlatform,
+                          };
+                          setLinksState(nextLinks);
+                        }}
+                        className="rounded-sm border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white outline-none focus:border-zinc-500 cursor-pointer"
+                      >
+                        {PLATFORM_OPTIONS.map((platform) => (
+                          <option key={platform} value={platform}>
+                            {platform}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        value={link.url}
+                        onChange={(e) => {
+                          const nextLinks = [...linksState];
+                          nextLinks[index] = {
+                            ...nextLinks[index],
+                            url: e.target.value,
+                          };
+                          setLinksState(nextLinks);
+                        }}
+                        className="w-full rounded-sm border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white outline-none focus:border-zinc-500"
+                        placeholder="https://example.com/your-handle"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setLinksState(
+                            linksState.filter((_, rowIndex) => rowIndex !== index),
+                          )
+                        }
+                        className="w-full rounded-sm bg-zinc-800 px-3 py-2 text-sm font-bold text-white hover:text-zinc-400 cursor-pointer"
+                        aria-label={`Remove link ${index + 1}`}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    disabled={linksState.length >= 6}
+                    onClick={() =>
+                      setLinksState([
+                        ...linksState,
+                        { platform: "INSTAGRAM", url: "" },
+                      ])
+                    }
+                    className={`rounded-sm px-4 py-2 text-sm font-bold ${
+                      linksState.length >= 6
+                        ? "bg-zinc-700 text-zinc-400 cursor-not-allowed"
+                        : "bg-zinc-800 text-white hover:text-zinc-400 cursor-pointer"
+                    }`}
+                  >
+                    Add another link
+                  </button>
                 </div>
               )}
             </div>

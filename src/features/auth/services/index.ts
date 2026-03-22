@@ -1,7 +1,4 @@
-// ── What is this file? ────────────────────────────────────────
-// Auth service layer — mock vs real toggle via VITE_USE_MOCK
-
-import axiosInstance from '../services/axiosInstance';
+import { api } from '../services/api';
 import { getRefreshToken, clearTokens } from '../utils/token.utils';
 import type {
   LoginRequest,
@@ -48,7 +45,7 @@ const mockCheckEmail = async (email: string): Promise<{ exists: boolean; message
 };
 
 const realCheckEmail = async (email: string): Promise<{ exists: boolean; message: string }> => {
-  const res = await axiosInstance.post('/auth/check-email', { email });
+  const res = await api.post('/auth/check-email', { email });
   return res.data;
 };
 
@@ -68,7 +65,7 @@ const mockLogin = async (data: LoginRequest): Promise<AuthResponse> => {
 };
 
 const realLogin = async (data: LoginRequest): Promise<AuthResponse> => {
-  const res = await axiosInstance.post('/auth/login', data);
+  const res = await api.post('/auth/login', data);
   return res.data;
 };
 
@@ -83,7 +80,7 @@ const mockRegister = async (_data: RegisterRequest): Promise<AuthResponse> => {
 };
 
 const realRegister = async (data: RegisterRequest): Promise<AuthResponse> => {
-  const res = await axiosInstance.post('/auth/register', data);
+  const res = await api.post('/auth/register', data);
   return res.data;
 };
 
@@ -97,7 +94,7 @@ const mockVerifyEmail = async (_email: string, _token: string): Promise<AuthResp
 };
 
 const realVerifyEmail = async (email: string, token: string): Promise<AuthResponse> => {
-  const res = await axiosInstance.post('/auth/verify-email', { email, token });
+  const res = await api.post('/auth/verify-email', { email, token });
   return res.data;
 };
 
@@ -110,7 +107,7 @@ const mockResendVerification = async (_email: string): Promise<{ message: string
 };
 
 const realResendVerification = async (email: string): Promise<{ message: string }> => {
-  const res = await axiosInstance.post('/auth/resend-verification', { email });
+  const res = await api.post('/auth/resend-verification', { email });
   return res.data;
 };
 
@@ -123,7 +120,7 @@ const mockSocialLogin = async (_data: SocialLoginRequest): Promise<AuthResponse>
 };
 
 const realSocialLogin = async (data: SocialLoginRequest): Promise<AuthResponse> => {
-  const res = await axiosInstance.post('/auth/social-login', data);
+  const res = await api.post('/auth/social-login', data);
   return res.data;
 };
 
@@ -131,12 +128,12 @@ export const socialLogin = IS_MOCK ? mockSocialLogin : realSocialLogin;
 
 // ── 7. Google OAuth ───────────────────────────────────────────
 const sendGoogleCode = async (code: string) => {
-  const res = await axiosInstance.post('/auth/google', { code });
+  const res = await api.post('/auth/google', { code });
   return res.data;
 };
 
 const linkGoogleAccount = async (linkingToken: string, password: string) => {
-  const res = await axiosInstance.post('/auth/google/link', { linkingToken, password });
+  const res = await api.post('/auth/google/link', { linkingToken, password });
   return res.data;
 };
 
@@ -152,7 +149,7 @@ const mockLogout = async (): Promise<void> => {
 const realLogout = async (): Promise<void> => {
   const refreshToken = getRefreshToken();
   if (refreshToken) {
-    await axiosInstance.post('/auth/signout', { refreshToken });
+    await api.post('/auth/signout', { refreshToken });
   }
   clearTokens();
 };
@@ -166,7 +163,7 @@ const mockForgotPassword = async (_email: string): Promise<{ message: string }> 
 };
 
 const realForgotPassword = async (email: string): Promise<{ message: string }> => {
-  const res = await axiosInstance.post('/auth/forgot-password', { email });
+  const res = await api.post('/auth/forgot-password', { email });
   return res.data;
 };
 
@@ -186,7 +183,7 @@ const realResetPassword = async (
   confirmPassword: string,
   signoutAll = true
 ): Promise<{ message: string }> => {
-  const res = await axiosInstance.post('/auth/reset-password', {
+  const res = await api.post('/auth/reset-password', {
     email,
     token,
     newPassword,

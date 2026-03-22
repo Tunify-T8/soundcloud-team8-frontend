@@ -3,8 +3,7 @@ import type { ToggleProps } from "../types";
 import type { TogglesState } from "../types";
 import { clearAudioSource } from "../../../store/AudioSourceSlice";
 import UploadSuccessScreen from "./UploadSuccessScreen";
-import axios from "axios";
-import axiosInstance from "@/features/auth/services/axiosInstance";
+import { api } from "@/features/auth/services/api";
 import { SiSoundcloud } from "react-icons/si";
 import { useDispatch } from "react-redux";
 import { useAppSelector } from "../../../app/hooks";
@@ -261,7 +260,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
 
   // ── Fetch user profile ────────────────────────────────────────────────────
   useEffect(() => {
-    axiosInstance.get("/users/me")
+    api.get("/users/me")
       .then((res) => setUserProfile(res.data))
       .catch((err) => console.error("Failed to fetch user profile:", err));
   }, []);
@@ -275,7 +274,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
       setIsUploading(true);
       setUploadProgress(0);
       try {
-        const blob = await axios.get(source.url, {
+        const blob = await api.get(source.url, {
           responseType: "blob",
           onDownloadProgress: (e) => {
             if (e.total) setUploadProgress(Math.round((e.loaded / e.total) * 100));
@@ -364,8 +363,9 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
     if (!fileReady || isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const { data: track } = await axiosInstance.post("/tracks", {
+      const { data: track } = await api.post("/tracks", {
         title:               titleRef.current?.value || "Untitled",
+
         tags:                tagsRef.current?.value ? [tagsRef.current.value] : [],
         description:         descriptionRef.current?.value || "",
         privacy:             privacyRef.current,
@@ -384,7 +384,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
         const audioFileName = source?.kind === "file" ? (source.name ?? `audio.${ext}`) : `recording.${ext}`;
         const audioForm = new FormData();
         audioForm.append("file", audioBlobRef.current, audioFileName);
-        await axiosInstance.post(`/tracks/${id}/audio`, audioForm, {
+        await api.post(`/tracks/${id}/audio`, audioForm, {
           headers: { "Content-Type": "multipart/form-data" },
         });
       }
@@ -393,7 +393,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
         const artworkBlob = await fetch(artworkBase64Ref.current).then(r => r.blob());
         const artworkForm = new FormData();
         artworkForm.append("artwork", artworkBlob, "artwork.jpg");
-        await axiosInstance.patch(`/tracks/${id}`, artworkForm, {
+        await api.patch(`/tracks/${id}`, artworkForm, {
           headers: { "Content-Type": "multipart/form-data" },
         });
       }

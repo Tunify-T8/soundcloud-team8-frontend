@@ -5,28 +5,41 @@ export default function Avatar({
   avatarUrl,
   displayName,
   isMe,
+  onProfileUpdated,
 }: {
   avatarUrl?: string;
   displayName?: string;
   isMe?: boolean;
+  onProfileUpdated?: () => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showActions, setShowActions] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   async function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) {
       setPreviewUrl(URL.createObjectURL(file));
       setShowActions(false);
+      setIsUploading(true);
       try {
         const formData = new FormData();
-        formData.append("avatar", file);
+        formData.append("file", file);
+        formData.append("upload_preset", "tunify_avatars_coverImgs");
+        const cloudRes = await fetch(
+          "https://api.cloudinary.com/v1_1/dcctvg2ay/image/upload",
+          { method: "POST", body: formData },
+        );
+        const cloudData = await cloudRes.json();
         await profileService.updateMeProfile({
-          avatarUrl: URL.createObjectURL(file),
+          avatarUrl: cloudData.secure_url,
         });
+        onProfileUpdated?.();
       } catch (err) {
         console.error("Failed to update avatar", err);
+      } finally {
+        setIsUploading(false);
       }
     }
   }
@@ -40,6 +53,7 @@ export default function Avatar({
     setShowActions(false);
     try {
       await profileService.updateMeProfile({ avatarUrl: null });
+      onProfileUpdated?.();
     } catch (err) {
       console.error("Failed to remove avatar", err);
     }
@@ -64,6 +78,11 @@ export default function Avatar({
             }`}
           />
         )}
+        {isUploading && (
+          <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center">
+            <span className="text-white text-xs font-bold">Uploading...</span>
+          </div>
+        )}
       </div>
 
       {isMe && (
@@ -75,11 +94,11 @@ export default function Avatar({
           <button
             type="button"
             onClick={() => setShowActions((prev) => !prev)}
-            className={`w-32 bg-zinc-800 font-bold text-[14px] px-3 py-1 rounded-sm transition-colors cursor-pointer ${
+            className={`w-32 bg-zinc-800 font-bold text-[14px] px-2 py-0.75 rounded-sm transition-colors cursor-pointer ${
               showActions ? "text-orange-500" : "text-white hover:text-zinc-500"
             }`}
           >
-            Update image
+            {isUploading ? "Uploading..." : src ? "Update image" : "Upload image"}
           </button>
           {showActions && (
             <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 flex w-32 flex-col rounded-sm border border-zinc-700 bg-zinc-950 shadow-lg">

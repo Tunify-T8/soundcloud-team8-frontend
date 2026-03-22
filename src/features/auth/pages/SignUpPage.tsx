@@ -1,7 +1,3 @@
-// ============================================================
-// SIGN UP PAGE — Tunify
-// ============================================================
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,8 +5,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Loader2, ChevronLeft } from 'lucide-react';
 
 import { signUpSchema, type SignUpFormData } from '../schemas/auth.schemas';
-import { register as registerUser } from '../services';
-import { storeTokens } from '../utils/token.utils';
+import { register as registerUser, checkEmail } from '../services';
+// import { storeTokens } from '../utils/token.utils';
 import { extractErrorMessage } from '../hooks/useAuth';
 import { isDisplayNameTaken } from '../data/mockUsers';
 
@@ -91,9 +87,25 @@ const SignUpPage: React.FC = () => {
     }
   };
 
-  const handlePasswordContinue = () => {
+  const handlePasswordContinue = async () => {
     if (!isPasswordReady) return;
-    setSignUpStep('profile');
+    setApiError(null);
+    setIsSubmitting(true);
+    try {
+      const emailToCheck = prefillEmail || getValues('email');
+      if (emailToCheck) {
+        const result = await checkEmail(emailToCheck.trim());
+        if (result.exists) {
+          navigate('/signin', { state: { email: emailToCheck.trim(), prefillStep: 'password' } });
+          return;
+        }
+      }
+      setSignUpStep('profile');
+    } catch {
+      setSignUpStep('profile');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleProfileContinue = async () => {

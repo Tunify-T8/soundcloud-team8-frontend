@@ -13,7 +13,7 @@ import type {
 function isMeProfile(
   user: MeUserProfile | PublicUserProfile,
 ): user is MeUserProfile {
-  return "email" in user;
+  return "lastLogin" in user;
 }
 
 export default function ProfilePage() {
@@ -21,9 +21,19 @@ export default function ProfilePage() {
   const [user, setUser] = useState<MeUserProfile | PublicUserProfile | null>(
     null,
   );
+  const [socialAccounts, setSocialAccounts] = useState<{
+    instagram?: string;
+    twitter?: string;
+    website?: string;
+  }>({});
   const [followingUsers, setFollowingUsers] = useState<UserFollowing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshTick, setRefreshTick] = useState(0);
+
+  const refreshProfile = () => {
+    setRefreshTick((prev) => prev + 1);
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -34,6 +44,12 @@ export default function ProfilePage() {
       try {
         let userData: MeUserProfile | PublicUserProfile | null = null;
         let following: UserFollowing[] = [];
+        let linksData: {
+          instagram?: string;
+          twitter?: string;
+          website?: string;
+        } = {};
+
         if (username) {
           userData = await profileService.getPublicProfile(username);
           if (userData?.id) {
@@ -49,19 +65,27 @@ export default function ProfilePage() {
         } else {
           userData = await profileService.getMeProfile();
           try {
+            linksData = await profileService.getMeSocialLinks();
+          } catch {
+            linksData = {};
+          }
+          try {
             const followingRes = await profileService.getMeFollowing();
             following = followingRes.following;
           } catch {
             following = [];
           }
         }
+
         if (isMounted) {
           setUser(userData);
+          setSocialAccounts(linksData);
           setFollowingUsers(following);
         }
       } catch (err: any) {
         if (isMounted) {
           setUser(null);
+          setSocialAccounts({});
           setFollowingUsers([]);
           setError(err?.message || "Failed to fetch user");
         }
@@ -74,7 +98,7 @@ export default function ProfilePage() {
     return () => {
       isMounted = false;
     };
-  }, [username]);
+  }, [username, refreshTick]);
 
   if (loading) {
     return <div className="min-h-screen text-white">Loading...</div>;
@@ -96,7 +120,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen text-white">
       <Header
-        displayName={user.username}
+        displayName={user.displayName ?? undefined}
         username={user.username}
         country={country}
         city={city}
@@ -104,26 +128,26 @@ export default function ProfilePage() {
         avatarUrl={user.avatarUrl || ""}
         coverUrl={user.coverUrl || ""}
         isMe={isMe}
+        onProfileUpdated={refreshProfile}
       />
       <div className="relative">
         <UserInfoBar
-          displayName={user.username}
+          displayName={user.displayName ?? undefined}
           avatarUrl={user.avatarUrl || ""}
           country={country}
           city={city}
           bio={user.bio ?? undefined}
-          socialAccounts={undefined}
+          socialAccounts={socialAccounts}
           isMe={isMe}
+          onProfileUpdated={refreshProfile}
         />
         <div className="absolute right-[8.333333%] top-full mt-4">
           <ProfileSideBar
             followers={user.followersCount}
             following={user.followingCount}
-            tracks={
-              "tracksUploadedCount" in user ? user.tracksUploadedCount : 0
-            }
+            tracks={"tracksCount" in user ? (user as any).tracksCount : 0}
             bio={user.bio ?? undefined}
-            socialAccounts={undefined}
+            socialAccounts={socialAccounts}
             followingUsers={followingUsers.map((u) => ({
               id: u.id,
               username: u.username,

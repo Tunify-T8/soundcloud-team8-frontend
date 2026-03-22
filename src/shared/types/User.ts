@@ -41,6 +41,7 @@ export interface FollowingUser {
 export interface MeUserProfile {
   id: string;
   username: string;
+  displayName?: string | null;
   email: string;
   role: "ARTIST" | "LISTENER";
   bio?: string | null;
@@ -62,6 +63,7 @@ export interface MeUserProfile {
 export interface PublicUserProfile {
   id: string;
   username: string;
+  displayName?: string | null;
   role: "ARTIST" | "LISTENER";
   bio?: string | null;
   location?: string | null;
@@ -74,6 +76,7 @@ export interface PublicUserProfile {
 
 // Update profile (PATCH /users/me/profile)
 export interface UpdateUserProfileRequest {
+  displayName?: string;
   username?: string;
   email?: string;
   bio?: string | null;
@@ -86,10 +89,15 @@ export interface UpdateUserProfileRequest {
 }
 
 // Social links (GET/PATCH /users/me/social-links)
+export type SocialPlatform = "INSTAGRAM" | "TWITTER" | "WEBSITE";
+
+export interface UserSocialLink {
+  platform: SocialPlatform;
+  url: string;
+}
+
 export interface UserSocialLinks {
-  instagram?: string | null;
-  twitter?: string | null;
-  website?: string | null;
+  links: UserSocialLink[];
 }
 
 // Genres (GET/PATCH /users/me/genres)
