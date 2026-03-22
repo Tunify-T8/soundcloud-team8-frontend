@@ -16,13 +16,15 @@ import SignInPage from "./features/auth/pages/SignInPage";
 import SignUpPage from "./features/auth/pages/SignUpPage";
 import ForgotPasswordPage from "./features/auth/pages/ForgotPasswordPage";
 
-import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage";
-import MessagesPage from "./features/conversation/pages/MessagesPage";
-import ProtectedRoute from "./routes/ProtectedRoute";
+import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage"
+import MessagesPage from "./features/conversation/pages/MessagesPage"
+import ProtectedRoute from "./routes/ProtectedRoute"
+import VerifyEmailPage from "./features/auth/pages/VerifyEmailPage"
 
 const router = createBrowserRouter([
-   {
-    path: "/signin",
+  { path: '/verify-email', element: <VerifyEmailPage /> },
+  {
+    path: '/signin',
     element: <SignInPage key={Math.random()} />,
   },
   {
