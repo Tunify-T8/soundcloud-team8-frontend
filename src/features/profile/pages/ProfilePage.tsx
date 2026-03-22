@@ -103,7 +103,7 @@ export default function ProfilePage() {
         isVerified={isMe ? user.isVerified : false}
         avatarUrl={user.avatarUrl || ""}
         coverUrl={user.coverUrl || ""}
-        isEditable={isMe}
+        isMe={isMe}
       />
       <div className="relative">
         <UserInfoBar
@@ -113,7 +113,7 @@ export default function ProfilePage() {
           city={city}
           bio={user.bio ?? undefined}
           socialAccounts={undefined}
-          isEditable={isMe}
+          isMe={isMe}
         />
         <div className="absolute right-[8.333333%] top-full mt-4">
           <ProfileSideBar

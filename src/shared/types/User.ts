@@ -18,7 +18,7 @@ export interface User {
   followersCount: number | string;
   followingCount: number;
   tracksCount: number;
-  isEditable: boolean;
+  isMe: boolean;
   // likesReceivedCount: number;
   // isFollowing: boolean;
   createdAt: string;
@@ -42,7 +42,7 @@ export interface MeUserProfile {
   id: string;
   username: string;
   email: string;
-  userType: "ARTIST" | "LISTENER";
+  role: "ARTIST" | "LISTENER";
   bio?: string | null;
   location?: string | null;
   avatarUrl?: string | null;
@@ -55,14 +55,14 @@ export interface MeUserProfile {
   likesReceived: number;
   createdAt: string;
   updatedAt: string;
-  lastLoginAt: string;
+  lastLogin: string;
 }
 
 // Profile for /users/{userIdOrUsername} (public info)
 export interface PublicUserProfile {
   id: string;
   username: string;
-  userType: "ARTIST" | "LISTENER";
+  role: "ARTIST" | "LISTENER";
   bio?: string | null;
   location?: string | null;
   avatarUrl?: string | null;
@@ -81,7 +81,7 @@ export interface UpdateUserProfileRequest {
   avatarUrl?: string | null;
   coverUrl?: string | null;
   visibility?: "PUBLIC" | "PRIVATE";
-  userType?: "ARTIST" | "LISTENER";
+  role?: "ARTIST" | "LISTENER";
   currentPassword?: string;
 }
 
@@ -190,7 +190,7 @@ export interface SuggestedUser {
   username: string;
   avatarUrl?: string | null;
   coverUrl?: string | null;
-  userType: "ARTIST" | "LISTENER";
+  role: "ARTIST" | "LISTENER";
   mutualFollowersCount: number;
   tracksUploadedCount: number;
   followersCount: number;

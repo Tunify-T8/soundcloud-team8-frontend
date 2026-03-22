@@ -3,10 +3,10 @@ import { profileService } from "../../profileService";
 
 export default function HeaderImg({
   coverUrl,
-  isEditable,
+  isMe,
 }: {
   coverUrl?: string;
-  isEditable?: boolean;
+  isMe?: boolean;
 }) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -38,7 +38,7 @@ export default function HeaderImg({
           className="absolute inset-0 w-full h-full object-cover"
         />
       )}
-      {isEditable && (
+      {isMe && (
         <label className="absolute top-8 right-7 z-10 bg-black text-white font-bold text-[14px] px-2 py-1 rounded-sm cursor-pointer hover:text-gray-400 transition-colors">
           Upload header image
           <input
