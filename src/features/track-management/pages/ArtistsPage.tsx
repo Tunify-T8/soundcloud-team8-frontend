@@ -94,11 +94,17 @@ export default function ArtistsPage() {
   const [tracks, setTracks] = useState<Track[]>([]);
 
 useEffect(() => {
+  try{
   const fetchTracks = async () => {
     const data = await trackService.getUploadedTracks();
-    setTracks(data);
-  };
-  fetchTracks();
+    setTracks(data);}
+     fetchTracks();
+  }
+    catch(e:any)
+    {
+      console.log(e)
+    }
+ 
 }, []);
 
 const filteredTracks = useMemo(() => {
