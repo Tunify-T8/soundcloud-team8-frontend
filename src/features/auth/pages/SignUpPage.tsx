@@ -346,8 +346,8 @@ const handleProfileContinue = async () => {
                           className={`w-full bg-[#2a2a2a] border text-sm px-4 py-3 rounded-sm focus:outline-none transition-colors appearance-none cursor-pointer ${gender === '' ? 'text-[#666] border-[#555]' : 'text-white border-[#555]'} focus:border-[#888]`}
                         >
                           <option value="" disabled>Gender (required)</option>
-                          <option value="Male">Male</option>
-                          <option value="Female">Female</option>
+                          <option value="MALE">Male</option>
+                          <option value="FEMALE">Female</option>
                           <option value="OTHER">Other</option>
                           <option value="PREFER_NOT_TO_SAY">Prefer not to say</option>
                         </select>
