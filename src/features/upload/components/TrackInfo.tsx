@@ -7,7 +7,7 @@ import axios from "axios";
 import axiosInstance from "@/features/auth/services/axiosInstance";
 import { SiSoundcloud } from "react-icons/si";
 import { useDispatch } from "react-redux";
-import { useAppSelector } from "../../../app/hooks"; 
+import { useAppSelector } from "../../../app/hooks";
 
 function Toggle({ enabled, onChange }: ToggleProps) {
   return (
@@ -63,11 +63,156 @@ function fmtDuration(secs: number): string {
   return `${m}:${s}`
 }
 
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+}
+
 const inputClass =
   "w-full bg-[#181818] border border-[#333] text-white text-sm px-4 py-3 focus:outline-none focus:border-[#555] placeholder-[#555]";
 
+const GENRE_MAP: Record<string, string> = {
+  "Hip-Hop":    "music_hiphop",
+  "Pop":        "music_pop",
+  "Rock":       "music_rock",
+  "Electronic": "music_electronic",
+  "Jazz":       "music_jazz",
+  "Classical":  "music_classical",
+  "R&B":        "music_rnb",
+  "Country":    "music_country",
+  "Metal":      "music_metal",
+  "Folk":       "music_folk",
+  "Reggae":     "music_reggae",
+  "Blues":      "music_blues",
+  "Soul":       "music_soul",
+  "Latin":      "music_latin",
+  "Dance":      "music_dance",
+  "House":      "music_house",
+  "Techno":     "music_techno",
+};
+
+const DEFAULT_GENRES = Object.keys(GENRE_MAP);
+
+// ─── Genre Input Component ────────────────────────────────────────────────────
+
+function GenreInput({ genreRef }: { genreRef: React.RefObject<HTMLInputElement | null> }) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const filtered = query.trim()
+    ? DEFAULT_GENRES.filter((g) => g.toLowerCase().includes(query.toLowerCase()))
+    : DEFAULT_GENRES;
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleSelect = (genre: string) => {
+    setSelected(genre);
+    setQuery(genre);
+    setOpen(false);
+    if (genreRef.current) genreRef.current.value = genre;
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setQuery(val);
+    setSelected("");
+    setOpen(true);
+    if (genreRef.current) genreRef.current.value = val;
+  };
+
+  const handleClear = () => {
+    setQuery("");
+    setSelected("");
+    setOpen(false);
+    if (genreRef.current) genreRef.current.value = "";
+  };
+
+  return (
+    <div ref={containerRef} className="relative">
+      <input ref={genreRef} type="hidden" />
+      <div className="flex items-center border-b border-[#2a2a2a] pb-3 mb-4">
+        <div className="flex-1 relative">
+          <input
+            type="text"
+            value={query}
+            onChange={handleChange}
+            onFocus={() => setOpen(true)}
+            placeholder="Add or search for genre"
+            className="w-full bg-transparent text-white text-sm py-1 focus:outline-none placeholder-[#555] pr-8"
+            aria-label="genre"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={handleClear}
+              className="absolute right-0 top-1/2 -translate-y-1/2 text-[#555] hover:text-white transition"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          )}
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#777" strokeWidth="2" className="flex-shrink-0 ml-2">
+          <polyline points="6,9 12,15 18,9" />
+        </svg>
+      </div>
+
+      {open && (
+        <div className="absolute z-50 top-full left-0 right-0 bg-[#1a1a1a] border border-[#333] max-h-52 overflow-y-auto shadow-xl">
+          {filtered.length > 0 ? (
+            filtered.map((genre) => (
+              <div
+                key={genre}
+                onMouseDown={() => handleSelect(genre)}
+                className={`px-4 py-2.5 text-sm cursor-pointer transition flex items-center justify-between
+                  ${selected === genre ? "bg-[#169b45] text-white" : "text-[#ccc] hover:bg-[#252525] hover:text-white"}`}
+              >
+                {genre}
+                {selected === genre && (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <polyline points="20,6 9,17 4,12" />
+                  </svg>
+                )}
+              </div>
+            ))
+          ) : (
+            <div
+              onMouseDown={() => handleSelect(query)}
+              className="px-4 py-2.5 text-sm text-[#aaa] hover:bg-[#252525] hover:text-white cursor-pointer transition"
+            >
+              Use "{query}" as custom genre
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
+type UserProfile = {
+  id: string
+  username: string
+}
+
 export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
-  // ── 1. All hooks first ───────────────────────────────────────────────────────
   const dispatch = useDispatch();
   const source = useAppSelector((s) => s.audioSource.source);
   const [isUploading, setIsUploading] = useState(false);
@@ -76,11 +221,15 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
   const [fileReady, setFileReady] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Artwork state
+  // User profile
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+
+  // Track URL state (updates as user types title)
+  const [trackSlug, setTrackSlug] = useState("");
+
   const [artworkPreview, setArtworkPreview] = useState<string | null>(null);
   const artworkBase64Ref = useRef<string | null>(null);
   const artworkInputRef = useRef<HTMLInputElement>(null);
-
   const audioBlobRef = useRef<Blob | null>(null);
 
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -102,12 +251,6 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
   const [geoMode, setGeoMode] = useState<"worldwide" | "exclusive" | "blocked">("worldwide");
   const [regions] = useState<string[]>([]);
   const [contentWarning, setContentWarning] = useState(false);
-  const [ccOptions] = useState({
-    allowAttribution: true,
-    nonCommercial: false,
-    noDerivatives: false,
-    shareAlike: false,
-  });
 
   const titleRef       = useRef<HTMLInputElement>(null);
   const genreRef       = useRef<HTMLInputElement>(null);
@@ -116,8 +259,14 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const privacyRef     = useRef<string>("public");
 
-  // Auto-start: fetch the audio blob from the local object URL
-  // Uses raw axios (not axiosInstance) because source.url is a local blob URL, not the API
+  // ── Fetch user profile ────────────────────────────────────────────────────
+  useEffect(() => {
+    axiosInstance.get("/users/me")
+      .then((res) => setUserProfile(res.data))
+      .catch((err) => console.error("Failed to fetch user profile:", err));
+  }, []);
+
+  // ── Fetch audio blob ──────────────────────────────────────────────────────
   useEffect(() => {
     if (!source?.url) return;
     let cancelled = false;
@@ -129,9 +278,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
         const blob = await axios.get(source.url, {
           responseType: "blob",
           onDownloadProgress: (e) => {
-            if (e.total) {
-              setUploadProgress(Math.round((e.loaded / e.total) * 100));
-            }
+            if (e.total) setUploadProgress(Math.round((e.loaded / e.total) * 100));
           },
         }).then(r => r.data);
 
@@ -149,9 +296,9 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
 
     fetchBlob();
     return () => { cancelled = true };
-  }, [source.url]);
+  }, [source?.url]);
 
-  // ── 2. Derived values ────────────────────────────────────────────────────────
+  // ── Derived values ────────────────────────────────────────────────────────
   const fileName = source?.kind === "file"
     ? source.name
     : source?.kind === "recorded"
@@ -165,6 +312,11 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
     : ""
 
   const defaultTitle = fileName.replace(/\.[^/.]+$/, "")
+
+  // Full track URL shown to user
+  const trackUrl = userProfile
+    ? `https://tunify.duckdns.org/${userProfile.username}-${userProfile.id}/${trackSlug || slugify(defaultTitle)}`
+    : ""
 
   const setToggle = (key: keyof TogglesState, val: boolean) =>
     setToggles((t) => ({ ...t, [key]: val }));
@@ -187,12 +339,9 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
     10 + Math.abs(Math.sin(i * 0.4) * 28 + Math.sin(i * 0.13) * 18)
   );
 
-  // ── 3. Handlers ──────────────────────────────────────────────────────────────
-
   const handleArtworkSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     const img = new Image();
     const objectUrl = URL.createObjectURL(file);
     img.onload = () => {
@@ -211,79 +360,42 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
     img.src = objectUrl;
   };
 
-  const GENRE_MAP: Record<string, string> = {
-    "hip-hop":    "music_hiphop",
-    "hiphop":     "music_hiphop",
-    "hip hop":    "music_hiphop",
-    "pop":        "music_pop",
-    "rock":       "music_rock",
-    "electronic": "music_electronic",
-    "jazz":       "music_jazz",
-    "classical":  "music_classical",
-    "r&b":        "music_rnb",
-    "rnb":        "music_rnb",
-    "country":    "music_country",
-    "metal":      "music_metal",
-    "folk":       "music_folk",
-    "reggae":     "music_reggae",
-    "blues":      "music_blues",
-    "soul":       "music_soul",
-    "latin":      "music_latin",
-    "dance":      "music_dance",
-    "house":      "music_house",
-    "techno":     "music_techno",
-  };
-
   const handleUpload = async () => {
     if (!fileReady || isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const rawGenre = genreRef.current?.value?.toLowerCase().trim() ?? "";
-
-      // ── Step 1: POST metadata → get trackId ─────────────────────────────────
       const { data: track } = await axiosInstance.post("/tracks", {
         title:               titleRef.current?.value || "Untitled",
         tags:                tagsRef.current?.value ? [tagsRef.current.value] : [],
         description:         descriptionRef.current?.value || "",
         privacy:             privacyRef.current,
-
         availability:        { type: geoMode, regions },
         scheduledReleaseDate: null,
         contentWarning,
       });
 
-      const { id } =  track;
+      const { id } = track;
       console.log("Track created:", track);
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // ── Step 2: POST audio to /tracks/{trackId}/audio ────────────────────────
       if (audioBlobRef.current) {
         const mimeType = audioBlobRef.current.type || "audio/wav";
         const ext = mimeType.split("/")[1] ?? "wav";
         const audioFileName = source?.kind === "file" ? (source.name ?? `audio.${ext}`) : `recording.${ext}`;
-
         const audioForm = new FormData();
         audioForm.append("file", audioBlobRef.current, audioFileName);
-
         await axiosInstance.post(`/tracks/${id}/audio`, audioForm, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-
-        console.log("Audio uploaded for track:", id);
       }
 
-      // ── Step 3: PATCH artwork to /tracks/{trackId} ───────────────────────────
       if (artworkBase64Ref.current) {
         const artworkBlob = await fetch(artworkBase64Ref.current).then(r => r.blob());
-
         const artworkForm = new FormData();
         artworkForm.append("artwork", artworkBlob, "artwork.jpg");
-
         await axiosInstance.patch(`/tracks/${id}`, artworkForm, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-
-        console.log("Artwork uploaded for track:", id);
       }
 
       setUploadDone(true);
@@ -295,10 +407,8 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
     }
   };
 
-  // ── 4. Early return after all hooks ──────────────────────────────────────────
   if (uploadDone) return <UploadSuccessScreen />;
 
-  // ── 5. Render ────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#0e0e0e] text-white font-sans">
 
@@ -310,8 +420,6 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
         </a>
 
         <div className="flex items-center gap-5">
-
-          {/* ── Uploading state ── */}
           {isUploading && (
             <div className="flex items-center gap-3">
               <div className="flex flex-col items-end gap-1">
@@ -320,16 +428,12 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
                   <span className="text-white font-semibold">Uploading {uploadProgress}%</span>
                 </div>
                 <div className="w-48 h-1.5 bg-[#2a2a2a] rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-[#169b45] rounded-full transition-all duration-300"
-                    style={{ width: `${uploadProgress}%` }}
-                  />
+                  <div className="h-full bg-[#169b45] rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
                 </div>
               </div>
             </div>
           )}
 
-          {/* ── Done state ── */}
           {!isUploading && uploadProgress === 100 && (
             <div className="flex items-center gap-3 text-sm text-[#aaa]">
               <button className="text-[#aaa] hover:text-white transition">
@@ -339,13 +443,10 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
                 </svg>
               </button>
               <span className="max-w-[200px] truncate">{fileName}</span>
-              <button className="text-white text-sm font-semibold hover:text-[#aaa] transition">
-                Replace track
-              </button>
+              <button className="text-white text-sm font-semibold hover:text-[#aaa] transition">Replace track</button>
             </div>
           )}
 
-          {/* ── Default state ── */}
           {!isUploading && uploadProgress < 100 && (
             <div className="flex items-center gap-5">
               <div className="flex items-center gap-2 text-sm text-[#aaa]">
@@ -365,9 +466,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
                 <span className="max-w-[220px] truncate">{fileName}</span>
                 {fileMeta && <span className="text-[#555] text-xs">{fileMeta}</span>}
               </div>
-              <button className="text-white text-sm font-semibold hover:text-[#aaa] transition">
-                Replace track
-              </button>
+              <button className="text-white text-sm font-semibold hover:text-[#aaa] transition">Replace track</button>
             </div>
           )}
 
@@ -385,42 +484,24 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
 
       {/* Main Content */}
       <div className="max-w-[1100px] mx-auto px-10 py-8 pb-28">
-
         <div className="grid grid-cols-2 gap-20 mb-8">
 
-          {/* LEFT: Artwork + Preview */}
+          {/* LEFT */}
           <div>
             {source?.url && (
               <div className="mb-4">
                 <p className="text-xs text-[#555] mb-2 uppercase tracking-wider">Preview</p>
-                <audio
-                  controls
-                  src={source.url}
-                  className="w-full max-w-[380px] h-10"
-                  style={{ colorScheme: "dark" }}
-                />
+                <audio controls src={source.url} className="w-full max-w-[380px] h-10" style={{ colorScheme: "dark" }} />
               </div>
             )}
-
-            {/* Artwork picker */}
-            <input
-              ref={artworkInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleArtworkSelect}
-            />
+            <input ref={artworkInputRef} type="file" accept="image/*" className="hidden" onChange={handleArtworkSelect} />
             <div
               onClick={() => artworkInputRef.current?.click()}
               className="w-full aspect-square border border-dashed border-[#444] flex flex-col items-center justify-center text-[#888] hover:border-[#666] transition cursor-pointer max-w-[380px] overflow-hidden relative group"
             >
               {artworkPreview ? (
                 <>
-                  <img
-                    src={artworkPreview}
-                    alt="Artwork"
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
+                  <img src={artworkPreview} alt="Artwork" className="absolute inset-0 w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -444,8 +525,10 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
             </div>
           </div>
 
-          {/* RIGHT: Form */}
+          {/* RIGHT */}
           <div>
+
+            {/* Track Title */}
             <div className="border-b border-[#2a2a2a] pb-3 mb-4">
               <div className="flex items-center gap-1 mb-1">
                 <label className="text-sm font-bold text-white">Track title</label>
@@ -456,19 +539,32 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
                 type="text"
                 ref={titleRef}
                 defaultValue={defaultTitle}
+                onChange={(e) => setTrackSlug(slugify(e.target.value))}
                 className="w-full bg-transparent text-white text-sm py-1 focus:outline-none"
               />
             </div>
 
+            {/* Track Link — auto-generated, read-only */}
             <div className="border-b border-[#2a2a2a] pb-3 mb-4">
               <label className="text-sm font-bold text-white block mb-1">Track link</label>
-              <input
-                type="text"
-                defaultValue="https://soundcloud.com/amgad-mohamed-376620236/"
-                className="w-full bg-transparent text-white text-sm py-1 focus:outline-none"
-              />
+              {userProfile ? (
+                <div className="flex items-center gap-1 text-sm py-1">
+                  <span className="text-[#555] select-none">
+                    https://tunify.duckdns.org/{userProfile.username}-{userProfile.id}/
+                  </span>
+                  <input
+                    type="text"
+                    value={trackSlug || slugify(defaultTitle)}
+                    onChange={(e) => setTrackSlug(e.target.value)}
+                    className="bg-transparent text-white focus:outline-none flex-1 min-w-0"
+                  />
+                </div>
+              ) : (
+                <div className="text-[#555] text-sm py-1 animate-pulse">Loading...</div>
+              )}
             </div>
 
+            {/* Main Artist — auto-filled from /users/me */}
             <div className="border-b border-[#2a2a2a] pb-3 mb-4">
               <div className="flex items-center gap-1 mb-1">
                 <label className="text-sm font-bold text-white">Main Artist(s)</label>
@@ -477,26 +573,21 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
               <input
                 type="text"
                 ref={artistsRef}
-                defaultValue="amgad mohamed"
-                className="w-full bg-transparent text-white text-sm py-1 focus:outline-none"
+                value={userProfile?.username ?? ""}
+                onChange={() => {}} // controlled by userProfile, editable if needed
+                placeholder={userProfile ? "" : "Loading..."}
+                className="w-full bg-transparent text-white text-sm py-1 focus:outline-none placeholder-[#555]"
               />
               <p className="text-xs text-[#555] mt-1">Tip: Use commas to add multiple artist names.</p>
             </div>
 
-            <div className="border-b border-[#2a2a2a] pb-3 mb-4">
+            {/* Genre */}
+            <div>
               <label className="text-sm font-bold text-white block mb-1">Genre</label>
-              <div className="flex items-center">
-                <input
-                  ref={genreRef}
-                  placeholder="Add or search for genre"
-                  className="w-full bg-transparent text-[#555] text-sm py-1 focus:outline-none placeholder-[#555]"
-                />
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#777" strokeWidth="2">
-                  <polyline points="6,9 12,15 18,9" />
-                </svg>
-              </div>
+              <GenreInput genreRef={genreRef} />
             </div>
 
+            {/* Tags */}
             <div className="border-b border-[#2a2a2a] pb-3 mb-4">
               <div className="flex items-center gap-1 mb-1">
                 <label className="text-sm font-bold text-white">Tags</label>
@@ -509,6 +600,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
               />
             </div>
 
+            {/* Description */}
             <div className="border-b border-[#2a2a2a] pb-3 mb-4">
               <label className="text-sm font-bold text-white block mb-1">Description</label>
               <textarea
@@ -519,6 +611,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
               />
             </div>
 
+            {/* Privacy */}
             <div>
               <label className="text-sm font-bold text-white block mb-3">Track Privacy</label>
               <div className="flex gap-6 text-sm text-white">
@@ -577,11 +670,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
                 <label className="text-sm font-bold text-white block mb-1">Contains explicit content</label>
                 <p className="text-sm text-[#666] mb-3">Please check this if your track contains explicit content.</p>
                 <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="w-4 h-4 accent-white"
-                    onChange={e => setContentWarning(e.target.checked)}
-                  />
+                  <input type="checkbox" className="w-4 h-4 accent-white" onChange={e => setContentWarning(e.target.checked)} />
                   <span className="text-sm text-white">Explicit content</span>
                   <span className="text-xs bg-[#333] text-white px-1.5 py-0.5 font-bold">E</span>
                 </label>
@@ -653,10 +742,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
                         name="geo"
                         defaultChecked={opt === "Worldwide"}
                         className="w-4 h-4 accent-white"
-                        onChange={() => setGeoMode(
-                          opt === "Worldwide" ? "worldwide" :
-                          opt === "Exclusive regions" ? "exclusive" : "blocked"
-                        )}
+                        onChange={() => setGeoMode(opt === "Worldwide" ? "worldwide" : opt === "Exclusive regions" ? "exclusive" : "blocked")}
                       />
                       <span className="text-sm text-[#888]">{opt}</span>
                     </label>
