@@ -116,7 +116,7 @@ export default function TrackCard({
             </span>
           )}
         </div>
-        <p className="text-zinc-400 text-xs mt-0.5 truncate">{"USERNAME"}</p>
+        <p className="text-zinc-400 text-xs mt-0.5 truncate">{track.artist}</p>
       </div>
 
       {/* Duration */}
