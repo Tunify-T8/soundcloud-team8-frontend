@@ -4,7 +4,7 @@ import {
   Download, Pencil, ListPlus, CircleDollarSign, SlidersHorizontal,
   Share2, TrendingUp, Link, Trash2
 } from "lucide-react";
-import type { Track } from "../types";
+import type { Track } from "@/shared/types/Track";
 
 interface TrackCardProps {
   track: Track;

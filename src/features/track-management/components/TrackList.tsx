@@ -1,5 +1,6 @@
 import { useState } from "react";
 import TrackCard from "./TrackCard";
+import EditTrackDrawer from "./EditTrackDrawer";
 import type { Track } from "../../../shared/types/Track";
 
 interface TrackListProps {
@@ -15,6 +16,7 @@ export default function TrackList({ tracks }: TrackListProps) {
   };
   
   const [selectedTracks, setSelectedTracks] = useState<string[]>([])
+  const [editingTrack, setEditingTrack] = useState<Track | null>(null);
 
   const handleSelectTrack = (id: string) => {
     setSelectedTracks(prev => 
@@ -73,11 +75,22 @@ export default function TrackList({ tracks }: TrackListProps) {
             track={track}
             isSelected={selectedTracks.includes(track.id)}
             onSelect={handleSelectTrack}
+            onEdit={(id) => {
+              const found = tracks.find((t) => t.id === id) ?? null;
+              setEditingTrack(found);
+            }}
           />
         ))}
       </div>
     </div>
     </div>
+
+    {editingTrack && (
+      <EditTrackDrawer
+        track={editingTrack}
+        onClose={() => setEditingTrack(null)}
+      />
+    )}
     </div>
   );
 }

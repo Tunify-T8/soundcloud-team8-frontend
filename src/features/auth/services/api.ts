@@ -1,17 +1,16 @@
- import axios from 'axios';
-import { getAccessToken, getRefreshToken, storeTokens, clearTokens } from '../utils/token.utils';
+import axios from 'axios';
+import { getAccessToken, getRefreshToken, storeTokens, clearTokens } from '@/features/auth/utils/token.utils';
  
-// const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api';
 import { BASE_URL } from '../../../config/env';
 
-const axiosInstance = axios.create({
+export const api = axios.create({
   baseURL: BASE_URL,
-  headers: {
+ headers: {
     'Content-Type': 'application/json',
   },
 });
  
-axiosInstance.interceptors.request.use(
+api.interceptors.request.use(
   (config) => {
     const token = getAccessToken();
  
@@ -45,12 +44,12 @@ const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue = [];
 };
  
-axiosInstance.interceptors.response.use(
+api.interceptors.response.use(
   (response) => response,
  
   async (error) => {
     const originalRequest = error.config;
- 
+  
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
@@ -59,7 +58,7 @@ axiosInstance.interceptors.response.use(
         })
           .then((newToken) => {
             originalRequest.headers.Authorization = `Bearer ${newToken}`;
-            return axiosInstance(originalRequest);
+            return api(originalRequest);
           })
           .catch((err) => Promise.reject(err));
       }
@@ -85,7 +84,7 @@ axiosInstance.interceptors.response.use(
  
         processQueue(null, accessToken);
  
-        return axiosInstance(originalRequest);
+        return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
         clearTokens();
@@ -95,9 +94,8 @@ axiosInstance.interceptors.response.use(
         isRefreshing = false;
       }
     }
- 
     return Promise.reject(error);
   }
+  
 );
  
-export default axiosInstance;

@@ -3,8 +3,7 @@ import type { ToggleProps } from "../types";
 import type { TogglesState } from "../types";
 import { clearAudioSource } from "../../../store/AudioSourceSlice";
 import UploadSuccessScreen from "./UploadSuccessScreen";
-import axios from "axios";
-import axiosInstance from "@/features/auth/services/axiosInstance";
+import { api } from "@/features/auth/services/api";
 import { SiSoundcloud } from "react-icons/si";
 import { useDispatch } from "react-redux";
 import { useAppSelector } from "../../../app/hooks"; 
@@ -19,6 +18,7 @@ function Toggle({ enabled, onChange }: ToggleProps) {
     </div>
   );
 }
+
 function InfoIcon() {
   return (
     <svg className="ml-1" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2">
@@ -125,7 +125,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
       setIsUploading(true);
       setUploadProgress(0);
       try {
-        const blob = await axios.get(source.url, {
+        const blob = await api.get(source.url, {
           responseType: "blob",
           onDownloadProgress: (e) => {
             if (e.total) {
@@ -240,42 +240,49 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
       const rawGenre = genreRef.current?.value?.toLowerCase().trim() ?? "";
 
       // ── Step 1: POST metadata → get trackId ─────────────────────────────────
-      // axiosInstance handles baseURL + auth token automatically
-      const { data: track } = await axiosInstance.post("/tracks", {
+      const { data: track } = await api.post("/tracks", {
         title:               titleRef.current?.value || "Untitled",
-        genre:               GENRE_MAP[rawGenre] ?? rawGenre,
         tags:                tagsRef.current?.value ? [tagsRef.current.value] : [],
         description:         descriptionRef.current?.value || "",
         privacy:             privacyRef.current,
-        artists:             artistsRef.current?.value
-                               ? artistsRef.current.value.split(",").map(a => a.trim())
-                               : [],
+
         availability:        { type: geoMode, regions },
-        licensing:           license === "all"
-                               ? { type: "all_rights_reserved", allowAttribution: false, nonCommercial: false, noDerivatives: false, shareAlike: false }
-                               : { type: "creative_commons", ...ccOptions },
         scheduledReleaseDate: null,
         contentWarning,
       });
 
-      const { trackId } = track;
-      console.log("Track created:", trackId);
+      const { id } =  track;
+      console.log("Track created:", track);
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      // ── Step 2: POST audio binary to /tracks/{trackId}/audio ────────────────
-      // axiosInstance handles baseURL + auth token automatically
+      // ── Step 2: POST audio to /tracks/{trackId}/audio ────────────────────────
       if (audioBlobRef.current) {
         const mimeType = audioBlobRef.current.type || "audio/wav";
         const ext = mimeType.split("/")[1] ?? "wav";
         const audioFileName = source?.kind === "file" ? (source.name ?? `audio.${ext}`) : `recording.${ext}`;
 
-        const formData = new FormData();
-        formData.append("audio", audioBlobRef.current, audioFileName);
+        const audioForm = new FormData();
+        audioForm.append("file", audioBlobRef.current, audioFileName);
 
-        await axiosInstance.post(`/tracks/${trackId}/audio`, formData, {
+        await api.post(`/tracks/${id}/audio`, audioForm, {
           headers: { "Content-Type": "multipart/form-data" },
         });
 
-        console.log("Audio uploaded for track:", trackId);
+        console.log("Audio uploaded for track:", id);
+      }
+
+      // ── Step 3: PATCH artwork to /tracks/{trackId} ───────────────────────────
+      if (artworkBase64Ref.current) {
+        const artworkBlob = await fetch(artworkBase64Ref.current).then(r => r.blob());
+
+        const artworkForm = new FormData();
+        artworkForm.append("artwork", artworkBlob, "artwork.jpg");
+
+        await api.patch(`/tracks/${id}`, artworkForm, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+
+        console.log("Artwork uploaded for track:", id);
       }
 
       setUploadDone(true);

@@ -1,11 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, Upload, Plus, Globe, DollarSign, SlidersHorizontal, ArrowUpDown, BarChart, Users, Gift } from "lucide-react";
 import TrackList from "../components/TrackList";
 import ArtistsNavbar from "../components/ArtistsNavbar";
 import ArtistsSidebar from "../components/ArtistsSidebar";
-// import { trackService } from "../trackService";
-// import type { Track } from "../types";
-import { SampleTracks } from "../tests/SampleTracks";
+import { trackService } from "../trackService";
+import type { Track } from "@/shared/types/Track";
+//import { SampleTracks } from "../tests/SampleTracks";
 
 function UploadBanner() {
   return (
@@ -91,26 +91,26 @@ export default function ArtistsPage() {
   const [activeTab, setActiveTab] = useState("SoundCloud Tracks");
   const [searchQuery, setSearchQuery] = useState("");
   const [visibilityFilter, setVisibilityFilter] = useState<"all" | "public" | "private">("all");
-  // const [tracks, setTracks] = useState<Track[]>([]);
+  const [tracks, setTracks] = useState<Track[]>([]);
 
-  // useEffect(() => {
-  //   const fetchTracks = async () => {
-  //     const data = await trackService.getUploadedTracks();
-  //     setTracks(Array.isArray(data) ? data : data?.data ?? []);
-  //   };
-  //   fetchTracks();
-  // }, []);
+useEffect(() => {
+  const fetchTracks = async () => {
+    const data = await trackService.getUploadedTracks();
+    setTracks(data);
+  };
+  fetchTracks();
+}, []);
 
-  const filteredTracks = useMemo(() => {
-    return SampleTracks.filter((track) => {
-      const matchesSearch = track.title.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesVisibility =
-        visibilityFilter === "all" ||
-        (visibilityFilter === "public" && !track.isPrivate) ||
-        (visibilityFilter === "private" && track.isPrivate);
-      return matchesSearch && matchesVisibility;
-    });
-  }, [searchQuery, visibilityFilter]);
+const filteredTracks = useMemo(() => {
+  return tracks.filter((track) => {
+    const matchesSearch = track.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesVisibility =
+      visibilityFilter === "all" ||
+      (visibilityFilter === "public" && !track.isPrivate) ||
+      (visibilityFilter === "private" && track.isPrivate);
+    return matchesSearch && matchesVisibility;
+  });
+}, [tracks, searchQuery, visibilityFilter]);
 
   const handleVisibilityChange = (v: "public" | "private") => {
     setVisibilityFilter((prev) => (prev === v ? "all" : v));

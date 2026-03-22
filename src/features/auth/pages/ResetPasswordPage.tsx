@@ -6,6 +6,7 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { resetPassword } from '../services/index';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 const TunifyLogo: React.FC = () => (
@@ -32,7 +33,7 @@ const ResetPasswordPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
-
+  const [email] = useState('');
   // Button is only active when both fields have 8+ chars
   const isReady =
     newPassword.length >= 8 &&
@@ -41,43 +42,33 @@ const ResetPasswordPage: React.FC = () => {
   const handleSave = async () => {
     setError(null);
 
-    // Validation 1: minimum length
     if (newPassword.length < 8) {
       setError('Password must be at least 8 characters.');
       return;
     }
-
-    // Validation 2: passwords must match
     if (newPassword !== confirmPassword) {
       setError('Passwords do not match.');
       return;
     }
-
-    // Validation 3: no token in URL (invalid/expired link)
     if (!resetToken) {
       setError('This reset link is invalid or has expired.');
       return;
     }
 
     setIsSubmitting(true);
-
-    // Mock: simulate API call
-    await new Promise((r) => setTimeout(r, 800));
-
-    // Mock success
-    setSubmitted(true);
-    setIsSubmitting(false);
-
-    // Real implementation when backend is ready:
-    // const res = await axiosInstance.post('/auth/reset-password', {
-    //   token: resetToken,
-    //   newPassword,
-    //   signOutEverywhere,
-    // });
-    // if (res.data.requireReLogin) {
-    //   clearTokens();
-    //   navigate('/signin');
-    // }
+    try {
+      await resetPassword(email, resetToken, newPassword, confirmPassword, signOutEverywhere);
+      setSubmitted(true);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message;
+      if (Array.isArray(msg)) {
+        setError(msg[0]);
+      } else {
+        setError(msg ?? 'Something went wrong. Please try again.');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
