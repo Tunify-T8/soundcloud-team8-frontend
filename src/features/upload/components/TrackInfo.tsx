@@ -3,8 +3,7 @@ import type { ToggleProps } from "../types";
 import type { TogglesState } from "../types";
 import { clearAudioSource } from "../../../store/AudioSourceSlice";
 import UploadSuccessScreen from "./UploadSuccessScreen";
-import axios from "axios";
-import axiosInstance from "@/features/auth/services/axiosInstance";
+import { api } from "@/features/auth/services/api";
 import { SiSoundcloud } from "react-icons/si";
 import { useDispatch } from "react-redux";
 import { useAppSelector } from "../../../app/hooks"; 
@@ -126,7 +125,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
       setIsUploading(true);
       setUploadProgress(0);
       try {
-        const blob = await axios.get(source.url, {
+        const blob = await api.get(source.url, {
           responseType: "blob",
           onDownloadProgress: (e) => {
             if (e.total) {
@@ -241,7 +240,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
       const rawGenre = genreRef.current?.value?.toLowerCase().trim() ?? "";
 
       // ── Step 1: POST metadata → get trackId ─────────────────────────────────
-      const { data: track } = await axiosInstance.post("/tracks", {
+      const { data: track } = await api.post("/tracks", {
         title:               titleRef.current?.value || "Untitled",
         tags:                tagsRef.current?.value ? [tagsRef.current.value] : [],
         description:         descriptionRef.current?.value || "",
@@ -265,7 +264,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
         const audioForm = new FormData();
         audioForm.append("file", audioBlobRef.current, audioFileName);
 
-        await axiosInstance.post(`/tracks/${id}/audio`, audioForm, {
+        await api.post(`/tracks/${id}/audio`, audioForm, {
           headers: { "Content-Type": "multipart/form-data" },
         });
 
@@ -279,7 +278,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
         const artworkForm = new FormData();
         artworkForm.append("artwork", artworkBlob, "artwork.jpg");
 
-        await axiosInstance.patch(`/tracks/${id}`, artworkForm, {
+        await api.patch(`/tracks/${id}`, artworkForm, {
           headers: { "Content-Type": "multipart/form-data" },
         });
 
