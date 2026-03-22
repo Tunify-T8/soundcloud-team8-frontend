@@ -9,17 +9,29 @@ export default function HeaderImg({
   isMe?: boolean;
 }) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   async function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) {
       setPreviewUrl(URL.createObjectURL(file));
+      setIsUploading(true);
       try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", "tunify_avatars_coverImgs");
+        const cloudRes = await fetch(
+          "https://api.cloudinary.com/v1_1/denreb1dd/image/upload",
+          { method: "POST", body: formData },
+        );
+        const cloudData = await cloudRes.json();
         await profileService.updateMeProfile({
-          coverUrl: URL.createObjectURL(file),
+          coverUrl: cloudData.secure_url,
         });
       } catch (err) {
         console.error("Failed to update cover image", err);
+      } finally {
+        setIsUploading(false);
       }
     }
   }
@@ -37,6 +49,11 @@ export default function HeaderImg({
           alt="Header"
           className="absolute inset-0 w-full h-full object-cover"
         />
+      )}
+      {isUploading && (
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
+          <span className="text-white font-bold text-sm">Uploading...</span>
+        </div>
       )}
       {isMe && (
         <label className="absolute top-8 right-7 z-10 bg-black text-white font-bold text-[14px] px-2 py-1 rounded-sm cursor-pointer hover:text-gray-400 transition-colors">

@@ -13,20 +13,30 @@ export default function Avatar({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showActions, setShowActions] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   async function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) {
       setPreviewUrl(URL.createObjectURL(file));
       setShowActions(false);
+      setIsUploading(true);
       try {
         const formData = new FormData();
-        formData.append("avatar", file);
+        formData.append("file", file);
+        formData.append("upload_preset", "tunify_avatars_coverImgs");
+        const cloudRes = await fetch(
+          "https://api.cloudinary.com/v1_1/denreb1dd/image/upload",
+          { method: "POST", body: formData },
+        );
+        const cloudData = await cloudRes.json();
         await profileService.updateMeProfile({
-          avatarUrl: URL.createObjectURL(file),
+          avatarUrl: cloudData.secure_url,
         });
       } catch (err) {
         console.error("Failed to update avatar", err);
+      } finally {
+        setIsUploading(false);
       }
     }
   }
@@ -63,6 +73,11 @@ export default function Avatar({
               showActions ? "opacity-100" : "opacity-0 group-hover:opacity-100"
             }`}
           />
+        )}
+        {isUploading && (
+          <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center">
+            <span className="text-white text-xs font-bold">Uploading...</span>
+          </div>
         )}
       </div>
 
