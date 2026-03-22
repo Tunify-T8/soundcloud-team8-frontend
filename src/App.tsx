@@ -70,10 +70,10 @@ const router = createBrowserRouter([
         path: '/messages',
         element: <MessagesPage />
       },
-      {
-        path: '/:artist/:songName',
-        element: <TrackPage />
-      },
+      // {
+      //   path: '/:artist/:songName',
+      //   element: <TrackPage />
+      // },
       {
         path: '/:artist/:songName/likes',
         element: <LikesPage />
