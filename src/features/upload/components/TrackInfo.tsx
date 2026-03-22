@@ -206,10 +206,12 @@ function GenreInput({ genreRef }: { genreRef: React.RefObject<HTMLInputElement |
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-
 type UserProfile = {
   id: string
   username: string
+  email: string
+  avatarUrl: string
+  isVerified: boolean
 }
 
 export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
@@ -259,7 +261,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
   // ── Fetch user profile ────────────────────────────────────────────────────
   useEffect(() => {
     api.get("/users/me")
-      .then((res) => setUserProfile(res.data))
+      .then((res) => setUserProfile(res.data.user))
       .catch((err) => console.error("Failed to fetch user profile:", err));
   }, []);
 
