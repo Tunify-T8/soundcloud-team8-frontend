@@ -35,15 +35,12 @@ const VerifyEmailPage: React.FC = () => {
   const fullCode = code.join('');
   const isReady = fullCode.length === 6;
 
-  // ── Handle each box input ──────────────────────────────────
   const handleChange = (index: number, value: string) => {
     const char = value.replace(/[^a-zA-Z0-9]/g, '').slice(-1).toUpperCase();
     const newCode = [...code];
     newCode[index] = char;
     setCode(newCode);
     setApiError(null);
-
-    // Auto-advance to next box
     if (char && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
@@ -63,12 +60,10 @@ const VerifyEmailPage: React.FC = () => {
       newCode[i] = pasted[i];
     }
     setCode(newCode);
-    // Focus last filled box
     const lastIndex = Math.min(pasted.length, 5);
     inputRefs.current[lastIndex]?.focus();
   };
 
-  // ── Submit verification ────────────────────────────────────
   const handleVerify = async () => {
     if (!isReady || isSubmitting) return;
     setApiError(null);
@@ -84,7 +79,6 @@ const VerifyEmailPage: React.FC = () => {
     }
   };
 
-  // ── Resend verification email ──────────────────────────────
   const handleResend = async () => {
     if (isResending) return;
     setIsResending(true);
@@ -163,8 +157,8 @@ const VerifyEmailPage: React.FC = () => {
                 </div>
               )}
 
-              {/* 6-box code input */}
-              <div className="flex gap-2 mb-6" onPaste={handlePaste}>
+              {/* ── 6-box code input — fixed size, centered ── */}
+              <div className="flex justify-center gap-3 mb-6" onPaste={handlePaste}>
                 {code.map((char, i) => (
                   <input
                     key={i}
@@ -175,7 +169,7 @@ const VerifyEmailPage: React.FC = () => {
                     value={char}
                     onChange={(e) => handleChange(i, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(i, e)}
-                    className={`flex-1 h-14 text-center text-white text-lg font-bold bg-[#2a2a2a] border rounded-sm focus:outline-none transition-colors uppercase ${
+                    className={`w-10 h-10 sm:w-11 sm:h-11 text-center text-white text-base font-bold bg-[#2a2a2a] border rounded-sm focus:outline-none transition-colors uppercase flex-shrink-0 ${
                       char ? 'border-white' : 'border-[#444] focus:border-[#888]'
                     }`}
                   />
