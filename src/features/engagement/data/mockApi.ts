@@ -168,6 +168,7 @@ export const setupMockApi = () => {
     });
 
   api.interceptors.request.use((config) => {
+    try {
     const base = config.baseURL && config.baseURL !== ''
       ? config.baseURL
       : window.location.origin;
@@ -232,5 +233,9 @@ export const setupMockApi = () => {
     }
 
     return config;
+    } catch {
+      // Not a valid URL for mocking — pass through to real API
+      return config;
+    }
   });
 };
