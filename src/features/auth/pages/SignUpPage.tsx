@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import AuthNavbar from '../components/AuthNavBar';
+import AuthNavbar from '../components/AuthNavbar';
 import { Eye, EyeOff, Loader2, ChevronLeft } from 'lucide-react';
 
 import { signUpSchema, type SignUpFormData } from '../schemas/auth.schemas';

@@ -5,7 +5,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import AuthNavbar from '../components/AuthNavBar';
+import AuthNavbar from '../components/AuthNavbar';
 import { ChevronLeft, Loader2 } from 'lucide-react';
 import { verifyEmail, resendVerification } from '../services/index';
 import { storeTokens } from '../utils/token.utils';
