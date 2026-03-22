@@ -1,4 +1,4 @@
-import { api } from "../../services/api";
+import { api } from "@/features/auth/services/api";
 import type { FollowingUser, User } from "../../shared/types/User";
 
 type UsersResponse = User | User[] | { users?: User[]; data?: User[] };

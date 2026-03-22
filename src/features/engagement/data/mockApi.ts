@@ -1,5 +1,4 @@
-
-import { api } from '../../../services/api';
+import { api } from "@/features/auth/services/api";
 import type { Like, Repost, EngagementCounts } from '../types';
 import type { Track } from "../../../shared/types/Track";
 import { getMockTrack } from './mockTracks';
