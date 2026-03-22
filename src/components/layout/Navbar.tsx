@@ -2,15 +2,28 @@ import { Search, Bell, Mail, MoreHorizontal } from "lucide-react";
 import { SiSoundcloud } from "react-icons/si";
 import { Link } from "react-router-dom";
 import { Outlet } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { profileService } from "../features/profile/profileService";
 
 export default function Navbar() {
   const location = useLocation();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [location.pathname]);
+
+  useEffect(() => {
+    profileService
+      .getMeProfile()
+      .then((user) => {
+        setAvatarUrl(user.avatarUrl ?? null);
+        setUsername(user.username);
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <>
@@ -50,7 +63,6 @@ export default function Navbar() {
               className="w-full bg-zinc-900 text-sm text-white placeholder-zinc-400
                        pl-4 pr-10 py-1.5 rounded-md focus:outline-none"
             />
-
             <Search
               size={18}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400"
@@ -94,11 +106,19 @@ export default function Navbar() {
             />
 
             <Link
-              to="/me"
-              className="w-7 h-7 bg-zinc-600 rounded-full cursor-pointer flex items-center justify-center"
+              to={username ? `/${username}` : "/me"}
+              className="w-7 h-7 bg-zinc-600 rounded-full cursor-pointer flex items-center justify-center overflow-hidden"
               title="My Profile"
             >
-              <span className="sr-only">My Profile</span>
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt="My Profile"
+                  className="w-full h-full object-cover rounded-full"
+                />
+              ) : (
+                <span className="sr-only">My Profile</span>
+              )}
             </Link>
           </div>
         </div>
