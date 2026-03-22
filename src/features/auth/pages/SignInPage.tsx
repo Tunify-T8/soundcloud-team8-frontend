@@ -1,9 +1,12 @@
+// ============================================================
+// SignInPage.tsx
+// ============================================================
+
 import React, { useRef, useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Eye, EyeOff, Loader2, ChevronLeft, AlertCircle } from 'lucide-react';
-import { SiSoundcloud } from "react-icons/si";
 import { useGoogleLogin } from '@react-oauth/google';
 import { signInSchema, type SignInFormData } from '../schemas/auth.schemas';
 import { login, socialLogin, googleSignIn, googleLink } from '../services/index';
@@ -11,7 +14,7 @@ import { storeTokens } from '../utils/token.utils';
 import { extractErrorMessage } from '../hooks/useAuth';
 import type { SocialProvider } from '../types/auth.types';
 import { checkEmail } from '../services/index';
-// ── Icons ──────────────────────────────────────────────────────
+
 const GoogleIcon: React.FC = () => (
   <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -62,13 +65,12 @@ const TunifyLogo: React.FC = () => (
   <Link to="/" className="flex items-center gap-2 no-underline">
     <svg viewBox="0 0 33 15" className="h-6 w-auto sm:h-7" fill="white" aria-hidden="true">
       <path d="M0 11.5c0 .8.7 1.5 1.5 1.5s1.5-.7 1.5-1.5V6c0-.8-.7-1.5-1.5-1.5S0 5.2 0 6v5.5zm4.5 1.5c.8 0 1.5-.7 1.5-1.5V3.5C6 2.7 5.3 2 4.5 2S3 2.7 3 3.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V1.5C10.5.7 9.8 0 9 0S7.5.7 7.5 1.5V11.5C7.5 12.3 8.2 13 9 13zm4.5 0c.8 0 1.5-.7 1.5-1.5V3.5C15 2.7 14.3 2 13.5 2S12 2.7 12 3.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V2.5C19.5 1.7 18.8 1 18 1s-1.5.7-1.5 1.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V4.5C24 3.7 23.3 3 22.5 3S21 3.7 21 4.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V4.5C27 3.7 26.3 3 25.5 3S24 3.7 24 4.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V2.5C33 1.7 32.3 1 31.5 1S30 1.7 30 2.5V11.5c0 .8.7 1.5 1.5 1.5z" />
-   </svg>
+    </svg>
     <span className="text-white font-bold text-sm sm:text-base tracking-widest uppercase">SoundCloud</span>
   </Link>
 );
 
 type Step = 'social' | 'email' | 'password';
-
 const isValidEmail = (val: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
 
 const SignInPage: React.FC = () => {
@@ -106,25 +108,21 @@ const SignInPage: React.FC = () => {
     };
   }, []);
 
-  // ── Google OAuth hook ──────────────────────────────────────────
+  // ── Google OAuth ───────────────────────────────────────────────
   const googleLogin = useGoogleLogin({
     onSuccess: async (response) => {
       setApiError(null);
       setSocialLoading('google');
       try {
         const res = await googleSignIn(response.code);
-
-        // Scenario 3 — email already registered locally, needs linking
         if (res.requiresLinking) {
           setLinkingToken(res.linkingToken);
           setShowLinkPassword(true);
           setSocialLoading(null);
           return;
         }
-
-        // Scenario 1 & 2 — new or returning Google user
         storeTokens(res.accessToken, res.refreshToken, 3600);
-        navigate(from, { replace: true });
+        navigate(from); // ← no replace: back button returns to signin
       } catch (error) {
         setApiError(extractErrorMessage(error));
       } finally {
@@ -147,7 +145,7 @@ const SignInPage: React.FC = () => {
     try {
       const res = await googleLink(linkingToken, linkPassword);
       storeTokens(res.accessToken, res.refreshToken, 3600);
-      navigate(from, { replace: true });
+      navigate(from); // ← no replace
     } catch (error) {
       setApiError(extractErrorMessage(error));
     } finally {
@@ -165,59 +163,54 @@ const SignInPage: React.FC = () => {
   };
 
   const handleEmailContinue = async () => {
-  const email = emailInput.trim();
-  if (!isValidEmail(email)) {
-    setEmailError('Enter a valid email address or profile url.');
-    return;
-  }
-  setEmailError(null);
-  setIsCheckingEmail(true);
-  try {
-    const result = await checkEmail(email);
-    if (!result.exists) {
-      navigate('/create-account', { state: { email } });
+    const email = emailInput.trim();
+    if (!isValidEmail(email)) {
+      setEmailError('Enter a valid email address or profile url.');
       return;
     }
-    setValue('email', email);
-    setStep('password');
-  } catch (error) {
-    setEmailError('Something went wrong. Please try again.');
-  } finally {
-    setIsCheckingEmail(false);
-  }
-};
-
-const onSubmit = async (data: SignInFormData) => {
-  setApiError(null);
-  setIsSubmitting(true);
-  try {
-    const res = await login(data);
-
-    // Handle unverified user — no tokens returned
-    if (res.user && res.user.isVerified === false) {
-      navigate('/verify-email', { state: { email: data.email } });
-      return;
+    setEmailError(null);
+    setIsCheckingEmail(true);
+    try {
+      const result = await checkEmail(email);
+      if (!result.exists) {
+        navigate('/create-account', { state: { email } });
+        return;
+      }
+      setValue('email', email);
+      setStep('password');
+    } catch (error) {
+      setEmailError('Something went wrong. Please try again.');
+    } finally {
+      setIsCheckingEmail(false);
     }
+  };
 
-    // Normal login — tokens present
-    if (!res.accessToken) {
-      setApiError('Login failed. Please try again.');
-      return;
+  const onSubmit = async (data: SignInFormData) => {
+    setApiError(null);
+    setIsSubmitting(true);
+    try {
+      const res = await login(data);
+      if (res.user && res.user.isVerified === false) {
+        navigate('/verify-email', { state: { email: data.email } });
+        return;
+      }
+      if (!res.accessToken) {
+        setApiError('Login failed. Please try again.');
+        return;
+      }
+      storeTokens(res.accessToken, res.refreshToken, res.expiresIn ?? 3600);
+      navigate(from); // ← no replace: back button returns to signin
+    } catch (error) {
+      const msg = extractErrorMessage(error);
+      if (msg.includes('No account') || msg.includes('not found')) {
+        navigate('/create-account', { state: { email: data.email } });
+      } else {
+        setApiError(msg);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
-
-    storeTokens(res.accessToken, res.refreshToken, res.expiresIn ?? 3600);
-    navigate(from, { replace: true });
-  } catch (error) {
-    const msg = extractErrorMessage(error);
-    if (msg.includes('No account') || msg.includes('not found')) {
-      navigate('/create-account', { state: { email: data.email } });
-    } else {
-      setApiError(msg);
-    }
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   const handleSocialLogin = async (provider: SocialProvider) => {
     setApiError(null);
@@ -225,7 +218,7 @@ const onSubmit = async (data: SignInFormData) => {
     try {
       const res = await socialLogin({ provider, providerToken: 'mock_oauth_token' });
       storeTokens(res.accessToken, res.refreshToken, res.expiresIn);
-      navigate(from, { replace: true });
+      navigate(from); // ← no replace
     } catch (error) {
       setApiError(extractErrorMessage(error));
     } finally {
@@ -268,7 +261,6 @@ const onSubmit = async (data: SignInFormData) => {
       {/* ── Main ── */}
       <main className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-[480px]">
-
           <div className="border sm:border-[#3a3a3a] sm:rounded-sm sm:p-[3px] sm:bg-[#111]">
             <div className="border sm:border-[#555] sm:rounded-sm bg-[#181818] sm:min-h-[520px]">
 
@@ -287,7 +279,6 @@ const onSubmit = async (data: SignInFormData) => {
 
                   <SocialButton provider="facebook" label="Continue with Facebook" icon={<FacebookIcon />} bgColor="bg-[#1877f2]" hoverColor="hover:bg-[#1565d8]" onClick={handleSocialLogin} disabled={isSocialDisabled} />
 
-                  {/* Google button uses real OAuth, not handleSocialLogin */}
                   <button
                     type="button"
                     disabled={isSocialDisabled}
@@ -300,14 +291,11 @@ const onSubmit = async (data: SignInFormData) => {
 
                   <SocialButton provider="apple" label="Continue with Apple" icon={<AppleIcon />} bgColor="bg-black" hoverColor="hover:bg-[#1a1a1a]" borderColor="border-[#555]" onClick={handleSocialLogin} disabled={isSocialDisabled} />
 
-                  {/* Account linking card — only shows when Google email already exists locally */}
                   {showLinkPassword && (
                     <div className="bg-[#2a2a2a] border border-[#555] rounded-sm p-4 flex flex-col gap-3">
                       <p className="text-white text-sm font-medium">This email is already registered.</p>
                       <p className="text-[#aaa] text-xs">Enter your Tunify password to link your Google account.</p>
-                      {apiError && (
-                        <p className="text-red-400 text-xs">{apiError}</p>
-                      )}
+                      {apiError && <p className="text-red-400 text-xs">{apiError}</p>}
                       <input
                         type="password"
                         value={linkPassword}
@@ -360,11 +348,12 @@ const onSubmit = async (data: SignInFormData) => {
                     Continue
                   </button>
                   <div className="text-left sm:text-center">
-                  <a href="https://help.soundcloud.com/hc/en-us/sections/46266771825691" target="_blank" rel="noreferrer" className="text-[#0066cc] text-sm hover:underline">Need help?</a>                   </div>
+                    <a href="https://help.soundcloud.com/hc/en-us/sections/46266771825691" target="_blank" rel="noreferrer" className="text-[#0066cc] text-sm hover:underline">Need help?</a>
+                  </div>
                 </div>
               )}
 
-              {/* ══ STEP: email focused ══ */}
+              {/* ══ STEP: email ══ */}
               {step === 'email' && (
                 <div className="p-8">
                   <div className="flex items-center gap-4 mb-6">
