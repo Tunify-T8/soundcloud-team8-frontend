@@ -35,21 +35,6 @@ const router = createBrowserRouter([
     path: "/forgot-password",
     element: <ForgotPasswordPage />,
   },
-  { path: "/reset-password", element: <ResetPasswordPage /> },
-  {
-    path: "/me",
-    element: (
-      <ProtectedRoute>
-        <NavBar />
-      </ProtectedRoute>
-    ),
-    children: [
-      {
-        index: true,
-        element: <ProfilePage />,
-      },
-    ],
-  },
   {
     path: "/reset-password",
     element: <ResetPasswordPage />,
@@ -83,7 +68,7 @@ const router = createBrowserRouter([
         element: <RepostsPage />
       },
       {
-        path: "/:username",
+        path: "/me",
         element: <ProfilePage />,
         children: [
           { index: true },
