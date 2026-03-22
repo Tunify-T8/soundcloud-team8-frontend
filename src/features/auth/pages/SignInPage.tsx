@@ -211,9 +211,9 @@ const SignInPage: React.FC = () => {
       if (msg.includes('No account') || msg.includes('not found')) {
         navigate('/create-account', { state: { email: data.email } });
       } else {
-        setApiError(msg);
+        setApiError('This password is incorrect.');
       }
-    } finally {
+    }finally {
       setIsSubmitting(false);
     }
   };
