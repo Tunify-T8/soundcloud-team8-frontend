@@ -1,5 +1,5 @@
 import type { Genre } from "@/shared/types/Genre";
-import { api } from "../../services/api";
+import { api } from "@/features/auth/services/api";
 import type { Track } from "../../shared/types/Track";
 import type { TrackVisibility } from "@/shared/types/Track";
 

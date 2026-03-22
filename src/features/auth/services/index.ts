@@ -1,4 +1,4 @@
-import { api } from "@/services/api";
+import { api } from "@/features/auth/services/api";
 import { getRefreshToken, clearTokens } from '../utils/token.utils';
 import type {
   LoginRequest,
