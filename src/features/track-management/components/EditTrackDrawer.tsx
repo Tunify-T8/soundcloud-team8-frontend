@@ -2,11 +2,13 @@ import { useState, useRef } from "react";
 import { X, Download, RefreshCw, ChevronDown } from "lucide-react";
 import type { Track } from "../../../shared/types/Track";
 import storefrontImg from "@/assets/storefront.png";
+import { trackService } from "../trackService";
+import type { UpdateTrackPayload } from "../trackService";
+import type { Genre } from "@/shared/types/Genre";
 
 interface EditTrackDrawerProps {
   track: Track;
   onClose: () => void;
-  onSave?: (id: string, data: Record<string, unknown>) => void;
 }
 
 function InfoIcon() {
@@ -74,17 +76,17 @@ function Accordion({
   );
 }
 
-export default function EditTrackDrawer({ track, onClose, onSave }: EditTrackDrawerProps) {
+export default function EditTrackDrawer({ track, onClose }: EditTrackDrawerProps) {
   const [activeTab, setActiveTab] = useState<"details" | "advanced" | "storefront">("details");
 
   const [artworkPreview, setArtworkPreview] = useState<string | null>(track.thumbnailUrl ?? null);
   const artworkInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState(track.title);
   const [artists, setArtists] = useState("Nada Serag");
-  const [genre, setGenre] = useState("");
+  const [genre, setGenre] = useState(track.genre);
   const [tags, setTags] = useState("");
   const [description, setDescription] = useState("");
-  const [privacy, setPrivacy] = useState<"public" | "private" | "schedule">("private");
+  const [privacy, setPrivacy] = useState<"public" | "private">("private");
   const [license, setLicense] = useState<"all" | "cc">("all");
 
   const [toggles, setToggles] = useState({
@@ -97,6 +99,7 @@ export default function EditTrackDrawer({ track, onClose, onSave }: EditTrackDra
     showComments: true,
     insights: true,
   });
+
   type TogglesKey = keyof typeof toggles;
   const setToggle = (key: TogglesKey, val: boolean) =>
     setToggles((t) => ({ ...t, [key]: val }));
@@ -119,10 +122,22 @@ export default function EditTrackDrawer({ track, onClose, onSave }: EditTrackDra
     img.src = objectUrl;
   };
 
-  const handleSave = () => {
-    onSave?.(track.id, { title, artists, genre, tags, description, privacy, license, toggles });
+  const handleSave = async () => {
+  try {
+    await trackService.updateTrack(track.id, {
+      id: track.id,
+      title,
+      genre: track.genre,
+      tags: tags ? tags.split(",").map((t) => t.trim()) : [],
+      description,
+      privacy,
+      artwork: artworkPreview,
+    });
     onClose();
-  };
+  } catch (err) {
+    console.error("Failed to update track:", err);
+  }
+};
 
   const waveformBars = Array.from({ length: 80 }, (_, i) =>
     10 + Math.abs(Math.sin(i * 0.4) * 28 + Math.sin(i * 0.13) * 18)
@@ -207,7 +222,7 @@ export default function EditTrackDrawer({ track, onClose, onSave }: EditTrackDra
         <div className="flex items-center">
           <input
             value={genre}
-            onChange={(e) => setGenre(e.target.value)}
+           // onChange={(e) => setGenre(e.target.value)}
             placeholder="Add or search for genre"
             className="w-full bg-transparent text-[#555] text-sm py-1 focus:outline-none placeholder-[#555]"
           />
@@ -242,7 +257,7 @@ export default function EditTrackDrawer({ track, onClose, onSave }: EditTrackDra
       <div className="pb-4">
         <label className="text-sm font-bold text-white block mb-3">Track Privacy</label>
         <div className="flex gap-6 text-sm text-white">
-          {(["Public", "Private", "Schedule"] as const).map((opt) => (
+          {(["Public", "Private"] as const).map((opt) => (
             <label key={opt} className="flex items-center gap-2 cursor-pointer">
               <input
                 type="radio"
