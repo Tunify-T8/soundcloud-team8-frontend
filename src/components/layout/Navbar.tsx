@@ -94,7 +94,7 @@ export default function Navbar() {
             />
 
             <Link
-              to="/me"
+              to="/:username"
               className="w-7 h-7 bg-zinc-600 rounded-full cursor-pointer flex items-center justify-center"
               title="My Profile"
             >
