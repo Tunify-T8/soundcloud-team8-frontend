@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ChevronLeft, Loader2 } from 'lucide-react';
 import { forgotPassword } from '../services/index';
-import { extractErrorMessage } from '../hooks/useAuth';
+// import { extractErrorMessage } from '../hooks/useAuth';
 
 const HELP_URL = 'https://help.soundcloud.com/hc/en-us/sections/46266771825691';
 
@@ -166,7 +166,7 @@ const ForgotPasswordPage: React.FC = () => {
 
                   <button
                     type="button"
-                    onClick={() => navigate('/signin')}
+                    onClick={() => navigate('/signin', { state: { email, prefillStep: 'password' } })}
                     className="w-full bg-white hover:bg-gray-100 text-black py-3 rounded-sm text-sm font-semibold transition-colors cursor-pointer mb-5"
                   >
                     Back to login
