@@ -41,6 +41,7 @@ export interface FollowingUser {
 export interface MeUserProfile {
   id: string;
   username: string;
+  displayName?: string | null;
   email: string;
   role: "ARTIST" | "LISTENER";
   bio?: string | null;
@@ -62,6 +63,7 @@ export interface MeUserProfile {
 export interface PublicUserProfile {
   id: string;
   username: string;
+  displayName?: string | null;
   role: "ARTIST" | "LISTENER";
   bio?: string | null;
   location?: string | null;

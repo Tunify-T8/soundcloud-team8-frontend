@@ -98,7 +98,7 @@ export default function Avatar({
               showActions ? "text-orange-500" : "text-white hover:text-zinc-500"
             }`}
           >
-            Update image
+            {isUploading ? "Uploading..." : src ? "Update image" : "Upload image"}
           </button>
           {showActions && (
             <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 flex w-32 flex-col rounded-sm border border-zinc-700 bg-zinc-950 shadow-lg">
