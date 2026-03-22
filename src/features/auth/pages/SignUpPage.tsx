@@ -91,24 +91,30 @@ const SignUpPage: React.FC = () => {
     setSignUpStep('profile');
   };
 
-  const handleProfileContinue = async () => {
-    if (!isProfileReady) return;
-    setApiError(null);
-    setIsSubmitting(true);
-    try {
-      const res = await registerUser({
-        username: displayName,
-        email: prefillEmail,
-        password: passwordValue,
-      });
-      storeTokens(res.accessToken, res.refreshToken, 3600);
-      navigate('/');
-    } catch (error) {
-      setApiError(extractErrorMessage(error));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+const handleProfileContinue = async () => {
+  if (!isProfileReady) return;
+  setApiError(null);
+  setIsSubmitting(true);
+  try {
+    const month = dobMonth.padStart(2, '0');
+    const day = dobDay.padStart(2, '0');
+    const isoDate = `${dobYear}-${month}-${day}`;
+
+    await registerUser({
+      username: displayName,
+      email: prefillEmail,
+      password: passwordValue,
+      gender: gender as 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY',
+      date_of_birth: isoDate,
+    });
+
+    navigate('/verify-email', { state: { email: prefillEmail } });
+  } catch (error) {
+    setApiError(extractErrorMessage(error));
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const selectClass = "w-full bg-white text-black text-sm px-3 py-3 rounded-sm border border-[#555] focus:outline-none focus:border-[#888] appearance-none cursor-pointer";
 
@@ -312,6 +318,8 @@ const SignUpPage: React.FC = () => {
                           <option value="" disabled>Gender (required)</option>
                           <option value="Male">Male</option>
                           <option value="Female">Female</option>
+                          <option value="OTHER">Other</option>
+                          <option value="PREFER_NOT_TO_SAY">Prefer not to say</option>
                         </select>
                         <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#777] text-xs">▼</div>
                       </div>
