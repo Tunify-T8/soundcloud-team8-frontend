@@ -7,9 +7,9 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import AuthNavbar from '../components/AuthNavbar';
 import { ChevronLeft, Loader2, Eye, EyeOff } from 'lucide-react';
-import { resetPassword } from '../services/index';
-
+import { resetPassword, resendVerification } from '../services/index';
 const TunifyLogo: React.FC = () => (
   <Link to="/" className="flex items-center gap-2 no-underline">
     <svg viewBox="0 0 33 15" className="h-6 w-auto sm:h-7" fill="white" aria-hidden="true">
@@ -70,7 +70,17 @@ const ResetPasswordPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       await resetPassword(email.trim(), token.trim().toUpperCase(), newPassword, confirmPassword, true);
-      setSubmitted(true);
+      try {
+        await resendVerification(email.trim());
+      } catch {
+        // verification email failed silently — still proceed
+      }
+      navigate('/verify-email', {
+        state: {
+          email: email.trim(),
+          message: 'Password reset successfully. Please verify your email to continue.',
+        },
+      });
     } catch (err: any) {
       const msg = err?.response?.data?.message;
       if (Array.isArray(msg)) {
@@ -94,21 +104,7 @@ const ResetPasswordPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#0d0d0d] flex flex-col">
 
-      {/* ── Navbar ── */}
-      <header className="flex items-center justify-between px-4 sm:px-6 py-3 bg-[#0d0d0d] border-b border-[#222]">
-        <TunifyLogo />
-        <nav className="hidden md:flex items-center gap-8">
-          <Link to="/" className="text-white text-sm font-medium hover:text-white/80">Home</Link>
-          <Link to="/stream" className="text-white/60 text-sm hover:text-white">Feed</Link>
-          <Link to="/discover" className="text-white/60 text-sm hover:text-white">Library</Link>
-        </nav>
-        <div className="flex items-center gap-2 sm:gap-4">
-          <Link to="/signin" className="text-white text-sm font-medium hover:text-white/80">Sign in</Link>
-          <Link to="/create-account" className="hidden sm:inline-flex border border-white text-white text-sm font-medium px-5 py-1.5 rounded-full hover:bg-white hover:text-black transition-all">
-            Create account
-          </Link>
-        </div>
-      </header>
+      <AuthNavbar />
 
       {/* ── Main ── */}
       <main className="flex-1 flex items-center justify-center px-4 py-10">
