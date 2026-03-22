@@ -187,24 +187,37 @@ const SignInPage: React.FC = () => {
   }
 };
 
-  const onSubmit = async (data: SignInFormData) => {
-    setApiError(null);
-    setIsSubmitting(true);
-    try {
-      const res = await login(data);
-      storeTokens(res.accessToken, res.refreshToken, res.expiresIn);
-      navigate(from, { replace: true });
-    } catch (error) {
-      const msg = extractErrorMessage(error);
-      if (msg.includes('No account') || msg.includes('not found')) {
-        navigate('/create-account', { state: { email: data.email } });
-      } else {
-        setApiError(msg);
-      }
-    } finally {
-      setIsSubmitting(false);
+const onSubmit = async (data: SignInFormData) => {
+  setApiError(null);
+  setIsSubmitting(true);
+  try {
+    const res = await login(data);
+
+    // Handle unverified user — no tokens returned
+    if (res.user && res.user.isVerified === false) {
+      navigate('/verify-email', { state: { email: data.email } });
+      return;
     }
-  };
+
+    // Normal login — tokens present
+    if (!res.accessToken) {
+      setApiError('Login failed. Please try again.');
+      return;
+    }
+
+    storeTokens(res.accessToken, res.refreshToken, res.expiresIn ?? 3600);
+    navigate(from, { replace: true });
+  } catch (error) {
+    const msg = extractErrorMessage(error);
+    if (msg.includes('No account') || msg.includes('not found')) {
+      navigate('/create-account', { state: { email: data.email } });
+    } else {
+      setApiError(msg);
+    }
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const handleSocialLogin = async (provider: SocialProvider) => {
     setApiError(null);
