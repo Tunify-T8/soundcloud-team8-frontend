@@ -252,8 +252,8 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
         contentWarning,
       });
 
-      const { trackId } = track;
-      console.log("Track created:", trackId);
+      const { id } =  track;
+      console.log("Track created:", track);
 
       // ── Step 2: POST audio to /tracks/{trackId}/audio ────────────────────────
       if (audioBlobRef.current) {
@@ -264,11 +264,11 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
         const audioForm = new FormData();
         audioForm.append("file", audioBlobRef.current, audioFileName);
 
-        await axiosInstance.post(`/tracks/${trackId}/audio`, audioForm, {
+        await axiosInstance.post(`/tracks/${id}/audio`, audioForm, {
           headers: { "Content-Type": "multipart/form-data" },
         });
 
-        console.log("Audio uploaded for track:", trackId);
+        console.log("Audio uploaded for track:", id);
       }
 
       // ── Step 3: PATCH artwork to /tracks/{trackId} ───────────────────────────
@@ -278,11 +278,11 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
         const artworkForm = new FormData();
         artworkForm.append("artwork", artworkBlob, "artwork.jpg");
 
-        await axiosInstance.patch(`/tracks/${trackId}`, artworkForm, {
+        await axiosInstance.patch(`/tracks/${id}`, artworkForm, {
           headers: { "Content-Type": "multipart/form-data" },
         });
 
-        console.log("Artwork uploaded for track:", trackId);
+        console.log("Artwork uploaded for track:", id);
       }
 
       setUploadDone(true);
