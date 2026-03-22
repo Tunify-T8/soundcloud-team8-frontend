@@ -1,5 +1,4 @@
-
-import axiosInstance from '../services/axiosInstance';
+import { api } from "@/features/auth/services/api";
 import { getRefreshToken, clearTokens } from '../utils/token.utils';
 import type {
   LoginRequest,
@@ -51,7 +50,7 @@ const mockLogin = async (data: LoginRequest): Promise<AuthResponse> => {
 };
 
 const realLogin = async (data: LoginRequest): Promise<AuthResponse> => {
-  const res = await axiosInstance.post('/auth/login', data);
+  const res = await api.post('/auth/login', data);
   return res.data;
 };
 
@@ -65,7 +64,7 @@ const mockSocialLogin = async (
 const realSocialLogin = async (
   data: SocialLoginRequest
 ): Promise<AuthResponse> => {
-  const res = await axiosInstance.post('/auth/social-login', data);
+  const res = await api.post('/auth/social-login', data);
   return res.data;
 };
 
@@ -75,7 +74,7 @@ const mockRegister = async (_data: RegisterRequest): Promise<AuthResponse> => {
 };
 
 const realRegister = async (data: RegisterRequest): Promise<AuthResponse> => {
-  const res = await axiosInstance.post('/auth/register', data);
+  const res = await api.post('/auth/register', data);
   return res.data;
 };
 
@@ -87,7 +86,7 @@ const mockLogout = async (): Promise<void> => {
 const realLogout = async (): Promise<void> => {
   const refreshToken = getRefreshToken();
   if (refreshToken) {
-    await axiosInstance.post('/auth/logout', { refreshToken });
+    await api.post('/auth/logout', { refreshToken });
   }
   clearTokens();
 };
