@@ -26,6 +26,7 @@ export default function UserInfoBar({
     facebook?: string;
     instagram?: string;
     twitter?: string;
+    website?: string;
     youtube?: string;
   };
   isMe?: boolean;

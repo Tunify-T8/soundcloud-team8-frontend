@@ -21,6 +21,11 @@ export default function ProfilePage() {
   const [user, setUser] = useState<MeUserProfile | PublicUserProfile | null>(
     null,
   );
+  const [socialAccounts, setSocialAccounts] = useState<{
+    instagram?: string;
+    twitter?: string;
+    website?: string;
+  }>({});
   const [followingUsers, setFollowingUsers] = useState<UserFollowing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +44,8 @@ export default function ProfilePage() {
       try {
         let userData: MeUserProfile | PublicUserProfile | null = null;
         let following: UserFollowing[] = [];
+        let linksData: { instagram?: string; twitter?: string; website?: string } =
+          {};
         if (username) {
           userData = await profileService.getPublicProfile(username);
           if (userData?.id) {
@@ -54,6 +61,20 @@ export default function ProfilePage() {
         } else {
           userData = await profileService.getMeProfile();
           try {
+            const socialLinksRes = await profileService.getMeSocialLinks();
+            linksData = socialLinksRes.links.reduce(
+              (acc, link) => {
+                if (link.platform === "INSTAGRAM") acc.instagram = link.url;
+                if (link.platform === "TWITTER") acc.twitter = link.url;
+                if (link.platform === "WEBSITE") acc.website = link.url;
+                return acc;
+              },
+              {} as { instagram?: string; twitter?: string; website?: string },
+            );
+          } catch {
+            linksData = {};
+          }
+          try {
             const followingRes = await profileService.getMeFollowing();
             following = followingRes.following;
           } catch {
@@ -62,11 +83,13 @@ export default function ProfilePage() {
         }
         if (isMounted) {
           setUser(userData);
+          setSocialAccounts(linksData);
           setFollowingUsers(following);
         }
       } catch (err: any) {
         if (isMounted) {
           setUser(null);
+          setSocialAccounts({});
           setFollowingUsers([]);
           setError(err?.message || "Failed to fetch user");
         }
@@ -118,7 +141,7 @@ export default function ProfilePage() {
           country={country}
           city={city}
           bio={user.bio ?? undefined}
-          socialAccounts={undefined}
+          socialAccounts={socialAccounts}
           isMe={isMe}
           onProfileUpdated={refreshProfile}
         />
@@ -130,7 +153,7 @@ export default function ProfilePage() {
               "tracksUploadedCount" in user ? user.tracksUploadedCount : 0
             }
             bio={user.bio ?? undefined}
-            socialAccounts={undefined}
+            socialAccounts={socialAccounts}
             followingUsers={followingUsers.map((u) => ({
               id: u.id,
               username: u.username,
