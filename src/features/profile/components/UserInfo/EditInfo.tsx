@@ -17,6 +17,7 @@ function normalizeLinks(links: UserSocialLink[]): UserSocialLink[] {
 
 export default function EditInfo({
   onClick,
+  onSaved,
   displayName,
   avatarUrl,
   country,
@@ -25,6 +26,7 @@ export default function EditInfo({
   socialAccounts,
 }: {
   onClick: () => void;
+  onSaved?: () => void;
   displayName?: string;
   avatarUrl?: string;
   country?: string;
@@ -97,7 +99,7 @@ export default function EditInfo({
         [cityState, countryState].filter(Boolean).join(", ") || null;
 
       await profileService.updateMeProfile({
-        username: displayNameState || undefined,
+        displayName: displayNameState || undefined,
         bio: bioState || null,
         location,
         visibility: visibilityState,
@@ -116,6 +118,7 @@ export default function EditInfo({
         });
       }
 
+      onSaved?.();
       onClick();
     } catch (err: any) {
       console.error("Failed to save profile", err);
@@ -175,7 +178,7 @@ export default function EditInfo({
                   {linksState.map((link, index) => (
                     <div
                       key={`${link.platform}-${index}`}
-                      className="grid grid-cols-[140px_1fr_auto] gap-2"
+                      className="grid gap-2"
                     >
                       <select
                         value={link.platform}
@@ -215,7 +218,7 @@ export default function EditInfo({
                             linksState.filter((_, rowIndex) => rowIndex !== index),
                           )
                         }
-                        className="rounded-sm bg-zinc-800 px-3 py-2 text-sm font-bold text-white hover:text-zinc-400 cursor-pointer"
+                        className="w-full rounded-sm bg-zinc-800 px-3 py-2 text-sm font-bold text-white hover:text-zinc-400 cursor-pointer"
                         aria-label={`Remove link ${index + 1}`}
                       >
                         Remove
