@@ -1,18 +1,26 @@
 import { z } from 'zod';
 
-// ── Sign In schema ────────────────────────────────────────────
+// ── Password rules matching backend ──────────────────────────
+const passwordSchema = z
+  .string()
+  .min(8, 'Password must be at least 8 characters')
+  .regex(/[A-Z]/, 'Must contain at least one uppercase letter')
+  .regex(/[a-z]/, 'Must contain at least one lowercase letter')
+  .regex(/[0-9]/, 'Must contain at least one number')
+  .regex(/[^A-Za-z0-9]/, 'Must contain at least one special character');
+
+// ── Sign In ───────────────────────────────────────────────────
 export const signInSchema = z.object({
   email: z
     .string()
     .min(1, 'Email is required')
     .email('Please enter a valid email address'),
-  password: z
-    .string()
-    .min(1, 'Password is required'),
+  password: z.string().min(1, 'Password is required'),
 });
 
 export type SignInFormData = z.infer<typeof signInSchema>;
 
+// ── Sign Up ───────────────────────────────────────────────────
 export const signUpSchema = z
   .object({
     username: z
@@ -24,10 +32,13 @@ export const signUpSchema = z
       .string()
       .min(1, 'Email is required')
       .email('Please enter a valid email address'),
-    password: z
-      .string()
-      .min(8, 'Password must be at least 8 characters'),
+    password: passwordSchema,
     confirmPassword: z.string().min(1, 'Please confirm your password'),
+    gender: z.string().refine(
+  (val) => ['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY'].includes(val),
+  { message: 'Please select a gender' }
+   ),
+    date_of_birth: z.string().min(1, 'Date of birth is required'),
     agreeToTerms: z.boolean().refine((val) => val === true, {
       message: 'You must agree to the terms',
     }),
@@ -39,7 +50,7 @@ export const signUpSchema = z
 
 export type SignUpFormData = z.infer<typeof signUpSchema>;
 
-// ── Forgot Password schema ────────────────────────────────────
+// ── Forgot Password ───────────────────────────────────────────
 export const forgotPasswordSchema = z.object({
   email: z
     .string()
@@ -49,19 +60,14 @@ export const forgotPasswordSchema = z.object({
 
 export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
 
-// ── Reset Password schema ─────────────────────────────────────
-export const resetPasswordSchema = z
-  .object({
-    newPassword: z
-      .string()
-      .min(8, 'Password must be at least 8 characters')
-      .regex(/[A-Z]/, 'Must contain at least one uppercase letter')
-      .regex(/[0-9]/, 'Must contain at least one number'),
-    confirmPassword: z.string().min(1, 'Please confirm your password'),
-  })
-  .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ['confirmPassword'],
-  });
+// ── Reset Password ────────────────────────────────────────────
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, 'Token is required'),
+  newPassword: passwordSchema,
+  confirmPassword: z.string().min(1, 'Please confirm your password'),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ['confirmPassword'],
+});
 
 export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;

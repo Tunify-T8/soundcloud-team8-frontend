@@ -10,8 +10,7 @@ import { login, socialLogin, googleSignIn, googleLink } from '../services/index'
 import { storeTokens } from '../utils/token.utils';
 import { extractErrorMessage } from '../hooks/useAuth';
 import type { SocialProvider } from '../types/auth.types';
-import { isKnownEmail } from '../data/mockUsers';
-
+import { checkEmail } from '../services/index';
 // ── Icons ──────────────────────────────────────────────────────
 const GoogleIcon: React.FC = () => (
   <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
@@ -166,22 +165,27 @@ const SignInPage: React.FC = () => {
   };
 
   const handleEmailContinue = async () => {
-    const email = emailInput.trim();
-    if (!isValidEmail(email)) {
-      setEmailError('Enter a valid email address or profile url.');
-      return;
-    }
-    setEmailError(null);
-    setIsCheckingEmail(true);
-    await new Promise((r) => setTimeout(r, 400));
-    if (!isKnownEmail(email)) {
+  const email = emailInput.trim();
+  if (!isValidEmail(email)) {
+    setEmailError('Enter a valid email address or profile url.');
+    return;
+  }
+  setEmailError(null);
+  setIsCheckingEmail(true);
+  try {
+    const result = await checkEmail(email);
+    if (!result.exists) {
       navigate('/create-account', { state: { email } });
       return;
     }
     setValue('email', email);
     setStep('password');
+  } catch (error) {
+    setEmailError('Something went wrong. Please try again.');
+  } finally {
     setIsCheckingEmail(false);
-  };
+  }
+};
 
   const onSubmit = async (data: SignInFormData) => {
     setApiError(null);
