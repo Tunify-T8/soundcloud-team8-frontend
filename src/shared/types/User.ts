@@ -86,10 +86,15 @@ export interface UpdateUserProfileRequest {
 }
 
 // Social links (GET/PATCH /users/me/social-links)
+export type SocialPlatform = "INSTAGRAM" | "TWITTER" | "WEBSITE";
+
+export interface UserSocialLink {
+  platform: SocialPlatform;
+  url: string;
+}
+
 export interface UserSocialLinks {
-  instagram?: string | null;
-  twitter?: string | null;
-  website?: string | null;
+  links: UserSocialLink[];
 }
 
 // Genres (GET/PATCH /users/me/genres)
