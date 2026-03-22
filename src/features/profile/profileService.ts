@@ -3,7 +3,6 @@ import type {
   MeUserProfile,
   PublicUserProfile,
   UpdateUserProfileRequest,
-  UserSocialLinks,
   UserGenres,
   UserTracksResponse,
   UserFollowingResponse,
