@@ -13,7 +13,7 @@ import type {
 function isMeProfile(
   user: MeUserProfile | PublicUserProfile,
 ): user is MeUserProfile {
-  return "email" in user;
+  return "lastLogin" in user;
 }
 
 export default function ProfilePage() {
@@ -44,8 +44,12 @@ export default function ProfilePage() {
       try {
         let userData: MeUserProfile | PublicUserProfile | null = null;
         let following: UserFollowing[] = [];
-        let linksData: { instagram?: string; twitter?: string; website?: string } =
-          {};
+        let linksData: {
+          instagram?: string;
+          twitter?: string;
+          website?: string;
+        } = {};
+
         if (username) {
           userData = await profileService.getPublicProfile(username);
           if (userData?.id) {
@@ -61,16 +65,7 @@ export default function ProfilePage() {
         } else {
           userData = await profileService.getMeProfile();
           try {
-            const socialLinksRes = await profileService.getMeSocialLinks();
-            linksData = socialLinksRes.links.reduce(
-              (acc, link) => {
-                if (link.platform === "INSTAGRAM") acc.instagram = link.url;
-                if (link.platform === "TWITTER") acc.twitter = link.url;
-                if (link.platform === "WEBSITE") acc.website = link.url;
-                return acc;
-              },
-              {} as { instagram?: string; twitter?: string; website?: string },
-            );
+            linksData = await profileService.getMeSocialLinks();
           } catch {
             linksData = {};
           }
@@ -81,6 +76,7 @@ export default function ProfilePage() {
             following = [];
           }
         }
+
         if (isMounted) {
           setUser(userData);
           setSocialAccounts(linksData);
@@ -149,9 +145,7 @@ export default function ProfilePage() {
           <ProfileSideBar
             followers={user.followersCount}
             following={user.followingCount}
-            tracks={
-              "tracksUploadedCount" in user ? user.tracksUploadedCount : 0
-            }
+            tracks={"tracksCount" in user ? (user as any).tracksCount : 0}
             bio={user.bio ?? undefined}
             socialAccounts={socialAccounts}
             followingUsers={followingUsers.map((u) => ({
