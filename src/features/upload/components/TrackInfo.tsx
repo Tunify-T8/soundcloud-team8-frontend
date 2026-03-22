@@ -262,7 +262,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
         const audioFileName = source?.kind === "file" ? (source.name ?? `audio.${ext}`) : `recording.${ext}`;
 
         const audioForm = new FormData();
-        audioForm.append("audio", audioBlobRef.current, audioFileName);
+        audioForm.append("file", audioBlobRef.current, audioFileName);
 
         await axiosInstance.post(`/tracks/${trackId}/audio`, audioForm, {
           headers: { "Content-Type": "multipart/form-data" },
