@@ -14,7 +14,7 @@ export default function UserInfoBar({
   city,
   bio,
   socialAccounts,
-  isEditable,
+  isMe,
 }: {
   displayName?: string;
   avatarUrl?: string;
@@ -27,7 +27,7 @@ export default function UserInfoBar({
     twitter?: string;
     youtube?: string;
   };
-  isEditable?: boolean;
+  isMe?: boolean;
 }) {
   const tabs = [
     { label: "All", path: "." },
@@ -56,8 +56,8 @@ export default function UserInfoBar({
             </NavLink>
           ))}
         </div>
-        <div className={`flex items-center ${isEditable ? "gap-2" : "gap-4"}`}>
-          {!isEditable && (
+        <div className={`flex items-center ${isMe ? "gap-2" : "gap-4"}`}>
+          {!isMe && (
             <button
               type="button"
               title="Station"
@@ -67,7 +67,7 @@ export default function UserInfoBar({
               <span>Station</span>
             </button>
           )}
-          {!isEditable && (
+          {!isMe && (
             <button
               type="button"
               title="Follow"
@@ -85,7 +85,7 @@ export default function UserInfoBar({
             <Upload size={14} />
             <span>Share</span>
           </button>
-          {!isEditable && (
+          {!isMe && (
             <div className="relative group">
               <button
                 type="button"
@@ -97,7 +97,7 @@ export default function UserInfoBar({
             </div>
           )}
           <div className="relative">
-            {!isEditable && (
+            {!isMe && (
               <button
                 type="button"
                 title="More"
@@ -132,7 +132,7 @@ export default function UserInfoBar({
               </div>
             )}
           </div>
-          {isEditable && (
+          {isMe && (
             <button
               type="button"
               title="Edit"

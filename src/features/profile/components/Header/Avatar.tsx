@@ -4,11 +4,11 @@ import { profileService } from "../../profileService";
 export default function Avatar({
   avatarUrl,
   displayName,
-  isEditable,
+  isMe,
 }: {
   avatarUrl?: string;
   displayName?: string;
-  isEditable?: boolean;
+  isMe?: boolean;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -57,7 +57,7 @@ export default function Avatar({
             {displayName?.charAt(0)}
           </div>
         )}
-        {isEditable && (
+        {isMe && (
           <div
             className={`absolute inset-0 bg-white/40 transition-opacity rounded-full ${
               showActions ? "opacity-100" : "opacity-0 group-hover:opacity-100"
@@ -66,7 +66,7 @@ export default function Avatar({
         )}
       </div>
 
-      {isEditable && (
+      {isMe && (
         <div
           className={`absolute bottom-10 left-1/2 -translate-x-1/2 z-20 transition-opacity ${
             showActions ? "opacity-100" : "opacity-0 group-hover:opacity-100"

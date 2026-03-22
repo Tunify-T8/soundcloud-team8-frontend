@@ -42,9 +42,7 @@ export default function EditInfo({
   const [visibilityState, setVisibilityState] = useState<"PUBLIC" | "PRIVATE">(
     "PUBLIC",
   );
-  const [userTypeState, setUserTypeState] = useState<"ARTIST" | "LISTENER">(
-    "ARTIST",
-  );
+  const [roleState, setroleState] = useState<"ARTIST" | "LISTENER">("ARTIST");
   const [showLinkInputs, setShowLinkInputs] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -77,7 +75,7 @@ export default function EditInfo({
         bio: bioState || null,
         location,
         visibility: visibilityState,
-        userType: userTypeState,
+        role: roleState,
       });
 
       await profileService.updateMeSocialLinks({
@@ -217,9 +215,9 @@ export default function EditInfo({
                   Account type
                 </label>
                 <select
-                  value={userTypeState}
+                  value={roleState}
                   onChange={(e) =>
-                    setUserTypeState(e.target.value as "ARTIST" | "LISTENER")
+                    setroleState(e.target.value as "ARTIST" | "LISTENER")
                   }
                   className="w-full rounded-sm border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white outline-none focus:border-zinc-500 cursor-pointer"
                 >
