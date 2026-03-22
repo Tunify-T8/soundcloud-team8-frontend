@@ -13,6 +13,7 @@ export default function HeaderImg({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [showActions, setShowActions] = useState(false);
 
   async function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -41,11 +42,13 @@ export default function HeaderImg({
   }
 
   const handleOpenUpload = () => {
+    setShowActions(false);
     fileInputRef.current?.click();
   };
 
   const handleRemoveImage = async () => {
     setPreviewUrl(null);
+    setShowActions(false);
     try {
       await profileService.updateMeProfile({ coverUrl: null });
       onProfileUpdated?.();
@@ -74,21 +77,48 @@ export default function HeaderImg({
         </div>
       )}
       {isMe && (
-        <div className="absolute top-8 right-7 z-10 flex gap-2">
-          <button
-            type="button"
-            onClick={handleOpenUpload}
-            className="bg-black text-white font-bold text-[14px] px-2 py-1 rounded-sm cursor-pointer hover:text-gray-400 transition-colors"
-          >
-            Upload header image
-          </button>
-          <button
-            type="button"
-            onClick={handleRemoveImage}
-            className="bg-black text-white font-bold text-[14px] px-2 py-1 rounded-sm cursor-pointer hover:text-gray-400 transition-colors"
-          >
-            Delete header image
-          </button>
+        <div className="absolute top-8 right-7 z-10">
+          {!src ? (
+            <button
+              type="button"
+              onClick={handleOpenUpload}
+              className="bg-black text-white font-bold text-[14px] px-3 py-2 rounded-sm cursor-pointer hover:text-gray-400 transition-colors"
+            >
+              Upload header image
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setShowActions((prev) => !prev)}
+                className={`w-36 bg-zinc-800 font-bold text-[14px] px-3 py-2 rounded-sm transition-colors cursor-pointer ${
+                  showActions
+                    ? "text-orange-500"
+                    : "text-white hover:text-zinc-500"
+                }`}
+              >
+                Update image
+              </button>
+              {showActions && (
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 flex w-36 flex-col rounded-sm border border-zinc-700 bg-zinc-950 shadow-lg">
+                  <button
+                    type="button"
+                    onClick={handleOpenUpload}
+                    className="w-full text-left text-white font-bold text-[14px] px-3 py-2 hover:text-gray-300 transition-colors cursor-pointer"
+                  >
+                    Replace image
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="w-full text-left text-white font-bold text-[14px] px-3 py-2 hover:text-gray-300 transition-colors cursor-pointer"
+                  >
+                    Delete image
+                  </button>
+                </div>
+              )}
+            </>
+          )}
           <input
             ref={fileInputRef}
             type="file"
