@@ -8,6 +8,7 @@ import { api } from "@/features/auth/services/api";
 import { SiSoundcloud } from "react-icons/si";
 import { useDispatch } from "react-redux";
 import { useAppSelector } from "../../../app/hooks";
+import { profileService } from "@/features/profile/profileService";
 
 function Toggle({ enabled, onChange }: ToggleProps) {
   return (
@@ -259,11 +260,20 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
   const privacyRef     = useRef<string>("public");
 
   // ── Fetch user profile ────────────────────────────────────────────────────
-  useEffect(() => {
-    api.get("/users/me")
-      .then((res) => setUserProfile(res.data.user))
-      .catch((err) => console.error("Failed to fetch user profile:", err));
-  }, []);
+useEffect(() => {
+  profileService.getMeProfile()
+    .then((user) => setUserProfile({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      avatarUrl: user.avatarUrl!,
+      isVerified: user.isVerified,
+    }))
+    .catch((err) => console.error("Failed to fetch user profile:", err));
+}, []);
+
+
+
 
   // ── Fetch audio blob using raw axios (NOT api) — blob: URLs are local ────
   useEffect(() => {

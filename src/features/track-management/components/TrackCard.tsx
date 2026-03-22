@@ -62,8 +62,8 @@ export default function TrackCard({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const fmt = (val: number | null) =>
-    val === null || val === 0 ? "-" : val.toString();
+  const fmt = (val: number | null | undefined) =>
+    val === null || val === 0 || val === undefined ? "-" : val.toString();
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
