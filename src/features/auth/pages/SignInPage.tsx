@@ -77,6 +77,8 @@ const SignInPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: Location })?.from?.pathname ?? '/';
+  const prefillEmailState = (location.state as { email?: string; prefillStep?: string })?.email ?? '';
+  const prefillStep = (location.state as { prefillStep?: string })?.prefillStep ?? '';
 
   const [step, setStep] = useState<Step>('social');
   const [emailInput, setEmailInput] = useState('');
@@ -98,15 +100,20 @@ const SignInPage: React.FC = () => {
   });
 
   useEffect(() => {
-    return () => {
-      setStep('social');
-      setEmailInput('');
-      setEmailError(null);
-      setApiError(null);
-      setShowPassword(false);
-      reset();
-    };
-  }, []);
+  if (prefillEmailState && prefillStep === 'password') {
+    setEmailInput(prefillEmailState);
+    setValue('email', prefillEmailState);
+    setStep('password');
+  }
+  return () => {
+    setStep('social');
+    setEmailInput('');
+    setEmailError(null);
+    setApiError(null);
+    setShowPassword(false);
+    reset();
+  };
+}, []);
 
   // ── Google OAuth ───────────────────────────────────────────────
   const googleLogin = useGoogleLogin({
@@ -134,8 +141,7 @@ const SignInPage: React.FC = () => {
       setSocialLoading(null);
     },
     flow: 'auth-code',
-    redirect_uri: 'http://localhost:3333/auth/google/callback',
-  });
+    redirect_uri: import.meta.env.VITE_GOOGLE_REDIRECT_URI ?? 'http://localhost:3333/auth/google/callback',  });
 
   // ── Google account linking ─────────────────────────────────────
   const handleGoogleLink = async () => {
