@@ -1,13 +1,16 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { profileService } from "../../profileService";
 
 export default function HeaderImg({
   coverUrl,
   isMe,
+  onProfileUpdated,
 }: {
   coverUrl?: string;
   isMe?: boolean;
+  onProfileUpdated?: () => void;
 }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -28,6 +31,7 @@ export default function HeaderImg({
         await profileService.updateMeProfile({
           coverUrl: cloudData.secure_url,
         });
+        onProfileUpdated?.();
       } catch (err) {
         console.error("Failed to update cover image", err);
       } finally {
@@ -35,6 +39,20 @@ export default function HeaderImg({
       }
     }
   }
+
+  const handleOpenUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleRemoveImage = async () => {
+    setPreviewUrl(null);
+    try {
+      await profileService.updateMeProfile({ coverUrl: null });
+      onProfileUpdated?.();
+    } catch (err) {
+      console.error("Failed to remove cover image", err);
+    }
+  };
 
   const src = previewUrl ?? coverUrl;
 
@@ -56,15 +74,29 @@ export default function HeaderImg({
         </div>
       )}
       {isMe && (
-        <label className="absolute top-8 right-7 z-10 bg-black text-white font-bold text-[14px] px-2 py-1 rounded-sm cursor-pointer hover:text-gray-400 transition-colors">
-          Upload header image
+        <div className="absolute top-8 right-7 z-10 flex gap-2">
+          <button
+            type="button"
+            onClick={handleOpenUpload}
+            className="bg-black text-white font-bold text-[14px] px-2 py-1 rounded-sm cursor-pointer hover:text-gray-400 transition-colors"
+          >
+            Upload header image
+          </button>
+          <button
+            type="button"
+            onClick={handleRemoveImage}
+            className="bg-black text-white font-bold text-[14px] px-2 py-1 rounded-sm cursor-pointer hover:text-gray-400 transition-colors"
+          >
+            Delete header image
+          </button>
           <input
+            ref={fileInputRef}
             type="file"
             accept="image/*"
             className="hidden"
             onChange={handleChange}
           />
-        </label>
+        </div>
       )}
     </div>
   );

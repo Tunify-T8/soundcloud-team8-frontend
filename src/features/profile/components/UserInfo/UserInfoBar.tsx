@@ -15,6 +15,7 @@ export default function UserInfoBar({
   bio,
   socialAccounts,
   isMe,
+  onProfileUpdated,
 }: {
   displayName?: string;
   avatarUrl?: string;
@@ -28,6 +29,7 @@ export default function UserInfoBar({
     youtube?: string;
   };
   isMe?: boolean;
+  onProfileUpdated?: () => void;
 }) {
   const tabs = [
     { label: "All", path: "." },
@@ -148,6 +150,7 @@ export default function UserInfoBar({
       {modal && (
         <EditInfo
           onClick={toggleModal}
+          onSaved={onProfileUpdated}
           displayName={displayName}
           avatarUrl={avatarUrl}
           country={country}

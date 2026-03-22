@@ -74,6 +74,7 @@ export interface PublicUserProfile {
 
 // Update profile (PATCH /users/me/profile)
 export interface UpdateUserProfileRequest {
+  displayName?: string;
   username?: string;
   email?: string;
   bio?: string | null;

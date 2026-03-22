@@ -5,10 +5,12 @@ export default function Avatar({
   avatarUrl,
   displayName,
   isMe,
+  onProfileUpdated,
 }: {
   avatarUrl?: string;
   displayName?: string;
   isMe?: boolean;
+  onProfileUpdated?: () => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -33,6 +35,7 @@ export default function Avatar({
         await profileService.updateMeProfile({
           avatarUrl: cloudData.secure_url,
         });
+        onProfileUpdated?.();
       } catch (err) {
         console.error("Failed to update avatar", err);
       } finally {
@@ -50,6 +53,7 @@ export default function Avatar({
     setShowActions(false);
     try {
       await profileService.updateMeProfile({ avatarUrl: null });
+      onProfileUpdated?.();
     } catch (err) {
       console.error("Failed to remove avatar", err);
     }

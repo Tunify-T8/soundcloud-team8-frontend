@@ -24,6 +24,11 @@ export default function ProfilePage() {
   const [followingUsers, setFollowingUsers] = useState<UserFollowing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshTick, setRefreshTick] = useState(0);
+
+  const refreshProfile = () => {
+    setRefreshTick((prev) => prev + 1);
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -74,7 +79,7 @@ export default function ProfilePage() {
     return () => {
       isMounted = false;
     };
-  }, [username]);
+  }, [username, refreshTick]);
 
   if (loading) {
     return <div className="min-h-screen text-white">Loading...</div>;
@@ -104,6 +109,7 @@ export default function ProfilePage() {
         avatarUrl={user.avatarUrl || ""}
         coverUrl={user.coverUrl || ""}
         isMe={isMe}
+        onProfileUpdated={refreshProfile}
       />
       <div className="relative">
         <UserInfoBar
@@ -114,6 +120,7 @@ export default function ProfilePage() {
           bio={user.bio ?? undefined}
           socialAccounts={undefined}
           isMe={isMe}
+          onProfileUpdated={refreshProfile}
         />
         <div className="absolute right-[8.333333%] top-full mt-4">
           <ProfileSideBar
