@@ -166,10 +166,10 @@ const ForgotPasswordPage: React.FC = () => {
 
                   <button
                     type="button"
-                    onClick={() => navigate('/signin', { state: { email, prefillStep: 'password' } })}
+                    onClick={() => navigate('/reset-password', { state: { email } })}
                     className="w-full bg-white hover:bg-gray-100 text-black py-3 rounded-sm text-sm font-semibold transition-colors cursor-pointer mb-5"
                   >
-                    Back to login
+                    Enter reset code
                   </button>
 
                   <p className="text-[#ccc] text-sm leading-relaxed">
