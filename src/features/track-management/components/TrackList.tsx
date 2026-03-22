@@ -1,6 +1,6 @@
 import { useState } from "react";
 import TrackCard from "./TrackCard";
-import type { Track } from "../types";
+import type { Track } from "../../../shared/types/Track";
 
 interface TrackListProps {
   tracks: Track[];
@@ -11,7 +11,7 @@ export default function TrackList({ tracks }: TrackListProps) {
 
   const handleSelectAll = () => {
     setAllSelected(!allSelected);
-    // Handle select all logic here
+    
   };
   
   const [selectedTracks, setSelectedTracks] = useState<string[]>([])
@@ -25,6 +25,7 @@ export default function TrackList({ tracks }: TrackListProps) {
   }
 
   return (
+     <div className="space-y-0 overflow-visible"> 
     <div className="space-y-0">
       {/* Header */}
       <div className="flex items-center gap-4 px-4 py-3 border-b border-border bg-[hsl(0,0%,10%)]">
@@ -63,6 +64,7 @@ export default function TrackList({ tracks }: TrackListProps) {
         <div className="w-6"></div>
       </div>
 
+<div className="space-y-1 overflow-visible"> 
       {/* Track Rows */}
       <div className="space-y-1">
         {tracks.map((track) => (
@@ -74,6 +76,8 @@ export default function TrackList({ tracks }: TrackListProps) {
           />
         ))}
       </div>
+    </div>
+    </div>
     </div>
   );
 }

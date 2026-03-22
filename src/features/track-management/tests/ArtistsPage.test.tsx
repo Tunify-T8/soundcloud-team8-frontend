@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ArtistsPage from "../pages/ArtistsPage";
 import { trackService } from "../trackService";
-import type { Track } from "../types";
+import type { Track } from "../../../shared/types/Track";
 import { Genre } from "../../../shared/types/Genre";
 vi.mock("../trackService");
 vi.mock("../components/ArtistsSidebar", () => ({

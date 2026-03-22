@@ -13,7 +13,7 @@ describe("Header", () => {
         isVerified
         avatarUrl="avatar.jpg"
         coverUrl="cover.jpg"
-        isEditable
+        isMe
       />,
     );
     expect(screen.getByText("John Doe")).toBeInTheDocument();

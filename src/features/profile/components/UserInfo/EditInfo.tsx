@@ -1,6 +1,7 @@
 import Avatar from "../Header/Avatar";
 import { useEffect, useState } from "react";
 import { FiInfo } from "react-icons/fi";
+import { profileService } from "../../profileService";
 
 export default function EditInfo({
   onClick,
@@ -28,43 +29,83 @@ export default function EditInfo({
   const initialCountry = country ?? "";
   const initialCity = city ?? "";
   const initialBio = bio ?? "";
-  const initialFacebook = socialAccounts?.facebook ?? "";
   const initialInstagram = socialAccounts?.instagram ?? "";
   const initialTwitter = socialAccounts?.twitter ?? "";
-  const initialYoutube = socialAccounts?.youtube ?? "";
 
   const [displayNameState, setDisplayNameState] = useState(initialDisplayName);
   const [countryState, setCountryState] = useState(initialCountry);
   const [cityState, setCityState] = useState(initialCity);
   const [bioState, setBioState] = useState(initialBio);
-  const [showLinkInputs, setShowLinkInputs] = useState(false);
-  const [facebookState, setFacebookState] = useState(initialFacebook);
   const [instagramState, setInstagramState] = useState(initialInstagram);
   const [twitterState, setTwitterState] = useState(initialTwitter);
-  const [youtubeState, setYoutubeState] = useState(initialYoutube);
+  const [websiteState, setWebsiteState] = useState("");
+  const [visibilityState, setVisibilityState] = useState<"PUBLIC" | "PRIVATE">(
+    "PUBLIC",
+  );
+  const [roleState, setroleState] = useState<"ARTIST" | "LISTENER">("ARTIST");
+  const [showLinkInputs, setShowLinkInputs] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const hasChanges =
     displayNameState !== initialDisplayName ||
     countryState !== initialCountry ||
     cityState !== initialCity ||
     bioState !== initialBio ||
-    facebookState !== initialFacebook ||
     instagramState !== initialInstagram ||
     twitterState !== initialTwitter ||
-    youtubeState !== initialYoutube;
+    websiteState !== "";
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
-
     return () => {
       document.body.style.overflow = "";
     };
   }, []);
 
+  const handleSave = async () => {
+    setIsSaving(true);
+    setErrorMsg(null);
+    try {
+      const location =
+        [cityState, countryState].filter(Boolean).join(", ") || null;
+
+      await profileService.updateMeProfile({
+        username: displayNameState || undefined,
+        bio: bioState || null,
+        location,
+        visibility: visibilityState,
+        role: roleState,
+      });
+
+      await profileService.updateMeSocialLinks({
+        instagram: instagramState || null,
+        twitter: twitterState || null,
+        website: websiteState || null,
+      });
+
+      onClick();
+    } catch (err: any) {
+      console.error("Failed to save profile", err);
+      setErrorMsg(
+        err?.response?.data?.message ?? "Failed to save. Please try again.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-white/40">
       <div className="mx-auto my-6 flex max-h-[90vh] w-[95%] max-w-3xl flex-col overflow-y-auto rounded-md bg-zinc-900 p-6">
         <h2 className="text-lg font-bold mb-6">Edit your Profile</h2>
+
+        {errorMsg && (
+          <div className="mb-4 rounded-sm bg-red-900/40 border border-red-500/40 px-4 py-3 text-sm text-red-400">
+            {errorMsg}
+          </div>
+        )}
+
         <div className="grid gap-8 lg:grid-cols-[220px_1fr]">
           <div className="flex h-full flex-col">
             <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full bg-gray-300 overflow-hidden">
@@ -88,35 +129,29 @@ export default function EditInfo({
                   onClick={() => setShowLinkInputs((prev) => !prev)}
                   className="rounded-sm bg-zinc-800 px-4 py-2 text-sm font-bold text-white hover:text-zinc-400 cursor-pointer"
                 >
-                  Add link
+                  {showLinkInputs ? "Hide links" : "Add link"}
                 </button>
               </div>
 
               {showLinkInputs && (
                 <div className="mt-4 grid gap-3">
                   <input
-                    value={facebookState}
-                    onChange={(event) => setFacebookState(event.target.value)}
-                    className="w-170 rounded-sm border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white outline-none focus:border-zinc-500"
-                    placeholder="Facebook URL"
-                  />
-                  <input
                     value={instagramState}
-                    onChange={(event) => setInstagramState(event.target.value)}
+                    onChange={(e) => setInstagramState(e.target.value)}
                     className="w-full rounded-sm border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white outline-none focus:border-zinc-500"
                     placeholder="Instagram URL"
                   />
                   <input
                     value={twitterState}
-                    onChange={(event) => setTwitterState(event.target.value)}
+                    onChange={(e) => setTwitterState(e.target.value)}
                     className="w-full rounded-sm border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white outline-none focus:border-zinc-500"
                     placeholder="Twitter URL"
                   />
                   <input
-                    value={youtubeState}
-                    onChange={(event) => setYoutubeState(event.target.value)}
+                    value={websiteState}
+                    onChange={(e) => setWebsiteState(e.target.value)}
                     className="w-full rounded-sm border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white outline-none focus:border-zinc-500"
-                    placeholder="YouTube URL"
+                    placeholder="Website URL"
                   />
                 </div>
               )}
@@ -130,7 +165,7 @@ export default function EditInfo({
               </label>
               <input
                 value={displayNameState}
-                onChange={(event) => setDisplayNameState(event.target.value)}
+                onChange={(e) => setDisplayNameState(e.target.value)}
                 className="w-full rounded-sm border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white outline-none focus:border-zinc-500"
                 placeholder="Enter display name"
               />
@@ -143,7 +178,7 @@ export default function EditInfo({
                 </label>
                 <input
                   value={cityState}
-                  onChange={(event) => setCityState(event.target.value)}
+                  onChange={(e) => setCityState(e.target.value)}
                   className="w-full rounded-sm border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white outline-none focus:border-zinc-500"
                   placeholder="Enter city"
                 />
@@ -154,7 +189,7 @@ export default function EditInfo({
                 </label>
                 <input
                   value={countryState}
-                  onChange={(event) => setCountryState(event.target.value)}
+                  onChange={(e) => setCountryState(e.target.value)}
                   className="w-full rounded-sm border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white outline-none focus:border-zinc-500"
                   placeholder="Enter country"
                 />
@@ -167,13 +202,48 @@ export default function EditInfo({
               </label>
               <textarea
                 value={bioState}
-                onChange={(event) => setBioState(event.target.value)}
+                onChange={(e) => setBioState(e.target.value)}
                 className="w-full rounded-sm border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white outline-none focus:border-zinc-500"
-                placeholder="Tell the world a little bit about yourself. The shorter the better."
+                placeholder="Tell the world a little bit about yourself."
+                rows={3}
               />
+            </div>
+
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-sm font-bold text-white">
+                  Account type
+                </label>
+                <select
+                  value={roleState}
+                  onChange={(e) =>
+                    setroleState(e.target.value as "ARTIST" | "LISTENER")
+                  }
+                  className="w-full rounded-sm border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white outline-none focus:border-zinc-500 cursor-pointer"
+                >
+                  <option value="ARTIST">Artist</option>
+                  <option value="LISTENER">Listener</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-bold text-white">
+                  Visibility
+                </label>
+                <select
+                  value={visibilityState}
+                  onChange={(e) =>
+                    setVisibilityState(e.target.value as "PUBLIC" | "PRIVATE")
+                  }
+                  className="w-full rounded-sm border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white outline-none focus:border-zinc-500 cursor-pointer"
+                >
+                  <option value="PUBLIC">Public</option>
+                  <option value="PRIVATE">Private</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
+
         <div className="mt-6 flex justify-end gap-2 border-t border-zinc-800 pt-4">
           <button
             onClick={onClick}
@@ -182,15 +252,15 @@ export default function EditInfo({
             Cancel
           </button>
           <button
-            onClick={onClick}
-            disabled={!hasChanges}
+            onClick={handleSave}
+            disabled={!hasChanges || isSaving}
             className={`inline-flex items-center gap-2 rounded-sm px-3 py-1.5 text-sm font-bold text-zinc-900 ${
-              hasChanges
+              hasChanges && !isSaving
                 ? "bg-white hover:text-zinc-400 cursor-pointer"
-                : "bg-zinc-500 "
+                : "bg-zinc-500 cursor-not-allowed"
             }`}
           >
-            Save changes
+            {isSaving ? "Saving..." : "Save changes"}
           </button>
         </div>
       </div>

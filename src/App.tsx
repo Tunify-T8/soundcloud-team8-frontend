@@ -1,43 +1,43 @@
-import NavBar from "./components/layout/Navbar"
-import { createBrowserRouter, RouterProvider } from "react-router-dom"
-import SideBar from "./components/layout/Sidebar"
-import UploadPage from "./features/upload/pages/UploadPage"
-import ArtistsPage from "./features/track-management/pages/ArtistsPage"
-import ProfilePage from "./features/profile/pages/ProfilePage";
-import PopularTracksPage from "./features/profile/pages/UserInfoBar/PopularTracksPage";
-import TracksPage from "./features/profile/pages/UserInfoBar/TracksPage";
-import AlbumsPage from "./features/profile/pages/UserInfoBar/AlbumsPage";
-import PlaylistsPage from "./features/profile/pages/UserInfoBar/PlaylistsPage";
-import RepostsPage from "./features/profile/pages/UserInfoBar/RepostsPage";
-import SignInPage from "./features/auth/pages/SignInPage"
-import SignUpPage from "./features/auth/pages/SignUpPage"
-import ForgotPasswordPage from "./features/auth/pages/ForgotPasswordPage"
+import NavBar from "./components/layout/Navbar";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import SideBar from "./components/layout/Sidebar";
+import TrackPage from "./features/engagement/pages/TrackPage"
+import LikesPage from "./features/engagement/pages/LikesPage"
+import RepostsPage from "./features/engagement/pages/RepostsPage"
+import UploadPage from "./features/upload/pages/UploadPage";
+import ArtistsPage from "./features/track-management/pages/ArtistsPage";
+import ProfilePage from "./features/profile/pages/ProfilePage"
+import PopularTracksPage from "./features/profile/pages/UserInfoBar/PopularTracksPage"
+import TracksPage from "./features/profile/pages/UserInfoBar/TracksPage"
+import AlbumsPage from "./features/profile/pages/UserInfoBar/AlbumsPage"
+import PlaylistsPage from "./features/profile/pages/UserInfoBar/PlaylistsPage"
+import ProfileRepostsPage from "./features/profile/pages/UserInfoBar/RepostsPage"
+import SignInPage from "./features/auth/pages/SignInPage";
+import SignUpPage from "./features/auth/pages/SignUpPage";
+import ForgotPasswordPage from "./features/auth/pages/ForgotPasswordPage";
 
 import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage"
 import MessagesPage from "./features/conversation/pages/MessagesPage"
 import ProtectedRoute from "./routes/ProtectedRoute"
+import VerifyEmailPage from "./features/auth/pages/VerifyEmailPage"
 
 const router = createBrowserRouter([
- {
+  { path: '/verify-email', element: <VerifyEmailPage /> },
+  {
     path: '/signin',
     element: <SignInPage key={Math.random()} />,
   },
   {
-    path: '/create-account',
+    path: "/create-account",
     element: <SignUpPage key={Math.random()} />,
   },
   {
-    path: '/forgot-password',
+    path: "/forgot-password",
     element: <ForgotPasswordPage />,
   },
-  { path: '/reset-password',
-  element: <ResetPasswordPage /> },
+  { path: "/reset-password", element: <ResetPasswordPage /> },
   {
-    path: '/reset-password',
-    element: <ResetPasswordPage />,
-  },
-   {
-    path: '/',
+    path: "/me",
     element: (
       <ProtectedRoute>
         <NavBar />
@@ -45,12 +45,42 @@ const router = createBrowserRouter([
     ),
     children: [
       {
-        path: '/',
-        element: <SideBar />
+        index: true,
+        element: <ProfilePage />,
+      },
+    ],
+  },
+  {
+    path: "/reset-password",
+    element: <ResetPasswordPage />,
+  },
+  {
+    path: "/",
+    element: (
+      <ProtectedRoute>
+        <NavBar />
+      </ProtectedRoute>
+    ),
+    children: [
+      {
+        path: "/",
+        element: <SideBar />,
       },
       {
-    path:'/messages',
-    element:<MessagesPage/>
+        path: '/messages',
+        element: <MessagesPage />
+      },
+      {
+        path: '/:artist/:songName',
+        element: <TrackPage />
+      },
+      {
+        path: '/:artist/:songName/likes',
+        element: <LikesPage />
+      },
+      {
+        path: '/:artist/:songName/reposts',
+        element: <RepostsPage />
       },
       {
         path: "/:username",
@@ -61,13 +91,13 @@ const router = createBrowserRouter([
           { path: "tracks", element: <TracksPage /> },
           { path: "albums", element: <AlbumsPage /> },
           { path: "playlists", element: <PlaylistsPage /> },
-          { path: "reposts", element: <RepostsPage /> },
-                  ],
+          { path: "reposts", element: <ProfileRepostsPage /> },
+        ],
       },
     ],
   },
   {
-    path: '/upload',
+    path: "/upload",
     element: (
       <ProtectedRoute>
         <UploadPage />
@@ -75,21 +105,21 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: '/artists',
+    path: "/artists",
     element: (
       <ProtectedRoute>
         <ArtistsPage />
       </ProtectedRoute>
     ),
-  }
-])
+  },
+]);
 
 function App() {
   return (
     <>
       <RouterProvider router={router} />
     </>
-  );
+  )
 }
 
-export default App
+export default App;
