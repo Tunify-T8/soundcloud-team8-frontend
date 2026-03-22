@@ -1,3 +1,5 @@
+import type { enumUtil } from "node_modules/zod/v3/helpers/enumUtil.d.cts";
+
 // ── Social provider type ──────────────────────────────────────
 export type SocialProvider = 'google' | 'facebook' | 'apple';
 
@@ -24,6 +26,8 @@ export interface RegisterRequest {
   username: string;
   email: string;
   password: string;
+  gender: 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';
+  date_of_birth : string;
 }
 
 export interface SocialLoginRequest {
