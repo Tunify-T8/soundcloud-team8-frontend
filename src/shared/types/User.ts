@@ -89,7 +89,13 @@ export interface UpdateUserProfileRequest {
 }
 
 // Social links (GET/PATCH /users/me/social-links)
-export type SocialPlatform = "INSTAGRAM" | "TWITTER" | "WEBSITE";
+export type SocialPlatform =
+  | "INSTAGRAM"
+  | "YOUTUBE"
+  | "SPOTIFY"
+  | "TIKTOK"
+  | "SOUNDCLOUD"
+  | "TWITTER";
 
 export interface UserSocialLink {
   platform: SocialPlatform;

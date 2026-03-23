@@ -2,9 +2,19 @@ import Avatar from "../Header/Avatar";
 import { useEffect, useState } from "react";
 import { FiInfo } from "react-icons/fi";
 import { profileService } from "../../profileService";
-import type { SocialPlatform, UserSocialLink } from "../../../../shared/types/User";
+import type {
+  SocialPlatform,
+  UserSocialLink,
+} from "../../../../shared/types/User";
 
-const PLATFORM_OPTIONS: SocialPlatform[] = ["INSTAGRAM", "TWITTER", "WEBSITE"];
+const PLATFORM_OPTIONS: SocialPlatform[] = [
+  "INSTAGRAM",
+  "YOUTUBE",
+  "SPOTIFY",
+  "TIKTOK",
+  "SOUNDCLOUD",
+  "TWITTER",
+];
 
 function normalizeLinks(links: UserSocialLink[]): UserSocialLink[] {
   return links
@@ -44,20 +54,32 @@ export default function EditInfo({
   const initialCountry = country ?? "";
   const initialCity = city ?? "";
   const initialBio = bio ?? "";
-  const initialLinks = [
-    {
-      platform: "INSTAGRAM",
-      url: socialAccounts?.instagram ?? "",
-    },
-    {
-      platform: "TWITTER",
-      url: socialAccounts?.twitter ?? "",
-    },
-    {
-      platform: "WEBSITE",
-      url: socialAccounts?.website ?? "",
-    },
-  ].filter((link): link is UserSocialLink => link.url.trim().length > 0);
+  const initialLinks: UserSocialLink[] = PLATFORM_OPTIONS.map((platform) => {
+    let url = "";
+    switch (platform) {
+      case "INSTAGRAM":
+        url = socialAccounts?.instagram ?? "";
+        break;
+      case "YOUTUBE":
+        url = socialAccounts?.youtube ?? "";
+        break;
+      case "SPOTIFY":
+        url = socialAccounts?.spotify ?? "";
+        break;
+      case "TIKTOK":
+        url = socialAccounts?.tiktok ?? "";
+        break;
+      case "SOUNDCLOUD":
+        url = socialAccounts?.soundcloud ?? "";
+        break;
+      case "TWITTER":
+        url = socialAccounts?.twitter ?? "";
+        break;
+      default:
+        url = "";
+    }
+    return { platform, url };
+  }).filter((link) => link.url.trim().length > 0);
   const normalizedInitialLinks = normalizeLinks(initialLinks);
 
   const [displayNameState, setDisplayNameState] = useState(initialDisplayName);
@@ -213,11 +235,21 @@ export default function EditInfo({
                       />
                       <button
                         type="button"
-                        onClick={() =>
-                          setLinksState(
-                            linksState.filter((_, rowIndex) => rowIndex !== index),
-                          )
-                        }
+                        onClick={async () => {
+                          try {
+                            await profileService.removeMeSocialLink(
+                              link.platform,
+                            );
+                            setLinksState(
+                              linksState.filter(
+                                (_, rowIndex) => rowIndex !== index,
+                              ),
+                            );
+                          } catch (err) {
+                            // Optionally handle error (e.g., show a message)
+                            console.error("Failed to remove social link", err);
+                          }
+                        }}
                         className="w-full rounded-sm bg-zinc-800 px-3 py-2 text-sm font-bold text-white hover:text-zinc-400 cursor-pointer"
                         aria-label={`Remove link ${index + 1}`}
                       >
