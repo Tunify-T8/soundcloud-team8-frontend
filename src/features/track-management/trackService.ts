@@ -26,7 +26,7 @@ export const trackService = {
 async updateTrack(id: string, payload: UpdateTrackPayload): Promise<Track> {
   const formData = new FormData();
 
-  formData.append("trackId", payload.id);
+  formData.append("trackId", id);
   formData.append("title", payload.title);
   formData.append("genre", payload.genre);
   formData.append("privacy", payload.privacy);
