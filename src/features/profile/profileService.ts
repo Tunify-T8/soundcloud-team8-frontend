@@ -9,6 +9,43 @@ import type {
   UserFollowingResponse,
 } from "../../shared/types/User";
 
+type SocialAccountsMap = {
+  instagram?: string;
+  twitter?: string;
+  website?: string;
+  facebook?: string;
+  youtube?: string;
+};
+
+type RawSocialLink = {
+  platform?: string | null;
+  url?: string | null;
+};
+
+function normalizeSocialLinksResponse(payload: unknown): SocialAccountsMap {
+  const map: SocialAccountsMap = {};
+
+  const rawLinks: RawSocialLink[] = Array.isArray(payload)
+    ? payload
+    : Array.isArray((payload as { links?: unknown })?.links)
+      ? ((payload as { links: RawSocialLink[] }).links ?? [])
+      : [];
+
+  rawLinks.forEach((item) => {
+    const platform = (item?.platform ?? "").toUpperCase();
+    const url = item?.url?.trim();
+    if (!url) return;
+
+    if (platform === "INSTAGRAM") map.instagram = url;
+    if (platform === "TWITTER") map.twitter = url;
+    if (platform === "WEBSITE") map.website = url;
+    if (platform === "FACEBOOK") map.facebook = url;
+    if (platform === "YOUTUBE") map.youtube = url;
+  });
+
+  return map;
+}
+
 export const profileService = {
   async getMeProfile(): Promise<MeUserProfile> {
     const { data } = await api.get<MeUserProfile>("/users/me");
@@ -32,11 +69,11 @@ export const profileService = {
     return data;
   },
 
-  async getMeSocialLinks(): Promise<UserSocialLinks> {
-    const { data } = await api.get<UserSocialLinks>(
+  async getMeSocialLinks(): Promise<SocialAccountsMap> {
+    const { data } = await api.get<UserSocialLinks | RawSocialLink[]>(
       "/users/me/social-links",
     );
-    return data;
+    return normalizeSocialLinksResponse(data);
   },
 
   async updateMeSocialLinks(
