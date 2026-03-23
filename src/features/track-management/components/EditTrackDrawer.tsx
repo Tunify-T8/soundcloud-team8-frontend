@@ -80,11 +80,10 @@ export default function EditTrackDrawer({ track, onClose }: EditTrackDrawerProps
   const [artworkPreview, setArtworkPreview] = useState<string | null>(null);
   const artworkInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState(track.title);
-  const [artists, setArtists] = useState(track.artist);
   const [genre, setGenre] = useState(track.genre);
-  const [tags, setTags] = useState("");
-  const [description, setDescription] = useState("");
-  const [privacy, setPrivacy] = useState<"public" | "private">("private");
+  const [tags, setTags] = useState(track.tags?.join(", ") ?? "");
+  const [description, setDescription] = useState(track.description ?? "");
+  const [privacy, setPrivacy] = useState<"public" | "private">(track.visibility ?? "private");
   const [license, setLicense] = useState<"all" | "cc">("all");
 
   const [toggles, setToggles] = useState({
@@ -102,28 +101,26 @@ export default function EditTrackDrawer({ track, onClose }: EditTrackDrawerProps
   const setToggle = (key: TogglesKey, val: boolean) =>
     setToggles((t) => ({ ...t, [key]: val }));
 
-const handleArtworkSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
+  const handleArtworkSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  // ✅ keep the REAL file
-  setArtworkFile(file);
+    setArtworkFile(file);
 
-  // ✅ generate preview ONLY
-  const objectUrl = URL.createObjectURL(file);
-  setArtworkPreview(objectUrl);
-};
+    const objectUrl = URL.createObjectURL(file);
+    setArtworkPreview(objectUrl);
+  };
 
- const handleSave = async () => {
+  const handleSave = async () => {
     try {
       await trackService.updateTrack(track.id, {
         id: track.id,
         title,
-        genre, 
+        genre,
         tags: tags ? tags.split(",").map((t: string) => t.trim()) : [],
         description,
         privacy,
-        artwork: artworkFile, 
+        artwork: artworkFile,
       });
     } catch (err: any) {
       console.error("Failed to update track:", err);
@@ -197,8 +194,6 @@ const handleArtworkSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         </div>
         <input
           type="text"
-          value={artists}
-          onChange={(e) => setArtists(e.target.value)}
           className="w-full bg-transparent text-white text-sm py-1 focus:outline-none"
         />
         <p className="text-xs text-[#555] mt-1">Tip: Use commas to add multiple artist names.</p>

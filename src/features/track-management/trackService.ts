@@ -26,7 +26,7 @@ export const trackService = {
 async updateTrack(id: string, payload: UpdateTrackPayload): Promise<Track> {
   const formData = new FormData();
 
-  formData.append("trackId", payload.id);
+  formData.append("trackId", id);
   formData.append("title", payload.title);
   formData.append("genre", payload.genre);
   formData.append("privacy", payload.privacy);
@@ -39,6 +39,11 @@ async updateTrack(id: string, payload: UpdateTrackPayload): Promise<Track> {
 
   if (payload.artwork) {
     formData.append("artwork", payload.artwork); 
+  }
+
+  //loggig form data for debugging
+  for (const [key, value] of formData.entries()) {
+    console.log(key, value);
   }
 
   const { data } = await api.patch(`/tracks/${id}`, formData, {
