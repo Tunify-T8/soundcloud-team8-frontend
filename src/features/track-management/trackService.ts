@@ -10,15 +10,12 @@ export interface UpdateTrackPayload {
   tags: string[];
   description?: string;
   privacy: TrackVisibility;
-  artwork: string | null;
+  artwork: File | null;
 }
 
 export const trackService = {
    async getUploadedTracks(): Promise<Track[]> {
-  //   const { data } = await api.get<Track[]>("/tracks/me");
-  //   return data ?? [];
    const { data } = await api.get<Track[]>("/tracks/me");
-  console.log("raw /tracks/me response:", data); // what shape is this?
   return data ?? [];
   },
 
@@ -26,8 +23,28 @@ export const trackService = {
     await api.delete(`/tracks/${id}`);
   },
 
- async updateTrack(id: string, payload: UpdateTrackPayload): Promise<Track> {
-    const { data } = await api.patch<Track>(`/tracks/${id}`, payload);
-    return data;
-  },
+async updateTrack(id: string, payload: UpdateTrackPayload): Promise<Track> {
+  const formData = new FormData();
+
+  formData.append("trackId", payload.id);
+  formData.append("title", payload.title);
+  formData.append("genre", payload.genre);
+  formData.append("privacy", payload.privacy);
+
+  payload.tags.forEach(tag => formData.append("tags", tag));
+
+  if (payload.description) {
+    formData.append("description", payload.description);
+  }
+
+  if (payload.artwork) {
+    formData.append("artwork", payload.artwork); 
+  }
+
+  const { data } = await api.patch(`/tracks/${id}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+
+  return data;
+}
 };

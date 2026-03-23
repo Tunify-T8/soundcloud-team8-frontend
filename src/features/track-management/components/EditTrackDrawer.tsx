@@ -76,8 +76,8 @@ function Accordion({
 
 export default function EditTrackDrawer({ track, onClose }: EditTrackDrawerProps) {
   const [activeTab, setActiveTab] = useState<"details" | "advanced" | "storefront">("details");
-
-  const [artworkPreview, setArtworkPreview] = useState<string | null>(track.thumbnailUrl ?? null);
+  const [artworkFile, setArtworkFile] = useState<File | null>(null);
+  const [artworkPreview, setArtworkPreview] = useState<string | null>(null);
   const artworkInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState(track.title);
   const [artists, setArtists] = useState(track.artist);
@@ -102,41 +102,33 @@ export default function EditTrackDrawer({ track, onClose }: EditTrackDrawerProps
   const setToggle = (key: TogglesKey, val: boolean) =>
     setToggles((t) => ({ ...t, [key]: val }));
 
-  const handleArtworkSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const img = new Image();
-    const objectUrl = URL.createObjectURL(file);
-    img.onload = () => {
-      const MAX_DIM = 400;
-      const scale = Math.min(MAX_DIM / img.width, MAX_DIM / img.height, 1);
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
-      setArtworkPreview(canvas.toDataURL("image/jpeg", 0.7));
-      URL.revokeObjectURL(objectUrl);
-    };
-    img.src = objectUrl;
-  };
+const handleArtworkSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
 
-  const handleSave = async () => {
-  try {
-    await trackService.updateTrack(track.id, {
-      id: track.id,
-      title,
-      genre: track.genre,
-      tags: tags ? tags.split(",").map((t) => t.trim()) : [],
-      description,
-      privacy,
-      artwork: artworkPreview,
-    });
-   } catch (err) {
-    console.error("Failed to update track:", err);
-  } finally {
-    onClose(); 
-  }
+  // ✅ keep the REAL file
+  setArtworkFile(file);
+
+  // ✅ generate preview ONLY
+  const objectUrl = URL.createObjectURL(file);
+  setArtworkPreview(objectUrl);
 };
+
+ const handleSave = async () => {
+    try {
+      await trackService.updateTrack(track.id, {
+        id: track.id,
+        title,
+        genre, 
+        tags: tags ? tags.split(",").map((t: string) => t.trim()) : [],
+        description,
+        privacy,
+        artwork: artworkFile, 
+      });
+    } catch (err: any) {
+      console.error("Failed to update track:", err);
+    }
+  };
 
   const inputClass =
     "w-full bg-[#181818] border border-[#333] text-white text-sm px-3 py-2.5 focus:outline-none focus:border-[#555] placeholder-[#555]";
@@ -217,7 +209,7 @@ export default function EditTrackDrawer({ track, onClose }: EditTrackDrawerProps
         <div className="flex items-center">
           <input
             value={genre}
-           // onChange={(e) => setGenre(e.target.value)}
+            onChange={(e) => setGenre(e.target.value as typeof genre)}
             placeholder="Add or search for genre"
             className="w-full bg-transparent text-[#555] text-sm py-1 focus:outline-none placeholder-[#555]"
           />
