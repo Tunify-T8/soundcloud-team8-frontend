@@ -4,7 +4,7 @@ import ProfileSideBar from "../components/UserInfo/ProfileSideBar";
 import { Outlet, useParams } from "react-router-dom";
 import { profileService } from "../profileService";
 import { useEffect, useState, useCallback } from "react";
-import { useMe } from "../context/ProfileContext";
+import { useMe } from "../context/useMe";
 import type {
   MeUserProfile,
   PublicUserProfile,
@@ -29,13 +29,19 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!username) return;
-    setLoading(true);
-    setError(null);
-    profileService
-      .getPublicProfile(username)
-      .then(setPublicUser)
-      .catch((err: any) => setError(err?.message || "Failed to fetch user"))
-      .finally(() => setLoading(false));
+    const fetchProfile = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await profileService.getPublicProfile(username);
+        setPublicUser(data);
+      } catch (err: any) {
+        setError(err?.message || "Failed to fetch user");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
   }, [username]);
 
   if (!username && !me) {

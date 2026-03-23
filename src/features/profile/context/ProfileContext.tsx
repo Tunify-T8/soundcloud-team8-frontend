@@ -56,4 +56,4 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export const useMe = () => useContext(ProfileContext);
+export { ProfileContext };
