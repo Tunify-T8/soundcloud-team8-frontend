@@ -22,9 +22,11 @@ export default function ProfilePage() {
     null,
   );
   const [socialAccounts, setSocialAccounts] = useState<{
+    facebook?: string;
     instagram?: string;
     twitter?: string;
     website?: string;
+    youtube?: string;
   }>({});
   const [followingUsers, setFollowingUsers] = useState<UserFollowing[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,9 +47,11 @@ export default function ProfilePage() {
         let userData: MeUserProfile | PublicUserProfile | null = null;
         let following: UserFollowing[] = [];
         let linksData: {
+          facebook?: string;
           instagram?: string;
           twitter?: string;
           website?: string;
+          youtube?: string;
         } = {};
 
         if (username) {
