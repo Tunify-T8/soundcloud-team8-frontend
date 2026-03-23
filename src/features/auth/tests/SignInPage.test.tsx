@@ -45,7 +45,7 @@ const MOCK_AUTH_RESPONSE = {
     username: 'testuser',
     email: 'test@tunify.com',
     avatarUrl: null,
-    isVerified: true,
+    isCertified: true,
     role: 'user' as const,
   },
 };

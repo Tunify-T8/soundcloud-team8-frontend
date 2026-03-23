@@ -75,7 +75,7 @@ export default function ProfilePage() {
         username={user.username}
         country={country}
         city={city}
-        isVerified={isMeProfile(user) ? user.isVerified : false}
+        isCertified={isMeProfile(user) ? user.isCertified : false}
         avatarUrl={user.avatarUrl || ""}
         coverUrl={user.coverUrl || ""}
         isMe={isMe}
@@ -103,7 +103,7 @@ export default function ProfilePage() {
               id: u.id,
               username: u.username,
               avatarUrl: u.avatarUrl ?? "",
-              isVerified: u.isVerified ?? false,
+              isCertified: u.isCertified ?? false,
               followersCount: undefined,
             }))}
           />

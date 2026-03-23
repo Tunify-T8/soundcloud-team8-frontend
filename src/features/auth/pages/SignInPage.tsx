@@ -192,7 +192,7 @@ const SignInPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       const res = await login(data);
-      if (res.user && res.user.isVerified === false) {
+      if (res.user && res.user.isCertified === false) {
         navigate('/verify-email', { state: { email: data.email } });
         return;
       }
