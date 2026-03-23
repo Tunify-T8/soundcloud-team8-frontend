@@ -11,8 +11,11 @@ import type { MeUserProfile, UserFollowing } from "../../../shared/types/User";
 
 type SocialAccounts = {
   instagram?: string;
+  youtube?: string;
+  spotify?: string;
+  tiktok?: string;
+  soundcloud?: string;
   twitter?: string;
-  website?: string;
 };
 
 type ProfileContextType = {

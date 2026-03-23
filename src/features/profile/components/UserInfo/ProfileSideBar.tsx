@@ -8,6 +8,9 @@ import {
   FaUser,
   FaGooglePlay,
   FaApple,
+  FaSpotify,
+  FaSoundcloud,
+  FaTiktok,
 } from "react-icons/fa";
 import { FiInfo } from "react-icons/fi";
 import { Ticket } from "lucide-react";
@@ -31,6 +34,9 @@ export default function ProfileSideBar({
     twitter?: string;
     website?: string;
     youtube?: string;
+    spotify?: string;
+    tiktok?: string;
+    soundcloud?: string;
   };
   followingUsers?: FollowingUser[];
 }) {
@@ -41,7 +47,10 @@ export default function ProfileSideBar({
     socialAccounts?.instagram ||
     socialAccounts?.twitter ||
     socialAccounts?.website ||
-    socialAccounts?.youtube,
+    socialAccounts?.youtube ||
+    socialAccounts?.spotify ||
+    socialAccounts?.tiktok ||
+    socialAccounts?.soundcloud,
   );
 
   const userInfo = [
@@ -117,6 +126,33 @@ export default function ProfileSideBar({
               >
                 <FaYoutube size={16} />
                 YouTube
+              </a>
+            )}
+            {socialAccounts?.spotify && (
+              <a
+                href={socialAccounts?.spotify}
+                className="flex items-center gap-2 text-[14px] text-zinc-400 hover:text-zinc-600 font-bold"
+              >
+                <FaSpotify size={16} />
+                Spotify
+              </a>
+            )}
+            {socialAccounts?.tiktok && (
+              <a
+                href={socialAccounts?.tiktok}
+                className="flex items-center gap-2 text-[14px] text-zinc-400 hover:text-zinc-600 font-bold"
+              >
+                <FaTiktok size={16} />
+                TikTok
+              </a>
+            )}
+            {socialAccounts?.soundcloud && (
+              <a
+                href={socialAccounts?.soundcloud}
+                className="flex items-center gap-2 text-[14px] text-zinc-400 hover:text-zinc-600 font-bold"
+              >
+                <FaSoundcloud size={16} />
+                SoundCloud
               </a>
             )}
           </div>

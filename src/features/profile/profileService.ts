@@ -11,10 +11,11 @@ import type {
 
 type SocialAccountsMap = {
   instagram?: string;
-  twitter?: string;
-  website?: string;
-  facebook?: string;
   youtube?: string;
+  spotify?: string;
+  tiktok?: string;
+  soundcloud?: string;
+  twitter?: string;
 };
 
 type RawSocialLink = {
@@ -37,10 +38,11 @@ function normalizeSocialLinksResponse(payload: unknown): SocialAccountsMap {
     if (!url) return;
 
     if (platform === "INSTAGRAM") map.instagram = url;
-    if (platform === "TWITTER") map.twitter = url;
-    if (platform === "WEBSITE") map.website = url;
-    if (platform === "FACEBOOK") map.facebook = url;
     if (platform === "YOUTUBE") map.youtube = url;
+    if (platform === "SPOTIFY") map.spotify = url;
+    if (platform === "TIKTOK") map.tiktok = url;
+    if (platform === "SOUNDCLOUD") map.soundcloud = url;
+    if (platform === "TWITTER") map.twitter = url;
   });
 
   return map;
@@ -92,10 +94,7 @@ export const profileService = {
   },
 
   async updateMeGenres(payload: UserGenres): Promise<UserGenres> {
-    const { data } = await api.patch<UserGenres>(
-      "/users/me/genres",
-      payload,
-    );
+    const { data } = await api.patch<UserGenres>("/users/me/genres", payload);
     return data;
   },
 
@@ -122,5 +121,9 @@ export const profileService = {
       `/users/${encodeURIComponent(userId)}/following?page=${page}&limit=${limit}`,
     );
     return data;
+  },
+
+  async removeMeSocialLink(platform: string): Promise<void> {
+    await api.delete(`/users/me/social-links/${platform.toLowerCase()}`);
   },
 };
