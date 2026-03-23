@@ -1,8 +1,11 @@
 import Avatar from "../Header/Avatar";
 import { useEffect, useState } from "react";
-import { FiInfo } from "react-icons/fi";
+import { FiInfo, FiLink, FiTrash2 } from "react-icons/fi";
 import { profileService } from "../../profileService";
-import type { SocialPlatform, UserSocialLink } from "../../../../shared/types/User";
+import type {
+  SocialPlatform,
+  UserSocialLink,
+} from "../../../../shared/types/User";
 
 const PLATFORM_OPTIONS: SocialPlatform[] = ["INSTAGRAM", "TWITTER", "WEBSITE"];
 
@@ -45,18 +48,9 @@ export default function EditInfo({
   const initialCity = city ?? "";
   const initialBio = bio ?? "";
   const initialLinks = [
-    {
-      platform: "INSTAGRAM",
-      url: socialAccounts?.instagram ?? "",
-    },
-    {
-      platform: "TWITTER",
-      url: socialAccounts?.twitter ?? "",
-    },
-    {
-      platform: "WEBSITE",
-      url: socialAccounts?.website ?? "",
-    },
+    { platform: "INSTAGRAM", url: socialAccounts?.instagram ?? "" },
+    { platform: "TWITTER", url: socialAccounts?.twitter ?? "" },
+    { platform: "WEBSITE", url: socialAccounts?.website ?? "" },
   ].filter((link): link is UserSocialLink => link.url.trim().length > 0);
   const normalizedInitialLinks = normalizeLinks(initialLinks);
 
@@ -69,9 +63,9 @@ export default function EditInfo({
     "PUBLIC",
   );
   const [roleState, setroleState] = useState<"ARTIST" | "LISTENER">("ARTIST");
-  const [showLinkInputs, setShowLinkInputs] = useState(initialLinks.length > 0);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   const normalizedCurrentLinks = normalizeLinks(linksState);
   const hasSocialLinksChanges =
     JSON.stringify(normalizedCurrentLinks) !==
@@ -82,7 +76,8 @@ export default function EditInfo({
     countryState !== initialCountry ||
     cityState !== initialCity ||
     bioState !== initialBio ||
-    hasSocialLinksChanges;
+    hasSocialLinksChanges ||
+    linksState.length !== initialLinks.length;
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -106,13 +101,7 @@ export default function EditInfo({
         role: roleState,
       });
 
-      if (hasSocialLinksChanges) {
-        if (normalizedCurrentLinks.length === 0) {
-          setErrorMsg("Please add at least one social link before saving.");
-          setIsSaving(false);
-          return;
-        }
-
+      if (hasSocialLinksChanges || linksState.length !== initialLinks.length) {
         await profileService.updateMeSocialLinks({
           links: normalizedCurrentLinks,
         });
@@ -127,6 +116,12 @@ export default function EditInfo({
       );
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const addLink = () => {
+    if (linksState.length < 6) {
+      setLinksState([...linksState, { platform: "WEBSITE", url: "" }]);
     }
   };
 
@@ -158,92 +153,70 @@ export default function EditInfo({
                   </div>
                 </div>
               </div>
-              <div className="mt-3 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (linksState.length === 0) {
-                      setLinksState([{ platform: "INSTAGRAM", url: "" }]);
-                    }
-                    setShowLinkInputs((prev) => !prev);
-                  }}
-                  className="rounded-sm bg-zinc-800 px-4 py-2 text-sm font-bold text-white hover:text-zinc-400 cursor-pointer"
-                >
-                  {showLinkInputs ? "Hide links" : "Add link"}
-                </button>
-              </div>
 
-              {showLinkInputs && (
-                <div className="mt-4 grid gap-3">
-                  {linksState.map((link, index) => (
-                    <div
-                      key={`${link.platform}-${index}`}
-                      className="grid gap-2"
-                    >
-                      <select
-                        value={link.platform}
-                        onChange={(e) => {
-                          const nextLinks = [...linksState];
-                          nextLinks[index] = {
-                            ...nextLinks[index],
-                            platform: e.target.value as SocialPlatform,
-                          };
-                          setLinksState(nextLinks);
-                        }}
-                        className="rounded-sm border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white outline-none focus:border-zinc-500 cursor-pointer"
-                      >
-                        {PLATFORM_OPTIONS.map((platform) => (
-                          <option key={platform} value={platform}>
-                            {platform}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        value={link.url}
-                        onChange={(e) => {
-                          const nextLinks = [...linksState];
-                          nextLinks[index] = {
-                            ...nextLinks[index],
-                            url: e.target.value,
-                          };
-                          setLinksState(nextLinks);
-                        }}
-                        className="w-full rounded-sm border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white outline-none focus:border-zinc-500"
-                        placeholder="https://example.com/your-handle"
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setLinksState(
-                            linksState.filter((_, rowIndex) => rowIndex !== index),
-                          )
-                        }
-                        className="w-full rounded-sm bg-zinc-800 px-3 py-2 text-sm font-bold text-white hover:text-zinc-400 cursor-pointer"
-                        aria-label={`Remove link ${index + 1}`}
-                      >
-                        Remove
-                      </button>
+              <div className="mt-4 flex flex-col gap-2">
+                {linksState.map((link, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center rounded-sm border border-zinc-700 bg-zinc-800 overflow-hidden"
+                  >
+                    <div className="flex items-center justify-center px-3 text-zinc-400">
+                      <FiLink size={16} />
                     </div>
-                  ))}
+                    <input
+                      value={link.url}
+                      onChange={(e) => {
+                        const next = [...linksState];
+                        next[index] = { ...next[index], url: e.target.value };
+                        setLinksState(next);
+                      }}
+                      className="flex-1 bg-transparent py-2 text-sm text-white outline-none placeholder-zinc-500"
+                      placeholder="Web or email address"
+                    />
+                    <div className="w-px h-8 bg-zinc-700" />
+                    <select
+                      value={link.platform}
+                      onChange={(e) => {
+                        const next = [...linksState];
+                        next[index] = {
+                          ...next[index],
+                          platform: e.target.value as SocialPlatform,
+                        };
+                        setLinksState(next);
+                      }}
+                      className="bg-transparent py-2 px-2 text-sm text-zinc-300 outline-none cursor-pointer w-32"
+                    >
+                      {PLATFORM_OPTIONS.map((p) => (
+                        <option key={p} value={p} className="bg-zinc-800">
+                          {p}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="w-px h-8 bg-zinc-700" />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setLinksState(linksState.filter((_, i) => i !== index))
+                      }
+                      className="flex items-center justify-center px-3 text-zinc-400 hover:text-white cursor-pointer"
+                      aria-label="Remove link"
+                    >
+                      <FiTrash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+
+                <div className="flex gap-2 mt-1">
                   <button
                     type="button"
+                    onClick={addLink}
                     disabled={linksState.length >= 6}
-                    onClick={() =>
-                      setLinksState([
-                        ...linksState,
-                        { platform: "INSTAGRAM", url: "" },
-                      ])
-                    }
-                    className={`rounded-sm px-4 py-2 text-sm font-bold ${
-                      linksState.length >= 6
-                        ? "bg-zinc-700 text-zinc-400 cursor-not-allowed"
-                        : "bg-zinc-800 text-white hover:text-zinc-400 cursor-pointer"
-                    }`}
+                    className="px-4 py-2 text-sm font-bold rounded-sm border border-zinc-600 text-white hover:bg-zinc-800 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    Add another link
+                    Add link
                   </button>
                 </div>
-              )}
+              </div>
             </div>
           </div>
 
