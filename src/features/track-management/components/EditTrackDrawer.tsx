@@ -3,8 +3,6 @@ import { X, Download, RefreshCw, ChevronDown } from "lucide-react";
 import type { Track } from "../../../shared/types/Track";
 import storefrontImg from "@/assets/storefront.png";
 import { trackService } from "../trackService";
-import type { UpdateTrackPayload } from "../trackService";
-import type { Genre } from "@/shared/types/Genre";
 
 interface EditTrackDrawerProps {
   track: Track;
@@ -82,7 +80,7 @@ export default function EditTrackDrawer({ track, onClose }: EditTrackDrawerProps
   const [artworkPreview, setArtworkPreview] = useState<string | null>(track.thumbnailUrl ?? null);
   const artworkInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState(track.title);
-  const [artists, setArtists] = useState("Nada Serag");
+  const [artists, setArtists] = useState(track.artist);
   const [genre, setGenre] = useState(track.genre);
   const [tags, setTags] = useState("");
   const [description, setDescription] = useState("");
@@ -133,15 +131,12 @@ export default function EditTrackDrawer({ track, onClose }: EditTrackDrawerProps
       privacy,
       artwork: artworkPreview,
     });
-    onClose();
-  } catch (err) {
+   } catch (err) {
     console.error("Failed to update track:", err);
+  } finally {
+    onClose(); 
   }
 };
-
-  const waveformBars = Array.from({ length: 80 }, (_, i) =>
-    10 + Math.abs(Math.sin(i * 0.4) * 28 + Math.sin(i * 0.13) * 18)
-  );
 
   const inputClass =
     "w-full bg-[#181818] border border-[#333] text-white text-sm px-3 py-2.5 focus:outline-none focus:border-[#555] placeholder-[#555]";
@@ -398,11 +393,6 @@ export default function EditTrackDrawer({ track, onClose }: EditTrackDrawerProps
         subtitle="Pick the 20 second clip you'd like to use as your track preview. This will live on your feed and socials."
       >
         <div className="relative w-full h-20 bg-[#161616] border border-[#2a2a2a] flex items-center justify-center overflow-hidden rounded">
-          <div className="absolute inset-0 flex items-center px-3 gap-px opacity-30">
-            {waveformBars.map((h, i) => (
-              <div key={i} className="flex-shrink-0 bg-[#aaa] rounded-sm" style={{ width: 3, height: h }} />
-            ))}
-          </div>
           <p className="relative z-10 text-xs font-semibold text-white text-center px-4">
             Can't set audio preview, because this track is shorter than preview time.
           </p>

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "mock": "json-server --watch db.json --port 3001",
+    "mock": "json-server --watch db.json --port 3001 --routes routes.json",
     "build": "tsc -b && vite build",
     "lint": "eslint . --max-warnings=-1",
     "preview": "vite preview",
@@ -48,7 +48,7 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "jsdom": "^28.1.0",
-    "json-server": "^1.0.0-beta.3",
+    "json-server": "^0.17.4",
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.1",
     "typescript": "~5.9.3",

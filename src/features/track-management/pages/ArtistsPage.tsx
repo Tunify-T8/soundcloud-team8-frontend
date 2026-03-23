@@ -95,12 +95,12 @@ export default function ArtistsPage() {
 
 useEffect(() => {
   const fetchTracks = async () => {
-    try {
+   try {
       const data = await trackService.getUploadedTracks();
       setTracks(data);
     } catch(e) {
       console.log("Failed to fetch tracks:", e)
-      setTracks([]) // fail gracefully with empty array
+      setTracks([])
     }
   }
   fetchTracks();
@@ -120,6 +120,10 @@ const filteredTracks = useMemo(() => {
   const handleVisibilityChange = (v: "public" | "private") => {
     setVisibilityFilter((prev) => (prev === v ? "all" : v));
   };
+
+  const handleDeleteTrack = (id: string) => {
+  setTracks((prev) => prev.filter((t) => t.id !== id));
+};
 
   return (
     <div className="flex min-h-screen bg-black text-white font-sans">
@@ -215,8 +219,7 @@ const filteredTracks = useMemo(() => {
                 </div>
               </div>
 
-              {/* Track list */}
-              <TrackList tracks={filteredTracks} />
+              <TrackList tracks={filteredTracks} onDelete={handleDeleteTrack} />
             </div>
           )}
 
