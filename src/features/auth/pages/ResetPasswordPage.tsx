@@ -9,7 +9,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import AuthNavbar from '../components/AuthNavbar';
 import { ChevronLeft, Loader2, Eye, EyeOff } from 'lucide-react';
-import { resetPassword, resendVerification } from '../services/index';
+import { resetPassword } from '../services/index';
 const TunifyLogo: React.FC = () => (
   <Link to="/" className="flex items-center gap-2 no-underline">
     <svg viewBox="0 0 33 15" className="h-6 w-auto sm:h-7" fill="white" aria-hidden="true">
@@ -70,17 +70,7 @@ const ResetPasswordPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       await resetPassword(email.trim(), token.trim().toUpperCase(), newPassword, confirmPassword, true);
-      try {
-        await resendVerification(email.trim());
-      } catch {
-        // verification email failed silently — still proceed
-      }
-      navigate('/verify-email', {
-        state: {
-          email: email.trim(),
-          message: 'Password reset successfully. Please verify your email to continue.',
-        },
-      });
+      navigate('/signin');
     } catch (err: any) {
       const msg = err?.response?.data?.message;
       if (Array.isArray(msg)) {

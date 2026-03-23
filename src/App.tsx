@@ -5,25 +5,26 @@ import SideBar from "./components/layout/Sidebar";
 // import RepostsPage from "./features/engagement/pages/RepostsPage"
 import UploadPage from "./features/upload/pages/UploadPage";
 import ArtistsPage from "./features/track-management/pages/ArtistsPage";
-import ProfilePage from "./features/profile/pages/ProfilePage"
-import PopularTracksPage from "./features/profile/pages/UserInfoBar/PopularTracksPage"
-import TracksPage from "./features/profile/pages/UserInfoBar/TracksPage"
-import AlbumsPage from "./features/profile/pages/UserInfoBar/AlbumsPage"
-import PlaylistsPage from "./features/profile/pages/UserInfoBar/PlaylistsPage"
-import ProfileRepostsPage from "./features/profile/pages/UserInfoBar/RepostsPage"
+import ProfilePage from "./features/profile/pages/ProfilePage";
+import PopularTracksPage from "./features/profile/pages/UserInfoBar/PopularTracksPage";
+import TracksPage from "./features/profile/pages/UserInfoBar/TracksPage";
+import AlbumsPage from "./features/profile/pages/UserInfoBar/AlbumsPage";
+import PlaylistsPage from "./features/profile/pages/UserInfoBar/PlaylistsPage";
+import ProfileRepostsPage from "./features/profile/pages/UserInfoBar/RepostsPage";
 import SignInPage from "./features/auth/pages/SignInPage";
 import SignUpPage from "./features/auth/pages/SignUpPage";
 import ForgotPasswordPage from "./features/auth/pages/ForgotPasswordPage";
 
-import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage"
-import MessagesPage from "./features/conversation/pages/MessagesPage"
-import ProtectedRoute from "./routes/ProtectedRoute"
-import VerifyEmailPage from "./features/auth/pages/VerifyEmailPage"
+import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage";
+import MessagesPage from "./features/conversation/pages/MessagesPage";
+import ProtectedRoute from "./routes/ProtectedRoute";
+import VerifyEmailPage from "./features/auth/pages/VerifyEmailPage";
+import { ProfileProvider } from "./features/profile/context/ProfileContext";
 
 const router = createBrowserRouter([
-  { path: '/verify-email', element: <VerifyEmailPage /> },
+  { path: "/verify-email", element: <VerifyEmailPage /> },
   {
-    path: '/signin',
+    path: "/signin",
     element: <SignInPage key={Math.random()} />,
   },
   {
@@ -42,7 +43,9 @@ const router = createBrowserRouter([
     path: "/",
     element: (
       <ProtectedRoute>
-        <NavBar />
+        <ProfileProvider>
+          <NavBar />
+        </ProfileProvider>
       </ProtectedRoute>
     ),
     children: [
@@ -51,8 +54,8 @@ const router = createBrowserRouter([
         element: <SideBar />,
       },
       {
-        path: '/messages',
-        element: <MessagesPage />
+        path: "/messages",
+        element: <MessagesPage />,
       },
       // {
       //   path: '/:artist/:songName',
@@ -102,7 +105,7 @@ function App() {
     <>
       <RouterProvider router={router} />
     </>
-  )
+  );
 }
 
 export default App;
