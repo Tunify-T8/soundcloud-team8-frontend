@@ -1,4 +1,6 @@
 import {
+  createContext,
+  useContext,
   useEffect,
   useState,
   useCallback,
@@ -6,7 +8,26 @@ import {
 import type { ReactNode } from "react";
 import { profileService } from "../profileService";
 import type { MeUserProfile, UserFollowing } from "../../../shared/types/User";
-import { ProfileContext, type SocialAccounts } from "./ProfileContextDef";
+
+type SocialAccounts = {
+  instagram?: string;
+  twitter?: string;
+  website?: string;
+};
+
+type ProfileContextType = {
+  me: MeUserProfile | null;
+  socialAccounts: SocialAccounts;
+  following: UserFollowing[];
+  refresh: () => void;
+};
+
+const ProfileContext = createContext<ProfileContextType>({
+  me: null,
+  socialAccounts: {},
+  following: [],
+  refresh: () => {},
+});
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
   const [me, setMe] = useState<MeUserProfile | null>(null);
@@ -34,3 +55,5 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     </ProfileContext.Provider>
   );
 }
+
+export const useMe = () => useContext(ProfileContext);

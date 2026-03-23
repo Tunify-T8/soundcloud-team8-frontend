@@ -4,7 +4,7 @@ import ProfileSideBar from "../components/UserInfo/ProfileSideBar";
 import { Outlet, useParams } from "react-router-dom";
 import { profileService } from "../profileService";
 import { useEffect, useState, useCallback } from "react";
-import { useMe } from "../context/useMe";
+import { useMe } from "../context/ProfileContext";
 import type {
   MeUserProfile,
   PublicUserProfile,
@@ -20,7 +20,7 @@ export default function ProfilePage() {
   const { username } = useParams<{ username: string }>();
   const { me, socialAccounts, following, refresh: refreshMe } = useMe();
   const [publicUser, setPublicUser] = useState<PublicUserProfile | null>(null);
-  const [loadedUsername, setLoadedUsername] = useState<string | null>(null);
+  const [loading, setLoading] = useState(!!username);
   const [error, setError] = useState<string | null>(null);
 
   const refreshProfile = useCallback(() => {
@@ -29,35 +29,20 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!username) return;
-    let isCancelled = false;
-
+    setLoading(true);
+    setError(null);
     profileService
       .getPublicProfile(username)
-      .then((data) => {
-        if (isCancelled) return;
-        setPublicUser(data);
-        setError(null);
-        setLoadedUsername(username);
-      })
-      .catch((err: any) => {
-        if (isCancelled) return;
-        setPublicUser(null);
-        setError(err?.message || "Failed to fetch user");
-        setLoadedUsername(username);
-      });
-
-    return () => {
-      isCancelled = true;
-    };
+      .then(setPublicUser)
+      .catch((err: any) => setError(err?.message || "Failed to fetch user"))
+      .finally(() => setLoading(false));
   }, [username]);
 
   if (!username && !me) {
     return <div className="min-h-screen text-white">Loading...</div>;
   }
 
-  const isPublicProfileLoading = Boolean(username && loadedUsername !== username);
-
-  if (isPublicProfileLoading) {
+  if (loading) {
     return <div className="min-h-screen text-white">Loading...</div>;
   }
 
