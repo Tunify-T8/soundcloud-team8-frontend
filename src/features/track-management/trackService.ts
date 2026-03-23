@@ -41,6 +41,11 @@ async updateTrack(id: string, payload: UpdateTrackPayload): Promise<Track> {
     formData.append("artwork", payload.artwork); 
   }
 
+  //loggig form data for debugging
+  for (const [key, value] of formData.entries()) {
+    console.log(key, value);
+  }
+
   const { data } = await api.patch(`/tracks/${id}`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
