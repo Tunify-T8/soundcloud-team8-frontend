@@ -95,9 +95,14 @@ export default function ArtistsPage() {
 
 useEffect(() => {
   const fetchTracks = async () => {
-    const data = await trackService.getUploadedTracks();
-    setTracks(data);
-  };
+    try {
+      const data = await trackService.getUploadedTracks();
+      setTracks(data);
+    } catch(e) {
+      console.log("Failed to fetch tracks:", e)
+      setTracks([]) // fail gracefully with empty array
+    }
+  }
   fetchTracks();
 }, []);
 

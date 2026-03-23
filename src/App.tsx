@@ -1,9 +1,8 @@
 import NavBar from "./components/layout/Navbar";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import SideBar from "./components/layout/Sidebar";
-import TrackPage from "./features/engagement/pages/TrackPage"
-import LikesPage from "./features/engagement/pages/LikesPage"
-import RepostsPage from "./features/engagement/pages/RepostsPage"
+// import LikesPage from "./features/engagement/pages/LikesPage"
+// import RepostsPage from "./features/engagement/pages/RepostsPage"
 import UploadPage from "./features/upload/pages/UploadPage";
 import ArtistsPage from "./features/track-management/pages/ArtistsPage";
 import ProfilePage from "./features/profile/pages/ProfilePage"
@@ -35,21 +34,6 @@ const router = createBrowserRouter([
     path: "/forgot-password",
     element: <ForgotPasswordPage />,
   },
-  { path: "/reset-password", element: <ResetPasswordPage /> },
-  {
-    path: "/me",
-    element: (
-      <ProtectedRoute>
-        <NavBar />
-      </ProtectedRoute>
-    ),
-    children: [
-      {
-        index: true,
-        element: <ProfilePage />,
-      },
-    ],
-  },
   {
     path: "/reset-password",
     element: <ResetPasswordPage />,
@@ -70,23 +54,22 @@ const router = createBrowserRouter([
         path: '/messages',
         element: <MessagesPage />
       },
+      // {
+      //   path: '/:artist/:songName',
+      //   element: <TrackPage />
+      // },
+      // {
+      //   path: '/:artist/:songName/likes',
+      //   element: <LikesPage />
+      // },
+      // {
+      //   path: '/:artist/:songName/reposts',
+      //   element: <RepostsPage />
+      // },
       {
-        path: '/:artist/:songName',
-        element: <TrackPage />
-      },
-      {
-        path: '/:artist/:songName/likes',
-        element: <LikesPage />
-      },
-      {
-        path: '/:artist/:songName/reposts',
-        element: <RepostsPage />
-      },
-      {
-        path: "/:username",
+        path: "/me",
         element: <ProfilePage />,
         children: [
-          { index: true },
           { path: "popular-tracks", element: <PopularTracksPage /> },
           { path: "tracks", element: <TracksPage /> },
           { path: "albums", element: <AlbumsPage /> },
