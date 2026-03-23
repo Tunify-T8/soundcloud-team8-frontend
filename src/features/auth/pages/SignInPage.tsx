@@ -137,8 +137,8 @@ const SignInPage: React.FC = () => {
       setSocialLoading(null);
     },
     flow: 'auth-code',
-    redirect_uri: import.meta.env.VITE_GOOGLE_REDIRECT_URI ?? 'http://localhost:3333/auth/google/callback',  });
-
+    // redirect_uri: import.meta.env.VITE_GOOGLE_REDIRECT_URI ?? 'http://localhost:3333/auth/google/callback',  });
+    redirect_uri: 'postmessage',});
   // ── Google account linking ─────────────────────────────────────
   const handleGoogleLink = async () => {
     if (!linkingToken || !linkPassword) return;
