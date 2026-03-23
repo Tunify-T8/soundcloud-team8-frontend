@@ -3,8 +3,6 @@ import { X, Download, RefreshCw, ChevronDown } from "lucide-react";
 import type { Track } from "../../../shared/types/Track";
 import storefrontImg from "@/assets/storefront.png";
 import { trackService } from "../trackService";
-import type { UpdateTrackPayload } from "../trackService";
-import type { Genre } from "@/shared/types/Genre";
 
 interface EditTrackDrawerProps {
   track: Track;
@@ -133,9 +131,10 @@ export default function EditTrackDrawer({ track, onClose }: EditTrackDrawerProps
       privacy,
       artwork: artworkPreview,
     });
-    onClose();
-  } catch (err) {
+   } catch (err) {
     console.error("Failed to update track:", err);
+  } finally {
+    onClose(); 
   }
 };
 

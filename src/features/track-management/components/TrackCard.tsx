@@ -1,10 +1,95 @@
 import { useState, useRef, useEffect } from "react";
 import {
   Play, Lock, MoreVertical, Heart, MessageSquare, Repeat2,
-  Download, Pencil, ListPlus, CircleDollarSign, SlidersHorizontal,
-  Share2, TrendingUp, Link, Trash2
+  Download, Pencil, ListPlus, CircleDollarSign, SlidersHorizontal, Share2, TrendingUp, Link, Trash2, X
 } from "lucide-react";
 import type { Track } from "@/shared/types/Track";
+import { trackService } from "../trackService"; 
+
+function DeleteConfirmModal({
+  track,
+  onCancel,
+  onDeleted,
+}: {
+  track: Track;
+  onCancel: () => void;
+  onDeleted: (id: string) => void;
+}) {
+  const [loading, setLoading] = useState(false);
+
+  const handleDelete = async () => {
+    setLoading(true);
+    try {
+      await trackService.deleteTrack(track.id);
+      onDeleted(track.id);
+    } catch (e) {
+      console.error("Failed to delete track:", e);
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 bg-black/60 z-50" onClick={onCancel} />
+
+      {/* Modal */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+        <div className="bg-[#111] border border-zinc-800 rounded-xl w-[540px] p-8 pointer-events-auto shadow-2xl">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-white text-xl font-bold">Permanently delete this track?</h2>
+            <button
+              onClick={onCancel}
+              className="w-7 h-7 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Track preview */}
+          <div className="flex items-center gap-4 mb-6">
+            <div className="relative w-16 h-16 flex-shrink-0 bg-zinc-700 rounded flex items-center justify-center overflow-hidden">
+              {track.thumbnailUrl ? (
+                <img src={track.thumbnailUrl} alt={track.title} className="w-full h-full object-cover" />
+              ) : (
+                <Play className="w-5 h-5 text-white fill-white" />
+              )}
+              {track.isPrivate && (
+                <div className="absolute -bottom-1 -right-1 bg-zinc-900 rounded-full p-0.5">
+                  <Lock className="w-3 h-3 text-zinc-400" />
+                </div>
+              )}
+            </div>
+            <span className="text-white font-semibold text-base">{track.title}</span>
+          </div>
+
+          {/* Warning */}
+          <p className="text-zinc-400 text-sm mb-8 leading-relaxed">
+            Removing this track is irreversible. You will lose all the plays, likes, and comments for this track with no way to get them back.
+          </p>
+
+          {/* Actions */}
+          <div className="flex items-center justify-end gap-3">
+            <button
+              onClick={onCancel}
+              className="px-6 py-2.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-semibold transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={loading}
+              className="px-6 py-2.5 rounded-full bg-red-500 hover:bg-red-600 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
+            >
+              {loading ? "Deleting..." : "Delete forever"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
 
 interface TrackCardProps {
   track: Track;
@@ -60,6 +145,7 @@ export default function TrackCard({
 }: TrackCardProps) {
   const [hovered, setHovered] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const fmt = (val: number | null | undefined) =>
@@ -163,7 +249,7 @@ export default function TrackCard({
         </button>
 
         {menuOpen && (
-          <div className="absolute right-0 top-full mt-1 z-50 bg-zinc-800 rounded-lg shadow-xl border border-zinc-700 overflow-hidden min-w-[180px] py-1">
+          <div className="absolute right-0 bottom-full mb-1 z-50 bg-zinc-800 rounded-lg shadow-xl border border-zinc-700 overflow-hidden min-w-[180px] py-1">
             <MenuItem icon={<Pencil className="w-4 h-4" />} label="Edit" onClick={() => { onEdit?.(track.id); setMenuOpen(false); }} />
             <MenuItem icon={<ListPlus className="w-4 h-4" />} label="Add to playlist" onClick={() => { onAddToPlaylist?.(track.id); setMenuOpen(false); }} />
             <div className="my-1 border-t border-zinc-700" />
@@ -174,10 +260,20 @@ export default function TrackCard({
             <MenuItem icon={<Download className="w-4 h-4" />} label="Download file" onClick={() => { onDownload?.(track.id); setMenuOpen(false); }} />
             <MenuItem icon={<Link className="w-4 h-4" />} label="Copy link" onClick={() => { onCopyLink?.(track.id); setMenuOpen(false); }} />
             <div className="my-1 border-t border-zinc-700" />
-            <MenuItem icon={<Trash2 className="w-4 h-4" />} label="Delete track" onClick={() => { onDelete?.(track.id); setMenuOpen(false); }} danger />
+            <MenuItem icon={<Trash2 className="w-4 h-4" />} label="Delete track" onClick={() => { setMenuOpen(false); setShowDeleteModal(true); }} danger />
           </div>
         )}
       </div>
+      {showDeleteModal && (
+        <DeleteConfirmModal
+          track={track}
+          onCancel={() => setShowDeleteModal(false)}
+          onDeleted={(id) => {
+            setShowDeleteModal(false);
+            onDelete?.(id);
+          }}
+        />
+      )}
     </div>
   );
 }

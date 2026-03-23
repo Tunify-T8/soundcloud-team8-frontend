@@ -14,9 +14,12 @@ export interface UpdateTrackPayload {
 }
 
 export const trackService = {
-  async getUploadedTracks(): Promise<Track[]> {
-    const { data } = await api.get<Track[]>("/tracks/me");
-    return data ?? [];
+   async getUploadedTracks(): Promise<Track[]> {
+  //   const { data } = await api.get<Track[]>("/tracks/me");
+  //   return data ?? [];
+   const { data } = await api.get<Track[]>("/tracks/me");
+  console.log("raw /tracks/me response:", data); // what shape is this?
+  return data ?? [];
   },
 
   async deleteTrack(id: string): Promise<void> {
