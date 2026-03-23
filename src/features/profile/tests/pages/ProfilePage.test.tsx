@@ -16,7 +16,7 @@ describe("ProfilePage", () => {
       username: "testuser",
       country: "Testland",
       city: "Test City",
-      isVerified: true,
+      isCertified: true,
       avatarUrl: "avatar.jpg",
       coverUrl: "cover.jpg",
       isMe: true,

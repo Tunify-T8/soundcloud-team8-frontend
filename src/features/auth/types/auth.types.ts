@@ -11,7 +11,7 @@ export interface User {
   username: string;
   email: string;
   avatarUrl: string | null;
-  isVerified: boolean;
+  isCertified: boolean;
   role: UserRole;
   isDeleted?: boolean;
 }

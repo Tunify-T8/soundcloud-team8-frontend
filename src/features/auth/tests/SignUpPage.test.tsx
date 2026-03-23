@@ -53,7 +53,7 @@ const MOCK_AUTH_RESPONSE = {
     username: 'newuser',
     email: 'newuser@example.com',
     avatarUrl: null,
-    isVerified: false,
+    isCertified: false,
     role: 'user' as const,
   },
 };

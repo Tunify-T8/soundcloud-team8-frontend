@@ -212,7 +212,7 @@ type UserProfile = {
   username: string
   email: string
   avatarUrl: string
-  isVerified: boolean
+  isCertified: boolean
 }
 
 export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
@@ -267,7 +267,7 @@ useEffect(() => {
       username: user.username,
       email: user.email,
       avatarUrl: user.avatarUrl!,
-      isVerified: user.isVerified,
+      isCertified: user.isCertified,
     }))
     .catch((err) => console.error("Failed to fetch user profile:", err));
 }, []);

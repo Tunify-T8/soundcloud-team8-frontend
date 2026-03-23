@@ -7,7 +7,7 @@ export default function Header({
   username,
   country,
   city,
-  isVerified,
+  isCertified,
   avatarUrl,
   coverUrl,
   isMe,
@@ -17,7 +17,7 @@ export default function Header({
   username?: string;
   country?: string;
   city?: string;
-  isVerified?: boolean;
+  isCertified?: boolean;
   avatarUrl?: string;
   coverUrl?: string;
   isMe?: boolean;
@@ -45,7 +45,7 @@ export default function Header({
             username={username}
             country={country}
             city={city}
-            isVerified={isVerified}
+            isCertified={isCertified}
           />
         </div>
       </div>
