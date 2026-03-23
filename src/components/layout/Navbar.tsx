@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Outlet } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { useMe } from "../../features/profile/context/ProfileContext";
+import { useMe } from "../../features/profile/context/useMe";
 import { logout } from "../../features/auth/services/index";
 
 export default function Navbar() {
