@@ -260,20 +260,17 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
   const privacyRef     = useRef<string>("public");
 
   // ── Fetch user profile ────────────────────────────────────────────────────
-useEffect(() => {
-  profileService.getMeProfile()
-    .then((user) => setUserProfile({
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      avatarUrl: user.avatarUrl!,
-      isVerified: user.isVerified,
-    }))
-    .catch((err) => console.error("Failed to fetch user profile:", err));
-}, []);
-
-
-
+  useEffect(() => {
+    profileService.getMeProfile()
+      .then((user) => setUserProfile({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        avatarUrl: user.avatarUrl!,
+        isVerified: user.isVerified,
+      }))
+      .catch((err) => console.error("Failed to fetch user profile:", err));
+  }, []);
 
   // ── Fetch audio blob using raw axios (NOT api) — blob: URLs are local ────
   useEffect(() => {
@@ -368,13 +365,19 @@ useEffect(() => {
     if (!fileReady || isSubmitting) return;
     setIsSubmitting(true);
     try {
+      const rawGenre = genreRef.current?.value ?? "";
+
       const { data: track } = await api.post("/tracks", {
         title:               titleRef.current?.value || "Untitled",
         tags:                tagsRef.current?.value ? [tagsRef.current.value] : [],
         description:         descriptionRef.current?.value || "",
         privacy:             privacyRef.current,
         availability:        { type: geoMode, regions },
+        genre:               GENRE_MAP[rawGenre] ?? rawGenre,
         scheduledReleaseDate: null,
+        artists:             artistsRef.current?.value
+                               ? artistsRef.current.value.split(",").map(a => a.trim())
+                               : [],
         contentWarning,
       });
 
