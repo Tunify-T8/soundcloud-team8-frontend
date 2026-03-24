@@ -114,7 +114,6 @@ export default function EditTrackDrawer({ track, onClose }: EditTrackDrawerProps
   const handleSave = async () => {
     try {
       await trackService.updateTrack(track.id, {
-        id: track.id,
         title,
         genre,
         tags: tags ? tags.split(",").map((t: string) => t.trim()) : [],
