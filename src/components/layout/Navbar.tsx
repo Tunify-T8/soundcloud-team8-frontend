@@ -6,7 +6,6 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useMe } from "../../features/profile/context/useMe";
 import { logout } from "../../features/auth/services/index";
-
 export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
