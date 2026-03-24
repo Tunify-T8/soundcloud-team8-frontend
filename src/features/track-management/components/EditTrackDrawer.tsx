@@ -121,9 +121,13 @@ export default function EditTrackDrawer({ track, onClose }: EditTrackDrawerProps
         privacy,
         artwork: artworkFile,
       });
-    } catch (err: any) {
+     } catch (err: any) {
       console.error("Failed to update track:", err);
-    }
+     } 
+     finally 
+    {
+      onClose(); 
+     }
   };
 
   const inputClass =
