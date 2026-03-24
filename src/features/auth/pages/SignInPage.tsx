@@ -76,7 +76,7 @@ const SignInPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
-  const from = (location.state as { from?: Location })?.from?.pathname ?? '/stream';
+  const from = (location.state as { from?: Location })?.from?.pathname ?? '/';
   const prefillEmailState = (location.state as { email?: string; prefillStep?: string })?.email ?? '';
   const prefillStep = (location.state as { prefillStep?: string })?.prefillStep ?? '';
 
