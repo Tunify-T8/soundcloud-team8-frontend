@@ -1,35 +1,29 @@
-// ============================================================
-// ResetPasswordPage.test.tsx
-// Location: src/features/auth/tests/ResetPasswordPage.test.tsx
-// ============================================================
-
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import ResetPasswordPage from '../pages/ResetPasswordPage';
 
-// ── Mocks ──────────────────────────────────────────────────────
 const mockNavigate = vi.fn();
 
-// We control the token via this variable
-// Tests can change it before rendering
-let mockToken: string | null = 'abc123';
-
 vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom');
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
   return {
     ...actual,
     useNavigate: () => mockNavigate,
-    useSearchParams: () => [
-      {
-        get: (key: string) => (key === 'token' ? mockToken : null),
-      },
-    ],
+    useLocation: () => ({
+      state: { email: 'test@tunify.com' },
+      pathname: '/reset-password',
+    }),
   };
 });
 
-// ── Helpers ───────────────────────────────────────────────────
+vi.mock('../services/index', () => ({
+  resetPassword: vi.fn(),
+}));
+
+import { resetPassword } from '../services/index';
+
 const renderPage = () =>
   render(
     <MemoryRouter>
@@ -37,287 +31,368 @@ const renderPage = () =>
     </MemoryRouter>
   );
 
-// Gets password inputs by type since they have no placeholder after typing
+const getTokenInput = () =>
+  screen.getByPlaceholderText(/e\.g\.\s*21d9e4/i);
+
+const getEmailInput = () =>
+  screen.getByPlaceholderText('your@email.com') as HTMLInputElement;
+
 const getPasswordInputs = () =>
-  document.querySelectorAll('input[type="password"], input[type="text"]');
+  document.querySelectorAll('input[type="password"]') as NodeListOf<HTMLInputElement>;
+
+const getSaveButton = () =>
+  screen.getByRole('button', { name: /save new password/i });
+
+const fillValidForm = async (token = 'ABC123', password = 'Test@1234') => {
+  const user = userEvent.setup();
+
+  await user.clear(getTokenInput());
+  await user.type(getTokenInput(), token);
+
+  const pwInputs = getPasswordInputs();
+  await user.type(pwInputs[0], password);
+  await user.type(pwInputs[1], password);
+
+  return user;
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockToken = 'abc123'; // reset to valid token before each test
+  vi.mocked(resetPassword).mockResolvedValue({
+    message: 'Password reset successfully.',
+  });
 });
 
-// ════════════════════════════════════════════════════════════════
-// INITIAL RENDER
-// ════════════════════════════════════════════════════════════════
 describe('ResetPasswordPage — initial render', () => {
-  it('renders the Change your password title', () => {
+  it('renders the page title', () => {
     renderPage();
-    expect(screen.getByText('Change your password')).toBeInTheDocument();
+    expect(screen.getByText(/reset your password/i)).toBeInTheDocument();
   });
 
-  it('renders the subtitle help text', () => {
+  it('renders email input pre-filled from state', () => {
     renderPage();
-    expect(screen.getByText(/choose a strong, unique password/i)).toBeInTheDocument();
+    expect(getEmailInput().value).toBe('test@tunify.com');
   });
 
-  it('renders new password label', () => {
+  it('renders the reset code input', () => {
     renderPage();
-    expect(screen.getByText('Type your new password')).toBeInTheDocument();
+    expect(getTokenInput()).toBeInTheDocument();
   });
 
-  it('renders confirm password label', () => {
+  it('renders the new password label', () => {
     renderPage();
-    expect(screen.getByText('Type your new password again, to confirm')).toBeInTheDocument();
+    expect(screen.getByText('New password')).toBeInTheDocument();
   });
 
-  it('renders the sign out everywhere checkbox text', () => {
+  it('renders the confirm password label', () => {
     renderPage();
-    expect(screen.getByText('Also sign me out everywhere')).toBeInTheDocument();
+    expect(screen.getByText('Confirm new password')).toBeInTheDocument();
   });
 
-  it('renders the Save button', () => {
+  it('renders helper text under the email field', () => {
     renderPage();
-    expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument();
+    expect(
+      screen.getByText(/enter the email address associated with your account/i)
+    ).toBeInTheDocument();
   });
 
-  it('renders Tunify branding', () => {
+  it('renders helper text under the reset code field', () => {
     renderPage();
-    expect(screen.getByText('Tunify')).toBeInTheDocument();
+    expect(
+      screen.getByText(/enter the 6-character code we sent to your email inbox/i)
+    ).toBeInTheDocument();
   });
 
-  it('does NOT show any error on initial load', () => {
+  it('renders the save button', () => {
     renderPage();
-    expect(screen.queryByText(/do not match/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/at least 8/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/invalid or has expired/i)).not.toBeInTheDocument();
+    expect(getSaveButton()).toBeInTheDocument();
+  });
+
+  it('does not show any error on initial load', () => {
+    renderPage();
+    expect(screen.queryByText(/passwords do not match/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/invalid/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/incorrect/i)).not.toBeInTheDocument();
+  });
+
+  it('renders the back button', () => {
+    renderPage();
+    const backBtn = screen
+      .getAllByRole('button')
+      .find((b) => b.querySelector('.lucide-chevron-left'));
+    expect(backBtn).toBeInTheDocument();
   });
 });
 
-// ════════════════════════════════════════════════════════════════
-// SAVE BUTTON STATE
-// ════════════════════════════════════════════════════════════════
 describe('ResetPasswordPage — Save button state', () => {
-  it('Save button is disabled when both fields are empty', () => {
+  it('save button is disabled when token and passwords are empty', () => {
     renderPage();
-    expect(screen.getByRole('button', { name: /save/i })).toBeDisabled();
+    expect(getSaveButton()).toBeDisabled();
   });
 
-  it('Save button is disabled when only new password is filled', async () => {
+  it('save button is disabled when only passwords are filled', async () => {
     renderPage();
     const user = userEvent.setup();
-    const pwInputs = document.querySelectorAll('input[type="password"]');
-    await user.type(pwInputs[0], 'Password123');
-    expect(screen.getByRole('button', { name: /save/i })).toBeDisabled();
+
+    const pwInputs = getPasswordInputs();
+    await user.type(pwInputs[0], 'Test@1234');
+    await user.type(pwInputs[1], 'Test@1234');
+
+    expect(getSaveButton()).toBeDisabled();
   });
 
-  it('Save button is disabled when both fields have less than 8 characters', async () => {
+  it('save button is disabled when token is less than 6 characters', async () => {
     renderPage();
     const user = userEvent.setup();
-    const pwInputs = document.querySelectorAll('input[type="password"]');
-    await user.type(pwInputs[0], 'short');
-    await user.type(pwInputs[1], 'short');
-    expect(screen.getByRole('button', { name: /save/i })).toBeDisabled();
+
+    await user.type(getTokenInput(), 'ABC');
+
+    const pwInputs = getPasswordInputs();
+    await user.type(pwInputs[0], 'Test@1234');
+    await user.type(pwInputs[1], 'Test@1234');
+
+    expect(getSaveButton()).toBeDisabled();
   });
 
-  it('Save button is enabled when both fields have 8+ characters', async () => {
+  it('save button is enabled when all fields are valid', async () => {
     renderPage();
-    const user = userEvent.setup();
-    const pwInputs = document.querySelectorAll('input[type="password"]');
-    await user.type(pwInputs[0], 'Password123');
-    await user.type(pwInputs[1], 'Password123');
+    await fillValidForm();
+
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /save/i })).not.toBeDisabled();
+      expect(getSaveButton()).not.toBeDisabled();
     });
   });
 });
 
-// ════════════════════════════════════════════════════════════════
-// VALIDATION ERRORS
-// ════════════════════════════════════════════════════════════════
 describe('ResetPasswordPage — validation errors', () => {
   it('shows error when passwords do not match', async () => {
     renderPage();
     const user = userEvent.setup();
-    const pwInputs = document.querySelectorAll('input[type="password"]');
 
-    await user.type(pwInputs[0], 'Password123');
-    await user.type(pwInputs[1], 'Different456');
+    await user.type(getTokenInput(), 'ABC123');
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /save/i })).not.toBeDisabled();
-    });
+    const pwInputs = getPasswordInputs();
+    await user.type(pwInputs[0], 'Test@1234');
+    await user.type(pwInputs[1], 'Different@1');
 
-    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+    fireEvent.click(getSaveButton());
 
     await waitFor(() => {
-      expect(screen.getByText(/do not match/i)).toBeInTheDocument();
+      expect(screen.getByText(/passwords do not match/i)).toBeInTheDocument();
     });
   });
 
-  it('clears error when user types after mismatch error', async () => {
+  it('clears mismatch error when user corrects confirm password to match', async () => {
     renderPage();
     const user = userEvent.setup();
-    const pwInputs = document.querySelectorAll('input[type="password"]');
 
-    await user.type(pwInputs[0], 'Password123');
-    await user.type(pwInputs[1], 'Different456');
+    await user.type(getTokenInput(), 'ABC123');
+
+    const pwInputs = getPasswordInputs();
+    await user.type(pwInputs[0], 'Test@1234');
+    await user.type(pwInputs[1], 'Different@1');
+
+    fireEvent.click(getSaveButton());
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /save/i })).not.toBeDisabled();
+      expect(screen.getByText(/passwords do not match/i)).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+    await user.clear(pwInputs[1]);
+    await user.type(pwInputs[1], 'Test@1234');
 
     await waitFor(() => {
-      expect(screen.getByText(/do not match/i)).toBeInTheDocument();
-    });
-
-    // Type more — error should clear
-    await user.type(pwInputs[1], 'x');
-
-    await waitFor(() => {
-      expect(screen.queryByText(/do not match/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/passwords do not match/i)).not.toBeInTheDocument();
     });
   });
 });
 
-// ════════════════════════════════════════════════════════════════
-// NO TOKEN IN URL
-// ════════════════════════════════════════════════════════════════
-describe('ResetPasswordPage — no token in URL', () => {
-  it('shows invalid link error when no token and Save is clicked', async () => {
-    mockToken = null; // simulate no token in URL
-    renderPage();
-    const user = userEvent.setup();
-    const pwInputs = document.querySelectorAll('input[type="password"]');
-
-    await user.type(pwInputs[0], 'Password123');
-    await user.type(pwInputs[1], 'Password123');
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /save/i })).not.toBeDisabled();
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: /save/i }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/invalid or has expired/i)).toBeInTheDocument();
-    });
-  });
-});
-
-// ════════════════════════════════════════════════════════════════
-// SUCCESS STATE
-// ════════════════════════════════════════════════════════════════
 describe('ResetPasswordPage — success state', () => {
-  const submitValidForm = async () => {
+  it('calls resetPassword service with correct params on submit', async () => {
     renderPage();
-    const user = userEvent.setup();
-    const pwInputs = document.querySelectorAll('input[type="password"]');
-
-    await user.type(pwInputs[0], 'Password123');
-    await user.type(pwInputs[1], 'Password123');
+    await fillValidForm('ABC123', 'Test@1234');
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /save/i })).not.toBeDisabled();
+      expect(getSaveButton()).not.toBeDisabled();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+    fireEvent.click(getSaveButton());
 
     await waitFor(() => {
-      expect(screen.getByText('Password changed')).toBeInTheDocument();
-    });
-  };
-
-  it('shows Password changed heading on success', async () => {
-    await submitValidForm();
-    expect(screen.getByText('Password changed')).toBeInTheDocument();
-  });
-
-  it('shows updated successfully text on success', async () => {
-    await submitValidForm();
-    expect(screen.getByText(/updated successfully/i)).toBeInTheDocument();
-  });
-
-  it('shows Sign in button on success', async () => {
-    await submitValidForm();
-    expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
-  });
-
-  it('Sign in button navigates to /signin', async () => {
-    await submitValidForm();
-    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
-    expect(mockNavigate).toHaveBeenCalledWith('/signin');
-  });
-
-  it('does NOT show the password form on success', async () => {
-    await submitValidForm();
-    expect(screen.queryByText('Type your new password')).not.toBeInTheDocument();
-  });
-});
-
-// ════════════════════════════════════════════════════════════════
-// CHECKBOX
-// ════════════════════════════════════════════════════════════════
-describe('ResetPasswordPage — sign out everywhere checkbox', () => {
-  it('checkbox is checked by default', () => {
-    renderPage();
-    // The checked state uses bg-[#f50] class
-    const checkboxDiv = screen.getByText('Also sign me out everywhere')
-      .closest('div')!
-      .querySelector('div');
-    expect(checkboxDiv?.className).toContain('#f50');
-  });
-
-  it('clicking checkbox area toggles it off', async () => {
-    renderPage();
-    const checkboxArea = screen.getByText('Also sign me out everywhere').closest('div')!;
-    fireEvent.click(checkboxArea);
-
-    await waitFor(() => {
-      const checkboxDiv = checkboxArea.querySelector('div');
-      expect(checkboxDiv?.className).toContain('#2a2a2a');
+      expect(resetPassword).toHaveBeenCalledWith(
+        'test@tunify.com',
+        'ABC123',
+        'Test@1234',
+        'Test@1234',
+        true
+      );
     });
   });
 
-  it('clicking checkbox area twice returns to checked state', async () => {
+  it('navigates to /signin after successful password reset', async () => {
     renderPage();
-    const checkboxArea = screen.getByText('Also sign me out everywhere').closest('div')!;
-    fireEvent.click(checkboxArea); // off
-    fireEvent.click(checkboxArea); // back on
+    await fillValidForm('ABC123', 'Test@1234');
 
     await waitFor(() => {
-      const checkboxDiv = checkboxArea.querySelector('div');
-      expect(checkboxDiv?.className).toContain('#f50');
+      expect(getSaveButton()).not.toBeDisabled();
+    });
+
+    fireEvent.click(getSaveButton());
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/signin');
     });
   });
 });
 
-// ════════════════════════════════════════════════════════════════
-// PASSWORD VISIBILITY TOGGLE
-// ════════════════════════════════════════════════════════════════
 describe('ResetPasswordPage — password visibility toggle', () => {
   it('both password inputs are hidden by default', () => {
     renderPage();
-    const pwInputs = document.querySelectorAll('input[type="password"]');
-    expect(pwInputs.length).toBe(2);
+    expect(getPasswordInputs().length).toBe(2);
   });
 
-  it('first eye button toggles new password visibility', async () => {
+  it('eye button toggles password visibility', async () => {
     renderPage();
-    const pwInput = document.querySelectorAll('input[type="password"]')[0] as HTMLInputElement;
 
-    const eyeBtns = screen.getAllByRole('button').filter(
-      (b) => b.querySelector('.lucide-eye')
-    );
+    const pwInput = getPasswordInputs()[0];
+    const eyeBtn = screen
+      .getAllByRole('button')
+      .find((b) => b.querySelector('.lucide-eye')) as HTMLElement;
 
     expect(pwInput).toHaveAttribute('type', 'password');
-    fireEvent.click(eyeBtns[0]);
+
+    fireEvent.click(eyeBtn);
 
     await waitFor(() => {
-      // After toggle, input type becomes text
-      const inputs = document.querySelectorAll('input[type="text"]');
-      expect(inputs.length).toBeGreaterThanOrEqual(1);
+      const visibleInputs = document.querySelectorAll('input[type="text"]');
+      expect(visibleInputs.length).toBeGreaterThanOrEqual(1);
     });
+  });
+});
+describe('ResetPasswordPage — extra coverage', () => {
+  
+
+  it('shows error for invalid token length', async () => {
+    renderPage();
+    const user = userEvent.setup();
+
+    await user.clear(getTokenInput());
+    await user.type(getTokenInput(), 'ABC');
+
+    const pwInputs = getPasswordInputs();
+    await user.type(pwInputs[0], 'Test@1234');
+    await user.type(pwInputs[1], 'Test@1234');
+
+    expect(getSaveButton()).toBeDisabled();
+  });
+
+  
+
+  it('handles backend array error', async () => {
+    vi.mocked(resetPassword).mockRejectedValue({
+      response: { data: { message: ['Array error'] } },
+    });
+
+    renderPage();
+    await fillValidForm('ABC123', 'Test@1234');
+
+    fireEvent.click(getSaveButton());
+
+    await waitFor(() => {
+      expect(screen.getByText('Array error')).toBeInTheDocument();
+    });
+  });
+
+  it('handles token error message', async () => {
+    vi.mocked(resetPassword).mockRejectedValue({
+      response: { data: { message: 'invalid token' } },
+    });
+
+    renderPage();
+    await fillValidForm('ABC123', 'Test@1234');
+
+    fireEvent.click(getSaveButton());
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/incorrect or has expired/i)
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('handles email error message', async () => {
+    vi.mocked(resetPassword).mockRejectedValue({
+      response: { data: { message: 'email not found' } },
+    });
+
+    renderPage();
+    await fillValidForm('ABC123', 'Test@1234');
+
+    fireEvent.click(getSaveButton());
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/no account found with that email address/i)
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('handles generic backend error', async () => {
+    vi.mocked(resetPassword).mockRejectedValue({
+      response: { data: { message: 'custom error' } },
+    });
+
+    renderPage();
+    await fillValidForm('ABC123', 'Test@1234');
+
+    fireEvent.click(getSaveButton());
+
+    await waitFor(() => {
+      expect(screen.getByText('custom error')).toBeInTheDocument();
+    });
+  });
+
+  it('handles fallback error', async () => {
+    vi.mocked(resetPassword).mockRejectedValue({});
+
+    renderPage();
+    await fillValidForm('ABC123', 'Test@1234');
+
+    fireEvent.click(getSaveButton());
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/something went wrong\. please try again\./i)
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('toggles password visibility for the first password field', async () => {
+    renderPage();
+
+    const pwInput = getPasswordInputs()[0];
+    const eyeBtn = screen
+      .getAllByRole('button')
+      .find((b) => b.querySelector('.lucide-eye')) as HTMLElement;
+
+    expect(pwInput).toHaveAttribute('type', 'password');
+
+    fireEvent.click(eyeBtn);
+
+    await waitFor(() => {
+      expect(pwInput).toHaveAttribute('type', 'text');
+    });
+  });
+
+  it('navigates back when clicking the chevron button', () => {
+    renderPage();
+
+    const backBtn = screen
+      .getAllByRole('button')
+      .find((b) => b.querySelector('.lucide-chevron-left')) as HTMLElement;
+
+    fireEvent.click(backBtn);
+
+    expect(mockNavigate).toHaveBeenCalled();
   });
 });
