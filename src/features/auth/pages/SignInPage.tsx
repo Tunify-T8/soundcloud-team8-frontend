@@ -135,7 +135,7 @@ const SignInPage: React.FC = () => {
             username: res.user.username,
             email: res.user.email,
             role: res.user.role,
-            isVerified: res.user.isVerified,
+            isVerified: res.user.isCertified,
             avatarUrl: res.user.avatarUrl ?? null,
           }));
         }
@@ -220,7 +220,7 @@ const SignInPage: React.FC = () => {
           username: res.user.username,
           email: res.user.email,
           role: res.user.role,
-          isVerified: res.user.isVerified,
+          isVerified: res.user.isCertified,
           avatarUrl: res.user.avatarUrl ?? null,
         }));
       }
