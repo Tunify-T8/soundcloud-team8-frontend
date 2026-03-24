@@ -5,9 +5,10 @@ import type { Track } from "../../../shared/types/Track";
 
 interface TrackListProps {
   tracks: Track[];
+  onDelete: (id: string) => void;
 }
 
-export default function TrackList({ tracks }: TrackListProps) {
+export default function TrackList({ tracks, onDelete }: TrackListProps) {
   const [allSelected, setAllSelected] = useState(false);
 
   const handleSelectAll = () => {
@@ -79,6 +80,7 @@ export default function TrackList({ tracks }: TrackListProps) {
               const found = tracks.find((t) => t.id === id) ?? null;
               setEditingTrack(found);
             }}
+            onDelete={onDelete}
           />
         ))}
       </div>

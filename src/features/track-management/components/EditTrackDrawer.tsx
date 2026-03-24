@@ -3,8 +3,6 @@ import { X, Download, RefreshCw, ChevronDown } from "lucide-react";
 import type { Track } from "../../../shared/types/Track";
 import storefrontImg from "@/assets/storefront.png";
 import { trackService } from "../trackService";
-import type { UpdateTrackPayload } from "../trackService";
-import type { Genre } from "@/shared/types/Genre";
 
 interface EditTrackDrawerProps {
   track: Track;
@@ -78,15 +76,14 @@ function Accordion({
 
 export default function EditTrackDrawer({ track, onClose }: EditTrackDrawerProps) {
   const [activeTab, setActiveTab] = useState<"details" | "advanced" | "storefront">("details");
-
-  const [artworkPreview, setArtworkPreview] = useState<string | null>(track.thumbnailUrl ?? null);
+  const [artworkFile, setArtworkFile] = useState<File | null>(null);
+  const [artworkPreview, setArtworkPreview] = useState<string | null>(null);
   const artworkInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState(track.title);
-  const [artists, setArtists] = useState("Nada Serag");
   const [genre, setGenre] = useState(track.genre);
-  const [tags, setTags] = useState("");
-  const [description, setDescription] = useState("");
-  const [privacy, setPrivacy] = useState<"public" | "private">("private");
+  const [tags, setTags] = useState(track.tags?.join(", ") ?? "");
+  const [description, setDescription] = useState(track.description ?? "");
+  const [privacy, setPrivacy] = useState<"public" | "private">(track.visibility ?? "private");
   const [license, setLicense] = useState<"all" | "cc">("all");
 
   const [toggles, setToggles] = useState({
@@ -107,41 +104,31 @@ export default function EditTrackDrawer({ track, onClose }: EditTrackDrawerProps
   const handleArtworkSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const img = new Image();
+
+    setArtworkFile(file);
+
     const objectUrl = URL.createObjectURL(file);
-    img.onload = () => {
-      const MAX_DIM = 400;
-      const scale = Math.min(MAX_DIM / img.width, MAX_DIM / img.height, 1);
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
-      setArtworkPreview(canvas.toDataURL("image/jpeg", 0.7));
-      URL.revokeObjectURL(objectUrl);
-    };
-    img.src = objectUrl;
+    setArtworkPreview(objectUrl);
   };
 
   const handleSave = async () => {
-  try {
-    await trackService.updateTrack(track.id, {
-      id: track.id,
-      title,
-      genre: track.genre,
-      tags: tags ? tags.split(",").map((t) => t.trim()) : [],
-      description,
-      privacy,
-      artwork: artworkPreview,
-    });
-    onClose();
-  } catch (err) {
-    console.error("Failed to update track:", err);
-  }
-};
-
-  const waveformBars = Array.from({ length: 80 }, (_, i) =>
-    10 + Math.abs(Math.sin(i * 0.4) * 28 + Math.sin(i * 0.13) * 18)
-  );
+    try {
+      await trackService.updateTrack(track.id, {
+        title,
+        genre,
+        tags: tags ? tags.split(",").map((t: string) => t.trim()) : [],
+        description,
+        privacy,
+        artwork: artworkFile,
+      });
+     } catch (err: any) {
+      console.error("Failed to update track:", err);
+     } 
+     finally 
+    {
+      onClose(); 
+     }
+  };
 
   const inputClass =
     "w-full bg-[#181818] border border-[#333] text-white text-sm px-3 py-2.5 focus:outline-none focus:border-[#555] placeholder-[#555]";
@@ -210,8 +197,6 @@ export default function EditTrackDrawer({ track, onClose }: EditTrackDrawerProps
         </div>
         <input
           type="text"
-          value={artists}
-          onChange={(e) => setArtists(e.target.value)}
           className="w-full bg-transparent text-white text-sm py-1 focus:outline-none"
         />
         <p className="text-xs text-[#555] mt-1">Tip: Use commas to add multiple artist names.</p>
@@ -222,7 +207,7 @@ export default function EditTrackDrawer({ track, onClose }: EditTrackDrawerProps
         <div className="flex items-center">
           <input
             value={genre}
-           // onChange={(e) => setGenre(e.target.value)}
+            onChange={(e) => setGenre(e.target.value as typeof genre)}
             placeholder="Add or search for genre"
             className="w-full bg-transparent text-[#555] text-sm py-1 focus:outline-none placeholder-[#555]"
           />
@@ -398,11 +383,6 @@ export default function EditTrackDrawer({ track, onClose }: EditTrackDrawerProps
         subtitle="Pick the 20 second clip you'd like to use as your track preview. This will live on your feed and socials."
       >
         <div className="relative w-full h-20 bg-[#161616] border border-[#2a2a2a] flex items-center justify-center overflow-hidden rounded">
-          <div className="absolute inset-0 flex items-center px-3 gap-px opacity-30">
-            {waveformBars.map((h, i) => (
-              <div key={i} className="flex-shrink-0 bg-[#aaa] rounded-sm" style={{ width: 3, height: h }} />
-            ))}
-          </div>
           <p className="relative z-10 text-xs font-semibold text-white text-center px-4">
             Can't set audio preview, because this track is shorter than preview time.
           </p>

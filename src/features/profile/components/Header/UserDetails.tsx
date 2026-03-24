@@ -4,13 +4,13 @@ export default function UserDetails({
   username,
   country,
   city,
-  isVerified,
+  isCertified,
 }: {
   displayName?: string;
   username?: string;
   country?: string;
   city?: string;
-  isVerified?: boolean;
+  isCertified?: boolean;
 }) {
   return (
     <div className="ml-6">
@@ -18,7 +18,7 @@ export default function UserDetails({
         {displayName && (
           <span className="inline-flex items-center bg-black text-white font-bold text-2xl md:text-3xl lg:text-3xl px-2">
             {displayName}
-            {isVerified && (
+            {isCertified && (
               <MdVerified
                 className="inline-block text-blue-500 ml-2"
                 size={20}

@@ -1,54 +1,42 @@
 import NavBar from "./components/layout/Navbar";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import SideBar from "./components/layout/Sidebar";
-import TrackPage from "./features/engagement/pages/TrackPage"
-import LikesPage from "./features/engagement/pages/LikesPage"
-import RepostsPage from "./features/engagement/pages/RepostsPage"
+// import LikesPage from "./features/engagement/pages/LikesPage"
+// import RepostsPage from "./features/engagement/pages/RepostsPage"
 import UploadPage from "./features/upload/pages/UploadPage";
 import ArtistsPage from "./features/track-management/pages/ArtistsPage";
-import ProfilePage from "./features/profile/pages/ProfilePage"
-import PopularTracksPage from "./features/profile/pages/UserInfoBar/PopularTracksPage"
-import TracksPage from "./features/profile/pages/UserInfoBar/TracksPage"
-import AlbumsPage from "./features/profile/pages/UserInfoBar/AlbumsPage"
-import PlaylistsPage from "./features/profile/pages/UserInfoBar/PlaylistsPage"
-import ProfileRepostsPage from "./features/profile/pages/UserInfoBar/RepostsPage"
+import ProfilePage from "./features/profile/pages/ProfilePage";
+import PopularTracksPage from "./features/profile/pages/UserInfoBar/PopularTracksPage";
+import TracksPage from "./features/profile/pages/UserInfoBar/TracksPage";
+import AlbumsPage from "./features/profile/pages/UserInfoBar/AlbumsPage";
+import PlaylistsPage from "./features/profile/pages/UserInfoBar/PlaylistsPage";
+import ProfileRepostsPage from "./features/profile/pages/UserInfoBar/RepostsPage";
 import SignInPage from "./features/auth/pages/SignInPage";
 import SignUpPage from "./features/auth/pages/SignUpPage";
+import PublicOnlyRoute from "./routes/PublicOnlyRoute";
 import ForgotPasswordPage from "./features/auth/pages/ForgotPasswordPage";
 
-import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage"
-import MessagesPage from "./features/conversation/pages/MessagesPage"
-import ProtectedRoute from "./routes/ProtectedRoute"
-import VerifyEmailPage from "./features/auth/pages/VerifyEmailPage"
+import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage";
+import MessagesPage from "./features/conversation/pages/MessagesPage";
+import ProtectedRoute from "./routes/ProtectedRoute";
+import VerifyEmailPage from "./features/auth/pages/VerifyEmailPage";
+import { ProfileProvider } from "./features/profile/context/ProfileContext";
+import useRestoreSession from './hooks/useRestoreSession';
+
 
 const router = createBrowserRouter([
-  { path: '/verify-email', element: <VerifyEmailPage /> },
+  { path: "/verify-email", element: <VerifyEmailPage /> },
   {
     path: '/signin',
-    element: <SignInPage key={Math.random()} />,
+    element: <PublicOnlyRoute><SignInPage /></PublicOnlyRoute>,
   },
   {
     path: "/create-account",
-    element: <SignUpPage key={Math.random()} />,
+    element: <PublicOnlyRoute><SignUpPage /></PublicOnlyRoute>,
   },
   {
     path: "/forgot-password",
     element: <ForgotPasswordPage />,
-  },
-  { path: "/reset-password", element: <ResetPasswordPage /> },
-  {
-    path: "/me",
-    element: (
-      <ProtectedRoute>
-        <NavBar />
-      </ProtectedRoute>
-    ),
-    children: [
-      {
-        index: true,
-        element: <ProfilePage />,
-      },
-    ],
   },
   {
     path: "/reset-password",
@@ -58,7 +46,9 @@ const router = createBrowserRouter([
     path: "/",
     element: (
       <ProtectedRoute>
-        <NavBar />
+        <ProfileProvider>
+          <NavBar />
+        </ProfileProvider>
       </ProtectedRoute>
     ),
     children: [
@@ -67,26 +57,25 @@ const router = createBrowserRouter([
         element: <SideBar />,
       },
       {
-        path: '/messages',
-        element: <MessagesPage />
+        path: "/messages",
+        element: <MessagesPage />,
       },
+      // {
+      //   path: '/:artist/:songName',
+      //   element: <TrackPage />
+      // },
+      // {
+      //   path: '/:artist/:songName/likes',
+      //   element: <LikesPage />
+      // },
+      // {
+      //   path: '/:artist/:songName/reposts',
+      //   element: <RepostsPage />
+      // },
       {
-        path: '/:artist/:songName',
-        element: <TrackPage />
-      },
-      {
-        path: '/:artist/:songName/likes',
-        element: <LikesPage />
-      },
-      {
-        path: '/:artist/:songName/reposts',
-        element: <RepostsPage />
-      },
-      {
-        path: "/:username",
+        path: "/me",
         element: <ProfilePage />,
         children: [
-          { index: true },
           { path: "popular-tracks", element: <PopularTracksPage /> },
           { path: "tracks", element: <TracksPage /> },
           { path: "albums", element: <AlbumsPage /> },
@@ -114,12 +103,13 @@ const router = createBrowserRouter([
   },
 ]);
 
+function AppInner() {
+  useRestoreSession();
+  return <RouterProvider router={router} />;
+}
+
 function App() {
-  return (
-    <>
-      <RouterProvider router={router} />
-    </>
-  )
+  return <AppInner />;
 }
 
 export default App;

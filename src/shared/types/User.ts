@@ -14,7 +14,7 @@ export interface User {
   };
   role: string;
   coverUrl: string;
-  isVerified: boolean;
+  isCertified: boolean;
   followersCount: number | string;
   followingCount: number;
   tracksCount: number;
@@ -29,7 +29,7 @@ export interface FollowingUser {
   username: string;
   displayName?: string;
   avatarUrl: string;
-  isVerified: boolean;
+  isCertified: boolean;
   followersCount?: number | string;
 }
 
@@ -48,7 +48,7 @@ export interface MeUserProfile {
   location?: string | null;
   avatarUrl?: string | null;
   coverUrl?: string | null;
-  isVerified: boolean;
+  isCertified: boolean;
   isActive: boolean;
   visibility: "PUBLIC" | "PRIVATE";
   followersCount: number;
@@ -89,7 +89,13 @@ export interface UpdateUserProfileRequest {
 }
 
 // Social links (GET/PATCH /users/me/social-links)
-export type SocialPlatform = "INSTAGRAM" | "TWITTER" | "WEBSITE";
+export type SocialPlatform =
+  | "INSTAGRAM"
+  | "YOUTUBE"
+  | "SPOTIFY"
+  | "TIKTOK"
+  | "SOUNDCLOUD"
+  | "TWITTER";
 
 export interface UserSocialLink {
   platform: SocialPlatform;
@@ -145,7 +151,7 @@ export interface UserFollowing {
   id: string;
   username: string;
   avatarUrl?: string | null;
-  isVerified?: boolean;
+  isCertified?: boolean;
 }
 
 export interface UserFollowingResponse {

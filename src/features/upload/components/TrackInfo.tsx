@@ -212,7 +212,7 @@ type UserProfile = {
   username: string
   email: string
   avatarUrl: string
-  isVerified: boolean
+  isCertified: boolean
 }
 
 export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
@@ -260,17 +260,20 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
   const privacyRef     = useRef<string>("public");
 
   // ── Fetch user profile ────────────────────────────────────────────────────
-  useEffect(() => {
-    profileService.getMeProfile()
-      .then((user) => setUserProfile({
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        avatarUrl: user.avatarUrl!,
-        isVerified: user.isVerified,
-      }))
-      .catch((err) => console.error("Failed to fetch user profile:", err));
-  }, []);
+useEffect(() => {
+  profileService.getMeProfile()
+    .then((user) => setUserProfile({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      avatarUrl: user.avatarUrl!,
+      isCertified: user.isCertified,
+    }))
+    .catch((err) => console.error("Failed to fetch user profile:", err));
+}, []);
+
+
+
 
   // ── Fetch audio blob using raw axios (NOT api) — blob: URLs are local ────
   useEffect(() => {

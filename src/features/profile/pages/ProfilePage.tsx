@@ -3,11 +3,11 @@ import UserInfoBar from "../components/UserInfo/UserInfoBar";
 import ProfileSideBar from "../components/UserInfo/ProfileSideBar";
 import { Outlet, useParams } from "react-router-dom";
 import { profileService } from "../profileService";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { useMe } from "../context/useMe";
 import type {
   MeUserProfile,
   PublicUserProfile,
-  UserFollowing,
 } from "../../../shared/types/User";
 
 function isMeProfile(
@@ -18,91 +18,42 @@ function isMeProfile(
 
 export default function ProfilePage() {
   const { username } = useParams<{ username: string }>();
-  const [user, setUser] = useState<MeUserProfile | PublicUserProfile | null>(
-    null,
-  );
-  const [socialAccounts, setSocialAccounts] = useState<{
-    instagram?: string;
-    twitter?: string;
-    website?: string;
-  }>({});
-  const [followingUsers, setFollowingUsers] = useState<UserFollowing[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { me, socialAccounts, following, refresh: refreshMe } = useMe();
+  const [publicUser, setPublicUser] = useState<PublicUserProfile | null>(null);
+  const [loading, setLoading] = useState(!!username);
   const [error, setError] = useState<string | null>(null);
-  const [refreshTick, setRefreshTick] = useState(0);
 
-  const refreshProfile = () => {
-    setRefreshTick((prev) => prev + 1);
-  };
+  const refreshProfile = useCallback(() => {
+    refreshMe();
+  }, [refreshMe]);
 
   useEffect(() => {
-    let isMounted = true;
-    setLoading(true);
-    setError(null);
-
-    const fetchUser = async () => {
+    if (!username) return;
+    const fetchProfile = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        let userData: MeUserProfile | PublicUserProfile | null = null;
-        let following: UserFollowing[] = [];
-        let linksData: {
-          instagram?: string;
-          twitter?: string;
-          website?: string;
-        } = {};
-
-        if (username) {
-          userData = await profileService.getPublicProfile(username);
-          if (userData?.id) {
-            try {
-              const followingRes = await profileService.getUserFollowing(
-                userData.id,
-              );
-              following = followingRes.following;
-            } catch {
-              following = [];
-            }
-          }
-        } else {
-          userData = await profileService.getMeProfile();
-          try {
-            linksData = await profileService.getMeSocialLinks();
-          } catch {
-            linksData = {};
-          }
-          try {
-            const followingRes = await profileService.getMeFollowing();
-            following = followingRes.following;
-          } catch {
-            following = [];
-          }
-        }
-
-        if (isMounted) {
-          setUser(userData);
-          setSocialAccounts(linksData);
-          setFollowingUsers(following);
-        }
+        const data = await profileService.getPublicProfile(username);
+        setPublicUser(data);
       } catch (err: any) {
-        if (isMounted) {
-          setUser(null);
-          setSocialAccounts({});
-          setFollowingUsers([]);
-          setError(err?.message || "Failed to fetch user");
-        }
+        setError(err?.message || "Failed to fetch user");
       } finally {
-        if (isMounted) setLoading(false);
+        setLoading(false);
       }
     };
+    fetchProfile();
+  }, [username]);
 
-    fetchUser();
-    return () => {
-      isMounted = false;
-    };
-  }, [username, refreshTick]);
+  if (!username && !me) {
+    return <div className="min-h-screen text-white">Loading...</div>;
+  }
 
   if (loading) {
     return <div className="min-h-screen text-white">Loading...</div>;
   }
+
+  const user = username ? publicUser : me;
+
   if (error || !user) {
     return (
       <div className="min-h-screen text-white">
@@ -111,7 +62,7 @@ export default function ProfilePage() {
     );
   }
 
-  const isMe = isMeProfile(user);
+  const isMe = !username;
   const location = user.location ?? "";
   const locationParts = location.split(",");
   const city = locationParts[0]?.trim() ?? undefined;
@@ -124,7 +75,7 @@ export default function ProfilePage() {
         username={user.username}
         country={country}
         city={city}
-        isVerified={isMe ? user.isVerified : false}
+        isCertified={isMeProfile(user) ? user.isCertified : false}
         avatarUrl={user.avatarUrl || ""}
         coverUrl={user.coverUrl || ""}
         isMe={isMe}
@@ -137,7 +88,7 @@ export default function ProfilePage() {
           country={country}
           city={city}
           bio={user.bio ?? undefined}
-          socialAccounts={socialAccounts}
+          socialAccounts={isMe ? socialAccounts : undefined}
           isMe={isMe}
           onProfileUpdated={refreshProfile}
         />
@@ -147,12 +98,12 @@ export default function ProfilePage() {
             following={user.followingCount}
             tracks={"tracksCount" in user ? (user as any).tracksCount : 0}
             bio={user.bio ?? undefined}
-            socialAccounts={socialAccounts}
-            followingUsers={followingUsers.map((u) => ({
+            socialAccounts={isMe ? socialAccounts : undefined}
+            followingUsers={following.map((u) => ({
               id: u.id,
               username: u.username,
               avatarUrl: u.avatarUrl ?? "",
-              isVerified: u.isVerified ?? false,
+              isCertified: u.isCertified ?? false,
               followersCount: undefined,
             }))}
           />

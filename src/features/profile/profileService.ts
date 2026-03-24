@@ -3,10 +3,50 @@ import type {
   MeUserProfile,
   PublicUserProfile,
   UpdateUserProfileRequest,
+  UserSocialLinks,
   UserGenres,
   UserTracksResponse,
   UserFollowingResponse,
 } from "../../shared/types/User";
+
+type SocialAccountsMap = {
+  instagram?: string;
+  youtube?: string;
+  spotify?: string;
+  tiktok?: string;
+  soundcloud?: string;
+  twitter?: string;
+};
+
+type RawSocialLink = {
+  platform?: string | null;
+  url?: string | null;
+};
+
+function normalizeSocialLinksResponse(payload: unknown): SocialAccountsMap {
+  const map: SocialAccountsMap = {};
+
+  const rawLinks: RawSocialLink[] = Array.isArray(payload)
+    ? payload
+    : Array.isArray((payload as { links?: unknown })?.links)
+      ? ((payload as { links: RawSocialLink[] }).links ?? [])
+      : [];
+
+  rawLinks.forEach((item) => {
+    const platform = (item?.platform ?? "").toUpperCase();
+    const url = item?.url?.trim();
+    if (!url) return;
+
+    if (platform === "INSTAGRAM") map.instagram = url;
+    if (platform === "YOUTUBE") map.youtube = url;
+    if (platform === "SPOTIFY") map.spotify = url;
+    if (platform === "TIKTOK") map.tiktok = url;
+    if (platform === "SOUNDCLOUD") map.soundcloud = url;
+    if (platform === "TWITTER") map.twitter = url;
+  });
+
+  return map;
+}
 
 export const profileService = {
   async getMeProfile(): Promise<MeUserProfile> {
@@ -31,11 +71,11 @@ export const profileService = {
     return data;
   },
 
-  async getMeSocialLinks(): Promise<UserSocialLinks> {
-    const { data } = await api.get<UserSocialLinks>(
+  async getMeSocialLinks(): Promise<SocialAccountsMap> {
+    const { data } = await api.get<UserSocialLinks | RawSocialLink[]>(
       "/users/me/social-links",
     );
-    return data;
+    return normalizeSocialLinksResponse(data);
   },
 
   async updateMeSocialLinks(
@@ -54,10 +94,7 @@ export const profileService = {
   },
 
   async updateMeGenres(payload: UserGenres): Promise<UserGenres> {
-    const { data } = await api.patch<UserGenres>(
-      "/users/me/genres",
-      payload,
-    );
+    const { data } = await api.patch<UserGenres>("/users/me/genres", payload);
     return data;
   },
 
@@ -84,5 +121,9 @@ export const profileService = {
       `/users/${encodeURIComponent(userId)}/following?page=${page}&limit=${limit}`,
     );
     return data;
+  },
+
+  async removeMeSocialLink(platform: string): Promise<void> {
+    await api.delete(`/users/me/social-links/${platform.toLowerCase()}`);
   },
 };
