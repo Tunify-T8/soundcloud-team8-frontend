@@ -21,14 +21,14 @@ export const trackService = {
   async deleteTrack(id: string): Promise<void> {
     await api.delete(`/tracks/${id}`);
   },
-
+  
 async updateTrack(id: string, payload: UpdateTrackPayload): Promise<Track> {
   const formData = new FormData();
 
   formData.append("title", payload.title);
   formData.append("genre", payload.genre);
 
-  payload.tags.forEach(tag => formData.append("tags", tag));
+  payload.tags.forEach(tag => formData.append("tags[]", tag));
 
   if (payload.description) {
     formData.append("description", payload.description);
@@ -40,7 +40,7 @@ async updateTrack(id: string, payload: UpdateTrackPayload): Promise<Track> {
     formData.append("artwork", payload.artwork); 
   }
 
-  //loggig form data for debugging
+  //logging form data for debugging
   for (const [key, value] of formData.entries()) {
     console.log(key, value);
   }
