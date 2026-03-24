@@ -4,7 +4,6 @@ import type { Track } from "../../shared/types/Track";
 import type { TrackVisibility } from "@/shared/types/Track";
 
 export interface UpdateTrackPayload {
-  id: string;
   title : string;
   genre: Genre;
   tags: string[];
@@ -26,10 +25,8 @@ export const trackService = {
 async updateTrack(id: string, payload: UpdateTrackPayload): Promise<Track> {
   const formData = new FormData();
 
-  formData.append("trackId", id);
   formData.append("title", payload.title);
   formData.append("genre", payload.genre);
-  formData.append("privacy", payload.privacy);
 
   payload.tags.forEach(tag => formData.append("tags", tag));
 
@@ -37,6 +34,8 @@ async updateTrack(id: string, payload: UpdateTrackPayload): Promise<Track> {
     formData.append("description", payload.description);
   }
 
+  formData.append("privacy", payload.privacy);
+  
   if (payload.artwork) {
     formData.append("artwork", payload.artwork); 
   }
