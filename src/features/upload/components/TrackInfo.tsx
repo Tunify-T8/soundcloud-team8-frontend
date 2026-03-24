@@ -368,13 +368,19 @@ useEffect(() => {
     if (!fileReady || isSubmitting) return;
     setIsSubmitting(true);
     try {
+      const rawGenre = genreRef.current?.value ?? "";
+
       const { data: track } = await api.post("/tracks", {
         title:               titleRef.current?.value || "Untitled",
         tags:                tagsRef.current?.value ? [tagsRef.current.value] : [],
         description:         descriptionRef.current?.value || "",
         privacy:             privacyRef.current,
         availability:        { type: geoMode, regions },
+        genre:               GENRE_MAP[rawGenre] ?? rawGenre,
         scheduledReleaseDate: null,
+        artists:             artistsRef.current?.value
+                               ? artistsRef.current.value.split(",").map(a => a.trim())
+                               : [],
         contentWarning,
       });
 
