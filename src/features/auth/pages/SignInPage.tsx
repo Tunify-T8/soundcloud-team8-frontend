@@ -11,6 +11,9 @@ import { extractErrorMessage } from '../hooks/useAuth';
 import type { SocialProvider } from '../types/auth.types';
 import { checkEmail } from '../services/index';
 import AuthNavbar from '../components/AuthNavbar';
+import { useDispatch } from 'react-redux';
+import { setUser } from '../../../store/userSlice';
+import type { AppDispatch } from '../../../app/store';
 const GoogleIcon: React.FC = () => (
   <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -72,7 +75,8 @@ const isValidEmail = (val: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim
 const SignInPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: Location })?.from?.pathname ?? '/';
+  const dispatch = useDispatch<AppDispatch>();
+  const from = (location.state as { from?: Location })?.from?.pathname ?? '/stream';
   const prefillEmailState = (location.state as { email?: string; prefillStep?: string })?.email ?? '';
   const prefillStep = (location.state as { prefillStep?: string })?.prefillStep ?? '';
 
@@ -125,7 +129,17 @@ const SignInPage: React.FC = () => {
           return;
         }
         storeTokens(res.accessToken, res.refreshToken, 3600);
-        navigate(from); // ← no replace: back button returns to signin
+        if (res.user) {
+          dispatch(setUser({
+            id: res.user.id,
+            username: res.user.username,
+            email: res.user.email,
+            role: res.user.role,
+            isVerified: res.user.isVerified,
+            avatarUrl: res.user.avatarUrl ?? null,
+          }));
+        }
+        navigate(from);
       } catch (error) {
         setApiError(extractErrorMessage(error));
       } finally {
@@ -137,7 +151,6 @@ const SignInPage: React.FC = () => {
       setSocialLoading(null);
     },
     flow: 'auth-code',
-    // redirect_uri: import.meta.env.VITE_GOOGLE_REDIRECT_URI ?? 'http://localhost:3333/auth/google/callback',  });
     redirect_uri: 'postmessage',});
   // ── Google account linking ─────────────────────────────────────
   const handleGoogleLink = async () => {
@@ -201,7 +214,17 @@ const SignInPage: React.FC = () => {
         return;
       }
       storeTokens(res.accessToken, res.refreshToken, res.expiresIn ?? 3600);
-      navigate(from); // ← no replace: back button returns to signin
+      if (res.user) {
+        dispatch(setUser({
+          id: res.user.id,
+          username: res.user.username,
+          email: res.user.email,
+          role: res.user.role,
+          isVerified: res.user.isVerified,
+          avatarUrl: res.user.avatarUrl ?? null,
+        }));
+      }
+      navigate(from);
     } catch (error) {
       const msg = extractErrorMessage(error);
       if (msg.includes('No account') || msg.includes('not found')) {
