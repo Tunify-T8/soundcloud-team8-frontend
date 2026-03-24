@@ -13,6 +13,7 @@ import PlaylistsPage from "./features/profile/pages/UserInfoBar/PlaylistsPage";
 import ProfileRepostsPage from "./features/profile/pages/UserInfoBar/RepostsPage";
 import SignInPage from "./features/auth/pages/SignInPage";
 import SignUpPage from "./features/auth/pages/SignUpPage";
+import PublicOnlyRoute from "./routes/PublicOnlyRoute";
 import ForgotPasswordPage from "./features/auth/pages/ForgotPasswordPage";
 
 import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage";
@@ -20,16 +21,18 @@ import MessagesPage from "./features/conversation/pages/MessagesPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import VerifyEmailPage from "./features/auth/pages/VerifyEmailPage";
 import { ProfileProvider } from "./features/profile/context/ProfileContext";
+import useRestoreSession from './hooks/useRestoreSession';
+
 
 const router = createBrowserRouter([
   { path: "/verify-email", element: <VerifyEmailPage /> },
   {
-    path: "/signin",
-    element: <SignInPage key={Math.random()} />,
+    path: '/signin',
+    element: <PublicOnlyRoute><SignInPage /></PublicOnlyRoute>,
   },
   {
     path: "/create-account",
-    element: <SignUpPage key={Math.random()} />,
+    element: <PublicOnlyRoute><SignUpPage /></PublicOnlyRoute>,
   },
   {
     path: "/forgot-password",
@@ -100,12 +103,13 @@ const router = createBrowserRouter([
   },
 ]);
 
+function AppInner() {
+  useRestoreSession();
+  return <RouterProvider router={router} />;
+}
+
 function App() {
-  return (
-    <>
-      <RouterProvider router={router} />
-    </>
-  );
+  return <AppInner />;
 }
 
 export default App;
