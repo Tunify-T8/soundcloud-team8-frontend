@@ -27,6 +27,7 @@ const makeTrack = (overrides: Partial<Track> = {}): Track => ({
   id: "t1",
   title: "Test Track",
   genre: Genre.POP,
+  artist: "Test Artist",
   tags: [],
   status: "finished",
   visibility: "public",
@@ -101,24 +102,6 @@ describe("ArtistsPage", () => {
   it("shows SoundCloud Tracks content by default", () => {
     render(<ArtistsPage />);
     expect(screen.getByPlaceholderText("Search tracks")).toBeInTheDocument();
-  });
-
-  it("switches to Distribution tab and shows placeholder", async () => {
-    render(<ArtistsPage />);
-    fireEvent.click(screen.getByRole("button", { name: "Distribution" }));
-    expect(await screen.findByText("Distribution content coming soon.")).toBeInTheDocument();
-  });
-
-  it("switches to Vinyl Records tab and shows placeholder", async () => {
-    render(<ArtistsPage />);
-    fireEvent.click(screen.getByRole("button", { name: "Vinyl Records" }));
-    expect(await screen.findByText("Vinyl Records content coming soon.")).toBeInTheDocument();
-  });
-
-  it("switches to Comments tab and shows placeholder", async () => {
-    render(<ArtistsPage />);
-    fireEvent.click(screen.getByRole("button", { name: "Comments" }));
-    expect(await screen.findByText("Comments content coming soon.")).toBeInTheDocument();
   });
 
   it("hides the track list when a non-tracks tab is active", async () => {

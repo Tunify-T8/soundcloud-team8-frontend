@@ -8,6 +8,7 @@ const baseTrack: Track = {
   id: "track-1",
   title: "Neon Dreams",
   genre: Genre.POP,
+  artist: "Synthwave Artist",
   tags: ["pop", "electronic"],
   status: "finished",
   visibility: "public",
@@ -123,5 +124,5 @@ describe("TrackCard", () => {
 });
 
 
-//running each test individually commands:
+//running each test individually command:
 //npm run test -- src/features/track-management/tests/TrackCard.test.tsx
