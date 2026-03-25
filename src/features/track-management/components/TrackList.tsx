@@ -5,9 +5,11 @@ import type { Track } from "../../../shared/types/Track";
 
 interface TrackListProps {
   tracks: Track[];
+  onDelete: (id: string) => void;
+  onUpdate: (updatedTrack: Track) => void;
 }
 
-export default function TrackList({ tracks }: TrackListProps) {
+export default function TrackList({ tracks, onDelete, onUpdate }: TrackListProps) {
   const [allSelected, setAllSelected] = useState(false);
 
   const handleSelectAll = () => {
@@ -79,6 +81,7 @@ export default function TrackList({ tracks }: TrackListProps) {
               const found = tracks.find((t) => t.id === id) ?? null;
               setEditingTrack(found);
             }}
+            onDelete={onDelete}
           />
         ))}
       </div>
@@ -89,6 +92,7 @@ export default function TrackList({ tracks }: TrackListProps) {
       <EditTrackDrawer
         track={editingTrack}
         onClose={() => setEditingTrack(null)}
+        onUpdate={onUpdate}
       />
     )}
     </div>

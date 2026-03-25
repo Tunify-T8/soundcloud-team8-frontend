@@ -1,104 +1,100 @@
 // ============================================================
 // RESET PASSWORD PAGE — Tunify
-// User lands here from the email reset link
-// URL: /reset-password?token=<jwt_token>
+// Location: src/features/auth/pages/ResetPasswordPage.tsx
+// Reached via navigate('/reset-password', { state: { email } })
+// after ForgotPasswordPage success screen
 // ============================================================
 
 import React, { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
-
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import AuthNavbar from '../components/AuthNavbar';
+import { ChevronLeft, Loader2, Eye, EyeOff } from 'lucide-react';
+import { resetPassword } from '../services/index';
 const TunifyLogo: React.FC = () => (
   <Link to="/" className="flex items-center gap-2 no-underline">
     <svg viewBox="0 0 33 15" className="h-6 w-auto sm:h-7" fill="white" aria-hidden="true">
       <path d="M0 11.5c0 .8.7 1.5 1.5 1.5s1.5-.7 1.5-1.5V6c0-.8-.7-1.5-1.5-1.5S0 5.2 0 6v5.5zm4.5 1.5c.8 0 1.5-.7 1.5-1.5V3.5C6 2.7 5.3 2 4.5 2S3 2.7 3 3.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V1.5C10.5.7 9.8 0 9 0S7.5.7 7.5 1.5V11.5C7.5 12.3 8.2 13 9 13zm4.5 0c.8 0 1.5-.7 1.5-1.5V3.5C15 2.7 14.3 2 13.5 2S12 2.7 12 3.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V2.5C19.5 1.7 18.8 1 18 1s-1.5.7-1.5 1.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V4.5C24 3.7 23.3 3 22.5 3S21 3.7 21 4.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V4.5C27 3.7 26.3 3 25.5 3S24 3.7 24 4.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V2.5C33 1.7 32.3 1 31.5 1S30 1.7 30 2.5V11.5c0 .8.7 1.5 1.5 1.5z" />
     </svg>
-    <span className="text-white font-bold text-sm sm:text-base tracking-widest uppercase">Tunify</span>
+    <span className="text-white font-bold text-sm sm:text-base tracking-widest uppercase">SoundCloud</span>
   </Link>
 );
 
+const isValidEmail = (val: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
+
 const ResetPasswordPage: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const emailFromState = (location.state as { email?: string })?.email ?? '';
 
-  // The token comes from the URL: /reset-password?token=abc123
-  const resetToken = searchParams.get('token');
-
+  const [email, setEmail] = useState(emailFromState);
+  const [token, setToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [signOutEverywhere, setSignOutEverywhere] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
-  // Button is only active when both fields have 8+ chars
-  const isReady =
+  const isPasswordReady =
     newPassword.length >= 8 &&
-    confirmPassword.length >= 8;
+    /[A-Z]/.test(newPassword) &&
+    /[a-z]/.test(newPassword) &&
+    /[0-9]/.test(newPassword) &&
+    /[^A-Za-z0-9]/.test(newPassword);
+
+  const isReady =
+    isValidEmail(email) &&
+    token.trim().length === 6 &&
+    isPasswordReady &&
+    confirmPassword === newPassword;
 
   const handleSave = async () => {
     setError(null);
-
-    // Validation 1: minimum length
-    if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters.');
+    if (!isValidEmail(email)) {
+      setError('Please enter a valid email address.');
       return;
     }
-
-    // Validation 2: passwords must match
+    if (token.trim().length !== 6) {
+      setError('Please enter the 6-character code from your email.');
+      return;
+    }
+    if (!isPasswordReady) {
+      setError('Password does not meet the requirements.');
+      return;
+    }
     if (newPassword !== confirmPassword) {
       setError('Passwords do not match.');
       return;
     }
-
-    // Validation 3: no token in URL (invalid/expired link)
-    if (!resetToken) {
-      setError('This reset link is invalid or has expired.');
-      return;
-    }
-
     setIsSubmitting(true);
-
-    // Mock: simulate API call
-    await new Promise((r) => setTimeout(r, 800));
-
-    // Mock success
-    setSubmitted(true);
-    setIsSubmitting(false);
-
-    // Real implementation when backend is ready:
-    // const res = await axiosInstance.post('/auth/reset-password', {
-    //   token: resetToken,
-    //   newPassword,
-    //   signOutEverywhere,
-    // });
-    // if (res.data.requireReLogin) {
-    //   clearTokens();
-    //   navigate('/signin');
-    // }
+    try {
+      await resetPassword(email.trim(), token.trim().toUpperCase(), newPassword, confirmPassword, true);
+      navigate('/signin');
+    } catch (err: any) {
+      const msg = err?.response?.data?.message;
+      if (Array.isArray(msg)) {
+        setError(msg[0]);
+      } else if (typeof msg === 'string') {
+        if (msg.toLowerCase().includes('token') || msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('expired')) {
+          setError('The reset code is incorrect or has expired. Please request a new one.');
+        } else if (msg.toLowerCase().includes('email')) {
+          setError('No account found with that email address.');
+        } else {
+          setError(msg);
+        }
+      } else {
+        setError('Something went wrong. Please try again.');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] flex flex-col">
 
-      {/* ── Navbar ── */}
-      <header className="flex items-center justify-between px-4 sm:px-6 py-3 bg-[#0d0d0d] border-b border-[#222]">
-        <TunifyLogo />
-        <nav className="hidden md:flex items-center gap-8">
-          <Link to="/" className="text-white text-sm font-medium hover:text-white/80">Home</Link>
-          <Link to="/stream" className="text-white/60 text-sm hover:text-white">Feed</Link>
-          <Link to="/discover" className="text-white/60 text-sm hover:text-white">Library</Link>
-        </nav>
-        <div className="flex items-center gap-2 sm:gap-4">
-          <Link to="/signin" className="text-white text-sm font-medium hover:text-white/80">Sign in</Link>
-          <Link to="/create-account" className="hidden sm:inline-flex border border-white text-white text-sm font-medium px-5 py-1.5 rounded-full hover:bg-white hover:text-black transition-all">
-            Create account
-          </Link>
-          <button className="text-white/60 text-lg hover:text-white hidden sm:block">···</button>
-        </div>
-      </header>
+      <AuthNavbar />
 
       {/* ── Main ── */}
       <main className="flex-1 flex items-center justify-center px-4 py-10">
@@ -108,34 +104,68 @@ const ResetPasswordPage: React.FC = () => {
 
               {!submitted ? (
                 <>
-                  {/* Title */}
-                  <h1 className="text-white text-xl font-bold text-center mb-2">
-                    Change your password
-                  </h1>
-
-                  {/* Subtitle */}
-                  <p className="text-[#999] text-sm text-center leading-relaxed mb-8">
-                    Choose a strong, unique password.{' '}
-                    For tips on choosing a secure password,{' '}
-                    <a href="#" className="text-[#0066cc] hover:underline">visit our Help Center</a>.
-                  </p>
+                  {/* Header */}
+                  <div className="flex items-center gap-4 mb-6">
+                    <button
+                      type="button"
+                      onClick={() => navigate('/forgot-password')}
+                      className="w-9 h-9 rounded-full bg-[#2a2a2a] hover:bg-[#3a3a3a] flex items-center justify-center transition-colors flex-shrink-0"
+                    >
+                      <ChevronLeft className="h-5 w-5 text-white" />
+                    </button>
+                    <h1 className="text-white text-base font-bold">Reset your password</h1>
+                  </div>
 
                   {/* Error */}
                   {error && (
-                    <p className="text-red-500 text-sm mb-4">{error}</p>
+                    <div role="alert" className="mb-4 px-4 py-3 bg-[#2a1a1a] border border-red-500/40 rounded text-red-400 text-sm">
+                      {error}
+                    </div>
                   )}
 
+                  {/* Email */}
+                  <div className="mb-4">
+                    <div className="bg-[#2a2a2a] border border-[#555] rounded-sm px-4 pt-2 pb-2 focus-within:border-[#888] transition-colors">
+                      <label className="block text-[#aaa] text-xs mb-0.5">Email address</label>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => { setEmail(e.target.value); setError(null); }}
+                        placeholder="your@email.com"
+                        className="w-full bg-transparent text-white text-sm focus:outline-none placeholder-[#666]"
+                        autoComplete="email"
+                      />
+                    </div>
+                    <p className="text-[#777] text-xs mt-1">Enter the email address associated with your account.</p>
+                  </div>
+
+                  {/* Reset code */}
+                  <div className="mb-4">
+                    <div className="bg-[#2a2a2a] border border-[#555] rounded-sm px-4 pt-2 pb-2 focus-within:border-[#888] transition-colors">
+                      <label className="block text-[#aaa] text-xs mb-0.5">Reset code</label>
+                      <input
+                        type="text"
+                        value={token}
+                        onChange={(e) => { setToken(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)); setError(null); }}
+                        placeholder="e.g. 21D9E4"
+                        maxLength={6}
+                        className="w-full bg-transparent text-white text-sm font-mono tracking-widest focus:outline-none placeholder-[#666] uppercase"
+                        autoComplete="off"
+                      />
+                    </div>
+                    <p className="text-[#777] text-xs mt-1">Enter the 6-character code we sent to your email inbox.</p>
+                  </div>
+
                   {/* New password */}
-                  <div className="mb-5">
-                    <label className="block text-white text-sm mb-2">
-                      Type your new password
-                    </label>
-                    <div className="relative">
+                  <div className="mb-4">
+                    <div className="relative bg-[#2a2a2a] border border-[#555] rounded-sm px-4 pt-2 pb-2 focus-within:border-[#888] transition-colors">
+                      <label className="block text-[#aaa] text-xs mb-0.5">New password</label>
                       <input
                         type={showNewPassword ? 'text' : 'password'}
                         value={newPassword}
                         onChange={(e) => { setNewPassword(e.target.value); setError(null); }}
-                        className="w-full bg-[#2a2a2a] border border-[#555] rounded-sm px-4 py-3 pr-10 text-white text-sm placeholder-[#666] focus:outline-none focus:border-[#888] transition-colors"
+                        placeholder="Choose a password (min. 8 characters)"
+                        className="w-full bg-transparent text-white text-sm focus:outline-none placeholder-[#666] pr-8"
                         autoComplete="new-password"
                       />
                       <button
@@ -146,19 +176,40 @@ const ResetPasswordPage: React.FC = () => {
                         {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
+                    {newPassword.length > 0 && (
+                      <div className="mt-2 bg-[#1a1a1a] border border-[#333] rounded-sm px-4 py-3 flex flex-col gap-1.5">
+                        {[
+                          { label: 'At least 8 characters', met: newPassword.length >= 8 },
+                          { label: 'At least one uppercase letter', met: /[A-Z]/.test(newPassword) },
+                          { label: 'At least one lowercase letter', met: /[a-z]/.test(newPassword) },
+                          { label: 'At least one number', met: /[0-9]/.test(newPassword) },
+                          { label: 'At least one special character', met: /[^A-Za-z0-9]/.test(newPassword) },
+                        ].map((rule) => (
+                          <div key={rule.label} className="flex items-center gap-2">
+                            <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 ${rule.met ? 'bg-green-500' : 'bg-[#444]'}`}>
+                              {rule.met && (
+                                <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </div>
+                            <span className={`text-xs ${rule.met ? 'text-green-400' : 'text-[#888]'}`}>{rule.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Confirm password */}
                   <div className="mb-6">
-                    <label className="block text-white text-sm mb-2">
-                      Type your new password again, to confirm
-                    </label>
-                    <div className="relative">
+                    <div className="relative bg-[#2a2a2a] border border-[#555] rounded-sm px-4 pt-2 pb-2 focus-within:border-[#888] transition-colors">
+                      <label className="block text-[#aaa] text-xs mb-0.5">Confirm new password</label>
                       <input
                         type={showConfirmPassword ? 'text' : 'password'}
                         value={confirmPassword}
                         onChange={(e) => { setConfirmPassword(e.target.value); setError(null); }}
-                        className="w-full bg-[#2a2a2a] border border-[#555] rounded-sm px-4 py-3 pr-10 text-white text-sm placeholder-[#666] focus:outline-none focus:border-[#888] transition-colors"
+                        placeholder="Re-enter your new password"
+                        className="w-full bg-transparent text-white text-sm focus:outline-none placeholder-[#666] pr-8"
                         autoComplete="new-password"
                       />
                       <button
@@ -169,21 +220,12 @@ const ResetPasswordPage: React.FC = () => {
                         {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
+                    {confirmPassword.length > 0 && newPassword !== confirmPassword && (
+                      <p className="text-red-400 text-xs mt-1">Passwords do not match.</p>
+                    )}
                   </div>
 
-                  {/* Sign out everywhere checkbox */}
-                  <div className="flex items-center gap-3 mb-6 cursor-pointer" onClick={() => setSignOutEverywhere((v) => !v)}>
-                    <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 transition-colors ${signOutEverywhere ? 'bg-[#f50]' : 'bg-[#2a2a2a] border border-[#555]'}`}>
-                      {signOutEverywhere && (
-                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
-                    </div>
-                    <span className="text-white text-sm">Also sign me out everywhere</span>
-                  </div>
-
-                  {/* Save button — disabled until both fields 8+ chars */}
+                  {/* Save button */}
                   <button
                     type="button"
                     onClick={handleSave}
@@ -194,21 +236,15 @@ const ResetPasswordPage: React.FC = () => {
                         : 'bg-[#333] text-[#888] cursor-not-allowed border border-[#444]'
                     }`}
                   >
-                    {isSubmitting
-                      ? <><Loader2 className="h-4 w-4 animate-spin" />Saving...</>
-                      : 'Save'
-                    }
+                    {isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin" />Saving...</> : 'Save new password'}
                   </button>
                 </>
               ) : (
-                /* ── Success state ── */
+                /* ── Success ── */
                 <>
-                  <h1 className="text-white text-xl font-bold text-center mb-4">
-                    Password changed
-                  </h1>
-                  <p className="text-[#ccc] text-sm text-center leading-relaxed mb-6">
-                    Your password has been updated successfully.
-                    {signOutEverywhere && ' You have been signed out of all other devices.'}
+                  <h2 className="text-white text-lg font-bold mb-3">Password changed</h2>
+                  <p className="text-[#ccc] text-sm leading-relaxed mb-6">
+                    Your password has been updated successfully. You have been signed out of all other devices.
                   </p>
                   <button
                     type="button"

@@ -14,12 +14,12 @@ describe("Avatar", () => {
   });
 
   it("shows update button if editable", () => {
-    render(<Avatar displayName="Jane" isEditable />);
+    render(<Avatar displayName="Jane" isMe />);
     expect(screen.getByText(/update image/i)).toBeInTheDocument();
   });
 
   it("toggles actions on update button click", () => {
-    render(<Avatar displayName="Jane" isEditable />);
+    render(<Avatar displayName="Jane" isMe />);
     const updateBtn = screen.getByText(/update image/i);
     fireEvent.click(updateBtn);
     expect(screen.getByText(/replace image/i)).toBeInTheDocument();

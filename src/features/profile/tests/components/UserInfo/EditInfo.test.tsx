@@ -20,10 +20,11 @@ describe("EditInfo", () => {
     const addLinkButton = addLinkButtons.find((el) => el.tagName === "BUTTON");
     expect(addLinkButton).toBeDefined();
     fireEvent.click(addLinkButton!);
-    expect(screen.getByPlaceholderText(/facebook url/i)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/instagram url/i)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/twitter url/i)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/youtube url/i)).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText(/https:\/\/example.com\/your-handle/i),
+    ).toBeInTheDocument();
+    expect(screen.getByDisplayValue("INSTAGRAM")).toBeInTheDocument();
+    expect(screen.getByText(/add another link/i)).toBeInTheDocument();
   });
 
   it("calls onClick when Cancel is clicked", () => {
