@@ -6,9 +6,10 @@ import type { Track } from "../../../shared/types/Track";
 interface TrackListProps {
   tracks: Track[];
   onDelete: (id: string) => void;
+  onUpdate: (updatedTrack: Track) => void;
 }
 
-export default function TrackList({ tracks, onDelete }: TrackListProps) {
+export default function TrackList({ tracks, onDelete, onUpdate }: TrackListProps) {
   const [allSelected, setAllSelected] = useState(false);
 
   const handleSelectAll = () => {
@@ -91,6 +92,7 @@ export default function TrackList({ tracks, onDelete }: TrackListProps) {
       <EditTrackDrawer
         track={editingTrack}
         onClose={() => setEditingTrack(null)}
+        onUpdate={onUpdate}
       />
     )}
     </div>

@@ -7,6 +7,7 @@ import { trackService } from "../trackService";
 interface EditTrackDrawerProps {
   track: Track;
   onClose: () => void;
+  onUpdate: (updatedTrack: Track) => void;
 }
 
 function InfoIcon() {
@@ -74,7 +75,7 @@ function Accordion({
   );
 }
 
-export default function EditTrackDrawer({ track, onClose }: EditTrackDrawerProps) {
+export default function EditTrackDrawer({ track, onClose, onUpdate }: EditTrackDrawerProps) {
   const [activeTab, setActiveTab] = useState<"details" | "advanced" | "storefront">("details");
   const [artworkFile, setArtworkFile] = useState<File | null>(null);
   const [artworkPreview, setArtworkPreview] = useState<string | null>(null);
@@ -113,7 +114,7 @@ export default function EditTrackDrawer({ track, onClose }: EditTrackDrawerProps
 
   const handleSave = async () => {
     try {
-      await trackService.updateTrack(track.id, {
+      const updated = await trackService.updateTrack(track.id, {
         title,
         genre,
         tags: tags ? tags.split(",").map((t: string) => t.trim()) : [],
@@ -121,6 +122,7 @@ export default function EditTrackDrawer({ track, onClose }: EditTrackDrawerProps
         privacy,
         artwork: artworkFile,
       });
+      onUpdate(updated);
      } catch (err: any) {
       console.error("Failed to update track:", err);
      } 

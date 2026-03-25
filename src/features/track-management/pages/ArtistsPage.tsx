@@ -362,6 +362,12 @@ export default function ArtistsPage() {
   const [visibilityFilter, setVisibilityFilter] = useState<"all" | "public" | "private">("all");
   const [tracks, setTracks] = useState<Track[]>([]);
 
+const handleUpdate = (updatedTrack: Track) => {
+  setTracks(prev =>
+    prev.map(t => t.id === updatedTrack.id ? updatedTrack : t)
+  );
+};
+
 useEffect(() => {
   const fetchTracks = async () => {
    try {
@@ -488,7 +494,7 @@ const filteredTracks = useMemo(() => {
                 </div>
               </div>
 
-              <TrackList tracks={filteredTracks} onDelete={handleDeleteTrack} />
+              <TrackList tracks={filteredTracks} onDelete={handleDeleteTrack} onUpdate={handleUpdate} />
             </div>
           )}
 
