@@ -364,7 +364,7 @@ export default function ArtistsPage() {
 
 const handleUpdate = (updatedTrack: Track) => {
   setTracks(prev =>
-    prev.map(t => t.id === updatedTrack.id ? updatedTrack : t)
+    prev.map(t => t.id === updatedTrack.id ? { ...t, ...updatedTrack } : t)
   );
 };
 
