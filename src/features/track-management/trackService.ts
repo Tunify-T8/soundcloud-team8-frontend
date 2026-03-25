@@ -49,6 +49,24 @@ async updateTrack(id: string, payload: UpdateTrackPayload): Promise<Track> {
     headers: { "Content-Type": "multipart/form-data" },
   });
 
-  return data;
+   return {
+    id: data.trackId,
+    title: data.title,
+    artist: data.artists?.[0]?.name || "",
+    genre: data.genre,
+    tags: data.tags || [],
+    status: data.status,
+    visibility: data.privacy,
+    audioUrl: data.audioUrl || "",
+    description: data.description || "",
+    duration: data.durationSeconds || 0,
+    date: data.createdAt,
+    likes: null,
+    comments: null,
+    reposts: null,
+    downloads: null,
+    plays: null,
+    thumbnailUrl: data.artworkUrl || null,
+  };
 }
 };
