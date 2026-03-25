@@ -18,15 +18,19 @@ export default function ArtistsSidebar() {
       </button>
     </Link>
 
+ <Link to="/feed">
     <button className="flex flex-col items-center gap-1.5 text-[hsl(0,0%,45%)] hover:text-white transition-colors w-full py-3">
       <Archive className="w-5 h-5" />
       <span className="text-[10px]">Library</span>
     </button>
+    </Link>
 
+ <Link to="/library">
     <button className="flex flex-col items-center gap-1.5 text-[hsl(0,0%,45%)] hover:text-white transition-colors w-full py-3">
       <BarChart2 className="w-5 h-5" />
       <span className="text-[10px]">Stats</span>
     </button>
+    </Link>
 
     <button className="flex flex-col items-center gap-1.5 text-[hsl(0,0%,45%)] hover:text-white transition-colors w-full py-3">
       <Star className="w-5 h-5" />
