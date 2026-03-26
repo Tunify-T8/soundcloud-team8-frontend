@@ -45,6 +45,7 @@ export default function Avatar({
   }
 
   const handleOpenUpload = () => {
+    setShowActions(false);
     fileInputRef.current?.click();
   };
 
@@ -93,14 +94,14 @@ export default function Avatar({
         >
           <button
             type="button"
-            onClick={() => setShowActions((prev) => !prev)}
+            onClick={src ? () => setShowActions((prev) => !prev) : handleOpenUpload}
             className={`w-32 bg-zinc-800 font-bold text-[14px] px-2 py-0.75 rounded-sm transition-colors cursor-pointer ${
               showActions ? "text-orange-500" : "text-white hover:text-zinc-500"
             }`}
           >
             {isUploading ? "Uploading..." : src ? "Update image" : "Upload image"}
           </button>
-          {showActions && (
+          {src && showActions && (
             <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 flex w-32 flex-col rounded-sm border border-zinc-700 bg-zinc-950 shadow-lg">
               <button
                 type="button"
