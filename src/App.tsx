@@ -21,18 +21,25 @@ import MessagesPage from "./features/conversation/pages/MessagesPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import VerifyEmailPage from "./features/auth/pages/VerifyEmailPage";
 import { ProfileProvider } from "./features/profile/context/ProfileContext";
-import useRestoreSession from './hooks/useRestoreSession';
-
+import useRestoreSession from "./hooks/useRestoreSession";
 
 const router = createBrowserRouter([
   { path: "/verify-email", element: <VerifyEmailPage /> },
   {
-    path: '/signin',
-    element: <PublicOnlyRoute><SignInPage /></PublicOnlyRoute>,
+    path: "/signin",
+    element: (
+      <PublicOnlyRoute>
+        <SignInPage />
+      </PublicOnlyRoute>
+    ),
   },
   {
     path: "/create-account",
-    element: <PublicOnlyRoute><SignUpPage /></PublicOnlyRoute>,
+    element: (
+      <PublicOnlyRoute>
+        <SignUpPage />
+      </PublicOnlyRoute>
+    ),
   },
   {
     path: "/forgot-password",
@@ -74,6 +81,18 @@ const router = createBrowserRouter([
       // },
       {
         path: "/me",
+        element: <ProfilePage />,
+        children: [
+          { path: "popular-tracks", element: <PopularTracksPage /> },
+          { path: "tracks", element: <TracksPage /> },
+          { path: "albums", element: <AlbumsPage /> },
+          { path: "playlists", element: <PlaylistsPage /> },
+          { path: "reposts", element: <ProfileRepostsPage /> },
+        ],
+      },
+      // Add public user profile route
+      {
+        path: "/:username",
         element: <ProfilePage />,
         children: [
           { path: "popular-tracks", element: <PopularTracksPage /> },
