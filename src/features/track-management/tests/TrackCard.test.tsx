@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import TrackCard from "../components/TrackCard";
-import type { Track } from "../types";
+import type { Track } from "../../../shared/types/Track";
 import { Genre } from "../../../shared/types/Genre"; //couldn't find file when path @/shared/types/Genre ?
 
 const baseTrack: Track = {
