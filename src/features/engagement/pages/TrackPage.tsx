@@ -5,8 +5,8 @@ import { useEngagement } from '../hooks/useEngagement';
 import type { Track } from '../types/Track';
 import {
   Heart, Repeat2, Play, Share2,
-  Copy, ListPlus, MoreHorizontal
 } from 'lucide-react';
+import ActionButtons from '../components/ActionButtons';
 
 const TrackPage = () => {
   const { artist, songName } = useParams<{ artist: string; songName: string }>();
@@ -99,50 +99,14 @@ const TrackPage = () => {
                 {engagementLoading ? '...' : counts.reposts.toLocaleString()}
               </Link>
             </div>
-            <div className="flex items-center gap-2">
-
-              
-              <button
-                onClick={toggleLike}
-                disabled={engagementLoading}
-                className={`w-10 h-10 rounded flex items-center justify-center transition ${
-                  isLiked
-                    ? 'bg-zinc-700 text-orange-500'
-                    : 'bg-zinc-800 text-white hover:bg-zinc-700'
-                }`}
-              >
-                <Heart className={`w-4 h-4 ${isLiked ? 'fill-orange-500' : ''}`} />
-              </button>
-
-              
-              <button
-                onClick={toggleRepost}
-                disabled={engagementLoading}
-                className={`w-10 h-10 rounded flex items-center justify-center transition ${
-                  isReposted
-                    ? 'bg-zinc-700 text-orange-500'
-                    : 'bg-zinc-800 text-white hover:bg-zinc-700'
-                }`}
-              >
-                <Repeat2 className={`w-4 h-4 ${isReposted ? 'text-orange-500' : ''}`} />
-              </button>
-
-              <button className="w-10 h-10 rounded bg-zinc-800 text-white hover:bg-zinc-700 flex items-center justify-center transition">
-                <Share2 className="w-4 h-4" />
-              </button>
-
-              <button className="w-10 h-10 rounded bg-zinc-800 text-white hover:bg-zinc-700 flex items-center justify-center transition">
-                <Copy className="w-4 h-4" />
-              </button>
-
-              <button className="w-10 h-10 rounded bg-zinc-800 text-white hover:bg-zinc-700 flex items-center justify-center transition">
-                <ListPlus className="w-4 h-4" />
-              </button>
-
-              <button className="w-10 h-10 rounded bg-zinc-800 text-white hover:bg-zinc-700 flex items-center justify-center transition">
-                <MoreHorizontal className="w-4 h-4" />
-              </button>
-            </div>
+            
+            <ActionButtons
+              isLiked={isLiked}
+              isReposted={isReposted}
+              isLoading={engagementLoading}
+              onLike={toggleLike}
+              onRepost={toggleRepost}
+            />
           </div>
 
           <div className="w-48 h-48 shrink-0 self-start mt-6 mr-6">
