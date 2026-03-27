@@ -49,7 +49,7 @@ export default function FeedPage() {
 
   return (
     <div className="min-h-screen bg-[#181818] flex">
-      <div className="flex-1 flex flex-col items-center py-10 overflow-y-auto">
+      <div className="flex-1 flex flex-col items-center py-10 mr-9 overflow-y-auto">
         <div className="flex items-center justify-between w-full max-w-[880px] ml-[135px] mb-10">
           <p className="text-[22px] font-bold text-white text-left">
             Hear the latest posts from the people you’re following:
@@ -109,28 +109,6 @@ export default function FeedPage() {
                       timeAgo={track.date}
                       waveformSeed={track.id.length}
                     />
-                    <div className="flex justify-end mt-2 pr-2">
-                      <button
-                        className="flex items-center gap-1 text-xs text-gray-400 hover:text-orange-500 px-3 py-1 rounded transition-colors border border-transparent hover:border-orange-500"
-                        title="Repost"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth={2}
-                          stroke="currentColor"
-                          className="w-4 h-4"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M17 1v6h-6M7 23v-6h6M3 12a9 9 0 0118 0M3 12a9 9 0 0018 0"
-                          />
-                        </svg>
-                        Repost
-                      </button>
-                    </div>
                   </div>
                 </div>
               </div>

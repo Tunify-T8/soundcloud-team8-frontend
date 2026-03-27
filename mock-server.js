@@ -150,6 +150,31 @@ let tracks = [
   },
 ];
 
+// ─── Artists Data ─────────────────────────────────────────────────────────────
+let artists = [
+  {
+    id: 1,
+    name: "كلاسيكيات",
+    avatar: "https://randomuser.me/api/portraits/men/34.jpg",
+    followers: "10.1K",
+    tracks: 3,
+  },
+  {
+    id: 2,
+    name: "Chill Beats",
+    avatar: "https://randomuser.me/api/portraits/men/12.jpg",
+    followers: "8.4K",
+    tracks: 5,
+  },
+  {
+    id: 3,
+    name: "Night Vibes",
+    avatar: "https://randomuser.me/api/portraits/women/22.jpg",
+    followers: "15.2K",
+    tracks: 7,
+  },
+];
+
 // ─── Feed Data ────────────────────────────────────────────────────────────────
 let feedItems = [
   {
@@ -671,6 +696,28 @@ app.get('/feed', async (req, res) => {
   });
 });
 
+// ─── Artists Route ────────────────────────────────────────────────────────────
+
+// GET /artists
+app.get('/artists', async (req, res) => {
+  await delay();
+
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+
+  const start = (page - 1) * limit;
+  const end = page * limit;
+
+  const paginated = artists.slice(start, end);
+
+  res.json({
+    artists: paginated,
+    page,
+    limit,
+    total: artists.length,
+  });
+});
+
 app.use((req, res) => {
   console.log(`[mock] 404 — ${req.method} ${req.url}`);
   res.status(404).json({ error: `Mock: no handler for ${req.method} ${req.url}` });
@@ -685,5 +732,6 @@ app.listen(PORT, () => {
   console.log('  Profile:       GET  /users/me');
   console.log('  Tracks:        GET  /tracks/me');
   console.log('  Conversations: GET  /me/conversations');
-  console.log('  Messages:      GET  /conversations/:id/messages\n');
+  console.log('  Messages:      GET  /conversations/:id/messages');
+  console.log('  Artists:       GET  /artists\n');
 });
