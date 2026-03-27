@@ -12,7 +12,6 @@ export default function FeedPage() {
 
   useEffect(() => {
     let isMounted = true;
-    setLoading(true);
     feedService
       .getFeedTracks()
       .then((data) => {
@@ -57,7 +56,7 @@ export default function FeedPage() {
           <div className="flex items-center gap-2 select-none">
             <span className="text-zinc-400 text-base">Reposts</span>
             <button
-              className={`relative w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none border-2 ${showReposts ? 'bg-orange-500 border-orange-500' : 'bg-gray-400 border-gray-400'}`}
+              className={`relative w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none border-2 ${showReposts ? "bg-orange-500 border-orange-500" : "bg-gray-400 border-gray-400"}`}
               title="Toggle Reposts"
               tabIndex={0}
               type="button"
@@ -67,9 +66,9 @@ export default function FeedPage() {
               <span
                 className="absolute w-5 h-5 bg-black rounded-full transition-all duration-200"
                 style={{
-                  left: showReposts ? 'calc(100% - 1.25rem)' : '0.25rem',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
+                  left: showReposts ? "calc(100% - 1.25rem)" : "0.25rem",
+                  top: "50%",
+                  transform: "translateY(-50%)",
                 }}
               ></span>
             </button>
