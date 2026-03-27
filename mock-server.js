@@ -150,6 +150,46 @@ let tracks = [
   },
 ];
 
+// ─── Feed Data ────────────────────────────────────────────────────────────────
+let feedItems = [
+  {
+    type: "track",
+    source: "original",
+    postedAt: "2026-02-28T13:45:00Z",
+    track: {
+      id: "trk_005",
+      title: "Summer Vibes",
+      artistId: "user-uuid-2",
+      duration: 180,
+      likesCount: 520,
+      repostsCount: 88,
+      createdAt: "2026-02-20T00:00:00.000Z",
+      interaction: {
+        isLiked: true,
+        isReposted: false,
+      },
+    },
+  },
+  {
+    type: "track",
+    source: "repost",
+    postedAt: "2026-03-01T10:00:00Z",
+    track: {
+      id: "trk_006",
+      title: "Night Drive",
+      artistId: "user-uuid-3",
+      duration: 240,
+      likesCount: 180,
+      repostsCount: 67,
+      createdAt: "2026-03-01T00:00:00.000Z",
+      interaction: {
+        isLiked: false,
+        isReposted: true,
+      },
+    },
+  },
+];
+
 let conversations = [
   {
     conversationId: 'conv-uuid-1',
@@ -595,6 +635,41 @@ app.post('/conversations/:conversationId/read', async (req, res) => {
 });
 
 // ─── Fallback ─────────────────────────────────────────────────────────────────
+// ─── Feed Route ───────────────────────────────────────────────────────────────
+app.get('/feed', async (req, res) => {
+  await delay();
+
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+
+  const start = (page - 1) * limit;
+  const end = page * limit;
+
+  const paginatedItems = feedItems.slice(start, end);
+
+  // enrich with real track data
+  const fullItems = paginatedItems.map(item => {
+    const fullTrack = tracks.find(t => t.id === item.track.id);
+
+    return {
+      ...item,
+      track: {
+        ...item.track,
+        thumbnailUrl: fullTrack?.thumbnailUrl || null,
+        audioUrl: fullTrack?.audioUrl || null,
+        waveformData: fullTrack?.waveformData || [],
+        plays: fullTrack?.plays || 0,
+      },
+    };
+  });
+
+  res.json({
+    items: fullItems,
+    page,
+    limit,
+    total: feedItems.length,
+  });
+});
 
 app.use((req, res) => {
   console.log(`[mock] 404 — ${req.method} ${req.url}`);
