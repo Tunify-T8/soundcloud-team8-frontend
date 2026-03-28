@@ -1,6 +1,6 @@
-import { Heart, SkipBack, SkipForward, Play, Pause, Shuffle, Repeat2, Volume2, UserPlus2, LayoutList } from "lucide-react";
+import { Heart, SkipBack, SkipForward, Play, Pause, Shuffle, Repeat2, Volume2, VolumeX, UserPlus2, LayoutList } from "lucide-react";
 import { usePlayer } from "../context/usePlayer";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 const formatTime = (s: number) => {
   const m = Math.floor(s / 60);
@@ -10,14 +10,48 @@ const formatTime = (s: number) => {
 
 export default function PlayerBar() {
   const { currentTrack, isPlaying, progress, setIsPlaying, setProgress } = usePlayer();
-  const [volume, setVolume] = useState(1); // 0 to 1
+  const [volume, setVolume] = useState(1);
+  const [prevVolume, setPrevVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
   const [showVolume, setShowVolume] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   if (!currentTrack) return null;
+
+  const handleVolumeChange = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = 1 - (e.clientY - rect.top) / rect.height;
+    setVolume(Math.max(0, Math.min(1, pct)));
+    setIsMuted(false);
+  };
+
+  const handleMouseEnter = () => {
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    setShowVolume(true);
+  };
+
+  const handleMouseLeave = () => {
+    hideTimer.current = setTimeout(() => {
+      setShowVolume(false);
+      setIsDragging(false);
+    }, 300);
+  };
+
+  const toggleMute = () => {
+    if (isMuted) {
+      setIsMuted(false);
+      setVolume(prevVolume || 1);
+    } else {
+      setPrevVolume(volume);
+      setIsMuted(true);
+    }
+  };
 
   return (
     <div className="fixed bottom-0 left-0 right-0 h-12 bg-[#222] border-t border-zinc-700 z-50 flex items-center px-6 gap-5">
 
+      {/* Playback controls */}
       <div className="flex items-center gap-4 shrink-0">
         <SkipBack size={16} className="text-white hover:text-zinc-300 cursor-pointer" />
         <button onClick={() => setIsPlaying(!isPlaying)} className="text-white hover:text-zinc-300">
@@ -47,7 +81,7 @@ export default function PlayerBar() {
             style={{ width: `${(progress / currentTrack.duration) * 100}%` }}
           />
           <div
-            className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-black rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
             style={{ left: `calc(${(progress / currentTrack.duration) * 100}% - 5px)` }}
           />
         </div>
@@ -57,40 +91,40 @@ export default function PlayerBar() {
       {/* Volume with vertical slider popup */}
       <div
         className="relative shrink-0"
-        onMouseEnter={() => setShowVolume(true)}
-        onMouseLeave={() => setShowVolume(false)}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
-        {/* Vertical slider popup */}
         {showVolume && (
-          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-[#2a2a2a] rounded-lg px-3 pt-3 pb-2 flex flex-col items-center shadow-xl"
+          <div
+            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-[#2a2a2a] rounded-lg px-3 pt-3 pb-2 flex flex-col items-center shadow-xl"
             style={{ height: "110px" }}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            onMouseMove={(e) => { if (isDragging) handleVolumeChange(e); }}
+            onMouseUp={() => setIsDragging(false)}
           >
-      
             <div
-              className="relative w-[3px] bg-zinc-600 rounded-full cursor-pointer flex-1"
+              className="relative bg-zinc-600 rounded-full cursor-pointer flex-1"
               style={{ width: "3px" }}
-              onClick={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const pct = 1 - (e.clientY - rect.top) / rect.height;
-                setVolume(Math.max(0, Math.min(1, pct)));
-              }}
+              onMouseDown={(e) => { setIsDragging(true); handleVolumeChange(e); }}
             >
-
               <div
                 className="absolute bottom-0 left-0 w-full bg-white rounded-full"
-                style={{ height: `${volume * 100}%` }}
+                style={{ height: `${isMuted ? 0 : volume * 100}%` }}
               />
               <div
                 className="absolute left-1/2 -translate-x-1/2 w-3 h-3 bg-black border border-white rounded-full shadow"
-                style={{ bottom: `calc(${volume * 100}% - 6px)` }}
+                style={{ bottom: `calc(${isMuted ? 0 : volume * 100}% - 6px)` }}
               />
             </div>
           </div>
         )}
-
-        <Volume2 size={15} className="text-white hover:text-zinc-300 cursor-pointer" />
+        <button onClick={toggleMute} className="text-white hover:text-zinc-300 cursor-pointer">
+          {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+        </button>
       </div>
 
+      {/* Track info */}
       <div className="flex items-center gap-2 shrink-0">
         {currentTrack.thumbnailUrl && (
           <img src={currentTrack.thumbnailUrl} alt="cover" className="w-8 h-8 object-cover" />
@@ -101,9 +135,10 @@ export default function PlayerBar() {
         </div>
       </div>
 
+      {/* Right-side actions */}
       <div className="flex items-center gap-4 shrink-0">
-       <Heart size={15} fill="#FF5500" className="cursor-pointer hover:opacity-80" style={{ color: "#FF5500" }} />
-       <UserPlus2 size={15} className="cursor-pointer hover:opacity-80" style={{ color: "#FF5500" }} />
+        <Heart size={15} fill="#FF5500" className="cursor-pointer hover:opacity-80" style={{ color: "#FF5500" }} />
+        <UserPlus2 size={15} className="cursor-pointer hover:opacity-80" style={{ color: "#FF5500" }} />
         <LayoutList size={15} className="text-white hover:text-zinc-300 cursor-pointer" />
       </div>
 
