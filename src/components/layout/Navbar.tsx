@@ -44,7 +44,7 @@ export default function Navbar() {
     navigate("/signin");
   };
 
-  const menuItems = [
+  const profileMenuItems = [
     { to: "/me",            icon: <User size={17} />,        label: "Profile" },
     { to: "/likes",         icon: <Heart size={17} />,       label: "Likes" },
     { to: "/playlists",     icon: <ListMusic size={17} />,   label: "Playlists" },
@@ -57,6 +57,31 @@ export default function Navbar() {
     { to: "/insights",      icon: <TrendingUp size={17} />,  label: "Insights" },
     { to: "/distribute",    icon: <Share2 size={17} />,      label: "Distribute" },
   ];
+
+  const menuItems : { group: { label: string; href?: string; action?: () => void }[] }[] =  [
+  { group: [
+    { label: "About us",         href: "/about" },
+    { label: "Legal",            href: "/legal" },
+    { label: "Copyright",        href: "/copyright" },
+  ]},
+  { group: [
+    { label: "Mobile apps",      href: "/mobile" },
+    { label: "Artist Membership",href: "/artist-membership" },
+    { label: "Newsroom",         href: "/newsroom" },
+    { label: "Jobs",             href: "/jobs" },
+    { label: "Developers",       href: "/developers" },
+    { label: "SoundCloud Store", href: "/store" },
+  ]},
+  { group: [
+    { label: "Support",          href: "/support" },
+    { label: "Keyboard shortcuts",href: "/shortcuts" },
+  ]},
+  { group: [
+    { label: "Subscription",     href: "/subscription" },
+    { label: "Settings",         href: "/settings" },
+    { label: "Sign out",         action: handleSignOut },
+  ]},
+];
 
   return (
     <>
@@ -113,7 +138,7 @@ export default function Navbar() {
 
               {profileMenuOpen && (
                 <div className="absolute left-0 top-10 w-40 bg-[#111] border border-zinc-800 rounded-sm shadow-2xl z-50 overflow-hidden">
-                  {menuItems.map((item) => (
+                  {profileMenuItems.map((item) => (
                     <Link
                       key={item.to}
                       to={item.to}
@@ -132,16 +157,7 @@ export default function Navbar() {
                       {item.label}
                     </Link>
                   ))}
-                  <div className="border-t border-zinc-800">
-                    <button
-                      type="button"
-                      onClick={handleSignOut}
-                      className="w-full flex items-center gap-3 px-4 py-1.5 font-bold text-sm text-white hover:text-zinc-400 transition-colors duration-150"
-                    >
-                      <LogOut size={17} />
-                      Sign out
-                    </button>
-                  </div>
+                 
                 </div>
               )}
             </div>
@@ -151,28 +167,43 @@ export default function Navbar() {
               <Mail size={18} className="cursor-pointer" />
             </Link>
 
-            {/* More options */}
-            <div className="relative" ref={menuRef}>
+           <div className="relative" ref={menuRef}>
               <MoreHorizontal
                 size={18}
                 className="text-zinc-400 hover:text-white cursor-pointer"
                 onClick={() => setMenuOpen((v) => !v)}
               />
               {menuOpen && (
-                <div className="absolute right-0 top-7 w-40 bg-zinc-900 border border-zinc-700 rounded shadow-lg z-50">
-                  <button
-                    type="button"
-                    onClick={handleSignOut}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors"
-                  >
-                    <LogOut size={15} />
-                    Sign out
-                  </button>
+                <div className="absolute right-0 top-7 w-50 bg-[#111] border border-zinc-800 rounded-sm shadow-2xl z-50 overflow-hidden">
+                  {menuItems.map((section, i) => (
+                    <div key={i} className={i !== 0 ? "border-t border-zinc-800" : ""}>
+                      {section.group.map((item) =>
+                       item.action ? (
+                          <button
+                            key={item.label}
+                            type="button"
+                            onClick={() => { item.action(); setMenuOpen(false); }}
+                            className="w-full text-left px-4 py-3.5 font-bold text-sm text-white hover:text-zinc-400 transition-colors duration-150"
+                          >
+                            {item.label}
+                          </button>
+                        ) : (
+                          <Link
+                            key={item.label}
+                            to={item.href!}
+                            onClick={() => setMenuOpen(false)}
+                            className="block px-4 py-1.5 font-bold text-sm text-white hover:text-zinc-400 transition-colors duration-150"
+                          >
+                            {item.label}
+                          </Link>
+                        )
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
           </div>
-
         </div>
       </nav>
       <Outlet />
