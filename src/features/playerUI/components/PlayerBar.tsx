@@ -1,6 +1,6 @@
 import { Heart, SkipBack, SkipForward, Play, Pause, Shuffle, Repeat2, Volume2, VolumeX, UserPlus2, LayoutList } from "lucide-react";
 import { usePlayer } from "../context/usePlayer";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 const formatTime = (s: number) => {
   const m = Math.floor(s / 60);
@@ -16,6 +16,20 @@ export default function PlayerBar() {
   const [showVolume, setShowVolume] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const isPlayingRef = useRef(isPlaying);
+useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
+
+useEffect(() => {
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.code === "Space" && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+      e.preventDefault();
+      setIsPlaying(!isPlayingRef.current);
+    }
+  };
+  window.addEventListener("keydown", handleKeyDown);
+  return () => window.removeEventListener("keydown", handleKeyDown);
+}, []);
 
   if (!currentTrack) return null;
 
@@ -47,6 +61,7 @@ export default function PlayerBar() {
       setIsMuted(true);
     }
   };
+
 
   return (
     <div className="fixed bottom-0 left-0 right-0 h-12 bg-[#222] border-t border-zinc-700 z-50 flex items-center justify-center px-6 gap-5">
