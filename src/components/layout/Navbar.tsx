@@ -182,7 +182,7 @@ export default function Navbar() {
                           <button
                             key={item.label}
                             type="button"
-                            onClick={() => { item.action(); setMenuOpen(false); }}
+                            onClick={() => { item.action?.(); setMenuOpen(false); }}
                             className="w-full text-left px-4 py-3.5 font-bold text-sm text-white hover:text-zinc-400 transition-colors duration-150"
                           >
                             {item.label}
