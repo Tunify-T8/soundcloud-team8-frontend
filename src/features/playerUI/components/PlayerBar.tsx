@@ -49,7 +49,7 @@ export default function PlayerBar() {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 h-12 bg-[#222] border-t border-zinc-700 z-50 flex items-center px-6 gap-5">
+    <div className="fixed bottom-0 left-0 right-0 h-12 bg-[#222] border-t border-zinc-700 z-50 flex items-center justify-center px-6 gap-5">
 
       {/* Playback controls */}
       <div className="flex items-center gap-4 shrink-0">
@@ -66,8 +66,8 @@ export default function PlayerBar() {
       </div>
 
       {/* Progress bar + times */}
-      <div className="flex items-center gap-2 flex-1 min-w-0">
-        <span className="text-xs text-zinc-400 shrink-0 w-8 text-right">{formatTime(progress)}</span>
+      <div className="flex items-center gap-2 shrink-0" style={{ width: "378px" }}>
+        <span className="text-xs font-bold text-white shrink-0 tracking-tight">{formatTime(progress)}</span>
         <div
           className="relative flex-1 h-[3px] bg-zinc-600 rounded-full cursor-pointer group"
           onClick={(e) => {
@@ -85,7 +85,7 @@ export default function PlayerBar() {
             style={{ left: `calc(${(progress / currentTrack.duration) * 100}% - 5px)` }}
           />
         </div>
-        <span className="text-xs text-zinc-400 shrink-0 w-8">{formatTime(currentTrack.duration)}</span>
+        <span className="text-xs font-bold text-white shrink-0 tracking-tight">{formatTime(currentTrack.duration)}</span>
       </div>
 
       {/* Volume with vertical slider popup */}
@@ -130,7 +130,7 @@ export default function PlayerBar() {
           <img src={currentTrack.thumbnailUrl} alt="cover" className="w-8 h-8 object-cover" />
         )}
         <div className="flex flex-col leading-tight">
-          <span className="text-xs text-zinc-400 leading-none">{currentTrack.artist}</span>
+          <span className="text-xs text-zinc-400 leading-none font-bold tracking-tight">{currentTrack.artist}</span>
           <span className="text-xs font-bold text-white leading-none mt-0.5">{currentTrack.title}</span>
         </div>
       </div>
