@@ -26,6 +26,7 @@ import useRestoreSession from "./hooks/useRestoreSession";
 import { PlayerProvider } from "./features/playerUI/context/PlayerContext";
 import PlayerBar from "./features/playerUI/components/PlayerBar";
 
+import { TestPlayer } from "./features/playerUI/tests/TestPlayer";
 
 const router = createBrowserRouter([
   { path: "/verify-email", element: <VerifyEmailPage /> },
@@ -127,14 +128,19 @@ const router = createBrowserRouter([
 ]);
 
 function AppInner() {
-  useRestoreSession();
-  return <RouterProvider router={router} />;
+useRestoreSession();
+  return (
+    <>
+      <TestPlayer />
+      <RouterProvider router={router} />
+    </>
+  );
 }
 
 function App() {
   return (
       <PlayerProvider>
-      <AppInner />;
+      <AppInner />
       <PlayerBar />
     </PlayerProvider>
   );
