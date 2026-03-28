@@ -23,6 +23,10 @@ import VerifyEmailPage from "./features/auth/pages/VerifyEmailPage";
 import { ProfileProvider } from "./features/profile/context/ProfileContext";
 import useRestoreSession from "./hooks/useRestoreSession";
 
+import { PlayerProvider } from "./features/playerUI/context/PlayerContext";
+import PlayerBar from "./features/playerUI/components/PlayerBar";
+
+
 const router = createBrowserRouter([
   { path: "/verify-email", element: <VerifyEmailPage /> },
   {
@@ -128,7 +132,12 @@ function AppInner() {
 }
 
 function App() {
-  return <AppInner />;
+  return (
+      <PlayerProvider>
+      <AppInner />;
+      <PlayerBar />
+    </PlayerProvider>
+  );
 }
 
 export default App;
