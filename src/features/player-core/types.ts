@@ -1,7 +1,10 @@
+// ─── Enums / Unions ───────────────────────────────────────────────────────────
 
 export type playabilityStatus = "playable" | "preview" | "blocked";
 export type playbackAction    = "play" | "pause" | "seek" | "complete" | "heartbeat";
 export type streamQuality     = "auto" | "low" | "medium" | "high";
+export type repeatMode        = "none" | "one" | "all";
+export type contextType       = "track" | "album" | "playlist" | "artist";
 export type playerStatus      =
   | "idle"
   | "loading"
@@ -12,6 +15,7 @@ export type playerStatus      =
   | "preview"
   | "error";
 
+// ─── Service Types ────────────────────────────────────────────────────────────
 
 export interface playbackArtist {
   id:   string;
@@ -37,9 +41,9 @@ export interface playbackPlayability {
 }
 
 export interface playbackPreview {
-  enabled:               boolean;
+  enabled:                boolean;
   previewDurationSeconds: number;
-  previewStartSeconds:   number;
+  previewStartSeconds:    number;
 }
 
 export interface playbackBundle {
@@ -71,24 +75,75 @@ export interface playbackEventPayload {
   positionSeconds: number;
 }
 
+// ─── Queue Types ──────────────────────────────────────────────────────────────
+
+export interface queueTrack {
+  trackId: string;
+}
+
+export interface buildQueueParams {
+  contextType:   contextType;
+  contextId:     string;
+  startTrackId?: string;
+  shuffle?:      boolean;
+  repeat?:       repeatMode;
+}
+
+export interface queueResponse {
+  queue:        queueTrack[];
+  currentIndex: number;
+  shuffle:      boolean;
+  repeat:       repeatMode;
+}
+
+export interface queueState {
+  tracks:       queueTrack[];
+  currentIndex: number;
+  shuffle:      boolean;
+  repeat:       repeatMode;
+  isLoading:    boolean;
+  error:        string | null;
+}
+
+export interface useQueueReturn {
+  tracks:         queueTrack[];
+  currentIndex:   number;
+  currentTrackId: string | null;
+  shuffle:        boolean;
+  repeat:         repeatMode;
+  isLoading:      boolean;
+  error:          string | null;
+  hasNext:        boolean;
+  hasPrev:        boolean;
+  loadQueue:      (params: buildQueueParams) => Promise<void>;
+  next:           () => void;
+  prev:           () => void;
+  addTrack:       (trackId: string, atIndex?: number) => void;
+  removeTrack:    (trackId: string) => void;
+  jumpTo:         (index: number) => void;
+  toggleShuffle:  () => void;
+  toggleRepeat:   () => void;
+  clearQueue:     () => void;
+}
+
 // ─── Hook Types ───────────────────────────────────────────────────────────────
 
 export interface accessibilityState {
-  status:                playabilityStatus;
-  isPlayable:            boolean;
-  isPreview:             boolean;
-  isBlocked:             boolean;
+  status:                 playabilityStatus;
+  isPlayable:             boolean;
+  isPreview:              boolean;
+  isBlocked:              boolean;
   previewDurationSeconds: number;
-  previewStartSeconds:   number;
-  blockedMessage:        string | null;
-  requiresSubscription:  boolean;
+  previewStartSeconds:    number;
+  blockedMessage:         string | null;
+  requiresSubscription:   boolean;
 }
 
 export interface usePlaybackOptions {
-  trackId:      string | null;
+  trackId:       string | null;
   privateToken?: string;
-  quality?:     streamQuality;
-  autoPlay?:    boolean;
+  quality?:      streamQuality;
+  autoPlay?:     boolean;
 }
 
 export interface usePlaybackReturn {
