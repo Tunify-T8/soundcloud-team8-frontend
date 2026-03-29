@@ -49,7 +49,7 @@ export default function SongCard({
   };
 
   return (
-    <div className="bg-[#1a1a1a] border border-[hsl(0,0%,13%)] rounded-sm flex gap-0 overflow-hidden w-full max-w-2xl font-sans">
+    <div className="bg-[#1a1a1a] border border-[hsl(0,0%,13%)] rounded-sm flex gap-0 overflow-hidden w-full font-sans">
       {/* Cover Art */}
       <div className="w-[130px] h-[130px] shrink-0 bg-[#111] relative">
         {coverUrl ? (

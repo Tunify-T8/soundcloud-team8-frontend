@@ -235,9 +235,9 @@ export default function ProfileSideBar({
                   </div>
                   <button
                     type="button"
-                    className="rounded-md bg-white px-3 py-2 text-[14px] font-bold text-black hover:bg-zinc-200 cursor-pointer"
+                    className="rounded-md bg-zinc-800 px-3 py-2 text-[14px] font-bold text-white hover:text-zinc-500 cursor-pointer"
                   >
-                    Follow
+                    Following
                   </button>
                 </div>
               );
