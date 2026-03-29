@@ -1,11 +1,15 @@
 import SideBar from "../../../components/layout/Sidebar";
 import SongCard from "../../../components/ui/SongCard";
-import type { Track } from "@/shared/types/Track";
+import { Repeat2 } from "lucide-react";
+import type { FeedItem, FeedResponse } from "@/shared/types/Feed";
 import { useEffect, useState } from "react";
 import { feedService } from "../feedservice";
 
 export default function FeedPage() {
-  const [tracks, setTracks] = useState<Track[]>([]);
+  const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
+  const [page, setPage] = useState<number>(1);
+  const [limit, setLimit] = useState<number>(20);
+  const [hasMore, setHasMore] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showReposts, setShowReposts] = useState(true);
@@ -13,14 +17,24 @@ export default function FeedPage() {
   useEffect(() => {
     let isMounted = true;
     feedService
-      .getFeedTracks()
-      .then((data) => {
+      .getFeed()
+      .then((data: FeedResponse | null) => {
         if (isMounted) {
-          setTracks(data);
+          if (data) {
+            setFeedItems(data.items);
+            setPage(data.page);
+            setLimit(data.limit);
+            setHasMore(data.hasMore);
+          } else {
+            setFeedItems([]);
+            setPage(1);
+            setLimit(20);
+            setHasMore(false);
+          }
           setLoading(false);
         }
       })
-      .catch((err) => {
+      .catch(() => {
         if (isMounted) {
           setError("Failed to load feed");
           setLoading(false);
@@ -75,38 +89,48 @@ export default function FeedPage() {
           </div>
         </div>
         <div className="w-full max-w-[880px] flex flex-col items-center ml-[135px]">
-          {tracks.map((track, idx) => (
+          {(showReposts
+            ? feedItems
+            : feedItems.filter((item) => item.action.action !== "repost")
+          ).map((item) => (
             <div
-              key={track.id}
+              key={item.id}
               className="w-full flex flex-col items-stretch mb-5"
             >
               {/* Avatar and meta row above the card */}
               <div className="flex items-center gap-3 pb-1">
                 <img
-                  src={track.thumbnailUrl || "https://i.pravatar.cc/100"}
-                  alt={track.artist}
+                  src={item.action.userAvatarUrl || "https://i.pravatar.cc/100"}
+                  alt={item.action.displayName || item.action.username}
                   className="w-8 h-8 rounded-full object-cover "
                 />
                 <span className="font-semibold text-white text-base">
-                  {track.artist}
+                  {item.action.displayName || item.action.username}
                 </span>
-                <span className="text-xs text-gray-400">posted a track</span>
-                <span className="text-xs text-gray-500 ml-2">2 days ago</span>
+                <span className="text-xs text-gray-400 flex items-center gap-1">
+                  {item.action.action === "repost" && (
+                    <Repeat2 className="inline w-4 h-4 text-green-400 mr-1" />
+                  )}
+                  {item.action.action === "repost" ? "reposted" : "posted"} a
+                  track
+                </span>
+                <span className="text-xs text-gray-500 ml-2">
+                  {new Date(item.action.date).toLocaleDateString()}
+                </span>
               </div>
               <div className="flex gap-4 items-start py-2">
                 <div className="flex-1">
                   <div className="bg-[#181818] rounded-lg">
                     <SongCard
-                      artistName={track.artist}
-                      title={track.title}
-                      coverUrl={track.thumbnailUrl || undefined}
-                      genre={track.genre}
-                      likes={track.likes?.toString()}
-                      reposts={track.reposts?.toString()}
-                      plays={track.plays?.toString()}
-                      comments={track.comments?.toString()}
-                      timeAgo={track.date}
-                      waveformSeed={track.id.length}
+                      artistName={item.artist}
+                      title={item.title}
+                      coverUrl={item.coverUrl || undefined}
+                      genre={item.genre}
+                      likes={item.numberOfLikes.toString()}
+                      reposts={item.numberOfReposts.toString()}
+                      plays={item.numberOfListens.toString()}
+                      comments={item.numberOfComments.toString()}
+                      timeAgo={new Date(item.action.date).toLocaleDateString()}
                     />
                   </div>
                 </div>

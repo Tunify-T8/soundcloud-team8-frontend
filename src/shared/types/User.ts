@@ -33,7 +33,7 @@ export interface FollowingUser {
   followersCount?: number | string;
 }
 
-// --- API Types generated from Swagger ---
+// --- API Types ---
 
 // User profile (GET /users/me, /users/{userIdOrUsername})
 
