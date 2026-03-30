@@ -7,7 +7,7 @@ export function TestPlayer() {
 
   useEffect(() => {
     setCurrentTrack({
-      id: "1",
+      id: "test-track-1",
       title: "Never Ending Story",
       artist: "Stranger Things",
       thumbnailUrl: thumbnail,
