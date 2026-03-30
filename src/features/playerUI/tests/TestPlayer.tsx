@@ -3,7 +3,7 @@ import { usePlayer } from "../context/usePlayer";
 import thumbnail from "@/assets/neverendingstory.png";
 
 export function TestPlayer() {
-  const { setCurrentTrack, setIsPlaying } = usePlayer();
+  const { setCurrentTrack } = usePlayer();
 
   useEffect(() => {
     setCurrentTrack({
@@ -13,7 +13,6 @@ export function TestPlayer() {
       thumbnailUrl: thumbnail,
       duration: 175,
     });
-    setIsPlaying(true);
   }, []);
 
   return null;

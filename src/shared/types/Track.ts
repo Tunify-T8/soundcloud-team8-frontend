@@ -15,11 +15,11 @@ export interface Track {
   waveformData?: number[];   
   duration: number;
   date?: string;
-  likes?: number | null;
-  comments?: number | null;
-  reposts?: number | null;
-  downloads?: number | null;
-  plays?: number | null;
+  likes: number | null;
+  comments: number | null;
+  reposts: number | null;
+  downloads: number | null;
+  plays: number | null;
   isHD?: boolean;
   isPrivate?: boolean;
   thumbnailUrl: string | null;

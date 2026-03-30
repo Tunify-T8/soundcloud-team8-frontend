@@ -41,7 +41,7 @@ function resolveBlockedMessage(bundle: playbackBundle): string | null {
 export function usePlaybackAccessibility(
   bundle: playbackBundle | null
 ): accessibilityState {
-  if (!bundle) {
+  if (!bundle || !bundle.playability){
     return {
       status:                "blocked",
       isPlayable:            false,

@@ -15,18 +15,17 @@ import SignInPage from "./features/auth/pages/SignInPage";
 import SignUpPage from "./features/auth/pages/SignUpPage";
 import PublicOnlyRoute from "./routes/PublicOnlyRoute";
 import ForgotPasswordPage from "./features/auth/pages/ForgotPasswordPage";
-
+import { TestPlayer } from "./features/playerUI/tests/TestPlayer";
 import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage";
 import MessagesPage from "./features/conversation/pages/MessagesPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import VerifyEmailPage from "./features/auth/pages/VerifyEmailPage";
 import { ProfileProvider } from "./features/profile/context/ProfileContext";
 import useRestoreSession from "./hooks/useRestoreSession";
-
-import { PlayerProvider } from "./features/playerUI/context/PlayerContext";
+import { PlayerProvider } from "./features/playerUI/context/PlayerProvider";
 import PlayerBar from "./features/playerUI/components/PlayerBar";
 
-import { TestPlayer } from "./features/playerUI/tests/TestPlayer";
+import { usePlayer } from "./features/playerUI/context/usePlayer";
 
 const router = createBrowserRouter([
   { path: "/verify-email", element: <VerifyEmailPage /> },
@@ -127,23 +126,27 @@ const router = createBrowserRouter([
   },
 ]);
 
-function AppInner() {
-useRestoreSession();
+function App() {
+  useRestoreSession();
   return (
-    <>
+    <PlayerProvider>
       <TestPlayer />
       <RouterProvider router={router} />
-    </>
-  );
-}
-
-function App() {
-  return (
-      <PlayerProvider>
-      <AppInner />
-      <PlayerBar />
+      <PlayerBarWrapper />
     </PlayerProvider>
   );
 }
 
+// Reads from context — only renders when a track is selected
+function PlayerBarWrapper() {
+  const { currentTrack } = usePlayer();
+  if (!currentTrack) return null;
+
+  return (
+    <PlayerBar
+      trackId={currentTrack.id}
+      track={currentTrack}
+    />
+  );
+}
 export default App;
