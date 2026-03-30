@@ -1,9 +1,9 @@
-import axios from 'axios';
+import axios from 'axios';//library to send api requests instead of using fetch
 import { getAccessToken, getRefreshToken, storeTokens, clearTokens } from '@/features/auth/utils/token.utils';
  
-import { BASE_URL } from '../../../config/env';
+import { BASE_URL } from '../../../config/env'; //This imports the base backend URL from your config.
 
-export const api = axios.create({
+export const api = axios.create({ //create a pre configured axios object
   baseURL: BASE_URL,
  headers: {
     'Content-Type': 'application/json',
@@ -11,11 +11,13 @@ export const api = axios.create({
 });
  
 api.interceptors.request.use(
-  (config) => {
+  (config) => { //config is the request settings object It contains things like: URL headers method data
+
+
     const token = getAccessToken();
  
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      config.headers.Authorization = `Bearer ${token}`;//This is how protected backend routes know who the user is.
     }
  
     return config; // must always return config
@@ -28,7 +30,7 @@ api.interceptors.request.use(
  
 // This flag prevents multiple refresh calls happening at the same time
 let isRefreshing = false;
-let failedQueue: Array<{
+let failedQueue: Array<{ //queue of pending requests waiting for refresh to finish.
   resolve: (token: string) => void;
   reject: (error: unknown) => void;
 }> = [];

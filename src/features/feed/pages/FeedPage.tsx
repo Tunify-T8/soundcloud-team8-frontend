@@ -5,13 +5,35 @@ import type { FeedItem, FeedResponse } from "@/shared/types/Feed";
 import { useEffect, useState } from "react";
 import { feedService } from "../feedservice";
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatTimeAgo(dateStr: string): string {
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diffMs / 60_000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins} minute${mins !== 1 ? 's' : ''} ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} hour${hrs !== 1 ? 's' : ''} ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days} day${days !== 1 ? 's' : ''} ago`;
+  const months = Math.floor(days / 30);
+  return `${months} month${months !== 1 ? 's' : ''} ago`;
+}
+
+function waveformSeedFromId(id: string): number {
+  return id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export default function FeedPage() {
+  // Your teammate's state variables — kept exactly as they intended
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
-  const [page, setPage] = useState<number>(1);
-  const [limit, setLimit] = useState<number>(20);
-  const [hasMore, setHasMore] = useState<boolean>(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [page, setPage]           = useState<number>(1);
+  const [limit, setLimit]         = useState<number>(20);
+  const [hasMore, setHasMore]     = useState<boolean>(false);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState<string | null>(null);
   const [showReposts, setShowReposts] = useState(true);
 
   useEffect(() => {
@@ -36,13 +58,11 @@ export default function FeedPage() {
       })
       .catch(() => {
         if (isMounted) {
-          setError("Failed to load feed");
+          setError('Failed to load feed');
           setLoading(false);
         }
       });
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, []);
 
   if (loading) {
@@ -52,6 +72,7 @@ export default function FeedPage() {
       </div>
     );
   }
+
   if (error) {
     return (
       <div className="min-h-screen bg-[#181818] flex items-center justify-center text-red-500">
@@ -60,19 +81,28 @@ export default function FeedPage() {
     );
   }
 
+  // Repost filter — your teammate's logic + your state variable name
+  const visibleItems = showReposts
+    ? feedItems
+    : feedItems.filter((item) => item.action.action !== 'repost');
+
   return (
     <div className="min-h-screen bg-[#181818] flex">
       <div className="flex-1 flex flex-col items-center py-10 mr-9 overflow-y-auto">
+
+        {/* Header row */}
         <div className="flex items-center justify-between w-full max-w-[880px] ml-[135px] mb-10">
           <p className="text-[22px] font-bold text-white text-left">
-            Hear the latest posts from the people you’re following:
+            Hear the latest posts from the people you're following:
           </p>
           <div className="flex items-center gap-2 select-none">
             <span className="text-zinc-400 text-base">Reposts</span>
             <button
-              className={`relative w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none border-2 ${showReposts ? "bg-orange-500 border-orange-500" : "bg-gray-400 border-gray-400"}`}
-              title="Toggle Reposts"
-              tabIndex={0}
+              className={`relative w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none border-2 ${
+                showReposts
+                  ? 'bg-orange-500 border-orange-500'
+                  : 'bg-gray-400 border-gray-400'
+              }`}
               type="button"
               aria-pressed={showReposts}
               onClick={() => setShowReposts((v) => !v)}
@@ -80,66 +110,75 @@ export default function FeedPage() {
               <span
                 className="absolute w-5 h-5 bg-black rounded-full transition-all duration-200"
                 style={{
-                  left: showReposts ? "calc(100% - 1.25rem)" : "0.25rem",
-                  top: "50%",
-                  transform: "translateY(-50%)",
+                  left: showReposts ? 'calc(100% - 1.25rem)' : '0.25rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
                 }}
-              ></span>
+              />
             </button>
           </div>
         </div>
+
+        {/* Track list */}
         <div className="w-full max-w-[880px] flex flex-col items-center ml-[135px]">
-          {(showReposts
-            ? feedItems
-            : feedItems.filter((item) => item.action.action !== "repost")
-          ).map((item) => (
+          {visibleItems.length === 0 && (
+            <p className="text-gray-500 text-sm mt-10">
+              Nothing to show here yet.
+            </p>
+          )}
+
+          {visibleItems.map((item) => (
             <div
               key={item.id}
               className="w-full flex flex-col items-stretch mb-5"
             >
-              {/* Avatar and meta row above the card */}
+              {/* Avatar + meta row — uses teammate's displayName + userAvatarUrl */}
               <div className="flex items-center gap-3 pb-1">
                 <img
-                  src={item.action.userAvatarUrl || "https://i.pravatar.cc/100"}
+                  src={item.action.userAvatarUrl || 'https://i.pravatar.cc/100'}
                   alt={item.action.displayName || item.action.username}
-                  className="w-8 h-8 rounded-full object-cover "
+                  className="w-8 h-8 rounded-full object-cover"
                 />
                 <span className="font-semibold text-white text-base">
                   {item.action.displayName || item.action.username}
                 </span>
                 <span className="text-xs text-gray-400 flex items-center gap-1">
-                  {item.action.action === "repost" && (
+                  {item.action.action === 'repost' && (
                     <Repeat2 className="inline w-4 h-4 text-green-400 mr-1" />
                   )}
-                  {item.action.action === "repost" ? "reposted" : "posted"} a
-                  track
+                  {item.action.action === 'repost' ? 'reposted' : 'posted'} a track
                 </span>
+                {/* Your formatTimeAgo instead of raw date */}
                 <span className="text-xs text-gray-500 ml-2">
-                  {new Date(item.action.date).toLocaleDateString()}
+                  {formatTimeAgo(item.action.date)}
                 </span>
               </div>
+
+              {/* Track card — your improvements: trackId, isLikedInitial, waveformSeed */}
               <div className="flex gap-4 items-start py-2">
-                <div className="flex-1">
-                  <div className="bg-[#181818] rounded-lg">
-                    <SongCard
-                      artistName={item.artist}
-                      title={item.title}
-                      coverUrl={item.coverUrl || undefined}
-                      genre={item.genre}
-                      likes={item.numberOfLikes.toString()}
-                      reposts={item.numberOfReposts.toString()}
-                      plays={item.numberOfListens.toString()}
-                      comments={item.numberOfComments.toString()}
-                      timeAgo={new Date(item.action.date).toLocaleDateString()}
-                    />
-                  </div>
+                <div className="flex-1 bg-[#181818] rounded-lg">
+                  <SongCard
+                    trackId={item.id}
+                    isLikedInitial={item.isLiked}
+                    artistName={item.artist}
+                    title={item.title}
+                    coverUrl={item.coverUrl ?? undefined}
+                    genre={item.genre as any}
+                    likes={item.numberOfLikes.toString()}
+                    reposts={item.numberOfReposts.toString()}
+                    plays={item.numberOfListens.toString()}
+                    comments={item.numberOfComments.toString()}
+                    timeAgo={formatTimeAgo(item.action.date)}
+                    waveformSeed={waveformSeedFromId(item.id)}
+                  />
                 </div>
               </div>
             </div>
           ))}
         </div>
       </div>
-      <div className="w-[460px]  bg-[#181818]">
+
+      <div className="w-[460px] bg-[#181818]">
         <SideBar />
       </div>
     </div>

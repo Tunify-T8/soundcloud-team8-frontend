@@ -2,9 +2,12 @@ import { useState, useMemo } from "react";
 import { Heart, Repeat2, Share2, Copy, MoreHorizontal, Play, Pause } from "lucide-react";
 import { SiSoundcloud } from "react-icons/si";
 import { waveGenerators } from "../Waveforms";
+import { useLike } from "@/features/feed/hooks/useLike";
 import { Genre } from "@/shared/types/Genre";
 
 interface PlayerProps {
+  trackId?: string;
+  isLikedInitial?: boolean;
   artistName?: string;
   title?: string;
   coverUrl?: string;
@@ -19,6 +22,8 @@ interface PlayerProps {
 }
 
 export default function SongCard({
+  trackId = '',
+  isLikedInitial = false,
   artistName = "",
   title = "",
   coverUrl = "",
@@ -33,7 +38,11 @@ export default function SongCard({
 }: PlayerProps){
   const [playing, setPlaying] = useState(false);
   const [hoverProgress, setHoverProgress] = useState<number | null>(null);
-
+  const { isLiked, likesCount, toggleLike } = useLike(
+    isLikedInitial,
+    Number(likes) || 0,
+    trackId,
+  );
   const BAR_COUNT = 140;
   const generatorIndex = waveformSeed % waveGenerators.length;
 
@@ -116,9 +125,21 @@ export default function SongCard({
             </button>
 
             {/* Stats */}
-            <button className="flex items-center gap-1.5 text-[hsl(0,0%,50%)] hover:text-[hsl(14,90%,58%)] transition-colors text-[11px] px-2 py-1 rounded border border-[hsl(0,0%,18%)] hover:border-[hsl(14,90%,40%)]">
-              <Heart size={12} />
-              <span>{likes}</span>
+            <button
+              onClick={toggleLike}
+              aria-label={isLiked ? 'Unlike track' : 'Like track'}
+              className={`flex items-center gap-1.5 transition-all duration-150 text-[11px] px-2 py-1 rounded border ${
+                isLiked
+                  ? 'text-[hsl(14,90%,58%)] border-[hsl(14,90%,40%)]'
+                  : 'text-[hsl(0,0%,50%)] hover:text-[hsl(14,90%,58%)] border-[hsl(0,0%,18%)] hover:border-[hsl(14,90%,40%)]'
+              }`}
+>           
+              <Heart
+                size={12}
+                fill={isLiked ? 'currentColor' : 'none'}
+                className="transition-all duration-150"
+              />
+              <span>{likesCount}</span>
             </button>
             <button className="flex items-center gap-1.5 text-[hsl(0,0%,50%)] hover:text-white transition-colors text-[11px] px-2 py-1 rounded border border-[hsl(0,0%,18%)] hover:border-[hsl(0,0%,35%)]">
               <Repeat2 size={12} />
