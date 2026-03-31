@@ -3,7 +3,7 @@ import SongCard from "../../../components/ui/SongCard";
 import { Repeat2 } from "lucide-react";
 import type { FeedItem, FeedResponse } from "@/shared/types/Feed";
 import { useEffect, useState } from "react";
-import { feedService } from "../feedService";
+import { feedService } from "@/features/feed/feedservice";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

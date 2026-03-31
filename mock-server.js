@@ -630,7 +630,7 @@ app.post('/conversations/:conversationId/read', async (req, res) => {
 
 // ─── Feed/Me Route ────────────────────────────────────────────────────────────
 
-app.get('/feed/me', async (req, res) => {
+app.get('/feed', async (req, res) => {
   await delay();
   const page            = parseInt(req.query.page)  || 1;
   const limit           = parseInt(req.query.limit) || 20;
@@ -799,7 +799,7 @@ app.listen(PORT, () => {
   console.log('  Auth:          POST /auth/login  (test@tunify.com / Password123)');
   console.log('  Profile:       GET  /users/me');
   console.log('  Tracks:        GET  /tracks/me');
-  console.log('  Feed:          GET  /feed/me');
+  console.log('  Feed:          GET  /feed');
   console.log('  Search:        GET  /search?q=keyword');
   console.log('  Likes:         GET  /users/me/likes');
   console.log('  Like track:    POST /tracks/:id/like');

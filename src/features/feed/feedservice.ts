@@ -3,18 +3,10 @@ import { api } from '@/features/auth/services/api';
 
 export const feedService = {
   // ─── Feed ───────────────────────────────────────────────────────────────────
-  async getFeedTracks(): Promise<FeedItem[]> {
-    try {
-      const response = await api.get('/feed/me');
-      return response.data.items || [];
-    } catch {
-      return [];
-    }
-  },
 
   async getFeed(page = 1, limit = 20): Promise<FeedResponse | null> {
   try {
-    const response = await api.get('/feed/me', { params: { page, limit } });
+    const response = await api.get('/feed', { params: { page, limit } });
     return response.data as FeedResponse;
   } catch {
     return null;
