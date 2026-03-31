@@ -3,7 +3,7 @@ import SongCard from "../../../components/ui/SongCard";
 import { Repeat2 } from "lucide-react";
 import type { FeedItem, FeedResponse } from "@/shared/types/Feed";
 import { useEffect, useState } from "react";
-import { feedService } from "../feedservice";
+import { feedService } from "../feedService";
 
 export default function FeedPage() {
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);

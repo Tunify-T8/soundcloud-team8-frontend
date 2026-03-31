@@ -23,8 +23,14 @@ import VerifyEmailPage from "./features/auth/pages/VerifyEmailPage";
 import { ProfileProvider } from "./features/profile/context/ProfileContext";
 import useRestoreSession from "./hooks/useRestoreSession";
 import FeedPage from "./features/feed/pages/FeedPage";
+import DiscoverPage from "./features/discover/pages/DiscoverPage";
+import { Navigate } from "react-router-dom";
 
 const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Navigate to="/discover" replace />,
+  },
   { path: "/verify-email", element: <VerifyEmailPage /> },
   {
     path: "/signin",
@@ -61,8 +67,8 @@ const router = createBrowserRouter([
     ),
     children: [
       {
-        path: "/",
-        element: <SideBar />,
+        path: "/discover",
+        element: <DiscoverPage />,
       },
       {
         path: "/messages",
