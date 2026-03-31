@@ -1,13 +1,56 @@
-import type { FeedResponse, FeedItem } from "@/shared/types/Feed";
-import { api } from "@/features/auth/services/api";
+import type { FeedItem, FeedResponse, SearchResult, LikedTrack } from '@/shared/types/Feed';
+import { api } from '@/features/auth/services/api';
 
 export const feedService = {
-  async getFeed(): Promise<FeedResponse | null> {
+  // ─── Feed ───────────────────────────────────────────────────────────────────
+  async getFeedTracks(): Promise<FeedItem[]> {
     try {
-      const response = await api.get("/feed");
-      return response.data as FeedResponse;
-    } catch (error) {
-      return null;
+      const response = await api.get('/feed/me');
+      return response.data.items || [];
+    } catch {
+      return [];
+    }
+  },
+
+  async getFeed(page = 1, limit = 20): Promise<FeedResponse | null> {
+  try {
+    const response = await api.get('/feed/me', { params: { page, limit } });
+    return response.data as FeedResponse;
+  } catch {
+    return null;
+  }
+},
+
+  // ─── Likes ──────────────────────────────────────────────────────────────────
+  async likeTrack(trackId: string): Promise<void> {
+    await api.post(`/tracks/${trackId}/like`);
+  },
+
+  async unlikeTrack(trackId: string): Promise<void> {
+    await api.delete(`/tracks/${trackId}/like`);
+  },
+
+  // ─── Search ─────────────────────────────────────────────────────────────────
+  // Used by both the dropdown (no type) and the full search page (with type)
+  async search(query: string, type?: string): Promise<SearchResult[]> {
+    if (!query.trim()) return [];
+    try {
+      const params: Record<string, string> = { q: query };
+      if (type) params.type = type;
+      const response = await api.get('/search', { params });
+      return response.data.results ?? response.data.items ?? [];
+    } catch {
+      return [];
+    }
+  },
+
+  // ─── My Likes (sidebar section) ─────────────────────────────────────────────
+  async getMyLikes(limit = 4): Promise<LikedTrack[]> {
+    try {
+      const response = await api.get('/users/me/likes', { params: { limit } });
+      return response.data.items || [];
+    } catch {
+      return [];
     }
   },
 };

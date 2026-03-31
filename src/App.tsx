@@ -15,7 +15,6 @@ import SignInPage from "./features/auth/pages/SignInPage";
 import SignUpPage from "./features/auth/pages/SignUpPage";
 import PublicOnlyRoute from "./routes/PublicOnlyRoute";
 import ForgotPasswordPage from "./features/auth/pages/ForgotPasswordPage";
-
 import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage";
 import MessagesPage from "./features/conversation/pages/MessagesPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
@@ -23,10 +22,9 @@ import VerifyEmailPage from "./features/auth/pages/VerifyEmailPage";
 import { ProfileProvider } from "./features/profile/context/ProfileContext";
 import useRestoreSession from "./hooks/useRestoreSession";
 import FeedPage from "./features/feed/pages/FeedPage";
-import DiscoverPage from "./features/discover/pages/DiscoverPage";
-import { Navigate } from "react-router-dom";
 
 const router = createBrowserRouter([
+  
   {
     path: "/",
     element: <Navigate to="/discover" replace />,
@@ -77,6 +75,10 @@ const router = createBrowserRouter([
       {
         path: "/feed",
         element: <FeedPage />,
+      },
+      {
+        path: "/search",
+        element: <SearchPage />,
       },
       // {
       //   path: '/:artist/:songName',
