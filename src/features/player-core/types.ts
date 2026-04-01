@@ -1,10 +1,9 @@
 // ─── Enums / Unions ───────────────────────────────────────────────────────────
 
 export type playabilityStatus = "playable" | "preview" | "blocked";
-export type playbackAction    = "play" | "pause" | "seek" | "complete" | "heartbeat";
 export type streamQuality     = "auto" | "low" | "medium" | "high";
 export type repeatMode        = "none" | "one" | "all";
-export type contextType       = "track" | "album" | "playlist" | "artist";
+export type contextType       = "playlist" | "profile" | "history";
 export type playerStatus      =
   | "idle"
   | "loading"
@@ -67,12 +66,6 @@ export interface streamBundle {
     expiresInSeconds: number;
     format:           "hls" | "mp3";
   };
-}
-
-export interface playbackEventPayload {
-  trackId:         string;
-  action:          playbackAction;
-  positionSeconds: number;
 }
 
 // ─── Queue Types ──────────────────────────────────────────────────────────────
@@ -142,7 +135,6 @@ export interface accessibilityState {
 export interface usePlaybackOptions {
   trackId:       string | null;
   privateToken?: string;
-  quality?:      streamQuality;
   autoPlay?:     boolean;
 }
 

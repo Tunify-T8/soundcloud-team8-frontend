@@ -2,8 +2,6 @@ import { api } from "@/features/auth/services/api";
 import type {
   playbackBundle,
   streamBundle,
-  playbackEventPayload,
-  streamQuality,
   buildQueueParams,
   queueResponse,
 } from "./types";
@@ -27,38 +25,36 @@ export const playbackService = {
   },
 
   /**
-   * POST /tracks/{trackId}/stream
-   * Requests a signed, time-limited HLS URL for audio playback.
+   * GET /tracks/{trackId}/stream
+   * Requests a signed, time-limited URL for audio playback.
    * Only called when playability.status is "playable" or "preview".
+   * Also records a play event on the backend automatically.
    */
-  requestStreamUrl: async (
-    trackId: string,
-    quality: streamQuality = "auto"
-  ): Promise<streamBundle> => {
-    const { data } = await api.post<streamBundle>(
-      `/tracks/${trackId}/stream`,
-      { quality }
+  requestStreamUrl: async (trackId: string): Promise<streamBundle> => {
+    const { data } = await api.get<streamBundle>(
+      `/tracks/${trackId}/stream`
     );
     return data;
   },
 
   /**
-   * PATCH /me/playback/events
-   * Reports a playback action (play, pause, seek, complete, heartbeat).
+   * POST /tracks/{trackId}/played
+   * Called only when the track ends naturally (audio "ended" event).
+   * Do NOT call on manual skip or pause.
    */
-  reportEvent: async (payload: playbackEventPayload): Promise<void> => {
-    await api.patch("/me/playback/events", payload);
+  reportCompleted: async (trackId: string): Promise<void> => {
+    await api.post(`/tracks/${trackId}/played`);
   },
 
   /**
-   * POST /playback/context
-   * Builds an ordered queue from a context (track, album, playlist, artist).
+   * POST /tracks/playback-context
+   * Builds an ordered queue from a context (playlist, profile, history).
    */
   buildQueue: async (params: buildQueueParams): Promise<queueResponse> => {
-    const { data } = await api.post<queueResponse>("/playback/context", {
+    const { data } = await api.post<queueResponse>("/tracks/playback-context", {
       contextType:  params.contextType,
       contextId:    params.contextId,
-      startTrackId: params.startTrackId ?? params.contextId,
+      startTrackId: params.startTrackId,
       shuffle:      params.shuffle ?? false,
       repeat:       params.repeat ?? "none",
     });
