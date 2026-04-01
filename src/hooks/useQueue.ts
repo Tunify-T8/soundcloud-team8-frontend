@@ -22,27 +22,9 @@ import {
   selectQueueError,
   selectHasNext,
   selectHasPrev,
-} from "../store/queueSlice";
+} from "@/store/queueSlice";
 import type { buildQueueParams, useQueueReturn } from "@/features/player-core/types";
 
-/**
- * useQueue — Queue system for the playback engine.
- *
- * Wraps the Redux queue slice and exposes:
- *  - loadQueue   → fetch queue from backend and populate Redux
- *  - next/prev   → navigate tracks (respects repeat mode)
- *  - jumpTo      → jump to a specific index
- *  - addTrack    → add a track at end or specific position
- *  - removeTrack → remove a track by trackId
- *  - toggleShuffle / toggleRepeat
- *  - clearQueue
- *
- * Usage:
- *   const queue = useQueue();
- *   await queue.loadQueue({ contextType: "album", contextId: "abc-123" });
- *   queue.next();
- *   // pass queue.currentTrackId to usePlayback
- */
 export function useQueue(): useQueueReturn {
   const dispatch = useDispatch();
 
@@ -80,46 +62,14 @@ export function useQueue(): useQueueReturn {
     [dispatch]
   );
 
-  const next = useCallback(() => {
-    dispatch(nextTrack());
-  }, [dispatch]);
-
-  const prev = useCallback(() => {
-    dispatch(prevTrack());
-  }, [dispatch]);
-
-  const jumpTo = useCallback(
-    (index: number) => {
-      dispatch(jumpToIndex(index));
-    },
-    [dispatch]
-  );
-
-  const handleAddTrack = useCallback(
-    (trackId: string, atIndex?: number) => {
-      dispatch(addTrack({ trackId, atIndex }));
-    },
-    [dispatch]
-  );
-
-  const handleRemoveTrack = useCallback(
-    (trackId: string) => {
-      dispatch(removeTrack(trackId));
-    },
-    [dispatch]
-  );
-
-  const handleToggleShuffle = useCallback(() => {
-    dispatch(toggleShuffle());
-  }, [dispatch]);
-
-  const handleToggleRepeat = useCallback(() => {
-    dispatch(toggleRepeat());
-  }, [dispatch]);
-
-  const handleClearQueue = useCallback(() => {
-    dispatch(clearQueue());
-  }, [dispatch]);
+  const next           = useCallback(() => dispatch(nextTrack()),          [dispatch]);
+  const prev           = useCallback(() => dispatch(prevTrack()),          [dispatch]);
+  const jumpTo         = useCallback((i: number) => dispatch(jumpToIndex(i)), [dispatch]);
+  const handleAdd      = useCallback((trackId: string, atIndex?: number) => dispatch(addTrack({ trackId, atIndex })), [dispatch]);
+  const handleRemove   = useCallback((trackId: string) => dispatch(removeTrack(trackId)), [dispatch]);
+  const handleShuffle  = useCallback(() => dispatch(toggleShuffle()),      [dispatch]);
+  const handleRepeat   = useCallback(() => dispatch(toggleRepeat()),       [dispatch]);
+  const handleClear    = useCallback(() => dispatch(clearQueue()),         [dispatch]);
 
   return {
     tracks,
@@ -134,11 +84,11 @@ export function useQueue(): useQueueReturn {
     loadQueue,
     next,
     prev,
-    addTrack:      handleAddTrack,
-    removeTrack:   handleRemoveTrack,
+    addTrack:      handleAdd,
+    removeTrack:   handleRemove,
     jumpTo,
-    toggleShuffle: handleToggleShuffle,
-    toggleRepeat:  handleToggleRepeat,
-    clearQueue:    handleClearQueue,
+    toggleShuffle: handleShuffle,
+    toggleRepeat:  handleRepeat,
+    clearQueue:    handleClear,
   };
 }

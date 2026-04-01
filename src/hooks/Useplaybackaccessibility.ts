@@ -1,13 +1,14 @@
-import type { playbackBundle, accessibilityState } from "../features/player-core/types";
+import type { playbackBundle, accessibilityState } from "@/features/player-core/types";
 
 // ─── Reason → message map ─────────────────────────────────────────────────────
 
 const blockedReasonMessages: Record<string, string> = {
-  regionRestricted: "This track is not available in your region.",
-  tierRestricted:   "Upgrade your plan to listen to this track.",
-  explicitContent:  "This track contains explicit content.",
-  scheduled:        "This track hasn't been released yet.",
-  default:          "This track is not available.",
+  regionRestricted:  "This track is not available in your region.",
+  tierRestricted:    "Upgrade your plan to listen to this track.",
+  explicitContent:   "This track contains explicit content.",
+  privateNoToken:    "This track is private.",
+  scheduled:         "This track hasn't been released yet.",
+  default:           "This track is not available.",
 };
 
 function resolveBlockedMessage(bundle: playbackBundle): string | null {
@@ -41,16 +42,16 @@ function resolveBlockedMessage(bundle: playbackBundle): string | null {
 export function usePlaybackAccessibility(
   bundle: playbackBundle | null
 ): accessibilityState {
-  if (!bundle || !bundle.playability){
+  if (!bundle) {
     return {
-      status:                "blocked",
-      isPlayable:            false,
-      isPreview:             false,
-      isBlocked:             true,
+      status:                 "blocked",
+      isPlayable:             false,
+      isPreview:              false,
+      isBlocked:              true,
       previewDurationSeconds: 0,
-      previewStartSeconds:   0,
-      blockedMessage:        null,
-      requiresSubscription:  false,
+      previewStartSeconds:    0,
+      blockedMessage:         null,
+      requiresSubscription:   false,
     };
   }
 
@@ -59,16 +60,16 @@ export function usePlaybackAccessibility(
 
   return {
     status,
-    isPlayable:            status === "playable",
-    isPreview:             status === "preview",
-    isBlocked:             status === "blocked",
+    isPlayable:             status === "playable",
+    isPreview:              status === "preview",
+    isBlocked:              status === "blocked",
     previewDurationSeconds: status === "preview" && preview.enabled
-                             ? preview.previewDurationSeconds
-                             : 0,
-    previewStartSeconds:   status === "preview" && preview.enabled
-                             ? preview.previewStartSeconds
-                             : 0,
-    blockedMessage:        resolveBlockedMessage(bundle),
-    requiresSubscription:  playability.requiresSubscription,
+                              ? preview.previewDurationSeconds
+                              : 0,
+    previewStartSeconds:    status === "preview" && preview.enabled
+                              ? preview.previewStartSeconds
+                              : 0,
+    blockedMessage:         resolveBlockedMessage(bundle),
+    requiresSubscription:   playability.requiresSubscription,
   };
 }

@@ -5,21 +5,17 @@ import type {
   playerStatus,
   usePlaybackOptions,
   usePlaybackReturn,
-} from "../features/player-core/types";
-import { playbackService } from "../features/player-core/Playbackservice";
+} from "@/features/player-core/types";
+import { playbackService } from "@/features/player-core/Playbackservice";
 import { usePlaybackAccessibility } from "./Useplaybackaccessibility";
-
-const heartbeatMs = 30_000;
 
 export function usePlayback({
   trackId,
   privateToken,
-  quality = "auto",
   autoPlay = false,
 }: usePlaybackOptions): usePlaybackReturn {
   const audioRef        = useRef<HTMLAudioElement | null>(null);
   const hlsRef          = useRef<Hls | null>(null);
-  const heartbeatRef    = useRef<ReturnType<typeof setInterval> | null>(null);
   const streamExpiryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [bundle,      setBundle]      = useState<playbackBundle | null>(null);
@@ -39,13 +35,13 @@ export function usePlayback({
       ? Math.max(0, access.previewDurationSeconds - currentTime)
       : null;
 
-  // Cleanup HLS 
+  // ── Cleanup HLS ───────────────────────────────────────────────────────────
   const destroyHls = useCallback(() => {
     hlsRef.current?.destroy();
     hlsRef.current = null;
   }, []);
 
-  //  Attach HLS stream 
+  // ── Attach HLS stream ─────────────────────────────────────────────────────
   const attachStream = useCallback(
     (streamUrl: string, expiresInSeconds: number) => {
       const audio = audioRef.current;
@@ -65,6 +61,7 @@ export function usePlayback({
         });
         hlsRef.current = hls;
       } else if (audio.canPlayType("application/vnd.apple.mpegurl")) {
+        // Safari native HLS
         audio.src = streamUrl;
       } else {
         setStatus("error");
@@ -77,17 +74,17 @@ export function usePlayback({
       streamExpiryRef.current = setTimeout(async () => {
         if (!trackId) return;
         try {
-          const fresh = await playbackService.requestStreamUrl(trackId, quality);
+          const fresh = await playbackService.requestStreamUrl(trackId);
           attachStream(fresh.stream.url, fresh.stream.expiresInSeconds);
         } catch {
           // Non-fatal — stream may still work until actual expiry
         }
       }, refreshIn);
     },
-    [trackId, quality, destroyHls]
+    [trackId, destroyHls]
   );
 
-  //  Load track 
+  // ── Load track ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!trackId) {
       setStatus("idle");
@@ -102,21 +99,30 @@ export function usePlayback({
 
     const load = async () => {
       try {
+        // Step 1: fetch playback bundle
         const b = await playbackService.getPlaybackBundle(trackId, privateToken);
         if (cancelled) return;
         setBundle(b);
 
+        // Step 2: blocked → stop here, no stream needed
         if (b.playability.status === "blocked") {
           setStatus("blocked");
           return;
         }
 
-        const streamData = await playbackService.requestStreamUrl(trackId, quality);
+        // Step 3: request signed stream URL (playable + preview both get one)
+        const streamData = await playbackService.requestStreamUrl(trackId);
         if (cancelled) return;
 
         attachStream(streamData.stream.url, streamData.stream.expiresInSeconds);
-        setStatus("ready");
 
+        // Step 4: if preview, seek to previewStartSeconds on load
+        if (b.playability.status === "preview" && b.preview.enabled) {
+          const audio = audioRef.current;
+          if (audio) audio.currentTime = b.preview.previewStartSeconds;
+        }
+
+        setStatus("ready");
         if (autoPlay) audioRef.current?.play().catch(() => {});
       } catch (err: unknown) {
         if (cancelled) return;
@@ -131,11 +137,10 @@ export function usePlayback({
       cancelled = true;
       destroyHls();
       if (streamExpiryRef.current) clearTimeout(streamExpiryRef.current);
-      if (heartbeatRef.current)    clearInterval(heartbeatRef.current);
     };
-  }, [trackId, privateToken, quality, autoPlay, attachStream, destroyHls]);
+  }, [trackId, privateToken, autoPlay, attachStream, destroyHls]);
 
-  //  Audio event listeners 
+  // ── Audio event listeners ─────────────────────────────────────────────────
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -143,6 +148,7 @@ export function usePlayback({
     const onTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
 
+      // Enforce preview time limit — stop at previewStartSeconds + previewDurationSeconds
       if (
         access.isPreview &&
         access.previewDurationSeconds > 0 &&
@@ -153,6 +159,7 @@ export function usePlayback({
         setStatus("paused");
       }
 
+      // Update buffered progress
       if (audio.buffered.length > 0) {
         setBuffered(audio.buffered.end(audio.buffered.length - 1) / (duration || 1));
       }
@@ -160,25 +167,18 @@ export function usePlayback({
 
     const onPlay = () => {
       setStatus("playing");
-      if (!trackId) return;
-      playbackService.reportEvent({ trackId, action: "play", positionSeconds: Math.floor(audio.currentTime) });
-      heartbeatRef.current = setInterval(() => {
-        playbackService.reportEvent({ trackId, action: "heartbeat", positionSeconds: Math.floor(audio.currentTime) });
-      }, heartbeatMs);
     };
 
     const onPause = () => {
       setStatus("paused");
-      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
-      if (!trackId) return;
-      playbackService.reportEvent({ trackId, action: "pause", positionSeconds: Math.floor(audio.currentTime) });
     };
 
+    // Only called on natural completion — report to backend
     const onEnded = () => {
       setStatus("paused");
-      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
-      if (!trackId) return;
-      playbackService.reportEvent({ trackId, action: "complete", positionSeconds: Math.floor(audio.currentTime) });
+      if (trackId) {
+        playbackService.reportCompleted(trackId);
+      }
     };
 
     const onError = () => {
@@ -198,11 +198,10 @@ export function usePlayback({
       audio.removeEventListener("pause",      onPause);
       audio.removeEventListener("ended",      onEnded);
       audio.removeEventListener("error",      onError);
-      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
     };
   }, [trackId, access, duration]);
 
-  //  Controls 
+  // ── Controls ──────────────────────────────────────────────────────────────
   const play = useCallback(() => {
     audioRef.current?.play().catch(() => {});
   }, []);
@@ -216,6 +215,7 @@ export function usePlayback({
       const audio = audioRef.current;
       if (!audio) return;
 
+      // Clamp seek within preview bounds
       let target = seconds;
       if (access.isPreview) {
         target = Math.min(
@@ -225,11 +225,8 @@ export function usePlayback({
       }
 
       audio.currentTime = target;
-      if (trackId) {
-        playbackService.reportEvent({ trackId, action: "seek", positionSeconds: Math.floor(target) });
-      }
     },
-    [access, trackId]
+    [access]
   );
 
   const setVolume = useCallback((v: number) => {
