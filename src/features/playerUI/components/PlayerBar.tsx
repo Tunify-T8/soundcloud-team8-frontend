@@ -1,9 +1,5 @@
 import {
   Heart,
-  SkipBack,
-  SkipForward,
-  Play,
-  Pause,
   Shuffle,
   Repeat2,
   Volume2,
@@ -14,15 +10,12 @@ import {
 import { useState, useRef, useEffect } from "react";
 import { usePlayback } from "@/hooks/Useplayback";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 const formatTime = (s: number) => {
   const m = Math.floor(s / 60);
   const sec = Math.floor(s % 60);
   return `${m}:${sec.toString().padStart(2, "0")}`;
 };
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface TrackMeta {
   title: string;
@@ -35,8 +28,6 @@ interface PlayerBarProps {
   track: TrackMeta;
   privateToken?: string;
 }
-
-// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function PlayerBar({ trackId, track, privateToken }: PlayerBarProps) {
   const {
@@ -60,13 +51,11 @@ export default function PlayerBar({ trackId, track, privateToken }: PlayerBarPro
   const [isDragging, setIsDragging] = useState(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Keep a ref so the keydown closure always sees the latest value
   const isPlayingRef = useRef(isPlaying);
   useEffect(() => {
     isPlayingRef.current = isPlaying;
   }, [isPlaying]);
 
-  // Spacebar play / pause — fix: use if/else instead of bare ternary expression
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
@@ -93,7 +82,10 @@ export default function PlayerBar({ trackId, track, privateToken }: PlayerBarPro
   const handleVolumeChange = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const pct = 1 - (e.clientY - rect.top) / rect.height;
-    setVolume(Math.max(0, Math.min(1, pct)));
+    const newVol = Math.max(0, Math.min(1, pct));
+    setVolume(newVol);
+    if (newVol < 0.01 && !isMuted) toggleMute();
+    if (newVol >= 0.01 && isMuted) toggleMute();
   };
 
   const handleMouseEnter = () => {
@@ -113,17 +105,18 @@ export default function PlayerBar({ trackId, track, privateToken }: PlayerBarPro
 
   return (
     <>
-      {/* Hidden audio element  */}
+      {/* Hidden audio element */}
       <audio ref={audioRef} style={{ display: "none" }} />
 
       <div className="fixed bottom-0 left-0 right-0 h-12 bg-[#222] border-t border-zinc-700 z-50 flex items-center justify-center px-6 gap-5">
 
-        {/* ── Playback controls ── */}
+              {/* ── Playback controls ── */}
         <div className="flex items-center gap-4 shrink-0">
-          <SkipBack
-            size={16}
-            className="text-white hover:text-zinc-300 cursor-pointer"
-          />
+          {/* Skip Back */}
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="white" className="cursor-pointer hover:opacity-70">
+          <rect x="0" y="0" width="2.5" height="16" />
+          <polygon points="14,0 3,8 14,16" />
+        </svg>
 
           <button
             onClick={() => {
@@ -133,22 +126,30 @@ export default function PlayerBar({ trackId, track, privateToken }: PlayerBarPro
                 play();
               }
             }}
-            className="text-white hover:text-zinc-300"
+            className="w-9 h-9 rounded-full bg-white flex items-center justify-center hover:scale-105 transition-transform"
             aria-label={isPlaying ? "Pause" : "Play"}
           >
             {isPlaying ? (
-              <Pause size={18} fill="white" className="text-white" />
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="black">
+                <rect x="1" y="1" width="4" height="12" />
+                <rect x="9" y="1" width="4" height="12" />
+              </svg>
             ) : (
-              <Play size={18} fill="white" className="text-white ml-0.5" />
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="black">
+                <polygon points="2,0 16,7 2,14" />
+              </svg>
             )}
           </button>
 
-          <SkipForward
-            size={16}
-            className="text-white hover:text-zinc-300 cursor-pointer"
-          />
-          <Shuffle size={15} className="text-white hover:text-zinc-300 cursor-pointer" />
-          <Repeat2 size={15} className="text-white hover:text-zinc-300 cursor-pointer" />
+
+          {/* Skip Forward */}
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="white" className="cursor-pointer hover:opacity-70">
+            <rect x="13.5" y="0" width="2.5" height="16" />
+            <polygon points="2,0 13,8 2,16" />
+          </svg>
+
+          <Shuffle size={15} className="text-zinc-400 hover:text-white cursor-pointer" />
+          <Repeat2 size={15} className="text-zinc-400 hover:text-white cursor-pointer" />
         </div>
 
         {/* ── Progress bar + times ── */}
@@ -179,7 +180,6 @@ export default function PlayerBar({ trackId, track, privateToken }: PlayerBarPro
             <div
               className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
               style={{ left: `clamp(0px, calc(${progressPct}% - 5px), calc(100% - 10px))` }}
-
             />
           </div>
 
@@ -215,11 +215,11 @@ export default function PlayerBar({ trackId, track, privateToken }: PlayerBarPro
               >
                 <div
                   className="absolute bottom-0 left-0 w-full bg-white rounded-full"
-                  style={{ height: `${isMuted ? 0 : volume * 100}%` }}
+                  style={{ height: `${volume * 100}%` }}
                 />
                 <div
                   className="absolute left-1/2 -translate-x-1/2 w-3 h-3 bg-black border border-white rounded-full shadow"
-                  style={{ bottom: `calc(${isMuted ? 0 : volume * 100}% - 6px)` }}
+                  style={{ bottom: `calc(${volume * 100}% - 6px)` }}
                 />
               </div>
             </div>
