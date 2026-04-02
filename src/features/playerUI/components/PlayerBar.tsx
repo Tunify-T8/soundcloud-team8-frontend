@@ -108,8 +108,8 @@ export default function PlayerBar({ trackId, track, privateToken }: PlayerBarPro
     }, 300);
   };
 
-  const progressPct = duration > 0 ? (currentTime / duration) * 100 : 0;
-  const bufferedPct = buffered * 100;
+  const progressPct = Math.min(100, Math.max(0, duration > 0 ? (currentTime / duration) * 100 : 0));
+  const bufferedPct = Math.min(100, Math.max(0, buffered * 100));
 
   return (
     <>
@@ -178,7 +178,8 @@ export default function PlayerBar({ trackId, track, privateToken }: PlayerBarPro
             {/* Scrubber thumb */}
             <div
               className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-              style={{ left: `calc(${progressPct}% - 5px)` }}
+              style={{ left: `clamp(0px, calc(${progressPct}% - 5px), calc(100% - 10px))` }}
+
             />
           </div>
 

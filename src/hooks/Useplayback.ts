@@ -148,6 +148,16 @@ export function usePlayback({
     const onTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
 
+      if (duration > 0 && audio.currentTime >= duration) {
+        audio.pause();
+        audio.currentTime = duration; // pin at end, don't let it drift past
+        setStatus("paused");
+        if (trackId) {
+          playbackService.reportCompleted(trackId);
+        }
+        return;
+      }
+      
       // Enforce preview time limit — stop at previewStartSeconds + previewDurationSeconds
       if (
         access.isPreview &&
