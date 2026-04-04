@@ -42,58 +42,55 @@ server.post("/tracks/:trackId/played", (req, res) => {
   res.status(204).send();
 });
 
-// POST /tracks/playback-context
-// Builds an ordered queue from a context (playlist, profile, history, etc.).
-// Body: { contextType, contextId, startTrackId?, shuffle?, repeat? }
-// Returns queueResponse: { queue, currentIndex, shuffle, repeat }
-//
-// IMPORTANT: this route must be registered BEFORE json-server's wildcard router
-// or it will be swallowed by the generic /tracks POST handler.
+
+const TRACKS = [
+  {
+    trackId: "test-track-1",
+    title: "Test Track One",
+    artist: { id: "artist-1", name: "Test Artist", tier: "pro" },
+    durationSeconds: 175,
+    waveformUrl: "",
+    coverUrl: "",
+    contentWarning: false,
+    engagement: { likeCount: 0, commentCount: 0, repostCount: 0, isLiked: false, isReposted: false, isSaved: false },
+    playability: { status: "playable", regionBlocked: false, tierBlocked: false, requiresSubscription: false, blockedReason: null },
+    preview: { enabled: false, previewStartSeconds: 0, previewDurationSeconds: 0 },
+    scheduledReleaseDate: null,
+  },
+  {
+    trackId: "test-track-2",
+    title: "Test Track Two",
+    artist: { id: "artist-1", name: "Test Artist", tier: "pro" },
+    durationSeconds: 210,
+    waveformUrl: "",
+    coverUrl: "",
+    contentWarning: false,
+    engagement: { likeCount: 5, commentCount: 1, repostCount: 0, isLiked: false, isReposted: false, isSaved: false },
+    playability: { status: "playable", regionBlocked: false, tierBlocked: false, requiresSubscription: false, blockedReason: null },
+    preview: { enabled: false, previewStartSeconds: 0, previewDurationSeconds: 0 },
+    scheduledReleaseDate: null,
+  },
+  {
+    trackId: "test-track-3",
+    title: "Test Track Three",
+    artist: { id: "artist-2", name: "Another Artist", tier: "free" },
+    durationSeconds: 195,
+    waveformUrl: "",
+    coverUrl: "",
+    contentWarning: false,
+    engagement: { likeCount: 0, commentCount: 0, repostCount: 0, isLiked: false, isReposted: false, isSaved: false },
+    playability: { status: "playable", regionBlocked: false, tierBlocked: false, requiresSubscription: false, blockedReason: null },
+    preview: { enabled: false, previewStartSeconds: 0, previewDurationSeconds: 0 },
+    scheduledReleaseDate: null,
+  },
+];
+
 server.post("/tracks/playback-context", (req, res) => {
-  const db = router.db.getState();
-  const { contextType, contextId, startTrackId, shuffle, repeat } = req.body;
-
-  // Find a matching context; fall back to all tracks
-  let tracks = [];
-  if (contextType && db.contexts) {
-    const ctx = db.contexts.find(
-      (c) => c.type === contextType && c.id === contextId
-    );
-    if (ctx) {
-      tracks = ctx.trackIds
-        .map((id) => db.tracks.find((t) => t.id === id))
-        .filter(Boolean);
-    }
-  }
-
-  if (!tracks.length) {
-    tracks = [...db.tracks];
-  }
-
-  // Respect shuffle
-  if (shuffle) {
-    for (let i = tracks.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [tracks[i], tracks[j]] = [tracks[j], tracks[i]];
-    }
-  }
-
-  // Place startTrackId at index 0 when specified
-  if (startTrackId) {
-    const idx = tracks.findIndex((t) => t.id === startTrackId);
-    if (idx > 0) {
-      const [item] = tracks.splice(idx, 1);
-      tracks.unshift(item);
-    }
-  }
-
-  const currentIndex = 0;
-
   res.json({
-    queue: tracks.map((t) => ({ trackId: t.id })),
-    currentIndex,
-    repeat: repeat ?? "none",
-    shuffle: shuffle ?? false,
+    queue: TRACKS.map((t) => ({ trackId: t.trackId })),
+    currentIndex: 0,
+    repeat: "none",
+    shuffle: false,
   });
 });
 
