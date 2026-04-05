@@ -43,6 +43,14 @@ export default function UserInfoBar({
     { label: "Albums", path: "albums" },
     { label: "Playlists", path: "playlists" },
     { label: "Reposts", path: "reposts" },
+    ...(isMe
+      ? [
+          { label: "Followers", path: "followers" },
+          { label: "Following", path: "following" },
+          { label: "Suggested", path: "suggested-users" },
+          { label: "Blocked", path: "blocked-users" },
+        ]
+      : []),
   ];
 
   const [modal, setModal] = useState(false);
