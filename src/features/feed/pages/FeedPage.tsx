@@ -4,43 +4,43 @@ import { Repeat2 } from "lucide-react";
 import type { FeedItem, FeedResponse } from "@/shared/types/Feed";
 import { useEffect, useState } from "react";
 import { feedService } from "../feedservice";
+import { SOCIAL_GRAPH_UPDATED_EVENT } from "@/features/profile/socialGraphEvents";
 
 export default function FeedPage() {
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
-  const [page, setPage] = useState<number>(1);
-  const [limit, setLimit] = useState<number>(20);
-  const [hasMore, setHasMore] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showReposts, setShowReposts] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
-    feedService
-      .getFeed()
-      .then((data: FeedResponse | null) => {
-        if (isMounted) {
-          if (data) {
-            setFeedItems(data.items);
-            setPage(data.page);
-            setLimit(data.limit);
-            setHasMore(data.hasMore);
-          } else {
-            setFeedItems([]);
-            setPage(1);
-            setLimit(20);
-            setHasMore(false);
+
+    const fetchFeed = () => {
+      feedService
+        .getFeed()
+        .then((data: FeedResponse | null) => {
+          if (isMounted) {
+            if (data) {
+              setFeedItems(data.items);
+            } else {
+              setFeedItems([]);
+            }
+            setLoading(false);
           }
-          setLoading(false);
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setError("Failed to load feed");
-          setLoading(false);
-        }
-      });
+        })
+        .catch(() => {
+          if (isMounted) {
+            setError("Failed to load feed");
+            setLoading(false);
+          }
+        });
+    };
+
+    fetchFeed();
+    window.addEventListener(SOCIAL_GRAPH_UPDATED_EVENT, fetchFeed);
+
     return () => {
+      window.removeEventListener(SOCIAL_GRAPH_UPDATED_EVENT, fetchFeed);
       isMounted = false;
     };
   }, []);
