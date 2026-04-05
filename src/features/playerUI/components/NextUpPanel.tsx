@@ -1,6 +1,7 @@
-import { X, Heart, MoreHorizontal } from "lucide-react";
-import { useState } from "react";
+import { X, Heart, MoreHorizontal, Share2, ListPlus, Radio, Download, Repeat2 } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 import { useQueue } from "@/hooks/useQueue";
+import { usePlayer } from "@/features/playerUI/context/usePlayer";
 import type { queueTrack } from "@/features/player-core/types";
 
 interface NextUpPanelProps {
@@ -9,13 +10,8 @@ interface NextUpPanelProps {
 }
 
 const THUMB_COLORS = [
-  "#1a3a4a",
-  "#2d1a1a",
-  "#1a2d1a",
-  "#2d2d1a",
-  "#1a1a3a",
-  "#3a1a2d",
-  "#1a3a3a",
+  "#1a3a4a", "#2d1a1a", "#1a2d1a",
+  "#2d2d1a", "#1a1a3a", "#3a1a2d", "#1a3a3a",
 ];
 
 function TrackThumbnail({ index, isPlaying }: { index: number; isPlaying: boolean }) {
@@ -46,11 +42,67 @@ function TrackThumbnail({ index, isPlaying }: { index: number; isPlaying: boolea
   );
 }
 
-export default function NextUpPanel({ isOpen, onClose }: NextUpPanelProps) {
-  const { tracks, currentIndex, jumpTo, clearQueue } = useQueue();
+interface ContextMenuProps {
+  x: number;
+  y: number;
+  onClose: () => void;
+}
 
-  const [autoplay,  setAutoplay]  = useState(true);
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
+function TrackContextMenu({ x, y, onClose }: ContextMenuProps) {
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose();
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [onClose]);
+
+  const items = [
+    { icon: <Heart size={14} />,        label: "Like" },
+    { icon: <Repeat2 size={14} />,      label: "Repost" },
+    { icon: <Share2 size={14} />,       label: "Share" },
+    { icon: <ListPlus size={14} />,     label: "Add to Next up" },
+    { icon: <ListPlus size={14} />,     label: "Add to Playlist" },
+    { icon: <Download size={14} />,     label: "Download file" },
+    { icon: <Radio size={14} />,        label: "Station" },
+  ];
+
+  return (
+    <div
+      ref={menuRef}
+      className="fixed z-[100] py-1 rounded-lg shadow-2xl"
+      style={{
+        top:        y,
+        left:       x,
+        background: "#1a1a1a",
+        border:     "1px solid rgba(255,255,255,0.1)",
+        minWidth:   "180px",
+      }}
+    >
+      {items.map(({ icon, label }) => (
+        <button
+          key={label}
+          className="w-full flex items-center gap-3 px-3 py-2 text-sm text-white hover:bg-white/10 transition-colors text-left tracking-tight"
+          style={{ fontWeight: 500 }}
+          onClick={(e) => { e.stopPropagation(); onClose(); }}
+        >
+          <span style={{ color: "#9ca3af" }}>{icon}</span>
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export default function NextUpPanel({ isOpen, onClose }: NextUpPanelProps) {
+  const { tracks, jumpTo, clearQueue } = useQueue();
+  const { currentTrack } = usePlayer();
+
+  const [autoplay,   setAutoplay]   = useState(true);
+  const [hoveredId,  setHoveredId]  = useState<string | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; trackId: string } | null>(null);
 
   if (!isOpen) return null;
 
@@ -71,10 +123,16 @@ export default function NextUpPanel({ isOpen, onClose }: NextUpPanelProps) {
         .track-actions { display: none; }
       `}</style>
 
-      {/* Backdrop */}
+      {contextMenu && (
+        <TrackContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
+
       <div className="fixed inset-0 z-40" onClick={onClose} style={{ background: "transparent" }} />
 
-      {/* Panel */}
       <div
         className="next-up-panel fixed right-75 z-50 flex flex-col"
         style={{
@@ -98,7 +156,7 @@ export default function NextUpPanel({ isOpen, onClose }: NextUpPanelProps) {
             <button
               onClick={clearQueue}
               className="text-xs text-zinc-400 hover:text-white transition-colors"
-              style={{ fontWeight: 600, letterSpacing: "0.01em" }}
+              style={{ fontWeight: 600 }}
             >
               Clear
             </button>
@@ -122,7 +180,8 @@ export default function NextUpPanel({ isOpen, onClose }: NextUpPanelProps) {
             </div>
           ) : (
             tracks.map((track: queueTrack, i: number) => {
-              const isPlaying = i === currentIndex;
+              // ✅ fix: compare currentTrack.id to track.trackId
+              const isPlaying = currentTrack?.id === track.trackId;
 
               return (
                 <div
@@ -140,7 +199,6 @@ export default function NextUpPanel({ isOpen, onClose }: NextUpPanelProps) {
                   onMouseLeave={() => setHoveredId(null)}
                   onClick={() => jumpTo(i)}
                 >
-                  {/* Thumbnail */}
                   <div className="relative flex-shrink-0">
                     <TrackThumbnail index={i} isPlaying={isPlaying} />
                     {!isPlaying && hoveredId === track.trackId && (
@@ -155,26 +213,24 @@ export default function NextUpPanel({ isOpen, onClose }: NextUpPanelProps) {
                     )}
                   </div>
 
-                  {/* Track info */}
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-zinc-400 truncate leading-tight" style={{ fontWeight: 600 }}>
-                      —
+                      {track.artist}
                     </p>
                     <p
                       className="text-xs truncate leading-tight mt-0.5"
                       style={{ color: isPlaying ? "#FF5500" : "white", fontWeight: 600 }}
                     >
-                      {track.trackId}
+                      {track.title}
                     </p>
                   </div>
 
-                  {/* Duration / actions */}
                   <div className="flex-shrink-0 flex items-center gap-2">
                     <span
                       className="track-duration text-xs text-zinc-500"
                       style={{ fontWeight: 600, fontVariantNumeric: "tabular-nums" }}
                     >
-                      —:——
+                      {Math.floor(track.durationSeconds / 60)}:{String(track.durationSeconds % 60).padStart(2, "0")}
                     </span>
                     <div className="track-actions items-center gap-1.5">
                       <button
@@ -189,7 +245,16 @@ export default function NextUpPanel({ isOpen, onClose }: NextUpPanelProps) {
                       </button>
                       <button
                         className="hover:opacity-80 transition-opacity"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // position menu above the button
+                          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                          setContextMenu({
+                            x:       rect.left - 170,
+                            y:       rect.top  - 240,
+                            trackId: track.trackId,
+                          });
+                        }}
                       >
                         <MoreHorizontal size={13} color="#9ca3af" />
                       </button>
@@ -201,7 +266,7 @@ export default function NextUpPanel({ isOpen, onClose }: NextUpPanelProps) {
           )}
         </div>
 
-        {/* Autoplay section */}
+        {/* Autoplay */}
         <div
           className="flex-shrink-0 px-4 py-3"
           style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}
