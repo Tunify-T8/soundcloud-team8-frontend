@@ -90,6 +90,7 @@ export default function ProfilePage() {
           bio={user.bio ?? undefined}
           socialAccounts={isMe ? socialAccounts : undefined}
           isMe={isMe}
+          userId={user.id}
           onProfileUpdated={refreshProfile}
         />
         <div className="absolute right-[8.333333%] top-full mt-4">

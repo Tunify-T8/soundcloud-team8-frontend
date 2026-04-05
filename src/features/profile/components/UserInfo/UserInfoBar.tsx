@@ -5,7 +5,9 @@ import { MdPodcasts, MdMoreHoriz } from "react-icons/md";
 import { FiSlash, FiInfo } from "react-icons/fi";
 import { NavLink } from "react-router-dom";
 import { Upload } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { profileService } from "../../profileService";
+import { notifySocialGraphUpdated } from "../../socialGraphEvents";
 
 export default function UserInfoBar({
   displayName,
@@ -16,6 +18,7 @@ export default function UserInfoBar({
   socialAccounts,
   isMe,
   onProfileUpdated,
+  userId,
 }: {
   displayName?: string;
   avatarUrl?: string;
@@ -31,6 +34,7 @@ export default function UserInfoBar({
   };
   isMe?: boolean;
   onProfileUpdated?: () => void;
+  userId?: string;
 }) {
   const tabs = [
     { label: "All", path: "." },
@@ -43,6 +47,56 @@ export default function UserInfoBar({
 
   const [modal, setModal] = useState(false);
   const [showMoreActions, setShowMoreActions] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [blockLoading, setBlockLoading] = useState(false);
+
+  useEffect(() => {
+    if (isMe || !userId) return;
+
+    profileService
+      .getFollowStatus(userId)
+      .then((status) => {
+        setIsFollowing(status.isFollowing);
+      })
+      .catch(() => {
+        setIsFollowing(false);
+      });
+  }, [isMe, userId]);
+
+  const handleFollowToggle = async () => {
+    if (!userId || followLoading) return;
+
+    setFollowLoading(true);
+    try {
+      if (isFollowing) {
+        await profileService.unfollowUser(userId);
+        setIsFollowing(false);
+      } else {
+        await profileService.followUser(userId);
+        setIsFollowing(true);
+      }
+
+      notifySocialGraphUpdated();
+      onProfileUpdated?.();
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  const handleBlock = async () => {
+    if (!userId || blockLoading) return;
+
+    setBlockLoading(true);
+    try {
+      await profileService.blockUser(userId);
+      notifySocialGraphUpdated();
+      onProfileUpdated?.();
+      setShowMoreActions(false);
+    } finally {
+      setBlockLoading(false);
+    }
+  };
 
   const toggleModal = () => {
     setModal(!modal);
@@ -73,11 +127,13 @@ export default function UserInfoBar({
           {!isMe && (
             <button
               type="button"
-              title="Follow"
+              title={isFollowing ? "Following" : "Follow"}
+              onClick={handleFollowToggle}
+              disabled={followLoading || !userId}
               className="inline-flex items-center gap-2 rounded-sm bg-white px-3 py-1.5 text-sm font-bold text-black hover:text-zinc-500 cursor-pointer"
             >
               <FaUser />
-              <span>Follow</span>
+              <span>{isFollowing ? "Following" : "Follow"}</span>
             </button>
           )}
           <button
@@ -119,10 +175,12 @@ export default function UserInfoBar({
                 <button
                   type="button"
                   title="Block"
+                  onClick={handleBlock}
+                  disabled={blockLoading || !userId}
                   className="inline-flex items-center gap-2 w-auto whitespace-nowrap text-left text-white font-bold text-[14px] px-3 py-2 hover:text-zinc-500 transition-colors cursor-pointer"
                 >
                   <FiSlash />
-                  Block {displayName}
+                  {blockLoading ? "Blocking..." : `Block ${displayName}`}
                 </button>
                 <button
                   type="button"
