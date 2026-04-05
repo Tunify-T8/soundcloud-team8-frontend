@@ -71,7 +71,10 @@ export interface streamBundle {
 // ─── Queue Types ──────────────────────────────────────────────────────────────
 
 export interface queueTrack {
-  trackId: string;
+  trackId:         string;
+  title:           string;
+  artist:          string;
+  durationSeconds: number;
 }
 
 export interface buildQueueParams {
@@ -87,6 +90,7 @@ export interface queueResponse {
   currentIndex: number;
   shuffle:      boolean;
   repeat:       repeatMode;
+  totalCount:   number;
 }
 
 export interface queueState {
@@ -96,22 +100,25 @@ export interface queueState {
   repeat:       repeatMode;
   isLoading:    boolean;
   error:        string | null;
+  totalCount:   number;
 }
 
 export interface useQueueReturn {
   tracks:         queueTrack[];
   currentIndex:   number;
   currentTrackId: string | null;
+  currentTrack:   queueTrack | null;
   shuffle:        boolean;
   repeat:         repeatMode;
   isLoading:      boolean;
   error:          string | null;
+  totalCount:     number;
   hasNext:        boolean;
   hasPrev:        boolean;
   loadQueue:      (params: buildQueueParams) => Promise<void>;
   next:           () => void;
   prev:           () => void;
-  addTrack:       (trackId: string, atIndex?: number) => void;
+  addTrack:       (track: queueTrack, atIndex?: number) => void;
   removeTrack:    (trackId: string) => void;
   jumpTo:         (index: number) => void;
   toggleShuffle:  () => void;

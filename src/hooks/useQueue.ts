@@ -22,8 +22,10 @@ import {
   selectQueueError,
   selectHasNext,
   selectHasPrev,
+  selectTotalCount,
+  selectCurrentTrack,
 } from "@/store/queueSlice";
-import type { buildQueueParams, useQueueReturn } from "@/features/player-core/types";
+import type { buildQueueParams, queueTrack, useQueueReturn } from "@/features/player-core/types";
 
 export function useQueue(): useQueueReturn {
   const dispatch = useDispatch();
@@ -31,12 +33,14 @@ export function useQueue(): useQueueReturn {
   const tracks         = useSelector(selectQueueTracks);
   const currentIndex   = useSelector(selectCurrentIndex);
   const currentTrackId = useSelector(selectCurrentTrackId);
+  const currentTrack   = useSelector(selectCurrentTrack);
   const shuffle        = useSelector(selectShuffle);
   const repeat         = useSelector(selectRepeat);
   const isLoading      = useSelector(selectQueueIsLoading);
   const error          = useSelector(selectQueueError);
   const hasNext        = useSelector(selectHasNext);
   const hasPrev        = useSelector(selectHasPrev);
+  const totalCount     = useSelector(selectTotalCount);
 
   const loadQueue = useCallback(
     async (params: buildQueueParams) => {
@@ -49,6 +53,7 @@ export function useQueue(): useQueueReturn {
             currentIndex: response.currentIndex,
             shuffle:      response.shuffle,
             repeat:       response.repeat,
+            totalCount:   response.totalCount,
           })
         );
       } catch (err: unknown) {
@@ -65,7 +70,7 @@ export function useQueue(): useQueueReturn {
   const next           = useCallback(() => dispatch(nextTrack()),          [dispatch]);
   const prev           = useCallback(() => dispatch(prevTrack()),          [dispatch]);
   const jumpTo         = useCallback((i: number) => dispatch(jumpToIndex(i)), [dispatch]);
-  const handleAdd      = useCallback((trackId: string, atIndex?: number) => dispatch(addTrack({ trackId, atIndex })), [dispatch]);
+  const handleAdd      = useCallback((track: queueTrack, atIndex?: number) => dispatch(addTrack({ track, atIndex })), [dispatch]);
   const handleRemove   = useCallback((trackId: string) => dispatch(removeTrack(trackId)), [dispatch]);
   const handleShuffle  = useCallback(() => dispatch(toggleShuffle()),      [dispatch]);
   const handleRepeat   = useCallback(() => dispatch(toggleRepeat()),       [dispatch]);
@@ -75,12 +80,14 @@ export function useQueue(): useQueueReturn {
     tracks,
     currentIndex,
     currentTrackId,
+    currentTrack,
     shuffle,
     repeat,
     isLoading,
     error,
     hasNext,
     hasPrev,
+    totalCount,
     loadQueue,
     next,
     prev,

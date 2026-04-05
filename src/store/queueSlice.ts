@@ -10,6 +10,7 @@ const initialState: queueState = {
   repeat:       "none",
   isLoading:    false,
   error:        null,
+  totalCount:   0,
 };
 
 const queueSlice = createSlice({
@@ -33,12 +34,14 @@ const queueSlice = createSlice({
         currentIndex: number;
         shuffle:      boolean;
         repeat:       repeatMode;
+        totalCount:   number;
       }>
     ) {
       state.tracks       = action.payload.tracks;
       state.currentIndex = action.payload.currentIndex;
       state.shuffle      = action.payload.shuffle;
       state.repeat       = action.payload.repeat;
+      state.totalCount   = action.payload.totalCount;
       state.isLoading    = false;
       state.error        = null;
     },
@@ -84,17 +87,17 @@ const queueSlice = createSlice({
 
     addTrack(
       state,
-      action: PayloadAction<{ trackId: string; atIndex?: number }>
+      action: PayloadAction<{ track: queueTrack; atIndex?: number }>
     ) {
-      const { trackId, atIndex } = action.payload;
-      const newTrack: queueTrack = { trackId };
+      const { track, atIndex } = action.payload;
 
       if (atIndex !== undefined && atIndex >= 0 && atIndex <= state.tracks.length) {
-        state.tracks.splice(atIndex, 0, newTrack);
+        state.tracks.splice(atIndex, 0, track);
         if (atIndex <= state.currentIndex) state.currentIndex += 1;
       } else {
-        state.tracks.push(newTrack);
+        state.tracks.push(track);
       }
+      state.totalCount = state.tracks.length;
     },
 
     removeTrack(state, action: PayloadAction<string>) {
@@ -102,6 +105,7 @@ const queueSlice = createSlice({
       if (index === -1) return;
 
       state.tracks.splice(index, 1);
+      state.totalCount = state.tracks.length;
 
       if (index < state.currentIndex) {
         state.currentIndex -= 1;
@@ -126,6 +130,7 @@ const queueSlice = createSlice({
       state.repeat       = "none";
       state.isLoading    = false;
       state.error        = null;
+      state.totalCount   = 0;
     },
   },
 });
@@ -152,10 +157,13 @@ export const selectQueueTracks    = (state: { queue: queueState }) => state.queu
 export const selectCurrentIndex   = (state: { queue: queueState }) => state.queue.currentIndex;
 export const selectCurrentTrackId = (state: { queue: queueState }) =>
   state.queue.tracks[state.queue.currentIndex]?.trackId ?? null;
+export const selectCurrentTrack   = (state: { queue: queueState }) =>
+  state.queue.tracks[state.queue.currentIndex] ?? null;
 export const selectShuffle        = (state: { queue: queueState }) => state.queue.shuffle;
 export const selectRepeat         = (state: { queue: queueState }) => state.queue.repeat;
 export const selectQueueIsLoading = (state: { queue: queueState }) => state.queue.isLoading;
 export const selectQueueError     = (state: { queue: queueState }) => state.queue.error;
+export const selectTotalCount     = (state: { queue: queueState }) => state.queue.totalCount;
 export const selectHasNext        = (state: { queue: queueState }) => {
   const { tracks, currentIndex, repeat } = state.queue;
   return repeat === "all" || repeat === "one" || currentIndex < tracks.length - 1;
