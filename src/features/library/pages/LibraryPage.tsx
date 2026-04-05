@@ -28,18 +28,23 @@ export default function LibraryPage() {
   return (
     <div className="min-h-screen bg-black text-white pb-20">
       {/* Tab bar */}
-      <div className="border-b border-zinc-800 px-6 sticky top-0 bg-black z-10">
-        <div className="flex gap-0">
+      <div className="border-b border-zinc-800 sticky top-[56px] bg-black z-10">
+        <div className="flex gap-0 pl-40">
           {TABS.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className="px-4 py-3 text-sm font-semibold transition-colors relative"
-              style={{ color: activeTab === tab ? "white" : "#71717a" }}
+              className="px-5 py-3 transition-colors relative whitespace-nowrap"
+              style={{
+                color:         activeTab === tab ? "white" : "#71717a",
+                fontWeight:    activeTab === tab ? 700 : 600,
+                fontSize:      "18px",
+                letterSpacing: "-0.01em",
+              }}
             >
               {tab}
               {activeTab === tab && (
-                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-orange-500" />
+                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white" />
               )}
             </button>
           ))}
@@ -47,7 +52,7 @@ export default function LibraryPage() {
       </div>
 
       {/* Content */}
-      <div className="px-6 pt-6 max-w-6xl">
+      <div className="pl-40 pr-6 pt-6 max-w-6xl">
         {renderTab()}
       </div>
     </div>

@@ -14,6 +14,14 @@ function StationCard({ item }: { item: CollectionItem }) {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         )}
+        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full" />
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-lg">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="black">
+              <polygon points="2,0 16,7 2,14" />
+            </svg>
+          </div>
+        </div>
       </div>
       <p className="text-white text-xs font-bold truncate text-center">{item.title}</p>
       <p className="text-zinc-400 text-xs truncate text-center">{item.subtitle}</p>

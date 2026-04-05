@@ -1,4 +1,5 @@
 {
   "/tracks/me": "/tracks",
-  "/users/me": "/users"
+  "/users/me": "/users",
+  "/tracks/me/listening-history": "/listening-history"
 }
