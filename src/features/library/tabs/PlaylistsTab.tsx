@@ -1,18 +1,49 @@
-import EmptyList from "../components/EmptyList";
 import type { CollectionItem } from "../types";
 
+const COLS = 6;
 const playlists: CollectionItem[] = [];
 
+function PlaylistCard({ item }: { item: CollectionItem }) {
+  return (
+    <div className="cursor-pointer group">
+      <div className="w-full aspect-square rounded-sm overflow-hidden mb-2 relative bg-[#282828]">
+        {item.coverUrl && (
+          <img
+            src={item.coverUrl}
+            alt={item.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        )}
+      </div>
+      <p className="text-white text-xs font-bold truncate">{item.title}</p>
+      <p className="text-zinc-400 text-xs truncate">{item.subtitle}</p>
+    </div>
+  );
+}
+
 export default function PlaylistsTab() {
+  const totalSlots = Math.ceil(Math.max(playlists.length, 1) / COLS) * COLS;
+
   return (
     <div>
-      <h2 className="text-white font-bold text-base mb-6">
-        Hear your own playlists and the playlists you've liked:
-      </h2>
-      {playlists.length === 0
-        ? <EmptyList message="You haven't liked any playlists yet" />
-        : null
-      }
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-white font-bold text-sm">Hear your own playlists and the playlists you've liked:</h2>
+        <input
+          placeholder="Filter"
+          className="bg-[#282828] border border-zinc-700 rounded-sm px-3 py-1 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 w-64"
+        />
+      </div>
+
+      <div className="grid grid-cols-6 gap-4">
+        {Array.from({ length: totalSlots }).map((_, i) => {
+          const item = playlists[i];
+          return item ? (
+            <PlaylistCard key={item.id} item={item} />
+          ) : (
+            <div key={i} className="w-full aspect-square rounded-sm bg-[#282828]" />
+          );
+        })}
+      </div>
     </div>
   );
 }
