@@ -3,7 +3,7 @@
     {
       "id": "test-track-1",
       "trackId": "test-track-1",
-      "title": "Test Track One",
+      "title": "Never Ending Stpry",
       "artist": {
         "id": "artist-1",
         "name": "Test Artist",
@@ -11,7 +11,7 @@
       },
       "durationSeconds": 175,
       "waveformUrl": "",
-      "coverUrl": "",
+      "coverUrl":"http://localhost:3001/assets/neverendingstory.png",
       "contentWarning": false,
       "engagement": {
         "likeCount": 0,

@@ -25,6 +25,7 @@ import { PlayerProvider } from "./features/playerUI/context/PlayerProvider";
 import PlayerBar from "./features/playerUI/components/PlayerBar";
 
 import { usePlayer } from "./features/playerUI/context/usePlayer";
+import { TestPlayer } from "./features/playerUI/tests/TestPlayer";
 
 const router = createBrowserRouter([
   { path: "/verify-email", element: <VerifyEmailPage /> },
@@ -129,6 +130,7 @@ function App() {
   useRestoreSession();
   return (
     <PlayerProvider>
+      <TestPlayer />
       <RouterProvider router={router} />
       <PlayerBarWrapper />
     </PlayerProvider>

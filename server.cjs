@@ -1,10 +1,21 @@
+
+
 const jsonServer = require("json-server");
 const server = jsonServer.create();
 const router = jsonServer.router("db.json");
 const middlewares = jsonServer.defaults();
 
+// add this BEFORE server.use(router)
+server.use("/assets", (req, res) => {
+  const filePath = path.join(__dirname, "src/assets", req.path);
+  res.sendFile(filePath);
+});
+
+
 server.use(middlewares);
 server.use(jsonServer.bodyParser);
+const path = require("path");
+
 
 // GET /tracks/:trackId/playback
 // Returns a full playbackBundle (shape defined in types.ts).
@@ -46,11 +57,11 @@ server.post("/tracks/:trackId/played", (req, res) => {
 const TRACKS = [
   {
     trackId: "test-track-1",
-    title: "Test Track One",
+    title: "Never Ending Story",
     artist: { id: "artist-1", name: "Test Artist", tier: "pro" },
     durationSeconds: 175,
     waveformUrl: "",
-    coverUrl: "",
+    coverUrl: "C:/Users/Nada Serag/Documents/Software Engineering CMPS203/Project/soundcloud-team8-frontend/src/assets/neverendingstory.png",
     contentWarning: false,
     engagement: { likeCount: 0, commentCount: 0, repostCount: 0, isLiked: false, isReposted: false, isSaved: false },
     playability: { status: "playable", regionBlocked: false, tierBlocked: false, requiresSubscription: false, blockedReason: null },
@@ -87,10 +98,15 @@ const TRACKS = [
 
 server.post("/tracks/playback-context", (req, res) => {
   res.json({
-    queue: TRACKS.map((t) => ({ trackId: t.trackId })),
+    queue: TRACKS.map((t) => ({
+      trackId:         t.trackId,
+      title:           t.title,
+      artist:          t.artist.name,
+      durationSeconds: t.durationSeconds,
+    })),
     currentIndex: 0,
-    repeat: "none",
-    shuffle: false,
+    repeat:       "none",
+    shuffle:      false,
   });
 });
 
