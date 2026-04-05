@@ -42,7 +42,12 @@ export default function PlaylistsTab() {
         />
       </div>
 
-      <div className="grid grid-cols-6 gap-4">
+      {playlists.length === 0 ? (
+          <p className="text-white font-bold text-lg text-center py-20">
+            You have not liked any playlists yet
+          </p>
+        ) : (
+          <div className="grid grid-cols-6 gap-4">
         {Array.from({ length: totalSlots }).map((_, i) => {
           const item = playlists[i];
           return item ? (
@@ -52,6 +57,8 @@ export default function PlaylistsTab() {
           );
         })}
       </div>
+        )}
+     
     </div>
   );
 }

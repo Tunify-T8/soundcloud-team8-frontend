@@ -42,16 +42,22 @@ export default function StationsTab() {
         />
       </div>
 
-      <div className="grid grid-cols-6 gap-4">
-        {Array.from({ length: totalSlots }).map((_, i) => {
-          const item = stations[i];
-          return item ? (
-            <StationCard key={item.id} item={item} />
-          ) : (
-            <div key={i} className="w-full aspect-square rounded-full bg-[#282828]" />
-          );
-        })}
-      </div>
+      {stations.length === 0 ? (
+        <p className="text-white font-bold text-lg text-center py-20">
+          You have not liked any stations yet
+        </p>
+      ) : (
+        <div className="grid grid-cols-6 gap-4">
+          {Array.from({ length: totalSlots }).map((_, i) => {
+            const item = stations[i];
+            return item ? (
+              <StationCard key={item.id} item={item} />
+            ) : (
+              <div key={i} className="w-full aspect-square rounded-full bg-[#282828]" />
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

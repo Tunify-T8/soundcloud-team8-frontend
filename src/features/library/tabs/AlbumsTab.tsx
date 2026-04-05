@@ -41,17 +41,22 @@ export default function AlbumsTab() {
           className="bg-[#282828] border border-zinc-700 rounded-sm px-3 py-1 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 w-64"
         />
       </div>
-
-      <div className="grid grid-cols-6 gap-4">
-        {Array.from({ length: totalSlots }).map((_, i) => {
-          const item = albums[i];
-          return item ? (
-            <AlbumCard key={item.id} item={item} />
-          ) : (
-            <div key={i} className="w-full aspect-square rounded-sm bg-[#282828]" />
-          );
-        })}
-      </div>
+        {albums.length === 0 ? (
+          <p className="text-white font-bold text-lg text-center py-20">
+            You have not liked any albums yet
+          </p>
+        ) : (
+          <div className="grid grid-cols-6 gap-4">
+            {Array.from({ length: totalSlots }).map((_, i) => {
+              const item = albums[i];
+              return item ? (
+                <AlbumCard key={item.id} item={item} />
+              ) : (
+                <div key={i} className="w-full aspect-square rounded-sm bg-[#282828]" />
+              );
+            })}
+          </div>
+        )}
     </div>
   );
 }

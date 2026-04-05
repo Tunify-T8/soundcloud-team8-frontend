@@ -34,7 +34,11 @@ export default function LikesTab() {
         </div>
       </div>
 
-      {view === "grid" ? (
+      {LIKED_TRACKS.length === 0 ? (
+        <p className="text-white font-bold text-lg text-center py-20">
+          You have not liked any tracks yet
+        </p>
+      ) : view === "grid" ? (
         <div className="grid grid-cols-6 gap-4">
           {Array.from({ length: totalSlots }).map((_, i) => {
             const track = LIKED_TRACKS[i];
