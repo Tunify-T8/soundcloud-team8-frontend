@@ -15,7 +15,6 @@ import SignInPage from "./features/auth/pages/SignInPage";
 import SignUpPage from "./features/auth/pages/SignUpPage";
 import PublicOnlyRoute from "./routes/PublicOnlyRoute";
 import ForgotPasswordPage from "./features/auth/pages/ForgotPasswordPage";
-import { TestPlayer } from "./features/playerUI/tests/TestPlayer";
 import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage";
 import MessagesPage from "./features/conversation/pages/MessagesPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
@@ -130,7 +129,6 @@ function App() {
   useRestoreSession();
   return (
     <PlayerProvider>
-      <TestPlayer />
       <RouterProvider router={router} />
       <PlayerBarWrapper />
     </PlayerProvider>
