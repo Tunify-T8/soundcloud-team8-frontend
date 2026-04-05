@@ -1,6 +1,7 @@
 import { Bell, Mail, MoreHorizontal, ChevronDown, Heart, ListMusic, Radio, Users, UserPlus, Star, BarChart2, TrendingUp, Share2, 
   User} from "lucide-react";
 import SearchBar from "../ui/SearchBar";
+
 import { SiSoundcloud } from "react-icons/si";
 import { Link, useNavigate } from "react-router-dom";
 import { Outlet } from "react-router-dom";
@@ -23,7 +24,10 @@ export default function Navbar() {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
       }
-      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(e.target as Node)
+      ) {
         setProfileMenuOpen(false);
       }
     };
@@ -195,6 +199,58 @@ export default function Navbar() {
                       )}
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+            <div className="relative" ref={profileMenuRef}>
+              <button
+                type="button"
+                onClick={() => setProfileMenuOpen((v) => !v)}
+                className="flex items-center gap-2"
+                title="Profile menu"
+              >
+                <span className="w-7 h-7 bg-zinc-600 rounded-full cursor-pointer flex items-center justify-center overflow-hidden">
+                  {me?.avatarUrl ? (
+                    <img
+                      src={me.avatarUrl}
+                      alt="My Profile"
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <span className="text-xs text-white font-bold">
+                      {me?.username?.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                </span>
+                <ChevronDown size={16} className="text-zinc-400" />
+              </button>
+
+              {profileMenuOpen && (
+                <div className="absolute -right-6 top-10 z-50 w-44 rounded-md border border-zinc-800 bg-zinc-950 py-1 shadow-lg">
+                  <Link
+                    to="/me"
+                    onClick={() => setProfileMenuOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 text-zinc-100 hover:bg-zinc-900"
+                  >
+                    <User size={18} />
+                    <span className="text-sm font-semibold">Profile</span>
+                  </Link>
+                  <Link
+                    to="/me/following"
+                    onClick={() => setProfileMenuOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 text-zinc-100 hover:bg-zinc-900"
+                  >
+                    <Users size={18} />
+                    <span className="text-sm font-semibold">Following</span>
+                  </Link>
+                  <Link
+                    to="/me/who-to-follow"
+                    onClick={() => setProfileMenuOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 text-zinc-100 hover:bg-zinc-900"
+                  >
+                    <Users size={18} />
+                    <span className="text-sm font-semibold">Who to follow</span>
+                  </Link>
                 </div>
               )}
             </div>
