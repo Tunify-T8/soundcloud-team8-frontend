@@ -1,25 +1,47 @@
+<<<<<<< HEAD
 import type { FeedItem, FeedResponse, SearchResult, LikedTrack } from '@/features/feed/type';
 import { api } from '@/features/auth/services/api';
+=======
+import type {
+  FeedResponse,
+  SearchResult,
+  LikedTrack,
+} from "@/shared/types/Feed";
+import { api } from "@/features/auth/services/api";
+
+interface FeedQueryParams {
+  page?: number;
+  limit?: number;
+  includeReposts?: boolean;
+  sinceTimestamp?: string;
+}
+>>>>>>> 1086ecd89db5f16ddf114346b694ce914d97c962
 
 export const feedService = {
   // ─── Feed ───────────────────────────────────────────────────────────────────
-  async getFeedTracks(): Promise<FeedItem[]> {
+
+  async getFeed(params: FeedQueryParams = {}): Promise<FeedResponse | null> {
+    const {
+      page = 1,
+      limit = 20,
+      includeReposts = true,
+      sinceTimestamp,
+    } = params;
+
     try {
-      const response = await api.get('/feed/me');
-      return response.data.items || [];
+      const response = await api.get("/feed", {
+        params: {
+          page,
+          limit,
+          includeReposts,
+          ...(sinceTimestamp ? { sinceTimestamp } : {}),
+        },
+      });
+      return response.data as FeedResponse;
     } catch {
-      return [];
+      return null;
     }
   },
-
-  async getFeed(page = 1, limit = 20): Promise<FeedResponse | null> {
-  try {
-    const response = await api.get('/feed/me', { params: { page, limit } });
-    return response.data as FeedResponse;
-  } catch {
-    return null;
-  }
-},
 
   // ─── Likes ──────────────────────────────────────────────────────────────────
   async likeTrack(trackId: string): Promise<void> {
@@ -37,7 +59,7 @@ export const feedService = {
     try {
       const params: Record<string, string> = { q: query };
       if (type) params.type = type;
-      const response = await api.get('/search', { params });
+      const response = await api.get("/search", { params });
       return response.data.results ?? response.data.items ?? [];
     } catch {
       return [];
@@ -47,7 +69,7 @@ export const feedService = {
   // ─── My Likes (sidebar section) ─────────────────────────────────────────────
   async getMyLikes(limit = 4): Promise<LikedTrack[]> {
     try {
-      const response = await api.get('/users/me/likes', { params: { limit } });
+      const response = await api.get("/users/me/likes", { params: { limit } });
       return response.data.items || [];
     } catch {
       return [];

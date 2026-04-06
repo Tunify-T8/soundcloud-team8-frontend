@@ -8,7 +8,7 @@ import type {
   TrackSearchResult,
   UserSearchResult,
   CollectionSearchResult,
-} from '@/features/feed/types';
+} from '@/shared/types/Feed';
 
 export default function SearchBar() {
   const [query, setQuery] = useState('');
@@ -25,11 +25,17 @@ export default function SearchBar() {
   // ─── Fire search when debounced query changes ──────────────────────────────
   useEffect(() => {
     if (!debouncedQuery.trim()) {
-      setResults([]);
-      setIsOpen(false);
+      // Defer state updates to avoid cascading renders
+      setTimeout(() => {
+        setResults([]);
+        setIsLoading(false);
+        setIsOpen(false);
+      }, 0);
       return;
     }
-    setIsLoading(true);
+    setTimeout(() => {
+      setIsLoading(true);
+    }, 0);
     feedService
       .search(debouncedQuery)
       .then((data) => {
