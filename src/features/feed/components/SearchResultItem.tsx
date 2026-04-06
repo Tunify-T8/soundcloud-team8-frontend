@@ -6,7 +6,7 @@ import type {
   TrackSearchResult,
   UserSearchResult,
   CollectionSearchResult,
-} from '../types';
+} from '../type';
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 

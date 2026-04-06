@@ -1,4 +1,4 @@
-import type { FeedItem, FeedResponse, SearchResult, LikedTrack } from '@/shared/types/Feed';
+import type { FeedItem, FeedResponse, SearchResult, LikedTrack } from '@/features/feed/type';
 import { api } from '@/features/auth/services/api';
 
 export const feedService = {

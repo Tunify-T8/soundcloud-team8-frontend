@@ -1,7 +1,7 @@
 import SideBar from "../../../components/layout/Sidebar";
 import SongCard from "../../../components/ui/SongCard";
 import { Repeat2 } from "lucide-react";
-import type { FeedItem, FeedResponse } from "@/shared/types/Feed";
+import type { FeedItem, FeedResponse } from "@/features/feed/type";
 import { useEffect, useState } from "react";
 import { feedService } from "../feedservice";
 
