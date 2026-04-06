@@ -25,8 +25,11 @@ export default function SearchBar() {
   // ─── Fire search when debounced query changes ──────────────────────────────
   useEffect(() => {
     if (!debouncedQuery.trim()) {
-      setResults([]);
-      setIsOpen(false);
+      // Defer state updates to avoid cascading renders
+      setTimeout(() => {
+        setResults([]);
+        setIsOpen(false);
+      }, 0);
       return;
     }
     setIsLoading(true);
