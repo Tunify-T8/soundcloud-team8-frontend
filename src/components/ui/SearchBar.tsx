@@ -8,7 +8,7 @@ import type {
   TrackSearchResult,
   UserSearchResult,
   CollectionSearchResult,
-} from '@/features/feed/types';
+} from '@/shared/types/Feed'
 
 export default function SearchBar() {
   const [query, setQuery] = useState('');
