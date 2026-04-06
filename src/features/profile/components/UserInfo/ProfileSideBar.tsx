@@ -220,13 +220,13 @@ export default function ProfileSideBar({
                     />
                     <div className="flex flex-col">
                       <Link
-                        to={`/${followingUser.username}`}
+                        to={`/${followingUser.id}`}
                         className="text-[14px] font-bold leading-none text-white uppercase hover:text-zinc-500"
                       >
                         {followingDisplayName}
                       </Link>
                       <Link
-                        to={`/${followingUser.username}/followers`}
+                        to={`/${followingUser.id}/followers`}
                         className="mt-2 inline-flex items-center gap-1 text-[13px] text-zinc-400 hover:text-zinc-600"
                       >
                         <FaUser size={12} />

@@ -102,6 +102,36 @@ const USERS = {
   },
 };
 
+const SUGGESTED_ARTISTS = [
+  {
+    id: "94788713-4b6f-5eb1-0c4a-bg10cc85b256",
+    username: "premium_artist",
+    displayName: null,
+    isCertified: false,
+    avatarUrl: null,
+    followersCount: 2,
+    tracksCount: 3,
+  },
+  {
+    id: "1f3f4c8e-1e7a-4d41-9c17-0d6d6a1f12f2",
+    username: "night_runner",
+    displayName: "Night Runner",
+    isCertified: true,
+    avatarUrl: "https://i.pravatar.cc/150?img=6",
+    followersCount: 84,
+    tracksCount: 11,
+  },
+  {
+    id: "7c7d1b8b-58f6-4d7d-a9d8-4a5b7c1e6a10",
+    username: "cairo_beats",
+    displayName: "Cairo Beats",
+    isCertified: false,
+    avatarUrl: "https://i.pravatar.cc/150?img=7",
+    followersCount: 19,
+    tracksCount: 5,
+  },
+];
+
 let tracks = [
   {
     id: "trk_001",
@@ -1156,6 +1186,21 @@ app.get("/feed", async (req, res) => {
   });
 
   res.json({ items: fullItems, page, limit, hasMore: end < filtered.length });
+});
+
+app.get("/feed/suggested-artists", async (req, res) => {
+  await delay();
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+  const start = (page - 1) * limit;
+  const end = page * limit;
+
+  res.json({
+    items: SUGGESTED_ARTISTS.slice(start, end),
+    page,
+    limit,
+    hasMore: end < SUGGESTED_ARTISTS.length,
+  });
 });
 
 // ─── Search Route ─────────────────────────────────────────────────────────────
