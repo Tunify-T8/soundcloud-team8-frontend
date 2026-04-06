@@ -71,15 +71,16 @@ export default function SongCard({
           {/* Play button — top left of content area */}
           <button
             onClick={() => setPlaying(!playing)}
-            className="w-9 h-9 rounded-full border border-[hsl(0,0%,35%)] flex items-center justify-center text-white hover:border-white transition-colors shrink-0 mt-0.5"
-          >
+           className="w-9 h-9 rounded-full bg-white flex items-center justify-center hover:scale-105 transition-transform shrink-0 mt-0.5"
+           >
+
             {playing ? (
-              <svg width="13" height="13" viewBox="0 0 14 14" fill="white">
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="black">
                 <rect x="1" y="1" width="4" height="12" />
                 <rect x="9" y="1" width="4" height="12" />
               </svg>
             ) : (
-              <svg width="13" height="13" viewBox="0 0 14 14" fill="white">
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="black">
                 <polygon points="2,0 14,7 2,14" />
               </svg>
             )}
