@@ -1,9 +1,10 @@
-import { useState, useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Heart, Repeat2, Share2, Copy, MoreHorizontal } from "lucide-react";
 import { SiSoundcloud } from "react-icons/si";
 import { waveGenerators } from "../Waveforms";
 import { useLike } from "@/features/feed/hooks/useLike";
 import { Genre } from "@/shared/types/Genre";
+import { usePlayer } from "@/features/playerUI/context/usePlayer";
 
 interface PlayerProps {
   trackId?: string;
@@ -22,7 +23,7 @@ interface PlayerProps {
 }
 
 export default function SongCard({
-  trackId = '',
+  trackId = "",
   isLikedInitial = false,
   artistName = "",
   title = "",
@@ -36,18 +37,39 @@ export default function SongCard({
   progress = 0,
   waveformSeed = 0,
 }: PlayerProps) {
-  const [playing, setPlaying] = useState(false);
+  const { currentTrack, isPlaying, setCurrentTrack, setIsPlaying } = usePlayer();
+
+  const isThisTrack = currentTrack?.id === trackId;
+  const playing = isThisTrack && isPlaying;
+
   const [hoverProgress, setHoverProgress] = useState<number | null>(null);
+
+  const handlePlayToggle = () => {
+    if (!trackId) return;
+
+    if (isThisTrack) {
+      setIsPlaying(!isPlaying);
+    } else {
+      setCurrentTrack({
+        id: trackId,
+        title,
+        artist: artistName,
+        thumbnailUrl: coverUrl || undefined,
+        duration: 0,
+      });
+      setIsPlaying(true);
+    }
+  };
+
   const { isLiked, likesCount, toggleLike } = useLike(
     isLikedInitial,
     Number(likes) || 0,
     trackId,
   );
-  const BAR_COUNT = 140;
-  const waveRef = useRef<HTMLDivElement>(null);
 
   const GAP = 1;
   const generatorIndex = waveformSeed % waveGenerators.length;
+  const waveRef = useRef<HTMLDivElement>(null);
 
   const bars = useMemo((): number[] => {
     return waveGenerators[generatorIndex](waveformSeed);
@@ -79,12 +101,12 @@ export default function SongCard({
 
         {/* Top row: play button + artist/title + time/genre */}
         <div className="flex items-start gap-3 mb-1">
-          {/* Play button — top left of content area */}
           <button
-            onClick={() => setPlaying(!playing)}
-           className="w-9 h-9 rounded-full bg-white flex items-center justify-center hover:scale-105 transition-transform shrink-0 mt-0.5"
-           >
-
+            onClick={handlePlayToggle}
+            disabled={!trackId}
+            className="w-9 h-9 rounded-full bg-white flex items-center justify-center hover:scale-105 transition-transform shrink-0 mt-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
+            aria-label={playing ? "Pause" : "Play"}
+          >
             {playing ? (
               <svg width="13" height="13" viewBox="0 0 14 14" fill="black">
                 <rect x="1" y="1" width="4" height="12" />
@@ -97,13 +119,11 @@ export default function SongCard({
             )}
           </button>
 
-          {/* Artist + title */}
           <div className="flex-1 min-w-0">
             <div className="text-[11px] text-[hsl(0,0%,50%)] truncate mb-0.5">{artistName}</div>
             <p className="text-[13px] text-white font-medium leading-snug line-clamp-2">{title}</p>
           </div>
 
-          {/* Time + genre */}
           <div className="flex items-center gap-2 shrink-0 mt-0.5">
             <span className="text-[11px] text-[hsl(0,0%,40%)] whitespace-nowrap">{timeAgo}</span>
             <span className="text-[10px] text-[hsl(0,0%,55%)] bg-[hsl(0,0%,12%)] border border-[hsl(0,0%,20%)] px-2 py-0.5 rounded-sm whitespace-nowrap">
@@ -140,11 +160,15 @@ export default function SongCard({
           })}
         </div>
 
-        {/* Controls row — stats only, no play button */}
+        {/* Controls row */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-1.5 text-[hsl(0,0%,50%)] hover:text-[hsl(14,90%,58%)] transition-colors text-[11px] px-2 py-1 rounded border border-[hsl(0,0%,18%)] hover:border-[hsl(14,90%,40%)]">
-              <Heart size={12} /><span>{likes}</span>
+            <button
+              onClick={toggleLike}
+              className="flex items-center gap-1.5 text-[hsl(0,0%,50%)] hover:text-[hsl(14,90%,58%)] transition-colors text-[11px] px-2 py-1 rounded border border-[hsl(0,0%,18%)] hover:border-[hsl(14,90%,40%)]"
+            >
+              <Heart size={12} fill={isLiked ? "#F94C00" : "none"} style={{ color: isLiked ? "#F94C00" : undefined }} />
+              <span>{likesCount}</span>
             </button>
             <button className="flex items-center gap-1.5 text-[hsl(0,0%,50%)] hover:text-white transition-colors text-[11px] px-2 py-1 rounded border border-[hsl(0,0%,18%)] hover:border-[hsl(0,0%,35%)]">
               <Repeat2 size={12} /><span>{reposts}</span>

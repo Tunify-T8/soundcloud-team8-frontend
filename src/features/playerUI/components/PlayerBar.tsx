@@ -10,6 +10,7 @@ import {
 import { useState, useRef, useEffect } from "react";
 import { usePlayback } from "@/hooks/Useplayback";
 import { useQueue } from "@/hooks/useQueue";
+import { usePlayer } from "@/features/playerUI/context/usePlayer";
 import NextUpPanel from "./NextUpPanel";
 
 const formatTime = (s: number) => {
@@ -18,19 +19,16 @@ const formatTime = (s: number) => {
   return `${m}:${sec.toString().padStart(2, "0")}`;
 };
 
-interface TrackMeta {
-  title: string;
-  artist: string;
-  thumbnailUrl?: string;
-}
+export default function PlayerBar() {
+  // ── Pull active track from global context ──────────────────────────────
+  const { currentTrack, isPlaying: contextIsPlaying, setIsPlaying } = usePlayer();
 
-interface PlayerBarProps {
-  trackId: string;
-  track: TrackMeta;
-  privateToken?: string;
-}
+  const trackId      = currentTrack?.id      ?? "";
+  const trackTitle   = currentTrack?.title   ?? "";
+  const trackArtist  = currentTrack?.artist  ?? "";
+  const thumbnailUrl = currentTrack?.thumbnailUrl;
 
-export default function PlayerBar({ trackId, track, privateToken }: PlayerBarProps) {
+  // ── Playback engine ────────────────────────────────────────────────────
   const {
     status,
     currentTime,
@@ -44,16 +42,36 @@ export default function PlayerBar({ trackId, track, privateToken }: PlayerBarPro
     setVolume,
     toggleMute,
     audioRef,
-  } = usePlayback({ trackId, privateToken, autoPlay: false });
+  } = usePlayback({ trackId, autoPlay: false });
 
   const isPlaying = status === "playing";
 
-  const [showVolume, setShowVolume] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [showNextUp, setShowNextUp] = useState(false);
-  const [hoverQueue, setHoverQueue] = useState(false);
-  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isPlayingRef = useRef(isPlaying);
+  // ── Sync context isPlaying → actual audio ─────────────────────────────
+  // When SongCard sets isPlaying=true in context, trigger real playback here
+  useEffect(() => {
+    if (!trackId) return;
+    if (contextIsPlaying && status === "ready") {
+      play();
+    } else if (!contextIsPlaying && status === "playing") {
+      pause();
+    }
+  }, [contextIsPlaying, status, trackId, play, pause]);
+
+  // ── Sync actual audio state → context (e.g. natural pause/end) ────────
+  useEffect(() => {
+    if (isPlaying !== contextIsPlaying) {
+      setIsPlaying(isPlaying);
+    }
+  }, [isPlaying]);
+
+  const [showVolume,  setShowVolume]  = useState(false);
+  const [isDragging,  setIsDragging]  = useState(false);
+  const [showNextUp,  setShowNextUp]  = useState(false);
+  const [hoverQueue,  setHoverQueue]  = useState(false);
+
+  const hideTimer     = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isPlayingRef  = useRef(isPlaying);
+
   const { next, prev, shuffle, repeat, toggleShuffle, toggleRepeat, loadQueue } = useQueue();
 
   useEffect(() => {
@@ -64,11 +82,12 @@ export default function PlayerBar({ trackId, track, privateToken }: PlayerBarPro
       repeat:      "none",
     });
   }, []);
-  
+
   useEffect(() => {
     isPlayingRef.current = isPlaying;
   }, [isPlaying]);
 
+  // Space bar shortcut
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
@@ -79,24 +98,26 @@ export default function PlayerBar({ trackId, track, privateToken }: PlayerBarPro
         e.preventDefault();
         if (isPlayingRef.current) {
           pause();
+          setIsPlaying(false);
         } else {
           play();
+          setIsPlaying(true);
         }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [play, pause]);
+  }, [play, pause, setIsPlaying]);
 
-  if (!track) return null;
+  if (!currentTrack) return null;
 
   const handleVolumeChange = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const pct = 1 - (e.clientY - rect.top) / rect.height;
+    const pct  = 1 - (e.clientY - rect.top) / rect.height;
     const newVol = Math.max(0, Math.min(1, pct));
     setVolume(newVol);
     if (newVol < 0.01 && !isMuted) toggleMute();
-    if (newVol >= 0.01 && isMuted) toggleMute();
+    if (newVol >= 0.01 && isMuted)  toggleMute();
   };
 
   const handleMouseEnter = () => {
@@ -111,8 +132,18 @@ export default function PlayerBar({ trackId, track, privateToken }: PlayerBarPro
     }, 300);
   };
 
-  const progressPct = Math.min(100, Math.max(0, duration > 0 ? (currentTime / duration) * 100 : 0));
-  const bufferedPct = Math.min(100, Math.max(0, buffered * 100));
+  const progressPct  = Math.min(100, Math.max(0, duration > 0 ? (currentTime / duration) * 100 : 0));
+  const bufferedPct  = Math.min(100, Math.max(0, buffered * 100));
+
+  const handlePlayPause = () => {
+    if (isPlaying) {
+      pause();
+      setIsPlaying(false);
+    } else {
+      play();
+      setIsPlaying(true);
+    }
+  };
 
   return (
     <>
@@ -134,7 +165,7 @@ export default function PlayerBar({ trackId, track, privateToken }: PlayerBarPro
           </svg>
 
           <button
-            onClick={() => { if (isPlaying) { pause(); } else { play(); } }}
+            onClick={handlePlayPause}
             className="w-9 h-9 rounded-full bg-white flex items-center justify-center hover:scale-105 transition-transform"
             aria-label={isPlaying ? "Pause" : "Play"}
           >
@@ -183,7 +214,7 @@ export default function PlayerBar({ trackId, track, privateToken }: PlayerBarPro
             className="relative flex-1 h-[3px] bg-zinc-600 rounded-full cursor-pointer group"
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
-              const pct = (e.clientX - rect.left) / rect.width;
+              const pct  = (e.clientX - rect.left) / rect.width;
               seek(pct * duration);
             }}
           >
@@ -240,12 +271,12 @@ export default function PlayerBar({ trackId, track, privateToken }: PlayerBarPro
 
         {/* ── Track info ── */}
         <div className="flex items-center gap-2 shrink-0">
-          {track.thumbnailUrl && (
-            <img src={track.thumbnailUrl} alt="cover" className="w-8 h-8 object-cover" />
+          {thumbnailUrl && (
+            <img src={thumbnailUrl} alt="cover" className="w-8 h-8 object-cover" />
           )}
           <div className="flex flex-col leading-tight">
-            <span className="text-xs text-zinc-400 leading-none font-bold tracking-tight">{track.artist}</span>
-            <span className="text-xs font-bold text-white leading-none mt-0.5">{track.title}</span>
+            <span className="text-xs text-zinc-400 leading-none font-bold tracking-tight">{trackArtist}</span>
+            <span className="text-xs font-bold text-white leading-none mt-0.5">{trackTitle}</span>
           </div>
         </div>
 
