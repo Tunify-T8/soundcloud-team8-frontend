@@ -1,21 +1,11 @@
-<<<<<<< HEAD
 import type { FeedItem, FeedResponse, SearchResult, LikedTrack } from '@/features/feed/type';
 import { api } from '@/features/auth/services/api';
-=======
-import type {
-  FeedResponse,
-  SearchResult,
-  LikedTrack,
-} from "@/shared/types/Feed";
-import { api } from "@/features/auth/services/api";
-
 interface FeedQueryParams {
   page?: number;
   limit?: number;
   includeReposts?: boolean;
   sinceTimestamp?: string;
 }
->>>>>>> 1086ecd89db5f16ddf114346b694ce914d97c962
 
 export const feedService = {
   // ─── Feed ───────────────────────────────────────────────────────────────────
