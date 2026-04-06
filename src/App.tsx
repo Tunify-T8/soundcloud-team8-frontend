@@ -27,6 +27,7 @@ import useRestoreSession from "./hooks/useRestoreSession";
 import FeedPage from "./features/feed/pages/FeedPage";
 import DiscoverPage from "./features/discover/pages/DiscoverPage";
 import SearchPage from "./features/feed/pages/SearchPage";
+import LibraryPage from "./features/library/pages/LibraryPage";
 
 const router = createBrowserRouter([
   {
@@ -96,6 +97,10 @@ const router = createBrowserRouter([
       //   path: '/:artist/:songName/reposts',
       //   element: <RepostsPage />
       // },
+      {
+        path: '/library',
+        element: <LibraryPage />
+      },
       {
         path: "/me",
         element: <ProfilePage />,
