@@ -1,10 +1,5 @@
-import type {
-  FeedResponse,
-  SearchResult,
-  LikedTrack,
-} from "@/shared/types/Feed";
-import { api } from "@/features/auth/services/api";
-
+import type { FeedItem, FeedResponse, SearchResult, LikedTrack } from '@/features/feed/type';
+import { api } from '@/features/auth/services/api';
 interface FeedQueryParams {
   page?: number;
   limit?: number;

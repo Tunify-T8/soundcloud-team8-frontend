@@ -8,7 +8,7 @@ import type {
   UserSearchResult,
   CollectionSearchResult,
   FilterType,
-} from '@/shared/types/Feed';
+} from '../type';
 
 // ─── Filter sidebar ───────────────────────────────────────────────────────────
 

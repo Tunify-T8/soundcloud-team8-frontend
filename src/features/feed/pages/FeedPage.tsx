@@ -2,7 +2,7 @@ import avatarFallback from "@/assets/avatar.png";
 import SideBar from "../../../components/layout/Sidebar";
 import SongCard from "../../../components/ui/SongCard";
 import { Repeat2 } from "lucide-react";
-import type { FeedItem, FeedResponse } from "@/shared/types/Feed";
+import type { FeedItem, FeedResponse } from "@/features/feed/type";
 import { useEffect, useState } from "react";
 import { feedService } from "@/features/feed/feedservice";
 
@@ -129,11 +129,11 @@ export default function FeedPage() {
                 <div className="flex items-center gap-3 pb-1">
                   <img
                     src={item.action.avatarUrl || avatarFallback}
-                    alt={item.action.displayName || item.action.username}
+                    alt={item.action.username || item.action.username}
                     className="w-8 h-8 rounded-full object-cover"
                   />
                   <span className="font-semibold text-white text-base">
-                    {item.action.displayName || item.action.username}
+                    {item.action.username || item.action.username}
                   </span>
                   <span className="text-xs text-gray-400 flex items-center gap-1">
                     {item.action.action === "repost" && (
