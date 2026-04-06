@@ -1,29 +1,28 @@
 import type { DiscoverTrack } from "@/shared/types/Discover";
 
-export function DiscoverCard({
-  item,
-  index,
-}: {
-  item: DiscoverTrack;
-  index: number;
-}) {
-  const badgeColors = [
-    "bg-violet-300 text-zinc-900",
-    "bg-blue-500 text-zinc-900",
-    "bg-zinc-200 text-zinc-900",
-    "bg-orange-500 text-zinc-900",
-  ];
-  const badgeClass = badgeColors[index % badgeColors.length];
-
+export function DiscoverCard({ item }: { item: DiscoverTrack }) {
   return (
-    <div className="w-37.5 shrink-0">
+    <div className="w-37.5 shrink-0 cursor-pointer group">
       <div className="relative overflow-hidden rounded-sm bg-zinc-800 shadow-sm shadow-black/30">
         <img
           src={item.coverUrl}
           alt={item.title}
-          className="h-37.5 w-37.5 object-cover"
+          className="h-37.5 w-37.5 object-cover transition-transform duration-300 group-hover:scale-105"
         />
-
+        <div className="absolute inset-0 bg-black/50 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+          <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-lg">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 14 14"
+              fill="black"
+              aria-hidden="true"
+            >
+              <polygon points="2,0 16,7 2,14" />
+            </svg>
+          </div>
+        </div>
       </div>
 
       <p className="mt-2 line-clamp-1 text-[14px] font-semibold leading-tight text-zinc-100">

@@ -28,11 +28,7 @@ function waveformSeedFromId(id: string): number {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function FeedPage() {
-  // Your teammate's state variables — kept exactly as they intended
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
-  const [page, setPage] = useState<number>(1);
-  const [limit, setLimit] = useState<number>(20);
-  const [hasMore, setHasMore] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showReposts, setShowReposts] = useState(true);
@@ -45,14 +41,8 @@ export default function FeedPage() {
         if (isMounted) {
           if (data) {
             setFeedItems(data.items);
-            setPage(data.page);
-            setLimit(data.limit);
-            setHasMore(data.hasMore);
           } else {
             setFeedItems([]);
-            setPage(1);
-            setLimit(20);
-            setHasMore(false);
           }
           setLoading(false);
         }
@@ -132,13 +122,13 @@ export default function FeedPage() {
 
             {visibleItems.map((item) => (
               <div
-                key={item.id}
+                key={item.trackId}
                 className="w-full flex flex-col items-stretch mb-5"
               >
-                {/* Avatar + meta row — uses teammate's displayName + userAvatarUrl */}
+                {/* Avatar + meta row */}
                 <div className="flex items-center gap-3 pb-1">
                   <img
-                    src={item.action.userAvatarUrl || avatarFallback}
+                    src={item.action.avatarUrl || avatarFallback}
                     alt={item.action.displayName || item.action.username}
                     className="w-8 h-8 rounded-full object-cover"
                   />
@@ -158,7 +148,7 @@ export default function FeedPage() {
                 <div className="flex gap-4 items-start py-2">
                   <div className="flex-1 bg-[#181818] rounded-lg">
                     <SongCard
-                      trackId={item.id}
+                      trackId={item.trackId}
                       isLikedInitial={item.isLiked}
                       artistName={item.artist}
                       title={item.title}
@@ -169,7 +159,7 @@ export default function FeedPage() {
                       plays={item.numberOfListens.toString()}
                       comments={item.numberOfComments.toString()}
                       timeAgo={formatTimeAgo(item.action.date)}
-                      waveformSeed={waveformSeedFromId(item.id)}
+                      waveformSeed={waveformSeedFromId(item.trackId)}
                     />
                   </div>
                 </div>
