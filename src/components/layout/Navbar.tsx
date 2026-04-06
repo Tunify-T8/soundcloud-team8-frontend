@@ -1,4 +1,5 @@
 import { Search, Bell, Mail, MoreHorizontal, LogOut } from "lucide-react";
+import SearchBar from "../ui/SearchBar";
 import { SiSoundcloud } from "react-icons/si";
 import { Link, useNavigate } from "react-router-dom";
 import { Outlet } from "react-router-dom";
@@ -67,15 +68,7 @@ export default function Navbar()
           </div>
 
           <div className="relative w-[420px]">
-            <input
-              type="text"
-              placeholder="Search"
-              className="w-full bg-zinc-900 text-sm text-white placeholder-zinc-400 pl-4 pr-10 py-1.5 rounded-md focus:outline-none"
-            />
-            <Search
-              size={18}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400"
-            />
+            <SearchBar />
           </div>
 
           <div className="flex items-center gap-5 text-sm">

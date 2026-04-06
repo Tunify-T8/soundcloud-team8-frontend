@@ -2,9 +2,12 @@ import { useState, useMemo, useRef } from "react";
 import { Heart, Repeat2, Share2, Copy, MoreHorizontal, Play, Pause } from "lucide-react";
 import { SiSoundcloud } from "react-icons/si";
 import { waveGenerators } from "../Waveforms";
+import { useLike } from "@/features/feed/hooks/useLike";
 import { Genre } from "@/shared/types/Genre";
 
 interface PlayerProps {
+  trackId?: string;
+  isLikedInitial?: boolean;
   artistName?: string;
   title?: string;
   coverUrl?: string;
@@ -19,6 +22,8 @@ interface PlayerProps {
 }
 
 export default function SongCard({
+  trackId = '',
+  isLikedInitial = false,
   artistName = "",
   title = "",
   coverUrl = "",
@@ -33,6 +38,12 @@ export default function SongCard({
 }: PlayerProps) {
   const [playing, setPlaying] = useState(false);
   const [hoverProgress, setHoverProgress] = useState<number | null>(null);
+  const { isLiked, likesCount, toggleLike } = useLike(
+    isLikedInitial,
+    Number(likes) || 0,
+    trackId,
+  );
+  const BAR_COUNT = 140;
   const waveRef = useRef<HTMLDivElement>(null);
 
   const GAP = 1;

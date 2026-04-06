@@ -34,3 +34,67 @@ export interface FeedResponse {
   limit: number;
   hasMore: boolean;
 }
+// ─── Search ───────────────────────────────────────────────────────────────────
+
+export interface TrackSearchResult {
+  id: string;
+  type: 'track';
+  title: string;
+  artist: string;
+  genre: string | null;
+  durationSeconds: number;
+  coverUrl: string | null;
+  likesCount: number;
+  playsCount: number;
+  allowDownloads: boolean;
+  createdAt: string;
+  score: number;
+}
+
+export interface UserSearchResult {
+  id: string;
+  type: 'user';
+  username: string;
+  displayName: string | null;
+  bio: string | null;
+  location: string | null;
+  isCertified: boolean;
+  followersCount: number;
+  score: number;
+}
+
+export interface CollectionSearchResult {
+  id: string;
+  type: 'album' | 'playlist';
+  title: string;
+  artist: string;
+  description: string | null;
+  coverUrl: string | null;
+  createdAt: string;
+  score: number;
+}
+
+export type SearchResult =
+  | TrackSearchResult
+  | UserSearchResult
+  | CollectionSearchResult;
+
+export type FilterType =
+  | 'everything'
+  | 'tracks'
+  | 'people'
+  | 'albums'
+  | 'playlists';
+
+// ─── Likes ────────────────────────────────────────────────────────────────────
+
+export interface LikedTrack {
+  id: string;
+  title: string;
+  artist: string;
+  coverUrl: string | null;
+  likesCount: number;
+  repostsCount: number;
+  commentsCount: number;
+  playsCount: number;
+}
