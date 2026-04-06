@@ -61,8 +61,8 @@ export function DiscoverTrackCarousel({
         ref={scrollRef}
         className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {tracks.map((track, index) => (
-          <DiscoverCard key={track.id} item={track} index={index} />
+        {tracks.map((track) => (
+          <DiscoverCard key={track.id} item={track} />
         ))}
       </div>
 

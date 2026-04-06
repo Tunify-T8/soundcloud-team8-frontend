@@ -1144,31 +1144,48 @@ app.post("/conversations/:conversationId/read", async (req, res) => {
 
 // ─── Feed/Me Route ────────────────────────────────────────────────────────────
 
-app.get("/feed", async (req, res) => {
+const handleFeedMe = async (req, res) => {
   await delay();
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 20;
   const includeReposts = req.query.includeReposts !== "false";
+  const sinceTimestamp =
+    typeof req.query.sinceTimestamp === "string"
+      ? req.query.sinceTimestamp
+      : undefined;
   const start = (page - 1) * limit;
   const end = page * limit;
 
-  const filtered = includeReposts
+  const withRepostsFilter = includeReposts
     ? feedItems
     : feedItems.filter((item) => item.source !== "repost");
 
+  const filtered = sinceTimestamp
+    ? withRepostsFilter.filter(
+        (item) => new Date(item.postedAt) > new Date(sinceTimestamp),
+      )
+    : withRepostsFilter;
+
   const fullItems = filtered.slice(start, end).map((item) => {
     const fullTrack = tracks.find((t) => t.id === item.track.id);
-    const fullUser = Object.values(USERS).find(
+    const trackArtist = Object.values(USERS).find(
       (u) => u.id === fullTrack?.userId,
     );
+
+    const actionUser =
+      item.source === "repost" ? USERS["user-uuid-2"] : trackArtist;
+
     return {
-      id: item.track.id,
+      trackId: item.track.id,
+      artistId: trackArtist?.id || item.track.artistId || "unknown-artist",
+      artistAvatarUrl: trackArtist?.avatarUrl || "",
+      artistIsCertified: Boolean(trackArtist?.isCertified),
       action: {
-        username: fullUser?.username || "unknown",
-        displayName: fullUser?.displayName || null,
-        userAvatarUrl: fullUser?.avatarUrl || null,
+        id: actionUser?.id || trackArtist?.id || randomId(),
+        username: actionUser?.username || "unknown",
         action: item.source === "repost" ? "repost" : "post",
         date: item.postedAt,
+        avatarUrl: actionUser?.avatarUrl || null,
       },
       title: fullTrack?.title || item.track.title,
       artist: fullTrack?.artist || "Unknown Artist",
@@ -1186,7 +1203,9 @@ app.get("/feed", async (req, res) => {
   });
 
   res.json({ items: fullItems, page, limit, hasMore: end < filtered.length });
-});
+};
+
+app.get("/feed", handleFeedMe);
 
 app.get("/feed/suggested-artists", async (req, res) => {
   await delay();
@@ -1330,7 +1349,7 @@ app.listen(PORT, () => {
   );
   console.log("  Profile:       GET  /users/me");
   console.log("  Tracks:        GET  /tracks/me");
-  console.log("  Feed:          GET  /feed");
+  console.log("  Feed:          GET  /feed/me");
   console.log("  Search:        GET  /search?q=keyword");
   console.log("  Likes:         GET  /users/me/likes");
   console.log("  Like track:    POST /tracks/:id/like");

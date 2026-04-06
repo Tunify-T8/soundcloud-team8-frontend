@@ -2,20 +2,23 @@ import { Genre } from "@/shared/types/Genre";
 
 // Feed item action type
 export interface FeedAction {
+  id: string;
   username: string;
-  displayName?: string;
   action: "post" | "repost";
-  userAvatarUrl: string | null;
+  avatarUrl: string | null;
   date: string;
 }
 
 // Feed item type
 export interface FeedItem {
-  id: string;
+  trackId: string;
+  artistId: string;
+  artistAvatarUrl: string;
+  artistIsCertified: boolean;
   action: FeedAction;
   title: string;
   artist: string;
-  genre?: Genre;
+  genre?: Genre | string;
   durationInSeconds: number;
   coverUrl: string | null;
   waveformUrl: string | null;
@@ -38,7 +41,7 @@ export interface FeedResponse {
 
 export interface TrackSearchResult {
   id: string;
-  type: 'track';
+  type: "track";
   title: string;
   artist: string;
   genre: string | null;
@@ -53,7 +56,7 @@ export interface TrackSearchResult {
 
 export interface UserSearchResult {
   id: string;
-  type: 'user';
+  type: "user";
   username: string;
   displayName: string | null;
   bio: string | null;
@@ -65,7 +68,7 @@ export interface UserSearchResult {
 
 export interface CollectionSearchResult {
   id: string;
-  type: 'album' | 'playlist';
+  type: "album" | "playlist";
   title: string;
   artist: string;
   description: string | null;
@@ -80,11 +83,11 @@ export type SearchResult =
   | CollectionSearchResult;
 
 export type FilterType =
-  | 'everything'
-  | 'tracks'
-  | 'people'
-  | 'albums'
-  | 'playlists';
+  | "everything"
+  | "tracks"
+  | "people"
+  | "albums"
+  | "playlists";
 
 // ─── Likes ────────────────────────────────────────────────────────────────────
 
