@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import CollectionGrid from "../components/CollectionGrid";
 import TrackRow from "../components/TrackRow";
 import { RECENTLY_PLAYED } from "../tests/mockdata";
@@ -12,6 +12,9 @@ export default function HistoryTab() {
   const [tracks, setTracks] = useState<TrackItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showPopup, setShowPopup] = useState(false);
+  const [historyCleared, setHistoryCleared] = useState(false);
+  const popupRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -37,22 +40,79 @@ export default function HistoryTab() {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (popupRef.current && !popupRef.current.contains(e.target as Node)) {
+        setShowPopup(false);
+      }
+    }
+    if (showPopup) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showPopup]);
+
+  function handleClearHistory() {
+    setTracks([]);
+    setHistoryCleared(true);
+    setShowPopup(false);
+  }
+
   return (
     <div>
-      <CollectionGrid items={RECENTLY_PLAYED} title="Recently played:" />
+      {/* Header row: "Recently played:" + Clear all history + Filter */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-white font-bold text-base">Recently played:</h2>
 
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-white font-bold text-base">Hear the tracks you've played:</h2>
-        <div className="flex items-center gap-3">
-          <button className="text-xs text-zinc-400 hover:text-white transition-colors">
-            Clear all history
-          </button>
-          <input
-            placeholder="Filter"
-            className="bg-transparent border border-zinc-700 rounded-sm px-3 py-1 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
-          />
-        </div>
+        {!historyCleared && (
+          <div className="flex items-center gap-3">
+            <div className="relative" ref={popupRef}>
+              <button
+                onClick={() => setShowPopup((v) => !v)}
+                className="text-xs text-zinc-400 hover:text-white transition-colors font-semibold"
+              >
+                Clear all history
+              </button>
+
+              {showPopup && (
+                <div className="absolute right-0 top-full mt-2 w-[240px] bg-[#282828] rounded-md px-3 py-3 z-50 shadow-xl">
+                  <div className="absolute -top-1.5 right-3 w-3 h-3 bg-[#282828] rotate-45" />
+                  <p className="text-white text-xs leading-snug mb-3">
+                    Are you sure you want to clear your entire listening history? You won't be able to undo this action.
+                  </p>
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      onClick={() => setShowPopup(false)}
+                      className="text-white text-xs font-bold px-3 py-1.5 rounded-full hover:bg-white/10 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleClearHistory}
+                      className="bg-white text-black text-xs font-bold px-3 py-1.5 rounded-full hover:bg-zinc-200 transition-colors"
+                    >
+                      Clear my history
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <input
+              placeholder="Filter"
+              className="bg-zinc-800 border border-zinc-700 rounded-sm px-3 py-1 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 w-36"
+            />
+          </div>
+        )}
       </div>
+
+      {/* Recently played grid */}
+      {!historyCleared && (
+        <CollectionGrid items={RECENTLY_PLAYED} title="" />
+      )}
+
+      {/* Tracks section heading */}
+      <h2 className="text-white font-bold text-base mt-8 mb-6">
+        Hear the tracks you've played:
+      </h2>
 
       {loading && (
         <div className="flex flex-col gap-4">
@@ -66,11 +126,13 @@ export default function HistoryTab() {
         <p className="text-zinc-500 text-sm py-10 text-center">{error}</p>
       )}
 
-      {!loading && !error && tracks.length === 0 && (
-        <p className="text-zinc-500 text-sm py-10 text-center">No listening history yet.</p>
+      {!loading && !error && (tracks.length === 0 || historyCleared) && (
+        <p className="text-white font-bold text-xl py-10 text-center">
+          You have no listening history yet.
+        </p>
       )}
 
-      {!loading && !error && tracks.map((track) => (
+      {!loading && !error && !historyCleared && tracks.map((track) => (
         <TrackRow key={track.id} track={track} />
       ))}
     </div>
