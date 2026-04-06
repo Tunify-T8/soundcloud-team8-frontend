@@ -4,7 +4,7 @@ export default function FollowingSection({ users }: { users: FollowingUser[] }) 
   return (
     <section className="mb-8">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-white font-bold text-sm">Following</h2>
+        <h2 className="text-white font-bold text-sm">Hear what the people you follow have posted:</h2>
         <span className="text-zinc-500 text-xs hover:text-white cursor-pointer">Browse trending playlists</span>
       </div>
       <div className="flex gap-6 flex-wrap">

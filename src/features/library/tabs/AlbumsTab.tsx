@@ -35,7 +35,7 @@ export default function AlbumsTab() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-white font-bold text-sm">Albums you've liked:</h2>
+        <h2 className="text-white font-bold text-sm">Hear your own albums and the albums you’ve liked:</h2>
         <input
           placeholder="Filter"
           className="bg-[#282828] border border-zinc-700 rounded-sm px-3 py-1 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 w-64"
