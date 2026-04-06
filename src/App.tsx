@@ -24,6 +24,12 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import VerifyEmailPage from "./features/auth/pages/VerifyEmailPage";
 import { ProfileProvider } from "./features/profile/context/ProfileContext";
 import useRestoreSession from "./hooks/useRestoreSession";
+import { PlayerProvider } from "./features/playerUI/context/PlayerProvider";
+import PlayerBar from "./features/playerUI/components/PlayerBar";
+
+import { usePlayer } from "./features/playerUI/context/usePlayer";
+import { TestPlayer } from "./features/playerUI/tests/TestPlayer";
+
 import FeedPage from "./features/feed/pages/FeedPage";
 import DiscoverPage from "./features/discover/pages/DiscoverPage";
 import SearchPage from "./features/feed/pages/SearchPage";
@@ -144,13 +150,27 @@ const router = createBrowserRouter([
   },
 ]);
 
-function AppInner() {
-  useRestoreSession();
-  return <RouterProvider router={router} />;
-}
-
 function App() {
-  return <AppInner />;
+  useRestoreSession();
+  return (
+    <PlayerProvider>
+      <TestPlayer />
+      <RouterProvider router={router} />
+      <PlayerBarWrapper />
+    </PlayerProvider>
+  );
 }
 
+// Reads from context — only renders when a track is selected
+function PlayerBarWrapper() {
+  const { currentTrack } = usePlayer();
+  if (!currentTrack) return null;
+
+  return (
+    <PlayerBar
+      trackId={currentTrack.id}
+      track={currentTrack}
+    />
+  );
+}
 export default App;
