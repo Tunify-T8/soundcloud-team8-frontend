@@ -28,7 +28,6 @@ import { PlayerProvider } from "./features/playerUI/context/PlayerProvider";
 import PlayerBar from "./features/playerUI/components/PlayerBar";
 
 import { usePlayer } from "./features/playerUI/context/usePlayer";
-import { TestPlayer } from "./features/playerUI/tests/TestPlayer";
 
 import FeedPage from "./features/feed/pages/FeedPage";
 import DiscoverPage from "./features/discover/pages/DiscoverPage";
@@ -154,7 +153,6 @@ function App() {
   useRestoreSession();
   return (
     <PlayerProvider>
-      <TestPlayer />
       <RouterProvider router={router} />
       <PlayerBarWrapper />
     </PlayerProvider>
