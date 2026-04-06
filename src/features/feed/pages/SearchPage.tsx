@@ -8,7 +8,7 @@ import type {
   UserSearchResult,
   CollectionSearchResult,
   FilterType,
-} from '@/shared/types/Feed'
+} from '@/shared/types/Feed';
 
 // ─── Filter sidebar ───────────────────────────────────────────────────────────
 
@@ -84,12 +84,15 @@ export default function SearchPage() {
   // Re-fetch when query or filter changes
   useEffect(() => {
     if (!query.trim()) {
-    setTimeout(() => {
-      setResults([]);
-    }, 0);
-    return;
+      setTimeout(() => {
+        setResults([]);
+        setLoading(false);
+      }, 0);
+      return;
     }
-    setLoading(true);
+    setTimeout(() => {
+      setLoading(true);
+    }, 0);
     const apiType = activeFilter === 'everything' ? undefined : TYPE_MAP[activeFilter];
     feedService
       .search(query, apiType)
