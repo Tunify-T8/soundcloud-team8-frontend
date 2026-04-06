@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from "react";
-import { Heart, Repeat2, Share2, Copy, MoreHorizontal, Play, Pause } from "lucide-react";
+import { Heart, Repeat2, Share2, Copy, MoreHorizontal } from "lucide-react";
 import { SiSoundcloud } from "react-icons/si";
 import { waveGenerators } from "../Waveforms";
 import { useLike } from "@/features/feed/hooks/useLike";
@@ -76,14 +76,35 @@ export default function SongCard({
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col px-4 pt-3 pb-3 min-w-0">
-        <div className="flex items-start justify-between gap-2 mb-1">
-          <div className="min-w-0">
-            <div className="text-[11px] text-[hsl(0,0%,50%)] flex items-center gap-1 mb-0.5">
-              <span className="truncate">{artistName}</span>
-            </div>
+
+        {/* Top row: play button + artist/title + time/genre */}
+        <div className="flex items-start gap-3 mb-1">
+          {/* Play button — top left of content area */}
+          <button
+            onClick={() => setPlaying(!playing)}
+           className="w-9 h-9 rounded-full bg-white flex items-center justify-center hover:scale-105 transition-transform shrink-0 mt-0.5"
+           >
+
+            {playing ? (
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="black">
+                <rect x="1" y="1" width="4" height="12" />
+                <rect x="9" y="1" width="4" height="12" />
+              </svg>
+            ) : (
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="black">
+                <polygon points="2,0 14,7 2,14" />
+              </svg>
+            )}
+          </button>
+
+          {/* Artist + title */}
+          <div className="flex-1 min-w-0">
+            <div className="text-[11px] text-[hsl(0,0%,50%)] truncate mb-0.5">{artistName}</div>
             <p className="text-[13px] text-white font-medium leading-snug line-clamp-2">{title}</p>
           </div>
-          <div className="flex items-center gap-2 mt-0.5">
+
+          {/* Time + genre */}
+          <div className="flex items-center gap-2 shrink-0 mt-0.5">
             <span className="text-[11px] text-[hsl(0,0%,40%)] whitespace-nowrap">{timeAgo}</span>
             <span className="text-[10px] text-[hsl(0,0%,55%)] bg-[hsl(0,0%,12%)] border border-[hsl(0,0%,20%)] px-2 py-0.5 rounded-sm whitespace-nowrap">
               # {genre}
@@ -105,10 +126,10 @@ export default function SongCard({
             return (
               <div
                 key={i}
-               style={{
+                style={{
                   flex: "1 1 0",
                   minWidth: 0,
-                  maxWidth: "2px",   // ← add here
+                  maxWidth: "2px",
                   height: `${height * 100}%`,
                   backgroundColor: played ? "#F94C00" : "hsl(0,0%,28%)",
                   opacity: played ? 1 : 0.7,
@@ -119,18 +140,9 @@ export default function SongCard({
           })}
         </div>
 
-        {/* Controls row */}
+        {/* Controls row — stats only, no play button */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPlaying(!playing)}
-              className="w-8 h-8 rounded-full border border-[hsl(0,0%,35%)] flex items-center justify-center text-white hover:border-white transition-colors shrink-0"
-            >
-              {playing
-                ? <Pause size={13} fill="white" />
-                : <Play size={13} fill="white" className="ml-0.5" />}
-            </button>
-
             <button className="flex items-center gap-1.5 text-[hsl(0,0%,50%)] hover:text-[hsl(14,90%,58%)] transition-colors text-[11px] px-2 py-1 rounded border border-[hsl(0,0%,18%)] hover:border-[hsl(14,90%,40%)]">
               <Heart size={12} /><span>{likes}</span>
             </button>
@@ -150,7 +162,8 @@ export default function SongCard({
 
           <div className="flex items-center gap-3 text-[11px] text-[hsl(0,0%,40%)]">
             <span className="flex items-center gap-1">
-              <Play size={10} fill="currentColor" /> {plays}
+              <svg width="10" height="10" viewBox="0 0 14 14" fill="currentColor"><polygon points="2,0 14,7 2,14" /></svg>
+              {plays}
             </span>
             <span className="flex items-center gap-1">
               <SiSoundcloud size={12} /> {comments}
