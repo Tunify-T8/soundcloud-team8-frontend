@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { Heart, Repeat2, Share2, Copy, MoreHorizontal, Play, Pause } from "lucide-react";
 import { SiSoundcloud } from "react-icons/si";
 import { waveGenerators } from "../Waveforms";
@@ -14,7 +14,7 @@ interface PlayerProps {
   reposts?: string;
   plays?: string;
   comments?: string;
-  progress?: number; 
+  progress?: number;
   waveformSeed?: number;
 }
 
@@ -30,22 +30,24 @@ export default function SongCard({
   comments = "",
   progress = 0,
   waveformSeed = 0,
-}: PlayerProps){
+}: PlayerProps) {
   const [playing, setPlaying] = useState(false);
   const [hoverProgress, setHoverProgress] = useState<number | null>(null);
+  const waveRef = useRef<HTMLDivElement>(null);
 
-  const BAR_COUNT = 140;
+  const GAP = 1;
   const generatorIndex = waveformSeed % waveGenerators.length;
 
   const bars = useMemo((): number[] => {
-  return waveGenerators[generatorIndex](waveformSeed);
-}, [generatorIndex, waveformSeed]);
+    return waveGenerators[generatorIndex](waveformSeed);
+  }, [generatorIndex, waveformSeed]);
 
   const displayProgress = hoverProgress ?? progress;
 
   const handleWaveMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    setHoverProgress((e.clientX - rect.left) / rect.width);
+    const raw = (e.clientX - rect.left) / rect.width;
+    setHoverProgress(Math.min(1, Math.max(0, raw)));
   };
 
   return (
@@ -70,7 +72,7 @@ export default function SongCard({
             </div>
             <p className="text-[13px] text-white font-medium leading-snug line-clamp-2">{title}</p>
           </div>
-          <div className="flex items-center gap-2 shrink-0 mt-0.5">
+          <div className="flex items-center gap-2 mt-0.5">
             <span className="text-[11px] text-[hsl(0,0%,40%)] whitespace-nowrap">{timeAgo}</span>
             <span className="text-[10px] text-[hsl(0,0%,55%)] bg-[hsl(0,0%,12%)] border border-[hsl(0,0%,20%)] px-2 py-0.5 rounded-sm whitespace-nowrap">
               # {genre}
@@ -78,24 +80,28 @@ export default function SongCard({
           </div>
         </div>
 
+        {/* Waveform */}
         <div
-          className="flex items-end gap-[2px] h-[52px] cursor-pointer mt-1 mb-2 relative"
+          ref={waveRef}
+          className="flex items-end h-[52px] cursor-pointer mt-1 mb-2 w-full"
+          style={{ gap: `${GAP}px` }}
           onMouseMove={handleWaveMouseMove}
           onMouseLeave={() => setHoverProgress(null)}
         >
           {bars.map((height, i) => {
-            const pos = i / BAR_COUNT;
-            const played = pos < displayProgress;
+            const pos = i / (bars.length - 1);
+            const played = pos <= displayProgress;
             return (
               <div
                 key={i}
-                className="flex-1 rounded-[1px] transition-colors duration-75"
-                style={{
+               style={{
+                  flex: "1 1 0",
+                  minWidth: 0,
+                  maxWidth: "2px",   // ← add here
                   height: `${height * 100}%`,
-                  backgroundColor: played
-                    ? "#F94C00"
-                    : "hsl(0,0%,28%)",
+                  backgroundColor: played ? "#F94C00" : "hsl(0,0%,28%)",
                   opacity: played ? 1 : 0.7,
+                  borderRadius: "1px",
                 }}
               />
             );
@@ -105,7 +111,6 @@ export default function SongCard({
         {/* Controls row */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {/* Play button */}
             <button
               onClick={() => setPlaying(!playing)}
               className="w-8 h-8 rounded-full border border-[hsl(0,0%,35%)] flex items-center justify-center text-white hover:border-white transition-colors shrink-0"
@@ -115,14 +120,11 @@ export default function SongCard({
                 : <Play size={13} fill="white" className="ml-0.5" />}
             </button>
 
-            {/* Stats */}
             <button className="flex items-center gap-1.5 text-[hsl(0,0%,50%)] hover:text-[hsl(14,90%,58%)] transition-colors text-[11px] px-2 py-1 rounded border border-[hsl(0,0%,18%)] hover:border-[hsl(14,90%,40%)]">
-              <Heart size={12} />
-              <span>{likes}</span>
+              <Heart size={12} /><span>{likes}</span>
             </button>
             <button className="flex items-center gap-1.5 text-[hsl(0,0%,50%)] hover:text-white transition-colors text-[11px] px-2 py-1 rounded border border-[hsl(0,0%,18%)] hover:border-[hsl(0,0%,35%)]">
-              <Repeat2 size={12} />
-              <span>{reposts}</span>
+              <Repeat2 size={12} /><span>{reposts}</span>
             </button>
             <button className="flex items-center gap-1.5 text-[hsl(0,0%,50%)] hover:text-white transition-colors text-[11px] px-2 py-1 rounded border border-[hsl(0,0%,18%)] hover:border-[hsl(0,0%,35%)]">
               <Share2 size={12} />
@@ -135,7 +137,6 @@ export default function SongCard({
             </button>
           </div>
 
-          {/* Right stats */}
           <div className="flex items-center gap-3 text-[11px] text-[hsl(0,0%,40%)]">
             <span className="flex items-center gap-1">
               <Play size={10} fill="currentColor" /> {plays}

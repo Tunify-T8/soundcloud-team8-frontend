@@ -1,47 +1,60 @@
 {
-  "users": [
-    {
-      "id": "1",
-      "name": "Nada Serag",
-      "email": "nada@example.com"
+  "listening-history": {
+    "data": [
+      {
+        "id": "ph-2",
+        "playedAt": "2026-04-06T09:15:00Z",
+        "track": {
+          "id": "t-2",
+          "title": "Never Ending Story",
+          "artist": "Stranger Things",
+          "coverUrl": "https://i1.sndcdn.com/artworks-strangerthings-cover.jpg",
+          "duration": 187,
+          "playability": "allowed"
+        }
+      },
+      {
+        "id": "ph-3",
+        "playedAt": "2026-04-05T22:00:00Z",
+        "track": {
+          "id": "t-3",
+          "title": "Every Breath You Take",
+          "artist": "THE POLICE",
+          "coverUrl": "https://i1.sndcdn.com/artworks-thepolice-cover.jpg",
+          "duration": 252,
+          "playability": "allowed"
+        }
+      },
+      {
+        "id": "ph-4",
+        "playedAt": "2026-04-05T20:45:00Z",
+        "track": {
+          "id": "t-4",
+          "title": "Blinding Lights",
+          "artist": "The Weeknd",
+          "coverUrl": "https://i1.sndcdn.com/artworks-weeknd-cover.jpg",
+          "duration": 200,
+          "playability": "preview"
+        }
+      },
+      {
+        "id": "ph-5",
+        "playedAt": "2026-04-05T18:10:00Z",
+        "track": {
+          "id": "t-5",
+          "title": "W1$h L1$t",
+          "artist": "Taylor Swift",
+          "coverUrl": "https://i1.sndcdn.com/artworks-taylorswift-cover.jpg",
+          "duration": 198,
+          "playability": "allowed"
+        }
+      }
+    ],
+    "meta": {
+      "currentPage": 1,
+      "totalPages": 3,
+      "totalItems": 47,
+      "itemsPerPage": 20
     }
-  ],
-  "tracks": [
-    {
-      "id": "2",
-      "title": "Late Night Session",
-      "artist": "Nada Serag",
-      "genre": "Ambient",
-      "tags": [
-        "ambient",
-        "dark"
-      ],
-      "status": "finished",
-      "visibility": "private",
-      "audioUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-      "description": "",
-      "waveformData": [
-        5,
-        15,
-        25,
-        40,
-        35,
-        20,
-        10,
-        30,
-        45,
-        50
-      ],
-      "duration": 203,
-      "date": "2024-03-10T22:00:00Z",
-      "likes": null,
-      "comments": null,
-      "reposts": null,
-      "downloads": null,
-      "plays": null,
-      "isHD": false,
-      "isPrivate": true,
-      "thumbnailUrl": null
-    }
-  ]
+  }
 }

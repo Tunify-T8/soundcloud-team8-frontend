@@ -23,6 +23,7 @@ import VerifyEmailPage from "./features/auth/pages/VerifyEmailPage";
 import { ProfileProvider } from "./features/profile/context/ProfileContext";
 import useRestoreSession from "./hooks/useRestoreSession";
 import FeedPage from "./features/feed/pages/FeedPage";
+import LibraryPage from "./features/library/pages/LibraryPage";
 
 const router = createBrowserRouter([
   { path: "/verify-email", element: <VerifyEmailPage /> },
@@ -84,6 +85,10 @@ const router = createBrowserRouter([
       //   path: '/:artist/:songName/reposts',
       //   element: <RepostsPage />
       // },
+      {
+        path: '/library',
+        element: <LibraryPage />
+      },
       {
         path: "/me",
         element: <ProfilePage />,
