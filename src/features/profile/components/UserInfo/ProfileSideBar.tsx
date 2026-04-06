@@ -15,6 +15,7 @@ import {
 import { FiInfo } from "react-icons/fi";
 import { Ticket } from "lucide-react";
 import type { FollowingUser } from "../../../../shared/types/User";
+import avatarFallback from '@/assets/avatar.png';
 
 export default function ProfileSideBar({
   followers,
@@ -213,19 +214,19 @@ export default function ProfileSideBar({
                 >
                   <div className="flex items-center gap-4">
                     <img
-                      src={followingUser.avatarUrl}
+                      src={followingUser.avatarUrl || avatarFallback}
                       alt={followingUser.username}
                       className="h-12 w-12 rounded-full object-cover"
                     />
                     <div className="flex flex-col">
                       <Link
-                        to={`/${followingUser.username}`}
+                        to={`/${followingUser.id}`}
                         className="text-[14px] font-bold leading-none text-white uppercase hover:text-zinc-500"
                       >
                         {followingDisplayName}
                       </Link>
                       <Link
-                        to={`/${followingUser.username}/followers`}
+                        to={`/${followingUser.id}/followers`}
                         className="mt-2 inline-flex items-center gap-1 text-[13px] text-zinc-400 hover:text-zinc-600"
                       >
                         <FaUser size={12} />
@@ -235,9 +236,9 @@ export default function ProfileSideBar({
                   </div>
                   <button
                     type="button"
-                    className="rounded-md bg-white px-3 py-2 text-[14px] font-bold text-black hover:bg-zinc-200 cursor-pointer"
+                    className="rounded-md bg-zinc-800 px-3 py-2 text-[14px] font-bold text-white hover:text-zinc-500 cursor-pointer"
                   >
-                    Follow
+                    Following
                   </button>
                 </div>
               );
