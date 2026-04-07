@@ -3,6 +3,7 @@ export interface TrackMeta {
   title: string;
   artist: string;
   thumbnailUrl?: string;
+  artworkUrl?: string;
   duration: number;
 }
 
@@ -11,4 +12,11 @@ export interface PlayerContextValue {
   isPlaying: boolean;
   setCurrentTrack: (track: TrackMeta) => void;
   setIsPlaying: (v: boolean) => void;
+}
+
+// Shape stored in localStorage for recently played entries
+export interface RecentlyPlayedEntry {
+  id: string;
+  title: string;
+  artworkUrl?: string;
 }
