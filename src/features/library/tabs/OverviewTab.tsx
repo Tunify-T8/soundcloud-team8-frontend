@@ -2,16 +2,18 @@ import CollectionGrid from "../components/CollectionGrid";
 import EmptyCollectionGrid from "../components/EmptyCollectionGrid";
 import FollowingSection from "../components/FollowingSection";
 import TrackRow from "../components/TrackRow";
-import { RECENTLY_PLAYED, LIKED_TRACKS, FOLLOWING } from "../tests//mockdata";
+import { useRecentlyPlayed } from "@/features/playerUI/context/useRecentlyPlayed";
+import { LIKED_TRACKS, FOLLOWING } from "../tests/mockdata";
 
 const COLS = 6;
 
 export default function OverviewTab() {
+  const recentlyPlayed = useRecentlyPlayed();
   const totalSlots = Math.ceil(Math.max(LIKED_TRACKS.length, 1) / COLS) * COLS;
 
   return (
     <div>
-      <CollectionGrid items={RECENTLY_PLAYED} title="Recently played" />
+      <CollectionGrid items={recentlyPlayed} title="Recently played" />
 
       <section className="mb-8">
         <div className="flex items-center justify-between mb-4">
