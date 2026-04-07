@@ -662,7 +662,7 @@ const trackStreams = {
   trk_001: {
     trackId: "trk_001",
     stream: {
-      url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
       expiresInSeconds: 600,
       format: "hls",
     },
@@ -707,7 +707,7 @@ const trackStreams = {
   trk_006: {
     trackId: "trk_006",
     stream: {
-      url: "https://test-streams.mux.dev/tos_ismc/main.m3u8",
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
       expiresInSeconds: 600,
       format: "hls",
     },
