@@ -49,7 +49,7 @@ export default function Navbar() {
     { to: "/likes",         icon: <Heart size={17} />,       label: "Likes" },
     { to: "/playlists",     icon: <ListMusic size={17} />,   label: "Playlists" },
     { to: "/stations",      icon: <Radio size={17} />,       label: "Stations" },
-    { to: "/following",     icon: <Users size={17} />,       label: "Following" },
+    { to: "/me/following",     icon: <Users size={17} />,       label: "Following" },
     { to: "/who-to-follow", icon: <UserPlus size={17} />,    label: "Who to follow" },
     { to: "/pro",           icon: <Star size={17} />,        label: "Try Artist Pro", orange: true },
     { to: "/benefits",      icon: <Star size={17} />,        label: "Benefits" },
