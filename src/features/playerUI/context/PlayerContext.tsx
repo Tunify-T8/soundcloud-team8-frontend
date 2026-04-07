@@ -1,7 +1,9 @@
 import { createContext } from "react";
-import type { PlayerContextValue } from "./PlayerTypes.ts";
+import type { PlayerContextValue } from "./PlayerTypes";
 
 export const PlayerContext = createContext<PlayerContextValue>({
   currentTrack: null,
+  isPlaying: false,
   setCurrentTrack: () => {},
+  setIsPlaying: () => {},
 });

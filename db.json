@@ -175,6 +175,35 @@
       "totalItems": 47,
       "itemsPerPage": 20
     }
-  }
+  },
+
+  "trackStreams": [
+    {
+      "id": "trk_005",
+      "trackId": "trk_005",
+      "stream": {
+        "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+        "expiresInSeconds": 600,
+        "format": "hls"
+      },
+      "preview": {
+        "previewStartSeconds": 0,
+        "previewDurationSeconds": 30
+      }
+    },
+    {
+      "id": "trk_006",
+      "trackId": "trk_006",
+      "stream": {
+        "url": "https://test-streams.mux.dev/tos_ismc/main.m3u8",
+        "expiresInSeconds": 600,
+        "format": "hls"
+      },
+      "preview": {
+        "previewStartSeconds": 0,
+        "previewDurationSeconds": 30
+      }
+    }
+  ]
 }
   

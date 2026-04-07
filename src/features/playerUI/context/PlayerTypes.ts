@@ -8,5 +8,7 @@ export interface TrackMeta {
 
 export interface PlayerContextValue {
   currentTrack: TrackMeta | null;
+  isPlaying: boolean;
   setCurrentTrack: (track: TrackMeta) => void;
+  setIsPlaying: (v: boolean) => void;
 }

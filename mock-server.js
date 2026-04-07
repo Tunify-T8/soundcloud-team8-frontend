@@ -548,6 +548,7 @@ let socialLinks = [
 ];
 
 let genres = { genres: ["ambient", "electronic", "jazz_and_blues", "pop"] };
+
 // ─── Albums / Collections Data ────────────────────────────────────────────────
 let collections = [
   {
@@ -631,6 +632,7 @@ let collections = [
     ],
   },
 ];
+
 let following = [
   {
     id: "user-uuid-2",
@@ -653,6 +655,104 @@ let following = [
     isNotificationEnabled: false,
   },
 ];
+
+// ─── Playback Seed Data ───────────────────────────────────────────────────────
+
+const trackStreams = {
+  trk_001: {
+    trackId: "trk_001",
+    stream: {
+      url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+      expiresInSeconds: 600,
+      format: "hls",
+    },
+    preview: { previewStartSeconds: 0, previewDurationSeconds: 30 },
+  },
+  trk_002: {
+    trackId: "trk_002",
+    stream: {
+      url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+      expiresInSeconds: 600,
+      format: "hls",
+    },
+    preview: { previewStartSeconds: 0, previewDurationSeconds: 30 },
+  },
+  trk_003: {
+    trackId: "trk_003",
+    stream: {
+      url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+      expiresInSeconds: 600,
+      format: "hls",
+    },
+    preview: { previewStartSeconds: 0, previewDurationSeconds: 30 },
+  },
+  trk_004: {
+    trackId: "trk_004",
+    stream: {
+      url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+      expiresInSeconds: 600,
+      format: "hls",
+    },
+    preview: { previewStartSeconds: 0, previewDurationSeconds: 30 },
+  },
+  trk_005: {
+    trackId: "trk_005",
+    stream: {
+      url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+      expiresInSeconds: 600,
+      format: "hls",
+    },
+    preview: { previewStartSeconds: 0, previewDurationSeconds: 30 },
+  },
+  trk_006: {
+    trackId: "trk_006",
+    stream: {
+      url: "https://test-streams.mux.dev/tos_ismc/main.m3u8",
+      expiresInSeconds: 600,
+      format: "hls",
+    },
+    preview: { previewStartSeconds: 0, previewDurationSeconds: 30 },
+  },
+};
+
+const trackPlaybacks = {
+  trk_001: {
+    trackId: "trk_001",
+    durationSeconds: 214,
+    playability: { status: "playable", requiresSubscription: false },
+    preview: { enabled: false, previewStartSeconds: 0, previewDurationSeconds: 0 },
+  },
+  trk_002: {
+    trackId: "trk_002",
+    durationSeconds: 176,
+    playability: { status: "playable", requiresSubscription: false },
+    preview: { enabled: false, previewStartSeconds: 0, previewDurationSeconds: 0 },
+  },
+  trk_003: {
+    trackId: "trk_003",
+    durationSeconds: 245,
+    playability: { status: "playable", requiresSubscription: false },
+    preview: { enabled: false, previewStartSeconds: 0, previewDurationSeconds: 0 },
+  },
+  trk_004: {
+    trackId: "trk_004",
+    durationSeconds: 312,
+    playability: { status: "playable", requiresSubscription: false },
+    preview: { enabled: false, previewStartSeconds: 0, previewDurationSeconds: 0 },
+  },
+  trk_005: {
+    trackId: "trk_005",
+    durationSeconds: 180,
+    playability: { status: "playable", requiresSubscription: false },
+    preview: { enabled: false, previewStartSeconds: 0, previewDurationSeconds: 0 },
+  },
+  trk_006: {
+    trackId: "trk_006",
+    durationSeconds: 240,
+    playability: { status: "playable", requiresSubscription: false },
+    preview: { enabled: false, previewStartSeconds: 0, previewDurationSeconds: 0 },
+  },
+};
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1049,6 +1149,56 @@ app.delete("/tracks/:id/like", async (req, res) => {
   res.status(200).json({ message: "Track unliked.", likesCount: track.likes });
 });
 
+// ─── Playback Routes ──────────────────────────────────────────────────────────
+
+// GET /tracks/:trackId/playback — playback bundle (accessibility, duration, preview info)
+app.get("/tracks/:id/playback", async (req, res) => {
+  await delay();
+  const bundle = trackPlaybacks[req.params.id];
+  if (!bundle) return res.status(404).json({ error: "Playback bundle not found" });
+  res.json(bundle);
+});
+
+// GET /tracks/:trackId/stream — signed streaming URL
+app.get("/tracks/:id/stream", async (req, res) => {
+  await delay();
+  const streamData = trackStreams[req.params.id];
+  if (!streamData) return res.status(404).json({ error: "Stream not found" });
+  res.json(streamData);
+});
+
+// POST /tracks/:trackId/played — report track completion
+app.post("/tracks/:id/played", async (req, res) => {
+  await delay(50);
+  const track = tracks.find((t) => t.id === req.params.id);
+  if (track) track.plays = (track.plays || 0) + 1;
+  res.status(204).send();
+});
+
+// POST /tracks/playback-context — build playback queue from context
+app.post("/tracks/playback-context", async (req, res) => {
+  await delay();
+  const { contextType, contextId, shuffle } = req.body;
+  let queueTracks = tracks;
+  if (contextType === "playlist" || contextType === "album") {
+    const col = collections.find((c) => c.id === contextId);
+    if (col) {
+      queueTracks = col.tracks
+        .map((ct) => tracks.find((t) => t.title === ct.title))
+        .filter(Boolean);
+    }
+  }
+  const queue = queueTracks.map((t) => ({
+    trackId: t.id,
+    title: t.title,
+    artist: t.artist,
+    thumbnailUrl: t.thumbnailUrl || null,
+    durationSeconds: t.duration,
+  }));
+  if (shuffle) queue.sort(() => Math.random() - 0.5);
+  res.json({ contextType, contextId, queue });
+});
+
 app.patch("/tracks/:id", async (req, res) => {
   await delay();
   const track = tracks.find((t) => t.id === req.params.id);
@@ -1323,7 +1473,8 @@ app.get("/artists", async (req, res) => {
   });
 });
 
-// ─── Fallback ─────────────────────────────────────────────────────────────────
+// ─── Collections Route ────────────────────────────────────────────────────────
+
 // GET /collections/:id/tracks
 app.get("/collections/:id/tracks", async (req, res) => {
   await delay();
@@ -1332,6 +1483,9 @@ app.get("/collections/:id/tracks", async (req, res) => {
     return res.status(404).json({ error: "Collection not found" });
   res.json({ tracks: collection.tracks, total: collection.tracks.length });
 });
+
+// ─── Fallback ─────────────────────────────────────────────────────────────────
+
 app.use((req, res) => {
   console.log(`[mock] 404 — ${req.method} ${req.url}`);
   res
@@ -1343,17 +1497,20 @@ app.use((req, res) => {
 
 const PORT = 3001;
 app.listen(PORT, () => {
-  console.log(`\n🎵 Mock server running at http://localhost:${PORT}\n`);
+  console.log(`\nMock server running at http://localhost:${PORT}\n`);
   console.log(
     "  Auth:          POST /auth/login  (test@tunify.com / Password123)",
   );
   console.log("  Profile:       GET  /users/me");
   console.log("  Tracks:        GET  /tracks/me");
-  console.log("  Feed:          GET  /feed/me");
+  console.log("  Feed:          GET  /feed");
   console.log("  Search:        GET  /search?q=keyword");
   console.log("  Likes:         GET  /users/me/likes");
   console.log("  Like track:    POST /tracks/:id/like");
   console.log("  Unlike track:  DELETE /tracks/:id/like");
+  console.log("  Playback:      GET  /tracks/:id/playback");
+  console.log("  Stream:        GET  /tracks/:id/stream");
+  console.log("  Played:        POST /tracks/:id/played");
   console.log("  Conversations: GET  /me/conversations");
   console.log("  Messages:      GET  /conversations/:id/messages");
   console.log("  Artists:       GET  /artists\n");
