@@ -11,9 +11,16 @@ export default function OverviewTab() {
   const recentlyPlayed = useRecentlyPlayed();
   const totalSlots = Math.ceil(Math.max(LIKED_TRACKS.length, 1) / COLS) * COLS;
 
+  const recentlyPlayedItems = recentlyPlayed.map((entry) => ({
+    id: entry.id,
+    title: entry.title,
+    subtitle: "",
+    coverUrl: entry.artworkUrl, // ← fix: artworkUrl → coverUrl
+  }));
+
   return (
     <div>
-      <CollectionGrid items={recentlyPlayed} title="Recently played" />
+      <CollectionGrid items={recentlyPlayedItems} title="Recently played" />
 
       <section className="mb-8">
         <div className="flex items-center justify-between mb-4">
