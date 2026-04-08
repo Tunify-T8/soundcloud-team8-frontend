@@ -15,6 +15,11 @@ export function usePlayback({
 }: usePlaybackOptions): usePlaybackReturn {
   const audioRef        = useRef<HTMLAudioElement | null>(null);
   const streamExpiryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const trackIdRef      = useRef(trackId);
+
+  useEffect(() => {
+    trackIdRef.current = trackId;
+  }, [trackId]);
 
   const [bundle,      setBundle]      = useState<playbackBundle | null>(null);
   const [status,      setStatus]      = useState<playerStatus>("idle");
@@ -33,47 +38,48 @@ export function usePlayback({
       ? Math.max(0, access.previewDurationSeconds - currentTime)
       : null;
 
-  // ── Attach MP3 stream ─────────────────────────────────────────────────────
-  const scheduleRefresh = useCallback(
-    (expiresInSeconds: number) => {
-      if (streamExpiryRef.current) clearTimeout(streamExpiryRef.current);
-      const refreshIn = Math.max((expiresInSeconds - 30) * 1000, 5000);
-      streamExpiryRef.current = setTimeout(async () => {
-        if (!trackId) return;
-        const audio = audioRef.current;
-        if (!audio) return;
-        try {
-          const fresh = await playbackService.requestStreamUrl(trackId);
-          const wasPlaying = !audio.paused;
-          const resumeTime = audio.currentTime;
-          audio.src = fresh.stream.url;
-          audio.load();
-          audio.addEventListener(
-            "canplay",
-            () => {
-              audio.currentTime = resumeTime;
-              if (wasPlaying) audio.play().catch(() => {});
-            },
-            { once: true }
-          );
-          scheduleRefresh(fresh.stream.expiresInSeconds);
-        } catch {
-          // Non-fatal — stream may still work until actual expiry
-        }
-      }, refreshIn);
-    },
-    [trackId]
-  );
+  // ── Stream refresh (uses ref to avoid self-reference lint error) ──────────
+  const scheduleRefreshRef = useRef<(expiresInSeconds: number) => void>();
 
+  scheduleRefreshRef.current = (expiresInSeconds: number) => {
+    if (streamExpiryRef.current) clearTimeout(streamExpiryRef.current);
+    const refreshIn = Math.max((expiresInSeconds - 30) * 1000, 5000);
+    streamExpiryRef.current = setTimeout(async () => {
+      const currentTrackId = trackIdRef.current;
+      if (!currentTrackId) return;
+      const audio = audioRef.current;
+      if (!audio) return;
+      try {
+        const fresh = await playbackService.requestStreamUrl(currentTrackId);
+        const wasPlaying = !audio.paused;
+        const resumeTime = audio.currentTime;
+        audio.src = fresh.stream.url;
+        audio.load();
+        audio.addEventListener(
+          "canplay",
+          () => {
+            audio.currentTime = resumeTime;
+            if (wasPlaying) audio.play().catch(() => {});
+          },
+          { once: true }
+        );
+        scheduleRefreshRef.current?.(fresh.stream.expiresInSeconds);
+      } catch {
+        // Non-fatal — stream may still work until actual expiry
+      }
+    }, refreshIn);
+  };
+
+  // ── Attach MP3 stream ─────────────────────────────────────────────────────
   const attachStream = useCallback(
     (streamUrl: string, expiresInSeconds: number) => {
       const audio = audioRef.current;
       if (!audio) return;
       audio.src = streamUrl;
       audio.load();
-      scheduleRefresh(expiresInSeconds);
+      scheduleRefreshRef.current?.(expiresInSeconds);
     },
-    [scheduleRefresh]
+    []
   );
 
   // ── Load track ────────────────────────────────────────────────────────────
