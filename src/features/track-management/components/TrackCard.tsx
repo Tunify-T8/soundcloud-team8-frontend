@@ -1,10 +1,18 @@
 import { useState, useRef, useEffect } from "react";
 import {
-  Play, Lock, MoreVertical, Heart, MessageSquare, Repeat2,
+  Lock, MoreVertical, Heart, MessageSquare, Repeat2,
   Download, Pencil, ListPlus, CircleDollarSign, SlidersHorizontal, Share2, TrendingUp, Link, Trash2, X
 } from "lucide-react";
 import type { Track } from "@/shared/types/Track";
-import { trackService } from "../trackService"; 
+import { trackService } from "../trackService";
+import { usePlayer } from "@/features/playerUI/context/usePlayer";
+
+
+function formatDate(raw: string): string {
+  const d = new Date(raw);
+  if (isNaN(d.getTime())) return raw;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
 
 function DeleteConfirmModal({
   track,
@@ -30,13 +38,9 @@ function DeleteConfirmModal({
 
   return (
     <>
-      {/* Backdrop */}
       <div className="fixed inset-0 bg-black/60 z-50" onClick={onCancel} />
-
-      {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
         <div className="bg-[#111] border border-zinc-800 rounded-xl w-[540px] p-8 pointer-events-auto shadow-2xl">
-          {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-white text-xl font-bold">Permanently delete this track?</h2>
             <button
@@ -46,14 +50,14 @@ function DeleteConfirmModal({
               <X className="w-4 h-4" />
             </button>
           </div>
-
-          {/* Track preview */}
           <div className="flex items-center gap-4 mb-6">
             <div className="relative w-16 h-16 flex-shrink-0 bg-zinc-700 rounded flex items-center justify-center overflow-hidden">
               {track.thumbnailUrl ? (
                 <img src={track.thumbnailUrl} alt={track.title} className="w-full h-full object-cover" />
               ) : (
-                <Play className="w-5 h-5 text-white fill-white" />
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="white">
+                  <polygon points="2,0 14,7 2,14" />
+                </svg>
               )}
               {track.isPrivate && (
                 <div className="absolute -bottom-1 -right-1 bg-zinc-900 rounded-full p-0.5">
@@ -63,13 +67,9 @@ function DeleteConfirmModal({
             </div>
             <span className="text-white font-semibold text-base">{track.title}</span>
           </div>
-
-          {/* Warning */}
           <p className="text-zinc-400 text-sm mb-8 leading-relaxed">
             Removing this track is irreversible. You will lose all the plays, likes, and comments for this track with no way to get them back.
           </p>
-
-          {/* Actions */}
           <div className="flex items-center justify-end gap-3">
             <button
               onClick={onCancel}
@@ -118,10 +118,7 @@ function MenuItem({ icon, label, onClick, danger = false }: MenuItemProps) {
     <button
       onClick={onClick}
       className={`flex items-center gap-3 w-full px-4 py-2.5 text-sm text-left transition-colors
-        ${danger
-          ? "text-red-400 hover:bg-zinc-700"
-          : "text-zinc-200 hover:bg-zinc-700"
-        }`}
+        ${danger ? "text-red-400 hover:bg-zinc-700" : "text-zinc-200 hover:bg-zinc-700"}`}
     >
       <span className="w-4 h-4 flex-shrink-0">{icon}</span>
       {label}
@@ -147,6 +144,26 @@ export default function TrackCard({
   const [menuOpen, setMenuOpen] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const { currentTrack, isPlaying, setCurrentTrack, setIsPlaying } = usePlayer();
+  const isThisTrack = currentTrack?.id === track.id;
+  const playing = isThisTrack && isPlaying;
+
+  const handlePlayToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isThisTrack) {
+      setIsPlaying(!isPlaying);
+    } else {
+      setCurrentTrack({
+        id: track.id,
+        title: track.title,
+        artist: track.artist,
+       // thumbnailUrl: track.thumbnailUrl,
+        duration: 0,
+      });
+      setIsPlaying(true);
+    }
+  };
 
   const fmt = (val: number | null | undefined) =>
     val === null || val === 0 || val === undefined ? "-" : val.toString();
@@ -178,15 +195,45 @@ export default function TrackCard({
         onClick={(e) => e.stopPropagation()}
       />
 
-      {/* Thumbnail */}
-      <div className="relative w-12 h-12 flex-shrink-0 bg-zinc-700 rounded flex items-center justify-center">
+      {/* Thumbnail with hover play button */}
+      <div
+        className="relative w-12 h-12 flex-shrink-0 bg-zinc-700 rounded overflow-hidden group"
+        onClick={handlePlayToggle}
+      >
         {track.thumbnailUrl ? (
-          <img src={track.thumbnailUrl} alt={track.title} className="w-full h-full object-cover rounded" />
+          <img
+            src={track.thumbnailUrl}
+            alt={track.title}
+            className="w-full h-full object-cover"
+          />
         ) : (
-          <Play className="w-5 h-5 text-white fill-white" />
+          <div className="w-full h-full bg-zinc-700" />
         )}
+
+        {/* Haze overlay */}
+        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+
+        {/* Play/pause button — always visible when playing, hover-only otherwise */}
+        <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200
+          ${playing ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+        >
+          <div className="w-7 h-7 rounded-full bg-white flex items-center justify-center shadow-md">
+            {playing ? (
+              <svg width="10" height="10" viewBox="0 0 14 14" fill="black">
+                <rect x="1" y="1" width="4" height="12" />
+                <rect x="9" y="1" width="4" height="12" />
+              </svg>
+            ) : (
+              <svg width="10" height="10" viewBox="0 0 14 14" fill="black">
+                <polygon points="2,0 14,7 2,14" />
+              </svg>
+            )}
+          </div>
+        </div>
+
+        {/* Lock badge */}
         {track.isPrivate && (
-          <div className="absolute -bottom-1 -right-1 bg-zinc-900 rounded-full p-0.5">
+          <div className="absolute -bottom-1 -right-1 bg-zinc-900 rounded-full p-0.5 z-10">
             <Lock className="w-3 h-3 text-zinc-400" />
           </div>
         )}
@@ -210,9 +257,9 @@ export default function TrackCard({
         <span className="text-zinc-300 text-sm tabular-nums">{track.duration}</span>
       </div>
 
-      {/* Date */}
+      {/* Date — formatted as "Mar 10, 2026" */}
       <div className="w-28 text-center">
-        <span className="text-zinc-300 text-sm">{track.date}</span>
+        <span className="text-zinc-300 text-sm">{formatDate(track.date)}</span>
       </div>
 
       {/* Stats */}
@@ -264,6 +311,7 @@ export default function TrackCard({
           </div>
         )}
       </div>
+
       {showDeleteModal && (
         <DeleteConfirmModal
           track={track}

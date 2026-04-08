@@ -1,29 +1,33 @@
 import { api } from "../auth/services/api";
 
 export interface HistoryTrack {
-  id: string;
+  trackId: string;
+  title: string;
+  artist: string;
+  coverUrl: string;
+  genre: string;
+  releaseDate: string;
   playedAt: string;
-  track: {
-    id: string;
-    title: string;
-    artist: string;
-    coverUrl: string;
-    duration: number;
-    playability: "allowed" | "blocked" | "preview";
+  durationSeconds: number;
+  engagement: {
+    likeCount: number;
+    repostCount: number;
+    commentCount: number;
+    playCount: number;
   };
 }
 
 export interface PaginationMeta {
-  currentPage: number;
-  totalPages: number;
-  totalItems: number;
-  itemsPerPage: number;
+  page: number;
+  limit: number;
+  total: number;
 }
 
 export interface ListeningHistoryResponse {
   data: HistoryTrack[];
   meta: PaginationMeta;
 }
+
 export async function getListeningHistory(
   page = 1,
   limit = 20
@@ -35,18 +39,19 @@ export async function getListeningHistory(
   return response.data;
 }
 
-/** Maps API HistoryTrack → local TrackItem used by TrackRow */
+/** Maps API HistoryTrack → local TrackItem used by TrackRow / SongCard */
 export function mapHistoryToTrackItem(h: HistoryTrack) {
   return {
-    id: h.track.id,
-    title: h.track.title,
-    artist: h.track.artist,
-    coverUrl: h.track.coverUrl,
+    id: h.trackId,
+    title: h.title,
+    artist: h.artist,
+    coverUrl: h.coverUrl,
     timeAgo: formatTimeAgo(h.playedAt),
-    likes: "0",
-    reposts: "0",
-    plays: "0",
-    comments: "0",
+    durationSeconds: h.durationSeconds,  // ← needed for setCurrentTrack
+    likes: String(h.engagement.likeCount),
+    reposts: String(h.engagement.repostCount),
+    comments: String(h.engagement.commentCount),
+    plays: String(h.engagement.playCount),
   };
 }
 
