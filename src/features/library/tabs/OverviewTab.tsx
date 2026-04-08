@@ -4,6 +4,7 @@ import FollowingSection from "../components/FollowingSection";
 import TrackRow from "../components/TrackRow";
 import { useRecentlyPlayed } from "@/features/playerUI/context/useRecentlyPlayed";
 import { LIKED_TRACKS, FOLLOWING } from "../tests/mockdata";
+import { Link } from "react-router-dom";
 
 const COLS = 6;
 
@@ -25,7 +26,9 @@ export default function OverviewTab() {
       <section className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-white font-bold text-sm">Likes</h2>
-          <span className="text-zinc-500 text-xs hover:text-white cursor-pointer">Browse trending playlists</span>
+          <Link to="/discover" className="text-zinc-500 text-xs hover:text-white transition-colors duration-150 cursor-pointer">
+            Browse trending playlists
+          </Link>
         </div>
         <div className="grid grid-cols-6 gap-4">
           {Array.from({ length: totalSlots }).map((_, i) => {

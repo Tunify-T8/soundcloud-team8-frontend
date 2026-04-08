@@ -85,7 +85,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="w-full h-12 bg-black text-white border-b border-zinc-800">
+      <nav className="w-full h-12 bg-black text-white border-b border-zinc-800 sticky top-0 z-50">
         <div className="max-w-[1200px] mx-auto h-full flex items-center justify-between px-6">
 
           {/* Left links */}
