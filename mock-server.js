@@ -664,7 +664,7 @@ const trackStreams = {
     stream: {
       url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
       expiresInSeconds: 600,
-      format: "hls",
+      format: "mp3",
     },
     preview: { previewStartSeconds: 0, previewDurationSeconds: 30 },
   },
@@ -695,21 +695,21 @@ const trackStreams = {
     },
     preview: { previewStartSeconds: 0, previewDurationSeconds: 30 },
   },
-  trk_005: {
+  trk_005: { //summer vibes
     trackId: "trk_005",
     stream: {
-      url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+      url: "https://test-streams.mux.dev/tos_ismc/main.m3u8",
       expiresInSeconds: 600,
       format: "hls",
     },
     preview: { previewStartSeconds: 0, previewDurationSeconds: 30 },
   },
-  trk_006: {
+  trk_006: { //night drive 
     trackId: "trk_006",
     stream: {
       url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
       expiresInSeconds: 600,
-      format: "hls",
+      format: "mp3",
     },
     preview: { previewStartSeconds: 0, previewDurationSeconds: 30 },
   },
