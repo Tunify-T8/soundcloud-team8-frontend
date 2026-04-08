@@ -39,7 +39,7 @@ export function usePlayback({
       : null;
 
   // ── Stream refresh (uses ref to avoid self-reference lint error) ──────────
-  const scheduleRefreshRef = useRef<(expiresInSeconds: number) => void>();
+  const scheduleRefreshRef = useRef<(expiresInSeconds: number) => void>(()=>{});
 
   scheduleRefreshRef.current = (expiresInSeconds: number) => {
     if (streamExpiryRef.current) clearTimeout(streamExpiryRef.current);
