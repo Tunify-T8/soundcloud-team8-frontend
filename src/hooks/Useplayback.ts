@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import Hls from "hls.js";
 import type {
   playbackBundle,
   playerStatus,
@@ -15,8 +14,12 @@ export function usePlayback({
   autoPlay = false,
 }: usePlaybackOptions): usePlaybackReturn {
   const audioRef        = useRef<HTMLAudioElement | null>(null);
-  const hlsRef          = useRef<Hls | null>(null);
   const streamExpiryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const trackIdRef      = useRef(trackId);
+
+  useEffect(() => {
+    trackIdRef.current = trackId;
+  }, [trackId]);
 
   const [bundle,      setBundle]      = useState<playbackBundle | null>(null);
   const [status,      setStatus]      = useState<playerStatus>("idle");
@@ -35,53 +38,48 @@ export function usePlayback({
       ? Math.max(0, access.previewDurationSeconds - currentTime)
       : null;
 
-  // ── Cleanup HLS ───────────────────────────────────────────────────────────
-  const destroyHls = useCallback(() => {
-    hlsRef.current?.destroy();
-    hlsRef.current = null;
-  }, []);
+  // ── Stream refresh (uses ref to avoid self-reference lint error) ──────────
+  const scheduleRefreshRef = useRef<(expiresInSeconds: number) => void>(()=>{});
 
-  // ── Attach HLS stream ─────────────────────────────────────────────────────
+  scheduleRefreshRef.current = (expiresInSeconds: number) => {
+    if (streamExpiryRef.current) clearTimeout(streamExpiryRef.current);
+    const refreshIn = Math.max((expiresInSeconds - 30) * 1000, 5000);
+    streamExpiryRef.current = setTimeout(async () => {
+      const currentTrackId = trackIdRef.current;
+      if (!currentTrackId) return;
+      const audio = audioRef.current;
+      if (!audio) return;
+      try {
+        const fresh = await playbackService.requestStreamUrl(currentTrackId);
+        const wasPlaying = !audio.paused;
+        const resumeTime = audio.currentTime;
+        audio.src = fresh.stream.url;
+        audio.load();
+        audio.addEventListener(
+          "canplay",
+          () => {
+            audio.currentTime = resumeTime;
+            if (wasPlaying) audio.play().catch(() => {});
+          },
+          { once: true }
+        );
+        scheduleRefreshRef.current?.(fresh.stream.expiresInSeconds);
+      } catch {
+        // Non-fatal — stream may still work until actual expiry
+      }
+    }, refreshIn);
+  };
+
+  // ── Attach MP3 stream ─────────────────────────────────────────────────────
   const attachStream = useCallback(
     (streamUrl: string, expiresInSeconds: number) => {
       const audio = audioRef.current;
       if (!audio) return;
-
-      destroyHls();
-
-      if (Hls.isSupported()) {
-        const hls = new Hls({ enableWorker: true, lowLatencyMode: false });
-        hls.loadSource(streamUrl);
-        hls.attachMedia(audio);
-        hls.on(Hls.Events.ERROR, (_evt: unknown, data: { fatal: boolean }) => {
-          if (data.fatal) {
-            setStatus("error");
-            setError("Stream error. Please try again.");
-          }
-        });
-        hlsRef.current = hls;
-      } else if (audio.canPlayType("application/vnd.apple.mpegurl")) {
-        // Safari native HLS
-        audio.src = streamUrl;
-      } else {
-        setStatus("error");
-        setError("Your browser does not support audio streaming.");
-        return;
-      }
-
-      // Refresh stream URL 30s before expiry
-      const refreshIn = Math.max((expiresInSeconds - 30) * 1000, 5000);
-      streamExpiryRef.current = setTimeout(async () => {
-        if (!trackId) return;
-        try {
-          const fresh = await playbackService.requestStreamUrl(trackId);
-          attachStream(fresh.stream.url, fresh.stream.expiresInSeconds);
-        } catch {
-          // Non-fatal — stream may still work until actual expiry
-        }
-      }, refreshIn);
+      audio.src = streamUrl;
+      audio.load();
+      scheduleRefreshRef.current?.(expiresInSeconds);
     },
-    [trackId, destroyHls]
+    []
   );
 
   // ── Load track ────────────────────────────────────────────────────────────
@@ -110,16 +108,23 @@ export function usePlayback({
           return;
         }
 
-        // Step 3: request signed stream URL (playable + preview both get one)
+        // Step 3: request signed stream URL
         const streamData = await playbackService.requestStreamUrl(trackId);
         if (cancelled) return;
 
         attachStream(streamData.stream.url, streamData.stream.expiresInSeconds);
 
-        // Step 4: if preview, seek to previewStartSeconds on load
+        // Step 4: if preview, seek to previewStartSeconds once audio is ready
         if (b.playability.status === "preview" && b.preview.enabled) {
-          const audio = audioRef.current;
-          if (audio) audio.currentTime = b.preview.previewStartSeconds;
+          audioRef.current?.addEventListener(
+            "canplay",
+            () => {
+              if (audioRef.current) {
+                audioRef.current.currentTime = b.preview.previewStartSeconds;
+              }
+            },
+            { once: true }
+          );
         }
 
         setStatus("ready");
@@ -135,10 +140,14 @@ export function usePlayback({
 
     return () => {
       cancelled = true;
-      destroyHls();
       if (streamExpiryRef.current) clearTimeout(streamExpiryRef.current);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+        audioRef.current.load();
+      }
     };
-  }, [trackId, privateToken, autoPlay, attachStream, destroyHls]);
+  }, [trackId, privateToken, autoPlay, attachStream]);
 
   // ── Audio event listeners ─────────────────────────────────────────────────
   useEffect(() => {
@@ -150,15 +159,15 @@ export function usePlayback({
 
       if (duration > 0 && audio.currentTime >= duration) {
         audio.pause();
-        audio.currentTime = duration; // pin at end, don't let it drift past
+        audio.currentTime = duration;
         setStatus("paused");
         if (trackId) {
           playbackService.reportCompleted(trackId);
         }
         return;
       }
-      
-      // Enforce preview time limit — stop at previewStartSeconds + previewDurationSeconds
+
+      // Enforce preview time limit
       if (
         access.isPreview &&
         access.previewDurationSeconds > 0 &&
@@ -175,15 +184,9 @@ export function usePlayback({
       }
     };
 
-    const onPlay = () => {
-      setStatus("playing");
-    };
+    const onPlay  = () => setStatus("playing");
+    const onPause = () => setStatus("paused");
 
-    const onPause = () => {
-      setStatus("paused");
-    };
-
-    // Only called on natural completion — report to backend
     const onEnded = () => {
       setStatus("paused");
       if (trackId) {
@@ -225,7 +228,6 @@ export function usePlayback({
       const audio = audioRef.current;
       if (!audio) return;
 
-      // Clamp seek within preview bounds
       let target = seconds;
       if (access.isPreview) {
         target = Math.min(
