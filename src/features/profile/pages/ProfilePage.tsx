@@ -8,6 +8,7 @@ import { useMe } from "../context/useMe";
 import type {
   MeUserProfile,
   PublicUserProfile,
+  UserFollowing,
 } from "../../../shared/types/User";
 
 function isMeProfile(
@@ -19,7 +20,9 @@ function isMeProfile(
 export default function ProfilePage() {
   const { username } = useParams<{ username: string }>();
   const { me, socialAccounts, following, refresh: refreshMe } = useMe();
+  const isMe = !username;
   const [publicUser, setPublicUser] = useState<PublicUserProfile | null>(null);
+  const [openedFollowing, setOpenedFollowing] = useState<UserFollowing[]>([]);
   const [loading, setLoading] = useState(!!username);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,6 +47,36 @@ export default function ProfilePage() {
     fetchProfile();
   }, [username]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    if (isMe) {
+      setOpenedFollowing(following);
+      return;
+    }
+
+    const openedUserId = publicUser?.id;
+    if (!openedUserId) {
+      setOpenedFollowing([]);
+      return;
+    }
+
+    profileService
+      .getUserFollowing(openedUserId)
+      .then((res) => {
+        if (!isMounted) return;
+        setOpenedFollowing(res.following ?? []);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setOpenedFollowing([]);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isMe, publicUser?.id, following]);
+
   if (!username && !me) {
     return <div className="min-h-screen text-white">Loading...</div>;
   }
@@ -61,8 +94,6 @@ export default function ProfilePage() {
       </div>
     );
   }
-
-  const isMe = !username;
   const location = user.location ?? "";
   const locationParts = location.split(",");
   const city = locationParts[0]?.trim() ?? undefined;
@@ -90,6 +121,7 @@ export default function ProfilePage() {
           bio={user.bio ?? undefined}
           socialAccounts={isMe ? socialAccounts : undefined}
           isMe={isMe}
+          userId={user.id}
           onProfileUpdated={refreshProfile}
         />
         <div className="absolute right-[8.333333%] top-full mt-4">
@@ -99,12 +131,13 @@ export default function ProfilePage() {
             tracks={"tracksCount" in user ? (user as any).tracksCount : 0}
             bio={user.bio ?? undefined}
             socialAccounts={isMe ? socialAccounts : undefined}
-            followingUsers={following.map((u) => ({
+            followingUsers={openedFollowing.map((u) => ({
               id: u.id,
               username: u.username,
+              displayName: u.displayName ?? undefined,
               avatarUrl: u.avatarUrl ?? "",
               isCertified: u.isCertified ?? false,
-              followersCount: undefined,
+              followersCount: u.followersCount ?? 0,
             }))}
           />
         </div>

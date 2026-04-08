@@ -6,12 +6,12 @@ export interface Track {
   id: string;
   title: string;
   artist: string;
-  genre: Genre;
-  tags: string[];
-  status: TrackStatus;
-  visibility: TrackVisibility;
-  audioUrl: string;
-  description: string;
+  genre?: Genre;
+  tags?: string[];
+  status?: TrackStatus;
+  visibility?: TrackVisibility;
+  audioUrl?: string;
+  description?: string;
   waveformData?: number[];   
   duration: number;
   date: string;
