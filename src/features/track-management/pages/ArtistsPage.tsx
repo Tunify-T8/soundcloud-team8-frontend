@@ -19,6 +19,7 @@ import tidalImg from "@/assets/tidal.png";
 import pandoraImg from "@/assets/pandora.png";
 import vinylImg from "@/assets/vinyl.png";
 import commentsImg from "@/assets/comment_bubbles.png";
+import { BenefitsSection } from "../components/BenefitsSection";
 
 
 function UploadBanner() {
@@ -495,6 +496,7 @@ const filteredTracks = useMemo(() => {
               </div>
 
               <TrackList tracks={filteredTracks} onDelete={handleDeleteTrack} onUpdate={handleUpdate} />
+              <BenefitsSection />
             </div>
           )}
 
