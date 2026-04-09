@@ -487,14 +487,21 @@ export default function TrackCard({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Checkbox */}
-      <input
-        type="checkbox"
-        checked={isSelected}
-        onChange={() => onSelect?.(track.id)}
-        className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 accent-orange-500 flex-shrink-0"
-        onClick={(e) => e.stopPropagation()}
-      />
+      
+    <button
+      onClick={(e) => { e.stopPropagation(); onSelect?.(track.id); }}
+      className={`w-4 h-4 rounded flex items-center justify-center border flex-shrink-0 transition-colors
+        ${isSelected
+          ? "bg-white border-white"
+          : "bg-transparent border-zinc-500 hover:border-white"
+        }`}
+    >
+      {isSelected && (
+        <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+          <path d="M1 4L3.5 6.5L9 1" stroke="black" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )}
+    </button>
 
       {/* Thumbnail with hover play button */}
       <div
