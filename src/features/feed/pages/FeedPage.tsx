@@ -5,7 +5,7 @@ import { Repeat2 } from "lucide-react";
 import type { FeedItem, FeedResponse } from "@/features/feed/type";
 import { useEffect, useState } from "react";
 import { feedService } from "@/features/feed/feedservice";
-
+import { SOCIAL_GRAPH_UPDATED_EVENT } from "@/features/profile/socialGraphEvents";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatTimeAgo(dateStr: string): string {
@@ -35,25 +35,33 @@ export default function FeedPage() {
 
   useEffect(() => {
     let isMounted = true;
-    feedService
-      .getFeed()
-      .then((data: FeedResponse | null) => {
-        if (isMounted) {
-          if (data) {
-            setFeedItems(data.items);
-          } else {
-            setFeedItems([]);
+
+    const fetchFeed = () => {
+      feedService
+        .getFeed()
+        .then((data: FeedResponse | null) => {
+          if (isMounted) {
+            if (data) {
+              setFeedItems(data.items);
+            } else {
+              setFeedItems([]);
+            }
+            setLoading(false);
           }
-          setLoading(false);
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setError("Failed to load feed");
-          setLoading(false);
-        }
-      });
+        })
+        .catch(() => {
+          if (isMounted) {
+            setError("Failed to load feed");
+            setLoading(false);
+          }
+        });
+    };
+
+    fetchFeed();
+    window.addEventListener(SOCIAL_GRAPH_UPDATED_EVENT, fetchFeed);
+
     return () => {
+      window.removeEventListener(SOCIAL_GRAPH_UPDATED_EVENT, fetchFeed);
       isMounted = false;
     };
   }, []);

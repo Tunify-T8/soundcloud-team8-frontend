@@ -28,7 +28,7 @@ export default function LibraryPage() {
   return (
     <div className="min-h-screen bg-black text-white pb-20">
       {/* Tab bar */}
-      <div className="border-b border-zinc-800 sticky top-[56px] bg-black z-10">
+      <div className="border-b border-zinc-800 sticky top-[48px] bg-black z-40">
         <div className="flex gap-0 pl-40">
           {TABS.map((tab) => (
             <button

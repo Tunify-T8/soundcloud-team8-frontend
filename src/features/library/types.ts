@@ -17,7 +17,7 @@ export interface TrackItem {
 export interface CollectionItem {
   id: string;
   title: string;
-  subtitle: string;
+  subtitle?: string;
   coverUrl?: string;
 }
 

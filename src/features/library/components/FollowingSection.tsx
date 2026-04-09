@@ -1,16 +1,22 @@
 import type { FollowingUser } from "../types";
+import { BadgeCheck } from "lucide-react";
 
-export default function FollowingSection({ users }: { users: FollowingUser[] }) {
+interface FollowingSectionProps {
+  users: FollowingUser[];
+}
+
+export default function FollowingSection({ users }: FollowingSectionProps) {
   return (
     <section className="mb-8">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-white font-bold text-sm">Hear what the people you follow have posted:</h2>
         <span className="text-zinc-500 text-xs hover:text-white cursor-pointer">Browse trending playlists</span>
       </div>
-      <div className="flex gap-6 flex-wrap">
+      {/* Single scrollable row — no wrapping */}
+      <div className="flex gap-6 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
         {users.map((user) => (
-          <div key={user.id} className="flex flex-col items-center gap-2 cursor-pointer group w-[170px]">
-            <div className="w-[170px] h-[170px] rounded-full overflow-hidden bg-[#282828] relative">
+          <div key={user.id} className="flex-shrink-0 w-[170px] flex flex-col items-center cursor-pointer group">
+            <div className="w-[170px] h-[170px] rounded-full overflow-hidden mb-3 relative bg-[#282828]">
               {user.avatarUrl ? (
                 <img
                   src={user.avatarUrl}
@@ -20,23 +26,14 @@ export default function FollowingSection({ users }: { users: FollowingUser[] }) 
               ) : (
                 <div className="w-full h-full bg-[#282828]" />
               )}
+              <div className="absolute inset-0 rounded-full bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-1">
-                <p className="text-white text-xs font-semibold">{user.name}</p>
-                {user.verified && (
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="#1da1f2">
-                    <circle cx="6" cy="6" r="6" />
-                    <path d="M4 6l1.5 1.5L8 4" stroke="white" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
-              </div>
-              <p className="text-zinc-500 text-xs mt-0.5">{user.followers} followers</p>
+            <div className="flex items-center gap-1 mb-0.5">
+              <p className="text-white text-xs font-semibold truncate">{user.name}</p>
+              {user.verified && <BadgeCheck size={13} className="text-blue-400 shrink-0" />}
             </div>
+            <p className="text-zinc-500 text-xs">{user.followers} followers</p>
           </div>
-        ))}
-        {Array.from({ length: Math.max(0, 6 - users.length) }).map((_, i) => (
-          <div key={`ghost-${i}`} className="w-[170px] h-[170px] rounded-full bg-[#282828]" />
         ))}
       </div>
     </section>

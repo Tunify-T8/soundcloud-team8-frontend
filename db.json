@@ -1,5 +1,124 @@
 {
-  "listening-history": {
+  "tracks": [
+    {
+      "id": "test-track-1",
+      "trackId": "test-track-1",
+      "title": "Never Ending Stpry",
+      "artist": {
+        "id": "artist-1",
+        "name": "Test Artist",
+        "tier": "pro"
+      },
+      "durationSeconds": 175,
+      "waveformUrl": "",
+      "coverUrl":"http://localhost:3001/assets/neverendingstory.png",
+      "contentWarning": false,
+      "engagement": {
+        "likeCount": 0,
+        "commentCount": 0,
+        "repostCount": 0,
+        "isLiked": false,
+        "isReposted": false,
+        "isSaved": false
+      },
+      "playability": {
+        "status": "playable",
+        "blockedReason": null,
+        "regionBlocked": false,
+        "tierBlocked": false,
+        "requiresSubscription": false
+      },
+      "preview": {
+        "enabled": false,
+        "previewStartSeconds": 0,
+        "previewDurationSeconds": 0
+      },
+      "scheduledReleaseDate": null
+    },
+    {
+      "id": "test-track-2",
+      "trackId": "test-track-2",
+      "title": "Preview Only Track",
+      "artist": {
+        "id": "artist-1",
+        "name": "Test Artist",
+        "tier": "pro"
+      },
+      "durationSeconds": 210,
+      "waveformUrl": "",
+      "coverUrl": "",
+      "contentWarning": false,
+      "engagement": {
+        "likeCount": 12,
+        "commentCount": 3,
+        "repostCount": 1,
+        "isLiked": false,
+        "isReposted": false,
+        "isSaved": false
+      },
+      "playability": {
+        "status": "preview",
+        "blockedReason": "tierRestricted",
+        "regionBlocked": false,
+        "tierBlocked": true,
+        "requiresSubscription": true
+      },
+      "preview": {
+        "enabled": true,
+        "previewStartSeconds": 0,
+        "previewDurationSeconds": 30
+      },
+      "scheduledReleaseDate": null
+    },
+    {
+      "id": "test-track-3",
+      "trackId": "test-track-3",
+      "title": "Region Blocked Track",
+      "artist": {
+        "id": "artist-2",
+        "name": "Another Artist",
+        "tier": "free"
+      },
+      "durationSeconds": 195,
+      "waveformUrl": "",
+      "coverUrl": "",
+      "contentWarning": false,
+      "engagement": {
+        "likeCount": 0,
+        "commentCount": 0,
+        "repostCount": 0,
+        "isLiked": false,
+        "isReposted": false,
+        "isSaved": false
+      },
+      "playability": {
+        "status": "blocked",
+        "blockedReason": "regionRestricted",
+        "regionBlocked": true,
+        "tierBlocked": false,
+        "requiresSubscription": false
+      },
+      "preview": {
+        "enabled": false,
+        "previewStartSeconds": 0,
+        "previewDurationSeconds": 0
+      },
+      "scheduledReleaseDate": null
+    }
+  ],
+  "contexts": [
+    {
+      "type": "playlist",
+      "id": "playlist-1",
+      "trackIds": ["test-track-1", "test-track-2", "test-track-3"]
+    },
+    {
+      "type": "profile",
+      "id": "user-1",
+      "trackIds": ["test-track-2", "test-track-1"]
+    }
+  ],
+"listening-history": {
     "data": [
       {
         "id": "ph-2",
@@ -56,5 +175,35 @@
       "totalItems": 47,
       "itemsPerPage": 20
     }
-  }
+  },
+
+  "trackStreams": [
+    {
+      "id": "trk_005",
+      "trackId": "trk_005",
+      "stream": {
+        "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+        "expiresInSeconds": 600,
+        "format": "hls"
+      },
+      "preview": {
+        "previewStartSeconds": 0,
+        "previewDurationSeconds": 30
+      }
+    },
+    {
+      "id": "trk_006",
+      "trackId": "trk_006",
+      "stream": {
+        "url": "https://test-streams.mux.dev/tos_ismc/main.m3u8",
+        "expiresInSeconds": 600,
+        "format": "hls"
+      },
+      "preview": {
+        "previewStartSeconds": 0,
+        "previewDurationSeconds": 30
+      }
+    }
+  ]
 }
+  
