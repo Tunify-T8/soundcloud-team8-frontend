@@ -2,6 +2,7 @@ import { useState } from "react";
 import TrackCard from "./TrackCard";
 import EditTrackDrawer from "./EditTrackDrawer";
 import type { Track } from "../../../shared/types/Track";
+import { Pencil, PlusSquare } from "lucide-react";
 
 interface TrackListProps {
   tracks: Track[];
@@ -10,91 +11,117 @@ interface TrackListProps {
 }
 
 export default function TrackList({ tracks, onDelete, onUpdate }: TrackListProps) {
-  const [allSelected, setAllSelected] = useState(false);
-
-  const handleSelectAll = () => {
-    setAllSelected(!allSelected);
-    
-  };
-  
-  const [selectedTracks, setSelectedTracks] = useState<string[]>([])
+  const [selectedTracks, setSelectedTracks] = useState<string[]>([]);
   const [editingTrack, setEditingTrack] = useState<Track | null>(null);
 
+  const validTracks = tracks.filter((track) => track != null && track.id != null);
+  const allSelected = selectedTracks.length === validTracks.length && validTracks.length > 0;
+  const someSelected = selectedTracks.length > 0;
+
+  const handleSelectAll = () => {
+    if (allSelected) {
+      setSelectedTracks([]);
+    } else {
+      setSelectedTracks(validTracks.map((t) => t.id));
+    }
+  };
+
   const handleSelectTrack = (id: string) => {
-    setSelectedTracks(prev => 
-      prev.includes(id) 
-        ? prev.filter(trackId => trackId !== id)
-        : [...prev, id]
-    )
-  }
+    setSelectedTracks((prev) =>
+      prev.includes(id) ? prev.filter((trackId) => trackId !== id) : [...prev, id]
+    );
+  };
 
   return (
-     <div className="space-y-0 overflow-visible"> 
-    <div className="space-y-0">
-      {/* Header */}
-      <div className="flex items-center gap-4 px-4 py-3 border-b border-border bg-[hsl(0,0%,10%)]">
-        {/* Checkbox */}
-        <input
-          type="checkbox"
-          checked={allSelected}
-          onChange={handleSelectAll}
-          className="w-4 h-4 rounded border-border bg-muted accent-orange-500 flex-shrink-0"
+    <div className="space-y-0 overflow-visible">
+      <div className="space-y-0">
+        {/* Header */}
+        <div className="flex items-center gap-4 px-4 py-3 border-b border-border bg-[hsl(0,0%,10%)]">
+          
+          {/* Checkbox — styled white with black tick, shows count when selected */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={handleSelectAll}
+              className={`w-4 h-4 rounded flex items-center justify-center border flex-shrink-0 transition-colors
+                ${someSelected
+                  ? "bg-white border-white"
+                  : "bg-transparent border-zinc-500 hover:border-white"
+                }`}
+            >
+              {someSelected && (
+                <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                  <path d="M1 4L3.5 6.5L9 1" stroke="black" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </button>
+          </div>
+
+          {/* Label — switches between TRACKS and "N SELECTED + actions" */}
+          {someSelected ? (
+            <div className="flex items-center gap-3 flex-1">
+              <span className="text-white text-xs font-bold tracking-wide">
+                {selectedTracks.length} SELECTED
+              </span>
+              <button className="text-zinc-400 hover:text-white transition-colors">
+                <Pencil className="w-4 h-4" />
+              </button>
+              <button className="text-zinc-400 hover:text-white transition-colors">
+                <PlusSquare className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <span className="text-foreground text-xs font-bold tracking-wide flex-1">TRACKS</span>
+          )}
+
+          {/* Duration Header */}
+          <div className="w-16 text-center">
+            <span className="text-foreground text-xs font-bold">DURATION</span>
+          </div>
+
+          {/* Date Header */}
+          <div className="w-28 text-center">
+            <span className="text-foreground text-xs font-bold">DATE</span>
+          </div>
+
+          {/* Engagements Header */}
+          <div className="flex items-center gap-4 w-52 justify-center">
+            <span className="text-foreground text-xs font-bold">ENGAGEMENTS</span>
+          </div>
+
+          <div className="w-16 text-right">
+            <span className="text-foreground text-xs font-bold">PLAYS</span>
+          </div>
+
+          <div className="w-[88px] flex-shrink-0"></div>
+          <div className="w-6 flex-shrink-0"></div>
+        </div>
+
+        <div className="space-y-1 overflow-visible">
+          <div className="space-y-1">
+            {validTracks.map((track) => (
+              <TrackCard
+                key={track.id}
+                track={track}
+                isSelected={selectedTracks.includes(track.id)}
+                onSelect={handleSelectTrack}
+                onEdit={(id) => {
+                  const found = tracks.find((t) => t.id === id) ?? null;
+                  setEditingTrack(found);
+                }}
+                onDelete={onDelete}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {editingTrack && (
+        <EditTrackDrawer
+          track={editingTrack}
+          onClose={() => setEditingTrack(null)}
+          onUpdate={onUpdate}
         />
-
-        {/* Tracks Label */}
-        <span className="text-foreground text-xs font-bold tracking-wide flex-1">TRACKS</span>
-
-        {/* Duration Header */}
-        <div className="w-16 text-center">
-          <span className="text-foreground text-xs font-bold">DURATION</span>
-        </div>
-
-        {/* Date Header */}
-        <div className="w-28 text-center">
-          <span className="text-foreground text-xs font-bold">DATE</span>
-        </div>
-
-        {/* Engagements Header */}
-        <div className="flex items-center gap-4 w-52 justify-center">
-          <span className="text-foreground text-xs font-bold">ENGAGEMENTS</span>
-        </div>
-
-        {/* Plays Header */}
-        <div className="w-16 text-right">
-          <span className="text-foreground text-xs font-bold">PLAYS</span>
-        </div>
-
-        {/* More menu spacer */}
-        <div className="w-6"></div>
-      </div>
-
-<div className="space-y-1 overflow-visible"> 
-      {/* Track Rows */}
-      <div className="space-y-1">
-        {tracks.map((track) => (
-          <TrackCard
-            key={track.id}
-            track={track}
-            isSelected={selectedTracks.includes(track.id)}
-            onSelect={handleSelectTrack}
-            onEdit={(id) => {
-              const found = tracks.find((t) => t.id === id) ?? null;
-              setEditingTrack(found);
-            }}
-            onDelete={onDelete}
-          />
-        ))}
-      </div>
-    </div>
-    </div>
-
-    {editingTrack && (
-      <EditTrackDrawer
-        track={editingTrack}
-        onClose={() => setEditingTrack(null)}
-        onUpdate={onUpdate}
-      />
-    )}
+      )}
     </div>
   );
 }
