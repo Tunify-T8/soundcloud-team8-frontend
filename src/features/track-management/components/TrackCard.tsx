@@ -596,8 +596,8 @@ export default function TrackCard({
         onClick={(e) => { e.stopPropagation(); setShowAmplifyModal(true); }}
         onMouseEnter={() => setAmplifyHovered(true)}
         onMouseLeave={() => setAmplifyHovered(false)}
-        className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-white text-xs font-semibold transition-all flex-shrink-0
-          ${amplifyHovered ? "bg-indigo-700 opacity-80" : "bg-indigo-600"}`}
+        className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-white text-xs font-bold transition-all flex-shrink-0 tracking-tight
+          ${amplifyHovered ? "bg-indigo-500 opacity-80" : "bg-indigo-400"}`}
       >
         <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M7 1L9 6H14L10 9.5L11.5 14L7 11L2.5 14L4 9.5L0 6H5L7 1Z" fill="white" />
