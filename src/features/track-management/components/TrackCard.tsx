@@ -581,7 +581,7 @@ export default function TrackCard({
 
       {/* Plays */}
       <div className="w-16 text-right">
-        <span className="text-white text-sm font-semibold tabular-nums">{track.plays}</span>
+        <span className="text-white text-sm tabular-nums">{track.plays}</span>
       </div>
 
       {/* Amplify button */}
