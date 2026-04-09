@@ -50,7 +50,7 @@ export const feedService = {
       const params: Record<string, string> = { q: query };
       if (type) params.type = type;
       const response = await api.get("/search", { params });
-      return response.data.results ?? response.data.items ?? [];
+      return response.data.data ?? [];
     } catch {
       return [];
     }
