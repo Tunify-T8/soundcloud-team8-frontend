@@ -59,19 +59,19 @@ export default function TrackList({ tracks, onDelete, onUpdate }: TrackListProps
           <span className="text-foreground text-xs font-bold">ENGAGEMENTS</span>
         </div>
 
-        {/* Plays Header */}
         <div className="w-16 text-right">
           <span className="text-foreground text-xs font-bold">PLAYS</span>
         </div>
 
-        {/* More menu spacer */}
-        <div className="w-6"></div>
+        <div className="w-[88px] flex-shrink-0"></div>
+
+        <div className="w-6 flex-shrink-0"></div>
       </div>
 
 <div className="space-y-1 overflow-visible"> 
       {/* Track Rows */}
       <div className="space-y-1">
-        {tracks.map((track) => (
+        {tracks.filter((track) => track != null && track.id != null).map((track) => (
           <TrackCard
             key={track.id}
             track={track}
