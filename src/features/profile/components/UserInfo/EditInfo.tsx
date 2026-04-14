@@ -2,9 +2,19 @@ import Avatar from "../Header/Avatar";
 import { useEffect, useState } from "react";
 import { FiInfo } from "react-icons/fi";
 import { profileService } from "../../profileService";
-import type { SocialPlatform, UserSocialLink } from "../../../../shared/types/User";
+import type {
+  SocialPlatform,
+  UserSocialLink,
+} from "../../../../shared/types/User";
 
-const PLATFORM_OPTIONS: SocialPlatform[] = ["INSTAGRAM", "TWITTER", "WEBSITE"];
+const PLATFORM_OPTIONS: SocialPlatform[] = [
+  "INSTAGRAM",
+  "YOUTUBE",
+  "SPOTIFY",
+  "TIKTOK",
+  "SOUNDCLOUD",
+  "TWITTER",
+];
 
 function normalizeLinks(links: UserSocialLink[]): UserSocialLink[] {
   return links
@@ -44,20 +54,32 @@ export default function EditInfo({
   const initialCountry = country ?? "";
   const initialCity = city ?? "";
   const initialBio = bio ?? "";
-  const initialLinks = [
-    {
-      platform: "INSTAGRAM",
-      url: socialAccounts?.instagram ?? "",
-    },
-    {
-      platform: "TWITTER",
-      url: socialAccounts?.twitter ?? "",
-    },
-    {
-      platform: "WEBSITE",
-      url: socialAccounts?.website ?? "",
-    },
-  ].filter((link): link is UserSocialLink => link.url.trim().length > 0);
+  const initialLinks: UserSocialLink[] = PLATFORM_OPTIONS.map((platform) => {
+    let url = "";
+    switch (platform) {
+      case "INSTAGRAM":
+        url = socialAccounts?.instagram ?? "";
+        break;
+      case "YOUTUBE":
+        url = socialAccounts?.youtube ?? "";
+        break;
+      case "SPOTIFY":
+        url = socialAccounts?.spotify ?? "";
+        break;
+      case "TIKTOK":
+        url = socialAccounts?.tiktok ?? "";
+        break;
+      case "SOUNDCLOUD":
+        url = socialAccounts?.soundcloud ?? "";
+        break;
+      case "TWITTER":
+        url = socialAccounts?.twitter ?? "";
+        break;
+      default:
+        url = "";
+    }
+    return { platform, url };
+  }).filter((link) => link.url.trim().length > 0);
   const normalizedInitialLinks = normalizeLinks(initialLinks);
 
   const [displayNameState, setDisplayNameState] = useState(initialDisplayName);
@@ -142,108 +164,9 @@ export default function EditInfo({
         )}
 
         <div className="grid gap-8 lg:grid-cols-[220px_1fr]">
-          <div className="flex h-full flex-col">
+          <div className="flex flex-col">
             <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full bg-gray-300 overflow-hidden">
               <Avatar avatarUrl={avatarUrl} displayName={displayName} />
-            </div>
-
-            <div className="mt-10">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-white">Your links</span>
-                <div className="relative group">
-                  <FiInfo size={14} className="text-zinc-400 cursor-pointer" />
-                  <div className="pointer-events-none absolute left-0 top-full z-10 mt-2 hidden w-80 rounded-sm bg-zinc-400 px-4 py-3 text-[14px] text-zinc-900 shadow-lg group-hover:block">
-                    Add links to your website and social network profiles to
-                    help your audience find you wherever you are.
-                  </div>
-                </div>
-              </div>
-              <div className="mt-3 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (linksState.length === 0) {
-                      setLinksState([{ platform: "INSTAGRAM", url: "" }]);
-                    }
-                    setShowLinkInputs((prev) => !prev);
-                  }}
-                  className="rounded-sm bg-zinc-800 px-4 py-2 text-sm font-bold text-white hover:text-zinc-400 cursor-pointer"
-                >
-                  {showLinkInputs ? "Hide links" : "Add link"}
-                </button>
-              </div>
-
-              {showLinkInputs && (
-                <div className="mt-4 grid gap-3">
-                  {linksState.map((link, index) => (
-                    <div
-                      key={`${link.platform}-${index}`}
-                      className="grid gap-2"
-                    >
-                      <select
-                        value={link.platform}
-                        onChange={(e) => {
-                          const nextLinks = [...linksState];
-                          nextLinks[index] = {
-                            ...nextLinks[index],
-                            platform: e.target.value as SocialPlatform,
-                          };
-                          setLinksState(nextLinks);
-                        }}
-                        className="rounded-sm border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white outline-none focus:border-zinc-500 cursor-pointer"
-                      >
-                        {PLATFORM_OPTIONS.map((platform) => (
-                          <option key={platform} value={platform}>
-                            {platform}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        value={link.url}
-                        onChange={(e) => {
-                          const nextLinks = [...linksState];
-                          nextLinks[index] = {
-                            ...nextLinks[index],
-                            url: e.target.value,
-                          };
-                          setLinksState(nextLinks);
-                        }}
-                        className="w-full rounded-sm border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white outline-none focus:border-zinc-500"
-                        placeholder="https://example.com/your-handle"
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setLinksState(
-                            linksState.filter((_, rowIndex) => rowIndex !== index),
-                          )
-                        }
-                        className="w-full rounded-sm bg-zinc-800 px-3 py-2 text-sm font-bold text-white hover:text-zinc-400 cursor-pointer"
-                        aria-label={`Remove link ${index + 1}`}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    disabled={linksState.length >= 6}
-                    onClick={() =>
-                      setLinksState([
-                        ...linksState,
-                        { platform: "INSTAGRAM", url: "" },
-                      ])
-                    }
-                    className={`rounded-sm px-4 py-2 text-sm font-bold ${
-                      linksState.length >= 6
-                        ? "bg-zinc-700 text-zinc-400 cursor-not-allowed"
-                        : "bg-zinc-800 text-white hover:text-zinc-400 cursor-pointer"
-                    }`}
-                  >
-                    Add another link
-                  </button>
-                </div>
-              )}
             </div>
           </div>
 
@@ -331,6 +254,151 @@ export default function EditInfo({
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Links section — full width, below the grid */}
+        <div className="mt-8">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-white">Your links</span>
+            <div className="relative group">
+              <FiInfo size={14} className="text-zinc-400 cursor-pointer" />
+              <div className="pointer-events-none absolute left-0 top-full z-10 mt-2 hidden w-80 rounded-sm bg-zinc-400 px-4 py-3 text-[14px] text-zinc-900 shadow-lg group-hover:block">
+                Add links to your website and social network profiles to help
+                your audience find you wherever you are.
+              </div>
+            </div>
+          </div>
+
+          {showLinkInputs && (
+            <div className="mt-3 grid gap-2">
+              {linksState.map((link, index) => (
+                <div
+                  key={`${link.platform}-${index}`}
+                  className="flex items-center gap-2"
+                >
+                  <div className="flex-shrink-0 text-zinc-400">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                    </svg>
+                  </div>
+
+                  <input
+                    value={link.url}
+                    onChange={(e) => {
+                      const nextLinks = [...linksState];
+                      nextLinks[index] = {
+                        ...nextLinks[index],
+                        url: e.target.value,
+                      };
+                      setLinksState(nextLinks);
+                    }}
+                    className="flex-1 min-w-0 rounded-sm bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-white placeholder-zinc-500 outline-none focus:border-zinc-500"
+                    placeholder="Web or email address"
+                  />
+
+                  <select
+                    value={link.platform}
+                    onChange={(e) => {
+                      const nextLinks = [...linksState];
+                      nextLinks[index] = {
+                        ...nextLinks[index],
+                        platform: e.target.value as SocialPlatform,
+                      };
+                      setLinksState(nextLinks);
+                    }}
+                    className="w-36 flex-shrink-0 rounded-sm bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-white outline-none focus:border-zinc-500 cursor-pointer"
+                  >
+                    {PLATFORM_OPTIONS.map((platform) => (
+                      <option key={platform} value={platform}>
+                        {platform.charAt(0) + platform.slice(1).toLowerCase()}
+                      </option>
+                    ))}
+                  </select>
+
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await profileService.removeMeSocialLink(link.platform);
+                        setLinksState(
+                          linksState.filter(
+                            (_, rowIndex) => rowIndex !== index,
+                          ),
+                        );
+                      } catch (err) {
+                        console.error("Failed to remove social link", err);
+                      }
+                    }}
+                    className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-sm bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-red-400 hover:border-red-400/40 cursor-pointer transition-colors"
+                    aria-label={`Remove link ${index + 1}`}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                      <path d="M10 11v6M14 11v6" />
+                      <path d="M9 6V4h6v2" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+
+              <button
+                type="button"
+                disabled={linksState.length >= 6}
+                onClick={() =>
+                  setLinksState([
+                    ...linksState,
+                    { platform: "INSTAGRAM", url: "" },
+                  ])
+                }
+                className={`mt-1 rounded-sm px-4 py-2 text-sm font-bold border transition-colors ${
+                  linksState.length >= 6
+                    ? "border-zinc-700 text-zinc-500 cursor-not-allowed"
+                    : "border-zinc-600 text-white hover:border-zinc-400 cursor-pointer"
+                }`}
+              >
+                Add link
+              </button>
+            </div>
+          )}
+
+          {!showLinkInputs && (
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={() => {
+                  if (linksState.length === 0) {
+                    setLinksState([{ platform: "INSTAGRAM", url: "" }]);
+                  }
+                  setShowLinkInputs(true);
+                }}
+                className="rounded-sm border border-zinc-600 px-4 py-2 text-sm font-bold text-white hover:border-zinc-400 cursor-pointer transition-colors"
+              >
+                Add link
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="mt-6 flex justify-end gap-2 border-t border-zinc-800 pt-4">

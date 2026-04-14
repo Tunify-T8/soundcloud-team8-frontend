@@ -14,7 +14,7 @@ export interface User {
   };
   role: string;
   coverUrl: string;
-  isVerified: boolean;
+  isCertified: boolean;
   followersCount: number | string;
   followingCount: number;
   tracksCount: number;
@@ -29,11 +29,11 @@ export interface FollowingUser {
   username: string;
   displayName?: string;
   avatarUrl: string;
-  isVerified: boolean;
+  isCertified: boolean;
   followersCount?: number | string;
 }
 
-// --- API Types generated from Swagger ---
+// --- API Types ---
 
 // User profile (GET /users/me, /users/{userIdOrUsername})
 
@@ -48,7 +48,7 @@ export interface MeUserProfile {
   location?: string | null;
   avatarUrl?: string | null;
   coverUrl?: string | null;
-  isVerified: boolean;
+  isCertified: boolean;
   isActive: boolean;
   visibility: "PUBLIC" | "PRIVATE";
   followersCount: number;
@@ -89,7 +89,13 @@ export interface UpdateUserProfileRequest {
 }
 
 // Social links (GET/PATCH /users/me/social-links)
-export type SocialPlatform = "INSTAGRAM" | "TWITTER" | "WEBSITE";
+export type SocialPlatform =
+  | "INSTAGRAM"
+  | "YOUTUBE"
+  | "SPOTIFY"
+  | "TIKTOK"
+  | "SOUNDCLOUD"
+  | "TWITTER";
 
 export interface UserSocialLink {
   platform: SocialPlatform;
@@ -144,8 +150,12 @@ export interface UserFollowersResponse {
 export interface UserFollowing {
   id: string;
   username: string;
+  displayName?: string | null;
   avatarUrl?: string | null;
-  isVerified?: boolean;
+  location?: string | null;
+  isCertified?: boolean;
+  followersCount?: number;
+  isNotificationEnabled?: boolean;
 }
 
 export interface UserFollowingResponse {

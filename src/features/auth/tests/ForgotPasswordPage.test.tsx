@@ -1,5 +1,3 @@
-
-
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -17,12 +15,11 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-vi.mock('../data/mockUsers', () => ({
-  isKnownEmail: vi.fn(),
+vi.mock('../services/index', () => ({
+  forgotPassword: vi.fn().mockResolvedValue({ message: 'Reset email sent.' }),
 }));
 
-import { isKnownEmail } from '../data/mockUsers';
-
+import { forgotPassword } from '../services/index';
 
 const renderForgotPage = () =>
   render(
@@ -31,15 +28,10 @@ const renderForgotPage = () =>
     </MemoryRouter>
   );
 
-
-
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.clearAllMocks();
-  vi.mocked(isKnownEmail).mockReturnValue(false);
+  vi.mocked(forgotPassword).mockResolvedValue({ message: 'Reset email sent.' });
 });
-
-// INITIAL RENDER
 
 describe('ForgotPasswordPage — initial render', () => {
   it('renders the Reset password title', () => {
@@ -67,15 +59,14 @@ describe('ForgotPasswordPage — initial render', () => {
     expect(screen.getByText(/visit our help center/i)).toBeInTheDocument();
   });
 
-  it('renders the Tunify branding', () => {
+  it('renders the navbar with logo', () => {
     renderForgotPage();
-    expect(screen.getByText('Tunify')).toBeInTheDocument();
+    expect(screen.getByText('Create account')).toBeInTheDocument();
   });
 
   it('does NOT show error message on initial render', () => {
     renderForgotPage();
     expect(screen.queryByText(/not valid/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/enter a valid/i)).not.toBeInTheDocument();
   });
 
   it('renders the back button', () => {
@@ -86,13 +77,10 @@ describe('ForgotPasswordPage — initial render', () => {
   });
 });
 
-// VALIDATION — ERROR CASES
-
 describe('ForgotPasswordPage — validation', () => {
   it('shows error when submitting with empty input', async () => {
     renderForgotPage();
     fireEvent.click(screen.getByRole('button', { name: /send reset link/i }));
-
     await waitFor(() => {
       expect(screen.getByText(/not valid/i)).toBeInTheDocument();
     });
@@ -101,10 +89,8 @@ describe('ForgotPasswordPage — validation', () => {
   it('shows error for invalid email format', async () => {
     renderForgotPage();
     const user = userEvent.setup();
-
     await user.type(screen.getByPlaceholderText('your@email.com'), 'notanemail');
     fireEvent.click(screen.getByRole('button', { name: /send reset link/i }));
-
     await waitFor(() => {
       expect(screen.getByText(/not valid/i)).toBeInTheDocument();
     });
@@ -113,10 +99,8 @@ describe('ForgotPasswordPage — validation', () => {
   it('shows error for partial email like abc@', async () => {
     renderForgotPage();
     const user = userEvent.setup();
-
     await user.type(screen.getByPlaceholderText('your@email.com'), 'abc@');
     fireEvent.click(screen.getByRole('button', { name: /send reset link/i }));
-
     await waitFor(() => {
       expect(screen.getByText(/not valid/i)).toBeInTheDocument();
     });
@@ -125,17 +109,11 @@ describe('ForgotPasswordPage — validation', () => {
   it('clears error when user starts typing after an error', async () => {
     renderForgotPage();
     const user = userEvent.setup();
-
-    // Trigger error
     fireEvent.click(screen.getByRole('button', { name: /send reset link/i }));
-
     await waitFor(() => {
       expect(screen.getByText(/not valid/i)).toBeInTheDocument();
     });
-
-    // Start typing — error should clear
     await user.type(screen.getByPlaceholderText('your@email.com'), 'a');
-
     await waitFor(() => {
       expect(screen.queryByText(/not valid/i)).not.toBeInTheDocument();
     });
@@ -144,119 +122,89 @@ describe('ForgotPasswordPage — validation', () => {
   it('does NOT show error for valid email format before submit', async () => {
     renderForgotPage();
     const user = userEvent.setup();
-
     await user.type(screen.getByPlaceholderText('your@email.com'), 'test@tunify.com');
-
     expect(screen.queryByText(/not valid/i)).not.toBeInTheDocument();
   });
 });
 
-// SUBMIT — UNKNOWN EMAIL
-
 describe('ForgotPasswordPage — unknown email submit', () => {
-it('shows error when email is valid format but unknown', async () => {
-  vi.mocked(isKnownEmail).mockReset();
-  vi.mocked(isKnownEmail).mockReturnValue(false);
-  renderForgotPage();
-  const user = userEvent.setup();
-
-  await user.type(screen.getByPlaceholderText('your@email.com'), 'unknown@example.com');
-  fireEvent.click(screen.getByRole('button', { name: /send reset link/i }));
-
-  await waitFor(() => {
-    expect(screen.getByText(/the request is not valid/i)).toBeInTheDocument();
-  });
-});
-
-  it('does NOT show success card for unknown email', async () => {
-    vi.mocked(isKnownEmail).mockReturnValue(false);
+  it('always shows success for any valid email format', async () => {
     renderForgotPage();
     const user = userEvent.setup();
-
     await user.type(screen.getByPlaceholderText('your@email.com'), 'unknown@example.com');
     fireEvent.click(screen.getByRole('button', { name: /send reset link/i }));
-
     await waitFor(() => {
-      expect(screen.queryByText(/check your email/i)).not.toBeInTheDocument();
+      expect(screen.getByText(/check your email/i)).toBeInTheDocument();
     });
   });
 });
 
-// SUBMIT — KNOWN EMAIL (SUCCESS)
-
 describe('ForgotPasswordPage — successful submit', () => {
-  it('shows success card after valid known email submit', async () => {
-    vi.mocked(isKnownEmail).mockReturnValue(true);
+  it('shows success card after valid email submit', async () => {
     renderForgotPage();
     const user = userEvent.setup();
-
     await user.type(screen.getByPlaceholderText('your@email.com'), 'test@tunify.com');
     fireEvent.click(screen.getByRole('button', { name: /send reset link/i }));
-
     await waitFor(() => {
       expect(screen.getByText(/check your email/i)).toBeInTheDocument();
     });
   });
 
   it('success card shows correct instruction text', async () => {
-    vi.mocked(isKnownEmail).mockReturnValue(true);
     renderForgotPage();
     const user = userEvent.setup();
-
     await user.type(screen.getByPlaceholderText('your@email.com'), 'test@tunify.com');
     fireEvent.click(screen.getByRole('button', { name: /send reset link/i }));
-
     await waitFor(() => {
       expect(screen.getByText(/we've sent instructions/i)).toBeInTheDocument();
     });
   });
 
-  it('success card shows Back to login button', async () => {
-    vi.mocked(isKnownEmail).mockReturnValue(true);
+  it('success card shows Enter reset code button', async () => {
     renderForgotPage();
     const user = userEvent.setup();
-
     await user.type(screen.getByPlaceholderText('your@email.com'), 'test@tunify.com');
     fireEvent.click(screen.getByRole('button', { name: /send reset link/i }));
-
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /back to login/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /enter reset code/i })).toBeInTheDocument();
     });
   });
 
   it('success card shows spam folder help text', async () => {
-    vi.mocked(isKnownEmail).mockReturnValue(true);
     renderForgotPage();
     const user = userEvent.setup();
-
     await user.type(screen.getByPlaceholderText('your@email.com'), 'test@tunify.com');
     fireEvent.click(screen.getByRole('button', { name: /send reset link/i }));
-
     await waitFor(() => {
       expect(screen.getByText(/spam folder/i)).toBeInTheDocument();
     });
   });
 
-  it('Back to login button navigates to /signin', async () => {
-    vi.mocked(isKnownEmail).mockReturnValue(true);
+  it('Enter reset code button navigates to /reset-password with email state', async () => {
     renderForgotPage();
     const user = userEvent.setup();
-
     await user.type(screen.getByPlaceholderText('your@email.com'), 'test@tunify.com');
     fireEvent.click(screen.getByRole('button', { name: /send reset link/i }));
-
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /back to login/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /enter reset code/i })).toBeInTheDocument();
     });
+    fireEvent.click(screen.getByRole('button', { name: /enter reset code/i }));
+    expect(mockNavigate).toHaveBeenCalledWith(
+      '/reset-password',
+      expect.objectContaining({ state: expect.objectContaining({ email: 'test@tunify.com' }) })
+    );
+  });
 
-    fireEvent.click(screen.getByRole('button', { name: /back to login/i }));
-
-    expect(mockNavigate).toHaveBeenCalledWith('/signin');
+  it('calls forgotPassword service with the entered email', async () => {
+    renderForgotPage();
+    const user = userEvent.setup();
+    await user.type(screen.getByPlaceholderText('your@email.com'), 'test@tunify.com');
+    fireEvent.click(screen.getByRole('button', { name: /send reset link/i }));
+    await waitFor(() => {
+      expect(forgotPassword).toHaveBeenCalledWith('test@tunify.com');
+    });
   });
 });
-
-
-// BACK BUTTON
 
 describe('ForgotPasswordPage — back button', () => {
   it('back button calls navigate(-1)', () => {
@@ -268,41 +216,31 @@ describe('ForgotPasswordPage — back button', () => {
   });
 
   it('back button on success card returns to email input card', async () => {
-    vi.mocked(isKnownEmail).mockReturnValue(true);
     renderForgotPage();
     const user = userEvent.setup();
-
     await user.type(screen.getByPlaceholderText('your@email.com'), 'test@tunify.com');
     fireEvent.click(screen.getByRole('button', { name: /send reset link/i }));
-
     await waitFor(() => {
       expect(screen.getByText(/check your email/i)).toBeInTheDocument();
     });
-
-    // Click back on success card
     const buttons = screen.getAllByRole('button');
     const backBtn = buttons.find((b) => b.querySelector('.lucide-chevron-left')) as HTMLElement;
     fireEvent.click(backBtn);
-
     await waitFor(() => {
       expect(screen.getByPlaceholderText('your@email.com')).toBeInTheDocument();
     });
   });
 });
 
-// ENTER KEY SUBMIT
-
 describe('ForgotPasswordPage — keyboard interaction', () => {
   it('pressing Enter in email input triggers submit', async () => {
     renderForgotPage();
     const user = userEvent.setup();
-
     await user.type(screen.getByPlaceholderText('your@email.com'), 'bad');
     fireEvent.keyDown(screen.getByPlaceholderText('your@email.com'), {
       key: 'Enter',
       code: 'Enter',
     });
-
     await waitFor(() => {
       expect(screen.getByText(/not valid/i)).toBeInTheDocument();
     });

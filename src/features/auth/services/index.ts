@@ -18,7 +18,7 @@ const MOCK_AUTH_RESPONSE: AuthResponse = {
     username: 'tunify_dev',
     email: 'test@tunify.com',
     avatarUrl: null,
-    isVerified: true,
+    isCertified: true,
     role: 'user',
   },
   accessToken: 'mock.access.token',
@@ -52,7 +52,7 @@ const realCheckEmail = async (email: string): Promise<{ exists: boolean; message
 export const checkEmail = IS_MOCK ? mockCheckEmail : realCheckEmail;
 
 // ── 2. Login ──────────────────────────────────────────────────
-// POST /auth/login → AuthResponse (tokens only if isVerified: true)
+// POST /auth/login → AuthResponse (tokens only if isCertified: true)
 const mockLogin = async (data: LoginRequest): Promise<AuthResponse> => {
   await delay();
   if (data.email === 'test@tunify.com' && data.password === 'Password123') {

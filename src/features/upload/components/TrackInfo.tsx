@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import axios from "axios";
 import type { ToggleProps } from "../types";
 import type { TogglesState } from "../types";
 import { clearAudioSource } from "../../../store/AudioSourceSlice";
@@ -7,6 +8,7 @@ import { api } from "@/features/auth/services/api";
 import { SiSoundcloud } from "react-icons/si";
 import { useDispatch } from "react-redux";
 import { useAppSelector } from "../../../app/hooks";
+import { profileService } from "@/features/profile/profileService";
 
 function Toggle({ enabled, onChange }: ToggleProps) {
   return (
@@ -205,10 +207,12 @@ function GenreInput({ genreRef }: { genreRef: React.RefObject<HTMLInputElement |
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-
 type UserProfile = {
   id: string
   username: string
+  email: string
+  avatarUrl: string
+  isCertified: boolean
 }
 
 export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
@@ -220,10 +224,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
   const [fileReady, setFileReady] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // User profile
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-
-  // Track URL state (updates as user types title)
   const [trackSlug, setTrackSlug] = useState("");
 
   const [artworkPreview, setArtworkPreview] = useState<string | null>(null);
@@ -259,13 +260,22 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
   const privacyRef     = useRef<string>("public");
 
   // ── Fetch user profile ────────────────────────────────────────────────────
-  useEffect(() => {
-    api.get("/users/me")
-      .then((res) => setUserProfile(res.data))
-      .catch((err) => console.error("Failed to fetch user profile:", err));
-  }, []);
+useEffect(() => {
+  profileService.getMeProfile()
+    .then((user) => setUserProfile({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      avatarUrl: user.avatarUrl!,
+      isCertified: user.isCertified,
+    }))
+    .catch((err) => console.error("Failed to fetch user profile:", err));
+}, []);
 
-  // ── Fetch audio blob ──────────────────────────────────────────────────────
+
+
+
+  // ── Fetch audio blob using raw axios (NOT api) — blob: URLs are local ────
   useEffect(() => {
     if (!source?.url) return;
     let cancelled = false;
@@ -274,7 +284,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
       setIsUploading(true);
       setUploadProgress(0);
       try {
-        const blob = await api.get(source.url, {
+        const blob = await axios.get(source.url, {
           responseType: "blob",
           onDownloadProgress: (e) => {
             if (e.total) setUploadProgress(Math.round((e.loaded / e.total) * 100));
@@ -311,11 +321,6 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
     : ""
 
   const defaultTitle = fileName.replace(/\.[^/.]+$/, "")
-
-  // Full track URL shown to user
-  const trackUrl = userProfile
-    ? `https://tunify.duckdns.org/${userProfile.username}-${userProfile.id}/${trackSlug || slugify(defaultTitle)}`
-    : ""
 
   const setToggle = (key: keyof TogglesState, val: boolean) =>
     setToggles((t) => ({ ...t, [key]: val }));
@@ -363,14 +368,19 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
     if (!fileReady || isSubmitting) return;
     setIsSubmitting(true);
     try {
+      const rawGenre = genreRef.current?.value ?? "";
+
       const { data: track } = await api.post("/tracks", {
         title:               titleRef.current?.value || "Untitled",
-
         tags:                tagsRef.current?.value ? [tagsRef.current.value] : [],
         description:         descriptionRef.current?.value || "",
         privacy:             privacyRef.current,
         availability:        { type: geoMode, regions },
+        genre:               GENRE_MAP[rawGenre] ?? rawGenre,
         scheduledReleaseDate: null,
+        artists:             artistsRef.current?.value
+                               ? artistsRef.current.value.split(",").map(a => a.trim())
+                               : [],
         contentWarning,
       });
 
@@ -544,7 +554,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
               />
             </div>
 
-            {/* Track Link — auto-generated, read-only */}
+            {/* Track Link — auto-generated from title + user profile */}
             <div className="border-b border-[#2a2a2a] pb-3 mb-4">
               <label className="text-sm font-bold text-white block mb-1">Track link</label>
               {userProfile ? (
@@ -573,8 +583,8 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
               <input
                 type="text"
                 ref={artistsRef}
-                value={userProfile?.username ?? ""}
-                onChange={() => {}} // controlled by userProfile, editable if needed
+                defaultValue={userProfile?.username ?? ""}
+                key={userProfile?.username}
                 placeholder={userProfile ? "" : "Loading..."}
                 className="w-full bg-transparent text-white text-sm py-1 focus:outline-none placeholder-[#555]"
               />

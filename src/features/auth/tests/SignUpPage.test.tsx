@@ -1,15 +1,9 @@
-// ============================================================
-// SignUpPage.test.tsx
-// Location: src/features/auth/tests/SignUpPage.test.tsx
-// ============================================================
-
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import SignUpPage from '../pages/SignUpPage';
 
-// ── Mocks ──────────────────────────────────────────────────────
 const mockNavigate = vi.fn();
 
 vi.mock('react-router-dom', async () => {
@@ -26,6 +20,7 @@ vi.mock('react-router-dom', async () => {
 
 vi.mock('../services/index', () => ({
   register: vi.fn(),
+  checkEmail: vi.fn(),
 }));
 
 vi.mock('../utils/token.utils', () => ({
@@ -39,11 +34,9 @@ vi.mock('../data/mockUsers', () => ({
   isDisplayNameTaken: vi.fn(),
 }));
 
-import { register } from '../services/index';
-import { storeTokens } from '../utils/token.utils';
+import { register, checkEmail } from '../services/index';
 import { isDisplayNameTaken } from '../data/mockUsers';
 
-// ── Mock auth response ────────────────────────────────────────
 const MOCK_AUTH_RESPONSE = {
   accessToken: 'mock.access.token',
   refreshToken: 'mock.refresh.token',
@@ -54,11 +47,11 @@ const MOCK_AUTH_RESPONSE = {
     email: 'newuser@example.com',
     avatarUrl: null,
     isVerified: false,
+    isCertified: false,
     role: 'user' as const,
   },
 };
 
-// ── Helper: render inside router ──────────────────────────────
 const renderSignUpPage = () =>
   render(
     <MemoryRouter initialEntries={['/create-account']}>
@@ -66,42 +59,36 @@ const renderSignUpPage = () =>
     </MemoryRouter>
   );
 
-// ── Helper: get back button ───────────────────────────────────
 const getBackButton = () => {
   const buttons = screen.getAllByRole('button');
   return buttons.find((b) => b.querySelector('.lucide-chevron-left')) as HTMLElement;
 };
 
-// ── Helper: get to profile step ───────────────────────────────
+// Password that meets all requirements: uppercase, lowercase, number, special char
+const VALID_PASSWORD = 'Password1!';
+
 const goToProfileStep = async () => {
   renderSignUpPage();
   const user = userEvent.setup();
-
   const passwordInput = screen.getByPlaceholderText('Choose a password (min. 8 characters)');
-  await user.type(passwordInput, 'Password123');
-
+  await user.type(passwordInput, VALID_PASSWORD);
   await waitFor(() => {
     const continueBtn = screen.getByRole('button', { name: /continue/i });
     expect(continueBtn).not.toBeDisabled();
   });
-
   fireEvent.click(screen.getByRole('button', { name: /continue/i }));
-
   await waitFor(() => {
     expect(screen.getByText('Tell us more about you')).toBeInTheDocument();
   });
-
   return user;
 };
 
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(isDisplayNameTaken).mockReturnValue(false);
+  vi.mocked(checkEmail).mockResolvedValue({ exists: false, message: 'Email available.' });
 });
 
-// ════════════════════════════════════════════════════════════════
-// INITIAL RENDER — PASSWORD STEP
-// ════════════════════════════════════════════════════════════════
 describe('SignUpPage — initial render (password step)', () => {
   it('renders the Create an account title', () => {
     renderSignUpPage();
@@ -115,9 +102,7 @@ describe('SignUpPage — initial render (password step)', () => {
 
   it('renders the password input', () => {
     renderSignUpPage();
-    expect(
-      screen.getByPlaceholderText('Choose a password (min. 8 characters)')
-    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Choose a password (min. 8 characters)')).toBeInTheDocument();
   });
 
   it('renders the Need help link', () => {
@@ -125,9 +110,9 @@ describe('SignUpPage — initial render (password step)', () => {
     expect(screen.getByText('Need help?')).toBeInTheDocument();
   });
 
-  it('renders the Tunify branding', () => {
+  it('renders the navbar with logo', () => {
     renderSignUpPage();
-    expect(screen.getByText('Tunify')).toBeInTheDocument();
+    expect(screen.getByText('Create account')).toBeInTheDocument();
   });
 
   it('renders the back button', () => {
@@ -136,9 +121,6 @@ describe('SignUpPage — initial render (password step)', () => {
   });
 });
 
-// ════════════════════════════════════════════════════════════════
-// PASSWORD BUTTON STATE
-// ════════════════════════════════════════════════════════════════
 describe('SignUpPage — password button state', () => {
   it('Continue button is disabled when password is empty', () => {
     renderSignUpPage();
@@ -149,34 +131,17 @@ describe('SignUpPage — password button state', () => {
   it('Continue button is disabled when password has less than 8 characters', async () => {
     renderSignUpPage();
     const user = userEvent.setup();
-
     const passwordInput = screen.getByPlaceholderText('Choose a password (min. 8 characters)');
     await user.type(passwordInput, 'short');
-
     const continueBtn = screen.getByRole('button', { name: /continue/i });
     expect(continueBtn).toBeDisabled();
   });
 
-  it('Continue button is enabled when password has exactly 8 characters', async () => {
+  it('Continue button is enabled when password meets all requirements', async () => {
     renderSignUpPage();
     const user = userEvent.setup();
-
     const passwordInput = screen.getByPlaceholderText('Choose a password (min. 8 characters)');
-    await user.type(passwordInput, 'exactly8');
-
-    await waitFor(() => {
-      const continueBtn = screen.getByRole('button', { name: /continue/i });
-      expect(continueBtn).not.toBeDisabled();
-    });
-  });
-
-  it('Continue button is enabled when password has more than 8 characters', async () => {
-    renderSignUpPage();
-    const user = userEvent.setup();
-
-    const passwordInput = screen.getByPlaceholderText('Choose a password (min. 8 characters)');
-    await user.type(passwordInput, 'Password123');
-
+    await user.type(passwordInput, VALID_PASSWORD);
     await waitFor(() => {
       const continueBtn = screen.getByRole('button', { name: /continue/i });
       expect(continueBtn).not.toBeDisabled();
@@ -184,9 +149,6 @@ describe('SignUpPage — password button state', () => {
   });
 });
 
-// ════════════════════════════════════════════════════════════════
-// PASSWORD SHOW/HIDE TOGGLE
-// ════════════════════════════════════════════════════════════════
 describe('SignUpPage — password visibility toggle', () => {
   it('password input is hidden by default', () => {
     renderSignUpPage();
@@ -195,25 +157,18 @@ describe('SignUpPage — password visibility toggle', () => {
   });
 
   it('toggles password visibility when eye button is clicked', async () => {
-  renderSignUpPage();
-  const passwordInput = screen.getByPlaceholderText('Choose a password (min. 8 characters)');
-
-  // Eye button has no aria-label, find it by its position next to the password input
-  const eyeBtn = screen.getAllByRole('button').find(
-    (b) => b.querySelector('.lucide-eye')
-  ) as HTMLElement;
-
-  fireEvent.click(eyeBtn);
-
-  await waitFor(() => {
-    expect(passwordInput).toHaveAttribute('type', 'text');
+    renderSignUpPage();
+    const passwordInput = screen.getByPlaceholderText('Choose a password (min. 8 characters)');
+    const eyeBtn = screen.getAllByRole('button').find(
+      (b) => b.querySelector('.lucide-eye')
+    ) as HTMLElement;
+    fireEvent.click(eyeBtn);
+    await waitFor(() => {
+      expect(passwordInput).toHaveAttribute('type', 'text');
+    });
   });
 });
-});
 
-// ════════════════════════════════════════════════════════════════
-// BACK BUTTON
-// ════════════════════════════════════════════════════════════════
 describe('SignUpPage — back button', () => {
   it('back button on password step navigates to /signin', () => {
     renderSignUpPage();
@@ -224,19 +179,13 @@ describe('SignUpPage — back button', () => {
   it('back button on profile step returns to password step', async () => {
     await goToProfileStep();
     fireEvent.click(getBackButton());
-
     await waitFor(() => {
       expect(screen.getByText('Create an account')).toBeInTheDocument();
-      expect(
-        screen.getByPlaceholderText('Choose a password (min. 8 characters)')
-      ).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Choose a password (min. 8 characters)')).toBeInTheDocument();
     });
   });
 });
 
-// ════════════════════════════════════════════════════════════════
-// PROFILE STEP — TELL US MORE ABOUT YOU
-// ════════════════════════════════════════════════════════════════
 describe('SignUpPage — profile step', () => {
   it('moves to profile step after valid password', async () => {
     await goToProfileStep();
@@ -271,11 +220,9 @@ describe('SignUpPage — profile step', () => {
     vi.mocked(isDisplayNameTaken).mockReturnValue(true);
     await goToProfileStep();
     const user = userEvent.setup();
-
     const displayNameInput = screen.getByDisplayValue('newuser');
     await user.clear(displayNameInput);
     await user.type(displayNameInput, 'TakenName');
-
     await waitFor(() => {
       expect(screen.getByText(/already taken/i)).toBeInTheDocument();
     });
@@ -284,37 +231,27 @@ describe('SignUpPage — profile step', () => {
   it('shows error when display name is empty', async () => {
     await goToProfileStep();
     const user = userEvent.setup();
-
     const displayNameInput = screen.getByDisplayValue('newuser');
     await user.clear(displayNameInput);
-
     await waitFor(() => {
       expect(screen.getByText(/display name is required/i)).toBeInTheDocument();
     });
   });
 });
 
-// ════════════════════════════════════════════════════════════════
-// PROFILE STEP — CONTINUE BUTTON ACTIVATION
-// ════════════════════════════════════════════════════════════════
 describe('SignUpPage — profile form completion', () => {
   const fillProfileForm = async () => {
     const user = await goToProfileStep();
-
-    // Display name is pre-filled, DOB and gender need filling
     const selects = screen.getAllByRole('combobox');
-    // Month, Day, Year, Gender (in order)
-    fireEvent.change(selects[0], { target: { value: '3' } });   // March
-    fireEvent.change(selects[1], { target: { value: '15' } });  // 15th
-    fireEvent.change(selects[2], { target: { value: '2000' } }); // 2000
-    fireEvent.change(selects[3], { target: { value: 'Female' } }); // Female
-
+    fireEvent.change(selects[0], { target: { value: '3' } });
+    fireEvent.change(selects[1], { target: { value: '15' } });
+    fireEvent.change(selects[2], { target: { value: '2000' } });
+    fireEvent.change(selects[3], { target: { value: 'FEMALE' } });
     return user;
   };
 
   it('Continue button activates when all profile fields are filled', async () => {
     await fillProfileForm();
-
     await waitFor(() => {
       const continueBtn = screen.getByRole('button', { name: /continue/i });
       expect(continueBtn).not.toBeDisabled();
@@ -324,37 +261,32 @@ describe('SignUpPage — profile form completion', () => {
   it('calls register service with correct data on submit', async () => {
     vi.mocked(register).mockResolvedValue(MOCK_AUTH_RESPONSE);
     await fillProfileForm();
-
     await waitFor(() => {
-      const continueBtn = screen.getByRole('button', { name: /continue/i });
-      expect(continueBtn).not.toBeDisabled();
+      expect(screen.getByRole('button', { name: /continue/i })).not.toBeDisabled();
     });
-
     fireEvent.click(screen.getByRole('button', { name: /continue/i }));
-
     await waitFor(() => {
       expect(register).toHaveBeenCalledWith(
         expect.objectContaining({
           email: 'newuser@example.com',
-          password: 'Password123',
+          password: VALID_PASSWORD,
         })
       );
     });
   });
 
-  it('stores tokens and navigates on successful registration', async () => {
+  it('navigates to /verify-email on successful registration', async () => {
     vi.mocked(register).mockResolvedValue(MOCK_AUTH_RESPONSE);
     await fillProfileForm();
-
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /continue/i })).not.toBeDisabled();
     });
-
     fireEvent.click(screen.getByRole('button', { name: /continue/i }));
-
     await waitFor(() => {
-      expect(storeTokens).toHaveBeenCalledWith('mock.access.token', 'mock.refresh.token', 3600);
-      expect(mockNavigate).toHaveBeenCalledWith('/');
+      expect(mockNavigate).toHaveBeenCalledWith(
+        '/verify-email',
+        expect.objectContaining({ state: expect.objectContaining({ email: 'newuser@example.com' }) })
+      );
     });
   });
 
@@ -366,13 +298,10 @@ describe('SignUpPage — profile form completion', () => {
       },
     });
     await fillProfileForm();
-
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /continue/i })).not.toBeDisabled();
     });
-
     fireEvent.click(screen.getByRole('button', { name: /continue/i }));
-
     await waitFor(() => {
       expect(screen.getByText(/email already in use/i)).toBeInTheDocument();
     });

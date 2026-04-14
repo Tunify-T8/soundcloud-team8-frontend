@@ -8,10 +8,14 @@ import {
   FaUser,
   FaGooglePlay,
   FaApple,
+  FaSpotify,
+  FaSoundcloud,
+  FaTiktok,
 } from "react-icons/fa";
 import { FiInfo } from "react-icons/fi";
 import { Ticket } from "lucide-react";
 import type { FollowingUser } from "../../../../shared/types/User";
+import avatarFallback from '@/assets/avatar.png';
 
 export default function ProfileSideBar({
   followers,
@@ -31,6 +35,9 @@ export default function ProfileSideBar({
     twitter?: string;
     website?: string;
     youtube?: string;
+    spotify?: string;
+    tiktok?: string;
+    soundcloud?: string;
   };
   followingUsers?: FollowingUser[];
 }) {
@@ -41,7 +48,10 @@ export default function ProfileSideBar({
     socialAccounts?.instagram ||
     socialAccounts?.twitter ||
     socialAccounts?.website ||
-    socialAccounts?.youtube,
+    socialAccounts?.youtube ||
+    socialAccounts?.spotify ||
+    socialAccounts?.tiktok ||
+    socialAccounts?.soundcloud,
   );
 
   const userInfo = [
@@ -119,6 +129,33 @@ export default function ProfileSideBar({
                 YouTube
               </a>
             )}
+            {socialAccounts?.spotify && (
+              <a
+                href={socialAccounts?.spotify}
+                className="flex items-center gap-2 text-[14px] text-zinc-400 hover:text-zinc-600 font-bold"
+              >
+                <FaSpotify size={16} />
+                Spotify
+              </a>
+            )}
+            {socialAccounts?.tiktok && (
+              <a
+                href={socialAccounts?.tiktok}
+                className="flex items-center gap-2 text-[14px] text-zinc-400 hover:text-zinc-600 font-bold"
+              >
+                <FaTiktok size={16} />
+                TikTok
+              </a>
+            )}
+            {socialAccounts?.soundcloud && (
+              <a
+                href={socialAccounts?.soundcloud}
+                className="flex items-center gap-2 text-[14px] text-zinc-400 hover:text-zinc-600 font-bold"
+              >
+                <FaSoundcloud size={16} />
+                SoundCloud
+              </a>
+            )}
           </div>
         )}
       </div>
@@ -177,19 +214,19 @@ export default function ProfileSideBar({
                 >
                   <div className="flex items-center gap-4">
                     <img
-                      src={followingUser.avatarUrl}
+                      src={followingUser.avatarUrl || avatarFallback}
                       alt={followingUser.username}
                       className="h-12 w-12 rounded-full object-cover"
                     />
                     <div className="flex flex-col">
                       <Link
-                        to={`/${followingUser.username}`}
+                        to={`/${followingUser.id}`}
                         className="text-[14px] font-bold leading-none text-white uppercase hover:text-zinc-500"
                       >
                         {followingDisplayName}
                       </Link>
                       <Link
-                        to={`/${followingUser.username}/followers`}
+                        to={`/${followingUser.id}/followers`}
                         className="mt-2 inline-flex items-center gap-1 text-[13px] text-zinc-400 hover:text-zinc-600"
                       >
                         <FaUser size={12} />
@@ -199,9 +236,9 @@ export default function ProfileSideBar({
                   </div>
                   <button
                     type="button"
-                    className="rounded-md bg-white px-3 py-2 text-[14px] font-bold text-black hover:bg-zinc-200 cursor-pointer"
+                    className="rounded-md bg-zinc-800 px-3 py-2 text-[14px] font-bold text-white hover:text-zinc-500 cursor-pointer"
                   >
-                    Follow
+                    Following
                   </button>
                 </div>
               );

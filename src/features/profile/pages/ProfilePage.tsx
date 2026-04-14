@@ -3,7 +3,8 @@ import UserInfoBar from "../components/UserInfo/UserInfoBar";
 import ProfileSideBar from "../components/UserInfo/ProfileSideBar";
 import { Outlet, useParams } from "react-router-dom";
 import { profileService } from "../profileService";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { useMe } from "../context/useMe";
 import type {
   MeUserProfile,
   PublicUserProfile,
@@ -18,91 +19,74 @@ function isMeProfile(
 
 export default function ProfilePage() {
   const { username } = useParams<{ username: string }>();
-  const [user, setUser] = useState<MeUserProfile | PublicUserProfile | null>(
-    null,
-  );
-  const [socialAccounts, setSocialAccounts] = useState<{
-    instagram?: string;
-    twitter?: string;
-    website?: string;
-  }>({});
-  const [followingUsers, setFollowingUsers] = useState<UserFollowing[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { me, socialAccounts, following, refresh: refreshMe } = useMe();
+  const isMe = !username;
+  const [publicUser, setPublicUser] = useState<PublicUserProfile | null>(null);
+  const [openedFollowing, setOpenedFollowing] = useState<UserFollowing[]>([]);
+  const [loading, setLoading] = useState(!!username);
   const [error, setError] = useState<string | null>(null);
-  const [refreshTick, setRefreshTick] = useState(0);
 
-  const refreshProfile = () => {
-    setRefreshTick((prev) => prev + 1);
-  };
+  const refreshProfile = useCallback(() => {
+    refreshMe();
+  }, [refreshMe]);
+
+  useEffect(() => {
+    if (!username) return;
+    const fetchProfile = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await profileService.getPublicProfile(username);
+        setPublicUser(data);
+      } catch (err: any) {
+        setError(err?.message || "Failed to fetch user");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, [username]);
 
   useEffect(() => {
     let isMounted = true;
-    setLoading(true);
-    setError(null);
 
-    const fetchUser = async () => {
-      try {
-        let userData: MeUserProfile | PublicUserProfile | null = null;
-        let following: UserFollowing[] = [];
-        let linksData: {
-          instagram?: string;
-          twitter?: string;
-          website?: string;
-        } = {};
+    if (isMe) {
+      setOpenedFollowing(following);
+      return;
+    }
 
-        if (username) {
-          userData = await profileService.getPublicProfile(username);
-          if (userData?.id) {
-            try {
-              const followingRes = await profileService.getUserFollowing(
-                userData.id,
-              );
-              following = followingRes.following;
-            } catch {
-              following = [];
-            }
-          }
-        } else {
-          userData = await profileService.getMeProfile();
-          try {
-            linksData = await profileService.getMeSocialLinks();
-          } catch {
-            linksData = {};
-          }
-          try {
-            const followingRes = await profileService.getMeFollowing();
-            following = followingRes.following;
-          } catch {
-            following = [];
-          }
-        }
+    const openedUserId = publicUser?.id;
+    if (!openedUserId) {
+      setOpenedFollowing([]);
+      return;
+    }
 
-        if (isMounted) {
-          setUser(userData);
-          setSocialAccounts(linksData);
-          setFollowingUsers(following);
-        }
-      } catch (err: any) {
-        if (isMounted) {
-          setUser(null);
-          setSocialAccounts({});
-          setFollowingUsers([]);
-          setError(err?.message || "Failed to fetch user");
-        }
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
+    profileService
+      .getUserFollowing(openedUserId)
+      .then((res) => {
+        if (!isMounted) return;
+        setOpenedFollowing(res.following ?? []);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setOpenedFollowing([]);
+      });
 
-    fetchUser();
     return () => {
       isMounted = false;
     };
-  }, [username, refreshTick]);
+  }, [isMe, publicUser?.id, following]);
+
+  if (!username && !me) {
+    return <div className="min-h-screen text-white">Loading...</div>;
+  }
 
   if (loading) {
     return <div className="min-h-screen text-white">Loading...</div>;
   }
+
+  const user = username ? publicUser : me;
+
   if (error || !user) {
     return (
       <div className="min-h-screen text-white">
@@ -110,8 +94,6 @@ export default function ProfilePage() {
       </div>
     );
   }
-
-  const isMe = isMeProfile(user);
   const location = user.location ?? "";
   const locationParts = location.split(",");
   const city = locationParts[0]?.trim() ?? undefined;
@@ -124,7 +106,7 @@ export default function ProfilePage() {
         username={user.username}
         country={country}
         city={city}
-        isVerified={isMe ? user.isVerified : false}
+        isCertified={isMeProfile(user) ? user.isCertified : false}
         avatarUrl={user.avatarUrl || ""}
         coverUrl={user.coverUrl || ""}
         isMe={isMe}
@@ -137,8 +119,9 @@ export default function ProfilePage() {
           country={country}
           city={city}
           bio={user.bio ?? undefined}
-          socialAccounts={socialAccounts}
+          socialAccounts={isMe ? socialAccounts : undefined}
           isMe={isMe}
+          userId={user.id}
           onProfileUpdated={refreshProfile}
         />
         <div className="absolute right-[8.333333%] top-full mt-4">
@@ -147,13 +130,14 @@ export default function ProfilePage() {
             following={user.followingCount}
             tracks={"tracksCount" in user ? (user as any).tracksCount : 0}
             bio={user.bio ?? undefined}
-            socialAccounts={socialAccounts}
-            followingUsers={followingUsers.map((u) => ({
+            socialAccounts={isMe ? socialAccounts : undefined}
+            followingUsers={openedFollowing.map((u) => ({
               id: u.id,
               username: u.username,
+              displayName: u.displayName ?? undefined,
               avatarUrl: u.avatarUrl ?? "",
-              isVerified: u.isVerified ?? false,
-              followersCount: undefined,
+              isCertified: u.isCertified ?? false,
+              followersCount: u.followersCount ?? 0,
             }))}
           />
         </div>
