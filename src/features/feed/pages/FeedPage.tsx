@@ -3,9 +3,13 @@ import SideBar from "../../../components/layout/Sidebar";
 import SongCard from "../../../components/ui/SongCard";
 import { Repeat2 } from "lucide-react";
 import type { FeedItem, FeedResponse } from "@/features/feed/type";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { feedService } from "@/features/feed/feedservice";
+import { profileService } from "@/features/profile/profileService";
+import { useMe } from "@/features/profile/context/useMe";
 import { SOCIAL_GRAPH_UPDATED_EVENT } from "@/features/profile/socialGraphEvents";
+import { FaUser } from "react-icons/fa";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatTimeAgo(dateStr: string): string {
@@ -25,13 +29,124 @@ function waveformSeedFromId(id: string): number {
   return id.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
 }
 
+type HoverCardState = {
+  username: string;
+  displayName: string;
+  avatarUrl: string;
+  followersCount: number;
+  location: string;
+  isFollowing: boolean;
+  isLoading: boolean;
+};
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function FeedPage() {
+  const { me } = useMe();
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showReposts, setShowReposts] = useState(true);
+  const [hoveredTrackId, setHoveredTrackId] = useState<string | null>(null);
+  const [hoverCardByUserId, setHoverCardByUserId] = useState<
+    Record<string, HoverCardState>
+  >({});
+  const [followPendingByUserId, setFollowPendingByUserId] = useState<
+    Record<string, boolean>
+  >({});
+  const requestedUserIdsRef = useRef<Set<string>>(new Set());
+
+  const ensureHoverCardData = async (item: FeedItem) => {
+    const userId = item.action.id;
+    if (!userId || requestedUserIdsRef.current.has(userId)) return;
+
+    requestedUserIdsRef.current.add(userId);
+
+    setHoverCardByUserId((prev) => ({
+      ...prev,
+      [userId]: prev[userId] ?? {
+        username: item.action.username,
+        displayName: item.action.username,
+        avatarUrl: item.action.avatarUrl || avatarFallback,
+        followersCount: 0,
+        location: "",
+        isFollowing: false,
+        isLoading: true,
+      },
+    }));
+
+    const profileResult = await profileService
+      .getPublicProfile(item.action.username)
+      .catch(() => null);
+
+    const followResult =
+      me?.id && me.id !== userId
+        ? await profileService
+            .getFollowStatus(userId)
+            .then((s) => s.isFollowing)
+            .catch(() => false)
+        : false;
+
+    setHoverCardByUserId((prev) => {
+      const current = prev[userId];
+      if (!current) return prev;
+
+      return {
+        ...prev,
+        [userId]: {
+          username: profileResult?.username ?? current.username,
+          displayName:
+            profileResult?.displayName?.trim() ||
+            profileResult?.username ||
+            current.displayName,
+          avatarUrl: profileResult?.avatarUrl || current.avatarUrl,
+          followersCount: Number(profileResult?.followersCount ?? 0),
+          location: profileResult?.location ?? "",
+          isFollowing: followResult,
+          isLoading: false,
+        },
+      };
+    });
+  };
+
+  const handleFollowToggle = async (userId: string) => {
+    if (!userId || followPendingByUserId[userId] || me?.id === userId) return;
+
+    const card = hoverCardByUserId[userId];
+    if (!card) return;
+
+    setFollowPendingByUserId((prev) => ({ ...prev, [userId]: true }));
+
+    try {
+      if (card.isFollowing) {
+        await profileService.unfollowUser(userId);
+      } else {
+        await profileService.followUser(userId);
+      }
+
+      setHoverCardByUserId((prev) => {
+        const current = prev[userId];
+        if (!current) return prev;
+
+        const nextIsFollowing = !current.isFollowing;
+        return {
+          ...prev,
+          [userId]: {
+            ...current,
+            isFollowing: nextIsFollowing,
+            followersCount: Math.max(
+              0,
+              current.followersCount + (nextIsFollowing ? 1 : -1),
+            ),
+          },
+        };
+      });
+
+      window.dispatchEvent(new Event(SOCIAL_GRAPH_UPDATED_EVENT));
+    } finally {
+      setFollowPendingByUserId((prev) => ({ ...prev, [userId]: false }));
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -90,7 +205,7 @@ export default function FeedPage() {
   return (
     <div className="min-h-screen bg-[#0b0b0b] text-white">
       <div className="mx-auto flex w-full max-w-340 gap-10 px-8 py-8">
-        <div className="flex-1 flex flex-col py-10 overflow-y-auto ml-6">
+        <div className="flex-1 flex flex-col py-10 overflow-y-auto overflow-x-visible ml-6">
           {/* Header row */}
           <div className="flex items-center justify-between w-full max-w-220 mb-10">
             <p className="text-[22px] font-bold text-white text-left">
@@ -135,14 +250,96 @@ export default function FeedPage() {
               >
                 {/* Avatar + meta row */}
                 <div className="flex items-center gap-3 pb-1">
-                  <img
-                    src={item.action.avatarUrl || avatarFallback}
-                    alt={item.action.username || item.action.username}
-                    className="w-8 h-8 rounded-full object-cover"
-                  />
-                  <span className="font-semibold text-white text-base">
-                    {item.action.username || item.action.username}
-                  </span>
+                  <div
+                    className="relative flex items-center gap-3"
+                    onMouseEnter={() => {
+                      setHoveredTrackId(item.trackId);
+                      void ensureHoverCardData(item);
+                    }}
+                    onMouseLeave={() =>
+                      setHoveredTrackId((prev) =>
+                        prev === item.trackId ? null : prev,
+                      )
+                    }
+                  >
+                    <Link
+                      to={`/${encodeURIComponent(item.action.id)}`}
+                      aria-label={`Open ${item.action.username} profile`}
+                    >
+                      <img
+                        src={item.action.avatarUrl || avatarFallback}
+                        alt={item.action.username || item.action.username}
+                        className="w-8 h-8 rounded-full object-cover cursor-pointer"
+                      />
+                    </Link>
+
+                    <Link
+                      to={`/${encodeURIComponent(item.action.id)}`}
+                      className="font-semibold text-white text-base hover:text-zinc-300"
+                    >
+                      {item.action.username || item.action.username}
+                    </Link>
+
+                    {hoveredTrackId === item.trackId && (
+                      <div className="absolute left-0 top-10 z-30 w-40 rounded-sm border border-zinc-700 bg-[#07090f] p-2 shadow-2xl">
+                        <div className="absolute left-4 top-0 h-3 w-3 -translate-y-1/2 rotate-45 border-l border-t border-zinc-700 bg-[#07090f]" />
+
+                        <Link
+                          to={`/${encodeURIComponent(item.action.id)}`}
+                          className="flex flex-col items-center"
+                        >
+                          <img
+                            src={
+                              hoverCardByUserId[item.action.id]?.avatarUrl ||
+                              item.action.avatarUrl ||
+                              avatarFallback
+                            }
+                            alt={item.action.username}
+                            className="h-16 w-16 rounded-full object-cover"
+                          />
+                          <p className="mt-1.5 text-base font-bold text-white">
+                            {hoverCardByUserId[item.action.id]?.displayName ||
+                              item.action.username}
+                          </p>
+                        </Link>
+
+                        <p className="mt-1.5 flex items-center justify-center gap-1.5 text-zinc-300">
+                          <FaUser className="text-xs" />
+                          <span className="text-xs font-bold">
+                            {(
+                              hoverCardByUserId[item.action.id]
+                                ?.followersCount ?? 0
+                            ).toLocaleString()}
+                          </span>
+                        </p>
+
+                        <p className="mt-1 text-center text-xs font-medium leading-snug text-zinc-400 wrap-break-word">
+                          {hoverCardByUserId[item.action.id]?.location ||
+                            "Unknown location"}
+                        </p>
+
+                        {me?.id !== item.action.id && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              void handleFollowToggle(item.action.id)
+                            }
+                            disabled={
+                              followPendingByUserId[item.action.id] ||
+                              hoverCardByUserId[item.action.id]?.isLoading
+                            }
+                            className="mt-2 w-full rounded-sm bg-zinc-700 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-70"
+                          >
+                            {followPendingByUserId[item.action.id]
+                              ? "Please wait..."
+                              : hoverCardByUserId[item.action.id]?.isFollowing
+                                ? "Following"
+                                : "Follow"}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   <span className="text-xs text-gray-400 flex items-center gap-1">
                     {item.action.action === "repost" && (
                       <Repeat2 className="inline w-4 h-4 text-grey-400 mr-1" />
@@ -176,7 +373,7 @@ export default function FeedPage() {
           </div>
         </div>
 
-        <aside className="w-90 shrink-0">
+        <aside className="sticky top-6 self-start h-[calc(100vh-3rem)] w-90 shrink-0 overflow-y-auto pr-2">
           <SideBar />
         </aside>
       </div>

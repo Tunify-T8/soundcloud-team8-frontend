@@ -1,4 +1,4 @@
-import type { DiscoverTrack } from "@/shared/types/Discover";
+import type { DiscoverTrack } from "@/features/discover/Discover";
 
 export function DiscoverCard({ item }: { item: DiscoverTrack }) {
   return (
