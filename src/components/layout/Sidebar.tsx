@@ -10,7 +10,7 @@ import { TbWorld } from "react-icons/tb";
 import { MdOutlineAutoFixHigh } from "react-icons/md";
 import { IoAddCircle, IoChevronDown } from "react-icons/io5";
 import { feedService } from "../../features/feed/feedservice";
-import type { LikedTrack } from "../../features/feed/type";
+import type { LikedTrack } from "@/shared/types/Feed";
 import { api } from '../../features/auth/services/api';
 import avatarFallback from "@/assets/avatar.png";
 
@@ -32,7 +32,7 @@ export default function SideBar() {
   const [open, setOpen] = useState(true);
 
   // Artists state — typed so TypeScript knows the shape
- const [suggestedUsers, setSuggestedUsers] = useState<SuggestedArtist[]>([]);
+  const [suggestedUsers, setSuggestedUsers] = useState<SuggestedArtist[]>([]);
   const [loading, setLoading]               = useState(true);
   const [error, setError]                   = useState<string | null>(null);
 

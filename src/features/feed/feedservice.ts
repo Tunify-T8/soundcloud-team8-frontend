@@ -43,36 +43,17 @@ export const feedService = {
   },
 
   // ─── Search ─────────────────────────────────────────────────────────────────
-  async searchTracks(query: string): Promise<SearchResult[]> {
+  // Used by both the dropdown (no type) and the full search page (with type)
+  async search(query: string, type?: string): Promise<SearchResult[]> {
     if (!query.trim()) return [];
     try {
-      const response = await api.get("/search/tracks/", { params: { q: query.toLowerCase() } });
-      return response.data.data ?? [];
-    } catch { return []; }
-  },
-
-  async searchPeople(query: string): Promise<SearchResult[]> {
-    if (!query.trim()) return [];
-    try {
-      const response = await api.get("/search/people/", { params: { q: query.toLowerCase() } });
-      return response.data.data ?? [];
-    } catch { return []; }
-  },
-
-  async searchCollections(query: string): Promise<SearchResult[]> {
-    if (!query.trim()) return [];
-    try {
-      const response = await api.get("/search/collections/", { params: { q: query.toLowerCase() } });
-      return response.data.data ?? [];
-    } catch { return []; }
-  },
-  // Used by the dropdown and "Everything" filter — hits the general endpoint
-  async search(query: string): Promise<SearchResult[]> {
-    if (!query.trim()) return [];
-    try {
-      const response = await api.get("/search/", { params: { q: query.toLowerCase() } });
-      return response.data.data ?? [];
-    } catch { return []; }
+      const params: Record<string, string> = { q: query };
+      if (type) params.type = type;
+      const response = await api.get("/search", { params });
+      return response.data.results ?? response.data.items ?? [];
+    } catch {
+      return [];
+    }
   },
 
   // ─── My Likes (sidebar section) ─────────────────────────────────────────────
