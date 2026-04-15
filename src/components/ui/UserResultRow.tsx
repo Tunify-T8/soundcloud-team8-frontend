@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import type { UserSearchResult } from '@/features/feed/types';
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/app/store';
+import type { UserSearchResult } from '../../features/feed/type';
 
 export default function UserResultRow({ user }: { user: UserSearchResult }) {
   const navigate = useNavigate();

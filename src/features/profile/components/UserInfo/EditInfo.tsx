@@ -33,6 +33,8 @@ export default function EditInfo({
   country,
   city,
   bio,
+  role,
+  visibility,
   socialAccounts,
 }: {
   onClick: () => void;
@@ -42,18 +44,25 @@ export default function EditInfo({
   country?: string;
   city?: string;
   bio?: string;
+  role?: "ARTIST" | "LISTENER";
+  visibility?: "PUBLIC" | "PRIVATE";
   socialAccounts?: {
     facebook?: string;
     instagram?: string;
     twitter?: string;
     website?: string;
     youtube?: string;
+    spotify?: string;
+    tiktok?: string;
+    soundcloud?: string;
   };
 }) {
   const initialDisplayName = displayName ?? "";
   const initialCountry = country ?? "";
   const initialCity = city ?? "";
   const initialBio = bio ?? "";
+  const initialRole = role ?? "ARTIST";
+  const initialVisibility = visibility ?? "PUBLIC";
   const initialLinks: UserSocialLink[] = PLATFORM_OPTIONS.map((platform) => {
     let url = "";
     switch (platform) {
@@ -88,9 +97,11 @@ export default function EditInfo({
   const [bioState, setBioState] = useState(initialBio);
   const [linksState, setLinksState] = useState<UserSocialLink[]>(initialLinks);
   const [visibilityState, setVisibilityState] = useState<"PUBLIC" | "PRIVATE">(
-    "PUBLIC",
+    initialVisibility,
   );
-  const [roleState, setroleState] = useState<"ARTIST" | "LISTENER">("ARTIST");
+  const [roleState, setRoleState] = useState<"ARTIST" | "LISTENER">(
+    initialRole,
+  );
   const [showLinkInputs, setShowLinkInputs] = useState(initialLinks.length > 0);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -104,6 +115,8 @@ export default function EditInfo({
     countryState !== initialCountry ||
     cityState !== initialCity ||
     bioState !== initialBio ||
+    roleState !== initialRole ||
+    visibilityState !== initialVisibility ||
     hasSocialLinksChanges;
 
   useEffect(() => {
@@ -229,7 +242,7 @@ export default function EditInfo({
                 <select
                   value={roleState}
                   onChange={(e) =>
-                    setroleState(e.target.value as "ARTIST" | "LISTENER")
+                    setRoleState(e.target.value as "ARTIST" | "LISTENER")
                   }
                   className="w-full rounded-sm border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white outline-none focus:border-zinc-500 cursor-pointer"
                 >
