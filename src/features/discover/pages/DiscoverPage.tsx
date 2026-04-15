@@ -1,35 +1,66 @@
 "use client";
 import { useEffect, useState } from "react";
 import SideBar from "@/components/layout/Sidebar";
-import type { DiscoverResponse } from "@/features/discover/Discover";
+import type { DiscoverArtist, DiscoverTrack } from "@/features/discover/Discover";
+import { ArtistsToWatchSection } from "../components/ArtistsToWatchSection";
 import { DiscoverSection } from "../components/DiscoverSection";
-import { getDiscoverTracks } from "../discoverService";
+import {
+  getDiscoverTracks,
+  getSuggestedArtists,
+  getTrendingAlbums,
+  getTrendingTracks,
+} from "../discoverService";
 
 export default function DiscoverPage() {
-  const [discoverResponse, setDiscoverResponse] = useState<DiscoverResponse>({
-    items: [],
-    page: 1,
-    limit: 20,
-    hasMore: false,
-    personalized: false,
-  });
+  const [discoverTracks, setDiscoverTracks] = useState<DiscoverTrack[]>([]);
+  const [albumTracks, setAlbumTracks] = useState<DiscoverTrack[]>([]);
+  const [madeForYouTracks, setMadeForYouTracks] = useState<DiscoverTrack[]>([]);
+  const [artistsToWatchTracks, setArtistsToWatchTracks] = useState<DiscoverArtist[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
 
-    const fetchDiscoverTracks = async () => {
+    const fetchDiscoverData = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await getDiscoverTracks({ page: 1, limit: 20 });
-        if (isMounted && Array.isArray(response.items)) {
-          setDiscoverResponse(response);
+        const [
+          discoverResponse,
+          suggestedArtistsResponse,
+          trendingAlbumsResponse,
+          trendingTracksResponse,
+        ] = await Promise.all([
+          getDiscoverTracks({ page: 1, limit: 20 }),
+          getSuggestedArtists({ page: 1, limit: 10 }),
+          getTrendingAlbums({ period: "week" }),
+          getTrendingTracks({ type: "track", period: "week" }),
+        ]);
+
+        if (isMounted) {
+          setDiscoverTracks(
+            Array.isArray(discoverResponse.items) ? discoverResponse.items : [],
+          );
+          setArtistsToWatchTracks(
+            Array.isArray(suggestedArtistsResponse.items)
+              ? suggestedArtistsResponse.items
+              : [],
+          );
+          setAlbumTracks(
+            Array.isArray(trendingAlbumsResponse.items)
+              ? trendingAlbumsResponse.items
+              : [],
+          );
+          setMadeForYouTracks(
+            Array.isArray(trendingTracksResponse.items)
+              ? trendingTracksResponse.items
+              : [],
+          );
         }
       } catch {
         if (isMounted) {
-          setError("Could not load discover tracks.");
+          setError("Could not load discover data.");
         }
       } finally {
         if (isMounted) {
@@ -38,33 +69,32 @@ export default function DiscoverPage() {
       }
     };
 
-    void fetchDiscoverTracks();
+    void fetchDiscoverData();
 
     return () => {
       isMounted = false;
     };
   }, []);
 
-  const tracks = discoverResponse.items;
   const discoverSections = [
-    { title: "More of what you like", tracks },
-    {
-      title: "Recently Played",
-      tracks: tracks.slice(1).concat(tracks.slice(0, 1)),
-    },
+    { title: "More of what you like", tracks: discoverTracks },
+    // {
+    //   title: "Recently Played",
+    //   tracks: recentlyPlayedTracks,
+    // },
     {
       title: "Albums for you",
-      tracks: tracks.slice(3).concat(tracks.slice(0, 3)),
+      tracks: discoverTracks,
     },
     {
       title: "Made for you",
-      tracks: tracks.slice(4).concat(tracks.slice(0, 4)),
-    },
-    {
-      title: "Artists to watch out for",
-      tracks: tracks.slice(6).concat(tracks.slice(0, 6)),
+      tracks: madeForYouTracks,
     },
   ];
+
+  const hasAnyTracks =
+    discoverSections.some((section) => section.tracks.length > 0) ||
+    artistsToWatchTracks.length > 0;
 
   return (
     <div className="min-h-screen bg-[#0b0b0b] text-white">
@@ -74,16 +104,22 @@ export default function DiscoverPage() {
             <p className="text-zinc-400">Loading discover tracks...</p>
           ) : error ? (
             <p className="text-red-400">{error}</p>
-          ) : tracks.length === 0 ? (
+          ) : !hasAnyTracks ? (
             <p className="text-zinc-400">No discover tracks yet.</p>
           ) : (
-            discoverSections.map((section) => (
-              <DiscoverSection
-                key={section.title}
-                title={section.title}
-                tracks={section.tracks}
+            <>
+              {discoverSections.map((section) => (
+                <DiscoverSection
+                  key={section.title}
+                  title={section.title}
+                  tracks={section.tracks}
+                />
+              ))}
+              <ArtistsToWatchSection
+                title="Artists to watch out for"
+                artists={artistsToWatchTracks}
               />
-            ))
+            </>
           )}
         </main>
 

@@ -1,11 +1,18 @@
-import React from "react";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import DiscoverPage from "../../pages/DiscoverPage";
-import { getDiscoverTracks } from "../../discoverService";
+import {
+  getDiscoverTracks,
+  getSuggestedArtists,
+  getTrendingAlbums,
+  getTrendingTracks,
+} from "../../discoverService";
 
 vi.mock("../../discoverService", () => ({
   getDiscoverTracks: vi.fn(),
+  getSuggestedArtists: vi.fn(),
+  getTrendingAlbums: vi.fn(),
+  getTrendingTracks: vi.fn(),
 }));
 
 vi.mock("@/components/layout/Sidebar", () => ({
@@ -13,6 +20,9 @@ vi.mock("@/components/layout/Sidebar", () => ({
 }));
 
 const mockedGetDiscoverTracks = vi.mocked(getDiscoverTracks);
+const mockedGetSuggestedArtists = vi.mocked(getSuggestedArtists);
+const mockedGetTrendingAlbums = vi.mocked(getTrendingAlbums);
+const mockedGetTrendingTracks = vi.mocked(getTrendingTracks);
 
 const mockDiscoverResponse = {
   items: [
@@ -43,10 +53,35 @@ const mockDiscoverResponse = {
   personalized: false,
 };
 
+const mockSuggestedArtistsResponse = {
+  items: [
+    {
+      id: "artist-1",
+      name: "Imagine Dragons",
+      avatarUrl: "https://example.com/imagine-dragons.jpg",
+      followersCount: 5550000,
+      isVerified: true,
+    },
+    {
+      id: "artist-2",
+      name: "Stranger Things",
+      avatarUrl: "https://example.com/stranger-things.jpg",
+      followersCount: 2475,
+      isVerified: false,
+    },
+  ],
+  page: 1,
+  limit: 10,
+  hasMore: false,
+};
+
 describe("DiscoverPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockedGetDiscoverTracks.mockResolvedValue(mockDiscoverResponse);
+    mockedGetSuggestedArtists.mockResolvedValue(mockSuggestedArtistsResponse);
+    mockedGetTrendingAlbums.mockResolvedValue(mockDiscoverResponse);
+    mockedGetTrendingTracks.mockResolvedValue(mockDiscoverResponse);
   });
 
   it("renders all discover section titles", async () => {
@@ -54,9 +89,6 @@ describe("DiscoverPage", () => {
 
     expect(
       await screen.findByRole("heading", { name: "More of what you like" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Recently Played" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Albums for you" }),
@@ -88,10 +120,20 @@ describe("DiscoverPage", () => {
   });
 
   it("renders an empty state when API returns no items", async () => {
-    mockedGetDiscoverTracks.mockResolvedValueOnce({
+    const emptyResponse = {
       ...mockDiscoverResponse,
       items: [],
+    };
+
+    mockedGetDiscoverTracks.mockResolvedValueOnce({
+      ...emptyResponse,
     });
+    mockedGetSuggestedArtists.mockResolvedValueOnce({
+      ...mockSuggestedArtistsResponse,
+      items: [],
+    });
+    mockedGetTrendingAlbums.mockResolvedValueOnce({ ...emptyResponse });
+    mockedGetTrendingTracks.mockResolvedValueOnce({ ...emptyResponse });
 
     render(<DiscoverPage />);
 
