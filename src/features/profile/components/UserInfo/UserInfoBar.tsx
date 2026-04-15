@@ -15,8 +15,6 @@ export default function UserInfoBar({
   country,
   city,
   bio,
-  role,
-  visibility,
   socialAccounts,
   isMe,
   onProfileUpdated,
@@ -27,17 +25,12 @@ export default function UserInfoBar({
   country?: string;
   city?: string;
   bio?: string;
-  role?: "ARTIST" | "LISTENER";
-  visibility?: "PUBLIC" | "PRIVATE";
   socialAccounts?: {
     facebook?: string;
     instagram?: string;
     twitter?: string;
     website?: string;
     youtube?: string;
-    spotify?: string;
-    tiktok?: string;
-    soundcloud?: string;
   };
   isMe?: boolean;
   onProfileUpdated?: () => void;
@@ -230,8 +223,6 @@ export default function UserInfoBar({
           country={country}
           city={city}
           bio={bio}
-          role={role}
-          visibility={visibility}
           socialAccounts={socialAccounts}
         />
       )}
