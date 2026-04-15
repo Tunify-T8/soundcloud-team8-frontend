@@ -35,6 +35,7 @@ function FilterSidebar({
         {FILTERS.map(({ key, label }) => (
           <button
             key={key}
+            data-testid={`filter-${key}`}
             onClick={() => onChange(key)}
             className={`w-full text-left px-4 py-2 mb-1 rounded text-[14px] font-semibold transition-colors ${
               active === key
@@ -130,12 +131,12 @@ export default function SearchPage() {
 
         {/* Loading */}
         {loading && (
-          <p className="text-gray-400 text-sm mt-8">Searching...</p>
+          <p data-testid="search-page-loading" className="text-gray-400 text-sm mt-8">Searching...</p>
         )}
 
         {/* Empty */}
         {!loading && results.length === 0 && query && (
-          <p className="text-gray-500 text-sm mt-8">
+          <p data-testid="search-page-no-results" className="text-gray-500 text-sm mt-8">
             No results for "{query}"
           </p>
         )}
@@ -144,9 +145,11 @@ export default function SearchPage() {
           Single clean loop — SearchResultItem dispatches to the right card.
           No messy conditionals here. Feed page is completely unaffected.
         */}
-        {!loading && results.map((result) => (
-          <SearchResultItem key={result.id} result={result} />
-        ))}
+        <div data-testid="search-page-results">
+          {!loading && results.map((result) => (
+            <SearchResultItem key={result.id} result={result} />
+          ))}
+        </div>
       </div>
     </div>
   );
