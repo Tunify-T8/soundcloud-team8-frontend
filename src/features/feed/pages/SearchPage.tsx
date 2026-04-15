@@ -8,7 +8,7 @@ import type {
   UserSearchResult,
   CollectionSearchResult,
   FilterType,
-} from '@/shared/types/Feed';
+} from '../type';
 
 // ─── Filter sidebar ───────────────────────────────────────────────────────────
 
@@ -20,12 +20,7 @@ const FILTERS: { key: FilterType; label: string }[] = [
   { key: 'playlists',  label: 'Playlists'  },
 ];
 
-const TYPE_MAP: Record<string, string> = {
-  tracks:    'track',
-  people:    'user',
-  albums:    'album',
-  playlists: 'playlist',
-};
+
 
 function FilterSidebar({
   active,
@@ -88,9 +83,13 @@ export default function SearchPage() {
       return;
     }
     setLoading(true);
-    const apiType = activeFilter === 'everything' ? undefined : TYPE_MAP[activeFilter];
-    feedService
-      .search(query, apiType)
+    const fetchFn =
+      activeFilter === 'tracks'    ? () => feedService.searchTracks(query) :
+      activeFilter === 'people'    ? () => feedService.searchPeople(query) :
+      activeFilter === 'albums'    ? () => feedService.searchCollections(query) :
+      activeFilter === 'playlists' ? () => feedService.searchCollections(query) :
+                                     () => feedService.search(query);
+    fetchFn()
       .then(setResults)
       .finally(() => setLoading(false));
   }, [query, activeFilter]);
