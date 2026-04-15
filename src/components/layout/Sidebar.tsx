@@ -10,7 +10,7 @@ import { TbWorld } from "react-icons/tb";
 import { MdOutlineAutoFixHigh } from "react-icons/md";
 import { IoAddCircle, IoChevronDown } from "react-icons/io5";
 import { feedService } from "../../features/feed/feedservice";
-import type { LikedTrack } from "@/shared/types/Feed";
+import type { LikedTrack } from "../../features/feed/type";
 import { api } from '../../features/auth/services/api';
 
 // ─── Local types ──────────────────────────────────────────────────────────────
