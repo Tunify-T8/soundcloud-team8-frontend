@@ -88,13 +88,18 @@ const SignInPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [socialLoading, setSocialLoading] = useState<SocialProvider | null>(null);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [emailExistsAlert, setEmailExistsAlert] = useState(false);
   const [linkingToken, setLinkingToken] = useState<string | null>(null);
+  const [shake, setShake] = useState(false);
   const [showLinkPassword, setShowLinkPassword] = useState(false);
   const [linkPassword, setLinkPassword] = useState('');
   const [isLinking, setIsLinking] = useState(false);
 
   const emailRef = useRef<HTMLInputElement>(null);
-
+  const triggerShake = () => {
+    setShake(true);
+    setTimeout(() => setShake(false), 500);
+  };
   const { register, handleSubmit, formState: { errors }, setValue, reset } = useForm<SignInFormData>({
     resolver: zodResolver(signInSchema),
   });
@@ -188,9 +193,10 @@ const SignInPage: React.FC = () => {
     try {
       const result = await checkEmail(email);
       if (!result.exists) {
-        navigate('/create-account', { state: { email } });
+        navigate('/signin');
         return;
       }
+      setEmailExistsAlert(true);
       setValue('email', email);
       setStep('password');
     } catch (error) {
@@ -231,7 +237,7 @@ const SignInPage: React.FC = () => {
                          msg.toLowerCase().includes('user not found') ||
                          msg.toLowerCase().includes('email not found');
       if (isNotFound) {
-        navigate('/create-account', { state: { email: data.email } });
+        navigate('/signin');
       } else {
         setApiError('This password is incorrect.');
       }
@@ -269,12 +275,12 @@ const SignInPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#0d0d0d] flex flex-col">
 
-      <AuthNavbar />
+      <AuthNavbar onCreateAccount={triggerShake} />
 
       {/* ── Main ── */}
       <main className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-[480px]">
-          <div className="border sm:border-[#3a3a3a] sm:rounded-sm sm:p-[3px] sm:bg-[#111]">
+          <div className={`border sm:border-[#3a3a3a] sm:rounded-sm sm:p-[3px] sm:bg-[#111] ${shake ? 'shake' : ''}`}>
             <div className="border sm:border-[#555] sm:rounded-sm bg-[#181818] sm:min-h-[520px]">
 
               {/* ══ STEP: social ══ */}
@@ -414,6 +420,11 @@ const SignInPage: React.FC = () => {
                     <h1 className="text-white text-base font-bold">Welcome back!</h1>
                   </div>
 
+                  {emailExistsAlert && (
+                    <div role="alert" className="mb-4 px-4 py-3 bg-[#1a2a1a] border border-green-500/40 rounded text-green-400 text-sm">
+                      This email is already registered. Please sign in below.
+                    </div>
+                  )}
                   {apiError && (
                     <div role="alert" className="mb-4 px-4 py-3 bg-[#2a1a1a] border border-red-500/40 rounded text-red-400 text-sm">
                       {apiError}
@@ -459,7 +470,7 @@ const SignInPage: React.FC = () => {
 
           <p className="hidden sm:block text-center text-[#777] text-sm mt-6">
             Don't have an account?{' '}
-            <Link to="/create-account" className="text-white hover:underline font-medium">Create one for free</Link>
+            <Link to="/signin" className="text-white hover:underline font-medium">Create one for free</Link>
           </p>
         </div>
       </main>
