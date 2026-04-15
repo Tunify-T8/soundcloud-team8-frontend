@@ -10,17 +10,20 @@ import { TbWorld } from "react-icons/tb";
 import { MdOutlineAutoFixHigh } from "react-icons/md";
 import { IoAddCircle, IoChevronDown } from "react-icons/io5";
 import { feedService } from "../../features/feed/feedservice";
-import type { LikedTrack } from "../../features/feed/type";
+import type { LikedTrack } from "@/shared/types/Feed";
 import { api } from '../../features/auth/services/api';
+import avatarFallback from "@/assets/avatar.png";
 
 // ─── Local types ──────────────────────────────────────────────────────────────
 
-interface Artist {
-  id: number;
-  name: string;
-  avatar: string;
-  followers: string;
-  tracks: number;
+interface SuggestedArtist {
+  id: string;
+  username: string;
+  displayName: string | null;
+  isCertified: boolean;
+  avatarUrl: string | null;
+  followersCount: number;
+  tracksCount: number;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -29,7 +32,7 @@ export default function SideBar() {
   const [open, setOpen] = useState(true);
 
   // Artists state — typed so TypeScript knows the shape
-  const [suggestedUsers, setSuggestedUsers] = useState<Artist[]>([]);
+  const [suggestedUsers, setSuggestedUsers] = useState<SuggestedArtist[]>([]);
   const [loading, setLoading]               = useState(true);
   const [error, setError]                   = useState<string | null>(null);
 
@@ -42,10 +45,10 @@ export default function SideBar() {
     setLoading(true);
     setError(null);
     try {
-      // const baseUrl =
-      //   window.location.hostname === "localhost" ? "http://localhost:3001" : "";
-        const res = await api.get('/artists');
-      setSuggestedUsers(res.data.artists || []);
+      const res = await api.get("/feed/suggested-artists", {
+        params: { page: 1, limit: 20 },
+      });
+      setSuggestedUsers(res.data.items || []);
     } catch {
       setError("Failed to load artists");
     } finally {
@@ -124,26 +127,26 @@ export default function SideBar() {
               suggestedUsers.map((artist) => (
                 <div key={artist.id} className="flex items-center justify-between">
                   <Link
-                    to={`/profile/${artist.name}`}
-                    className="flex items-center gap-3 hover:underline"
+                    to={`/${artist.id}`}
+                    className="flex items-center gap-3 "
                   >
                     <img
-                      src={artist.avatar}
-                      alt={artist.name}
-                      className="w-11 h-11 rounded-full object-cover bg-gradient-to-br from-gray-700 to-gray-900"
+                      src={artist.avatarUrl || avatarFallback}
+                      alt={artist.displayName || artist.username}
+                      className="w-11 h-11 rounded-full object-cover bg-linear-to-br from-gray-700 to-gray-900"
                     />
                     <div>
                       <div className="font-bold text-white text-[15px] leading-tight hover:text-zinc-500">
-                        {artist.name}
+                        {artist.displayName || artist.username}
                       </div>
                       <div className="flex items-center gap-3 text-xs text-gray-400 mt-0.5">
                         <span className="flex items-center gap-1 hover:text-zinc-600">
                           <FaUser size={12} />
-                          {artist.followers}
+                          {artist.followersCount}
                         </span>
                         <span className="flex items-center gap-1 hover:text-zinc-600">
                           <FaMusic size={12} />
-                          {artist.tracks}
+                          {artist.tracksCount}
                         </span>
                       </div>
                     </div>
@@ -277,7 +280,7 @@ type ToolProps = {
 
 function Tool({ icon, label }: ToolProps) {
   return (
-    <div className="relative flex flex-col items-center justify-center w-[70px] h-[70px] bg-zinc-950 border border-zinc-800 rounded-lg hover:bg-zinc-900 hover:border-zinc-700 cursor-pointer transition">
+    <div className="relative flex flex-col items-center justify-center w-17.5 h-17.5 bg-zinc-950 border border-zinc-800 rounded-lg hover:bg-zinc-900 hover:border-zinc-700 cursor-pointer transition">
       <IoAddCircle size={14} className="absolute top-1 right-1 text-purple-500" />
       <div className="text-zinc-300">{icon}</div>
       <span className="text-[11px] mt-1 text-zinc-400">{label}</span>
