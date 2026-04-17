@@ -1,7 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 import SideBar from "@/components/layout/Sidebar";
-import type { DiscoverArtist, DiscoverTrack } from "@/features/discover/Discover";
+import type {
+  DiscoverArtist,
+  DiscoverTrack,
+} from "@/features/discover/Discover";
 import { ArtistsToWatchSection } from "../components/ArtistsToWatchSection";
 import { DiscoverSection } from "../components/DiscoverSection";
 import {
@@ -15,7 +18,9 @@ export default function DiscoverPage() {
   const [discoverTracks, setDiscoverTracks] = useState<DiscoverTrack[]>([]);
   const [albumTracks, setAlbumTracks] = useState<DiscoverTrack[]>([]);
   const [madeForYouTracks, setMadeForYouTracks] = useState<DiscoverTrack[]>([]);
-  const [artistsToWatchTracks, setArtistsToWatchTracks] = useState<DiscoverArtist[]>([]);
+  const [artistsToWatchTracks, setArtistsToWatchTracks] = useState<
+    DiscoverArtist[]
+  >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -123,7 +128,7 @@ export default function DiscoverPage() {
           )}
         </main>
 
-        <aside className="w-90 shrink-0">
+        <aside className="sticky top-6 self-start h-[calc(100vh-3rem)] w-90 shrink-0 overflow-y-auto pr-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <SideBar />
         </aside>
       </div>

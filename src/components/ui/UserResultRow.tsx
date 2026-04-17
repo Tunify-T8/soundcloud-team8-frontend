@@ -11,7 +11,7 @@ export default function UserResultRow({ user }: { user: UserSearchResult }) {
     if (currentUser && user.username === currentUser.username) {
       navigate('/me');
     } else {
-      navigate(`/${user.username}`);
+      navigate(`/${user.id}`);
     }
   };
 

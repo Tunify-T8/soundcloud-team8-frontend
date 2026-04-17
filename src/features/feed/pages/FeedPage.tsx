@@ -47,6 +47,14 @@ export default function FeedPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showReposts, setShowReposts] = useState(true);
+
+  const FEED_PAGE_LIMIT = 20;
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
+  const lastRequestedPageRef = useRef(1);
+
   const [hoveredTrackId, setHoveredTrackId] = useState<string | null>(null);
   const [hoverCardByUserId, setHoverCardByUserId] = useState<
     Record<string, HoverCardState>
@@ -148,21 +156,77 @@ export default function FeedPage() {
     }
   };
 
+  const loadMore = async () => {
+    if (loading || loadingMore || !hasMore) return;
+
+    const nextPage = page + 1;
+    if (lastRequestedPageRef.current >= nextPage) return;
+    lastRequestedPageRef.current = nextPage;
+
+    setLoadingMore(true);
+    try {
+      const data = await feedService.getFeed({
+        page: nextPage,
+        limit: FEED_PAGE_LIMIT,
+      });
+
+      if (!data) {
+        setHasMore(false);
+        return;
+      }
+
+      const nextHasMore =
+        typeof (data as any).hasMore === "boolean"
+          ? Boolean((data as any).hasMore)
+          : data.items.length === (data.limit ?? FEED_PAGE_LIMIT);
+
+      setFeedItems((prev) => {
+        const seen = new Set(prev.map((i) => i.trackId));
+        const merged = [...prev];
+        for (const item of data.items) {
+          if (!seen.has(item.trackId)) {
+            merged.push(item);
+            seen.add(item.trackId);
+          }
+        }
+        return merged;
+      });
+      setPage(data.page ?? nextPage);
+      setHasMore(nextHasMore);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
 
     const fetchFeed = () => {
+      setLoading(true);
+      setError(null);
+      setPage(1);
+      setHasMore(true);
+      lastRequestedPageRef.current = 1;
+
       feedService
-        .getFeed()
+        .getFeed({ page: 1, limit: FEED_PAGE_LIMIT })
         .then((data: FeedResponse | null) => {
-          if (isMounted) {
-            if (data) {
-              setFeedItems(data.items);
-            } else {
-              setFeedItems([]);
-            }
-            setLoading(false);
+          if (!isMounted) return;
+
+          if (data) {
+            const nextHasMore =
+              typeof (data as any).hasMore === "boolean"
+                ? Boolean((data as any).hasMore)
+                : data.items.length === (data.limit ?? FEED_PAGE_LIMIT);
+
+            setFeedItems(data.items);
+            setPage(data.page ?? 1);
+            setHasMore(nextHasMore);
+          } else {
+            setFeedItems([]);
+            setHasMore(false);
           }
+          setLoading(false);
         })
         .catch(() => {
           if (isMounted) {
@@ -180,6 +244,28 @@ export default function FeedPage() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!hasMore || loading || loadingMore) return;
+    const sentinel = loadMoreSentinelRef.current;
+    if (!sentinel) return;
+
+    if (typeof window === "undefined" || !("IntersectionObserver" in window)) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          void loadMore();
+        }
+      },
+      { root: null, rootMargin: "400px 0px" },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loading, loadingMore, page]);
 
   if (loading) {
     return (
@@ -370,10 +456,25 @@ export default function FeedPage() {
                 </div>
               </div>
             ))}
+
+            {/* Infinite scroll sentinel */}
+            {feedItems.length > 0 && (
+              <div ref={loadMoreSentinelRef} className="h-1 w-full" />
+            )}
+
+            {loadingMore && (
+              <p className="mt-6 text-sm text-zinc-400">Loading more...</p>
+            )}
+
+            {!loadingMore && !hasMore && feedItems.length > 0 && (
+              <p className="mt-6 text-sm text-zinc-500">
+                You're all caught up.
+              </p>
+            )}
           </div>
         </div>
 
-        <aside className="sticky top-6 self-start h-[calc(100vh-3rem)] w-90 shrink-0 overflow-y-auto pr-2">
+        <aside className="sticky top-6 self-start h-[calc(100vh-3rem)] w-90 shrink-0 overflow-y-auto pr-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <SideBar />
         </aside>
       </div>

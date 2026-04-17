@@ -71,7 +71,7 @@ export default function SearchBar() {
       if (currentUser && result.username === currentUser.username) {
         navigate('/me');
       } else {
-        navigate(`/${result.username}`);
+        navigate(`/${result.id}`);
       }
     } else if (result.type === 'track') {
       navigate(`/${result.artist}`);
