@@ -8,7 +8,7 @@ import type {
   TrackSearchResult,
   UserSearchResult,
   CollectionSearchResult,
-} from '../../features/feed/type';
+} from '@/shared/types/Feed';
 
 export default function SearchBar() {
   const [query, setQuery] = useState('');
@@ -66,7 +66,6 @@ export default function SearchBar() {
   // ← This is the only new line. Dropdown click behavior is untouched.
   if (e.key === 'Enter' && query.trim()) {
     setIsOpen(false);
-     setQuery(''); 
     navigate(`/search?q=${encodeURIComponent(query.trim())}`);
   }
 };
