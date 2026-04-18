@@ -14,7 +14,7 @@ export interface Track {
   description?: string;
   waveformData?: number[];   
   duration: number;
-  date?: string;
+  date: string;
   likes: number | null;
   comments: number | null;
   reposts: number | null;

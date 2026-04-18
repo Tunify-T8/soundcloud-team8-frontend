@@ -6,7 +6,6 @@ import type { FeedItem, FeedResponse } from "@/features/feed/type";
 import { useEffect, useState } from "react";
 import { SOCIAL_GRAPH_UPDATED_EVENT } from "@/features/profile/socialGraphEvents";
 import { feedService } from "@/features/feed/feedservice";
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatTimeAgo(dateStr: string): string {

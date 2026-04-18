@@ -1,14 +1,34 @@
 import { useEffect, useRef, useState } from "react";
 import CollectionGrid from "../components/CollectionGrid";
 import TrackRow from "../components/TrackRow";
-import { RECENTLY_PLAYED } from "../tests/mockdata";
 import {
   getListeningHistory,
   mapHistoryToTrackItem,
 } from "../libraryService";
 import type { TrackItem } from "../types";
+import type { CollectionItem } from "../types";
+
+const STORAGE_KEY = "recentlyPlayed"; // must match the key used when saving
+
+function loadRecentlyPlayedFromStorage(): CollectionItem[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const entries = JSON.parse(raw);
+    // Map RecentlyPlayedEntry → CollectionItem, fixing artworkUrl → coverUrl
+    return entries.map((entry: { id: string; title: string; artworkUrl?: string }) => ({
+      id: entry.id,
+      title: entry.title,
+      subtitle: "",
+      coverUrl: entry.artworkUrl,  // ← this is the artwork fix
+    }));
+  } catch {
+    return [];
+  }
+}
 
 export default function HistoryTab() {
+  const [recentlyPlayed] = useState<CollectionItem[]>(loadRecentlyPlayedFromStorage);
   const [tracks, setTracks] = useState<TrackItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +78,6 @@ export default function HistoryTab() {
 
   return (
     <div>
-      {/* Header row: "Recently played:" + Clear all history + Filter */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-white font-bold text-base">Recently played:</h2>
 
@@ -104,12 +123,11 @@ export default function HistoryTab() {
         )}
       </div>
 
-      {/* Recently played grid */}
-      {!historyCleared && (
-        <CollectionGrid items={RECENTLY_PLAYED} title="" />
+      {/* Recently played grid — now from localStorage */}
+      {!historyCleared && recentlyPlayed.length > 0 && (
+        <CollectionGrid items={recentlyPlayed} title="" />
       )}
 
-      {/* Tracks section heading */}
       <h2 className="text-white font-bold text-base mt-8 mb-6">
         Hear the tracks you've played:
       </h2>

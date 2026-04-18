@@ -26,7 +26,6 @@ import { ProfileProvider } from "./features/profile/context/ProfileContext";
 import useRestoreSession from "./hooks/useRestoreSession";
 import { PlayerProvider } from "./features/playerUI/context/PlayerProvider";
 import PlayerBar from "./features/playerUI/components/PlayerBar";
-
 import { usePlayer } from "./features/playerUI/context/usePlayer";
 
 import FeedPage from "./features/feed/pages/FeedPage";
@@ -187,6 +186,8 @@ function PlayerBarWrapper() {
   const { currentTrack } = usePlayer();
   if (!currentTrack) return null;
 
-  return <PlayerBar />;
+  return (
+    <PlayerBar/>
+  );
 }
 export default App;

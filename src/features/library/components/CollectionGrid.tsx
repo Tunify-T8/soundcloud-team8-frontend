@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import type { CollectionItem } from "../types";
 
 interface CollectionGridProps {
@@ -12,7 +13,12 @@ export default function CollectionGrid({ items, title, showBrowse = false }: Col
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-white font-bold text-sm">{title}</h2>
         {showBrowse && (
-          <span className="text-zinc-500 text-xs hover:text-white cursor-pointer">Browse trending playlists</span>
+          <Link
+            to="/home"
+            className="text-zinc-500 text-xs transition-colors duration-150 hover:text-white cursor-pointer"
+          >
+            Browse trending playlists
+          </Link>
         )}
       </div>
       <div className="flex gap-4 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
@@ -28,14 +34,8 @@ export default function CollectionGrid({ items, title, showBrowse = false }: Col
               ) : (
                 <div className="w-full h-full bg-[#282828]" />
               )}
+              {/* Haze only — no play button for recently played */}
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-lg">
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="black">
-                    <polygon points="2,0 16,7 2,14" />
-                  </svg>
-                </div>
-              </div>
             </div>
             <p className="text-white text-xs font-semibold truncate">{item.title}</p>
             <p className="text-zinc-500 text-xs truncate mt-0.5">{item.subtitle}</p>
