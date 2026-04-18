@@ -58,10 +58,14 @@ export default function SearchBar() {
       setIsOpen(false);
     }
     if (e.key === 'Enter' && query.trim()) {
-      setIsOpen(false);
-      setQuery('');
+    setIsOpen(false);
+    setQuery('');
+    if (currentUser && query.trim().toLowerCase() === currentUser.username.toLowerCase()) {
+      navigate('/me');
+    } else {
       navigate(`/search?q=${encodeURIComponent(query.trim())}`);
     }
+  }
   };
 
   const handleSelect = (result: SearchResult) => {
