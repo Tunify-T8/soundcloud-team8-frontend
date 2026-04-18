@@ -63,7 +63,7 @@ export default function FollowersPage() {
   const basePath = username ? `/${username}` : "/me";
 
   return (
-    <div className="mx-auto mt-10 w-9/12 text-white">
+    <div className="mx-auto mt-10 w-9/12 text-white w-9/12">
       <SocialInfoBar
         avatarUrl={avatarUrl}
         title={`Followers of ${titleName || "user"}`}
@@ -73,7 +73,7 @@ export default function FollowersPage() {
       {loading ? (
         <div className="mt-20 text-center text-zinc-400">Loading followers...</div>
       ) : followers.length === 0 ? (
-        <p className="mt-20 text-center text-5xl font-semibold text-white">
+        <p className="mt-20 text-center text-3xl font-semibold text-white">
           No one is following you yet.
         </p>
       ) : (
@@ -85,8 +85,9 @@ export default function FollowersPage() {
                 alt={user.username}
                 className="h-44 w-44 rounded-full object-cover"
               />
-              <p className="mt-3 text-2xl font-semibold">{user.username}</p>
-              <p className="mt-1 flex items-center gap-1 text-lg text-zinc-400">
+              <p className="mt-3 text-
+              xl font-semibold">{user.username}</p>
+              <p className="mt-1 flex items-center gap-1 text-base text-zinc-400">
                 <User size={14} />
                 follower
               </p>
