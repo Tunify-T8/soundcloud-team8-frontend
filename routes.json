@@ -1,4 +1,7 @@
 {
   "/tracks/me": "/tracks",
-  "/users/me": "/users"
+  "/users/me": "/users",
+  "/tracks/me/listening-history": "/listening-history",
+  "/tracks/:id/stream": "/trackStreams/:id",
+  "/tracks/:id/playback": "/trackPlaybacks/:id"
 }

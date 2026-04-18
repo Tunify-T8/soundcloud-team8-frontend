@@ -17,6 +17,7 @@ import { FiInfo } from "react-icons/fi";
 import { Ticket } from "lucide-react";
 import type { FollowingUser } from "../../../../shared/types/User";
 import { followingService } from "../../../following/followingService";
+import avatarFallback from '@/assets/avatar.png';
 
 export default function ProfileSideBar({
   followers,
@@ -226,19 +227,19 @@ export default function ProfileSideBar({
                 >
                   <div className="flex items-center gap-4">
                     <img
-                      src={followingUser.avatarUrl}
+                      src={followingUser.avatarUrl || avatarFallback}
                       alt={followingUser.username}
                       className="h-12 w-12 rounded-full object-cover"
                     />
                     <div className="flex flex-col">
                       <Link
-                        to={`/${followingUser.username}`}
+                        to={`/${followingUser.id}`}
                         className="text-[14px] font-bold leading-none text-white uppercase hover:text-zinc-500"
                       >
                         {followingDisplayName}
                       </Link>
                       <Link
-                        to={`/${followingUser.username}/followers`}
+                        to={`/${followingUser.id}/followers`}
                         className="mt-2 inline-flex items-center gap-1 text-[13px] text-zinc-400 hover:text-zinc-600"
                       >
                         <FaUser size={12} />

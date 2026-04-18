@@ -150,8 +150,12 @@ export interface UserFollowersResponse {
 export interface UserFollowing {
   id: string;
   username: string;
+  displayName?: string | null;
   avatarUrl?: string | null;
+  location?: string | null;
   isCertified?: boolean;
+  followersCount?: number;
+  isNotificationEnabled?: boolean;
 }
 
 export interface UserFollowingResponse {
