@@ -84,7 +84,7 @@ export default function FollowingPage() {
       {loading ? (
         <div className="mt-20 text-center text-zinc-400">Loading following...</div>
       ) : following.length === 0 ? (
-        <p className="mt-20 text-center text-5xl font-semibold text-white">
+        <p className="mt-20 text-center text-xl font-semibold text-white">
           Not following anyone yet.
         </p>
       ) : (
@@ -97,7 +97,7 @@ export default function FollowingPage() {
                   alt={user.username}
                   className="h-44 w-44 rounded-full object-cover"
                 />
-                <p className="mt-3 text-2xl font-semibold">{user.username}</p>
+                <p className="mt-3 text-xl font-semibold">{user.username}</p>
               </Link>
               <button
                 type="button"

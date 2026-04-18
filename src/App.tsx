@@ -140,7 +140,7 @@ const router = createBrowserRouter([
         element: <FollowingPage />,
       },
       {
-        path: "/me/who-to-follow",
+        path: "/who-to-follow",
         element: <WhoToFollowPage />,
       },
       {
