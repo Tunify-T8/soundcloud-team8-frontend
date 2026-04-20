@@ -53,16 +53,16 @@ const router = createBrowserRouter([
         element: <MessagesPage />
       },
       {
-        path: '/:artist/:songName',
-        element: <TrackPage />
+        path: '/tracks/:trackId',
+        element: <TrackPage />,
       },
       {
-        path: '/:artist/:songName/likes',
-        element: <LikesPage />
+        path: '/tracks/:trackId/likes',
+        element: <LikesPage />,
       },
       {
-        path: '/:artist/:songName/reposts',
-        element: <RepostsPage />
+        path: '/tracks/:trackId/reposts',
+        element: <RepostsPage />,
       },
       {
         path: "/:username",

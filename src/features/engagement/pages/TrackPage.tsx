@@ -1,248 +1,493 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { engagementService } from '../services/engagementService';
-import { useEngagement } from '../hooks/useEngagement';
-import type { Track } from '../types/Track';
-
 import {
-  Heart, Repeat2, Play, Share2,
+  Play, Pause, Heart, Repeat2,
+  Users, Flag, Info,
 } from 'lucide-react';
-import ActionButtons from '../components/ActionButtons';
 
-const TrackPage = () => {
-  const { artist, songName } = useParams<{ artist: string; songName: string }>();
-  const trackId = `${artist}/${songName}`;
-  const [track, setTrack] = useState<Track | null>(null);
-  const [trackLoading, setTrackLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+import { engagementService }   from '../services/engagementService';
+import { useEngagement }       from '../hooks/useEngagement';
+import type { Track }          from '../types/Track';
+import ActionButtons           from '../components/ActionButtons';
+import CommentsSection         from '../components/CommentsSection';
+import { makeCommentAvatar, formatTimestamp } from '../components/CommentsSection';
 
-  const {
-    counts,
-    isLiked,
-    isReposted,
-    loading: engagementLoading,
-    toggleLike,
-    toggleRepost,
-  } = useEngagement(trackId ?? '');
-
-  useEffect(() => {
-    const fetchTrack = async () => {
-      if (!trackId) return;
-      try {
-        const data = await engagementService.getTrackDetails(trackId);
-        setTrack(data);
-      } catch {
-        setError('Failed to load track');
-      } finally {
-        setTrackLoading(false);
-      }
-    };
-    fetchTrack();
-  }, [trackId]);
-
-  if (trackLoading) return <div className="p-8 text-white">Loading...</div>;
-  if (error || !track) return <div className="p-8 text-red-500">{error || 'Track not found'}</div>;
-
-  return (
-    <div className="min-h-screen bg-zinc-900 text-white">
-      <div className="max-w-5xl mx-auto">
-
-        <div className="flex bg-zinc-900">
-
-          
-          <div className="flex-1 p-6 space-y-4">
-
-           
-            <div className="flex items-center gap-4">
-              <button className="w-14 h-14 shrink-0 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition">
-                <Play className="w-6 h-6 fill-black" />
-              </button>
-              <div>
-                <p className="text-xs text-zinc-400 uppercase tracking-widest">{track.artist}</p>
-                <h1 className="text-xl font-bold leading-tight">{track.title}</h1>
-              </div>
-              <span className="ml-auto text-xs text-zinc-500">
-                {new Date(track.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
-              </span>
-            </div>
-
-            
-            <div className="relative h-24 bg-zinc-800 rounded overflow-hidden">
-              <div className="absolute inset-0 flex items-end gap-px px-1">
-                {Array.from({ length: 120 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="flex-1 bg-zinc-500 rounded-sm opacity-70"
-                    style={{ height: `${20 + Math.random() * 80}%` }}
-                  />
-                ))}
-              </div>
-            </div>
-
-           
-            <div className="flex items-center gap-6 text-xs text-zinc-400">
-              <span className="flex items-center gap-1">
-                <Play className="w-3 h-3" />
-                {(track.plays ?? 0).toLocaleString()}
-              </span>
-              <Link
-                to={`/${artist}/${songName}/likes`}
-                className="flex items-center gap-1 hover:text-white transition"
-              >
-                <Heart className="w-3 h-3" />
-                {engagementLoading ? '...' : counts.likes.toLocaleString()}
-              </Link>
-              <Link
-                to={`/${artist}/${songName}/reposts`}
-                className="flex items-center gap-1 hover:text-white transition"
-              >
-                <Repeat2 className="w-3 h-3" />
-                {engagementLoading ? '...' : counts.reposts.toLocaleString()}
-              </Link>
-            </div>
-            
-            <ActionButtons
-              isLiked={isLiked}
-              isReposted={isReposted}
-              isLoading={engagementLoading}
-              onLike={toggleLike}
-              onRepost={toggleRepost}
-            />
-          </div>
-
-          <div className="w-48 h-48 shrink-0 self-start mt-6 mr-6">
-            <img
-              src={track.artworkUrl}
-              alt={track.title}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        </div>
-
-        <CommentsSection trackId={trackId} commentCount={counts.comments} />
-      </div>
-    </div>
-  );
-};
-
-
-interface Comment {
+interface WaveformComment {
   id: string;
   userId: string;
   username: string;
   avatarUrl: string;
   body: string;
   timestamp: number;
-  createdAt: string;
-  likes: number;
 }
 
-const mockComments: Comment[] = [
-  { id: 'c1', userId: 'u1', username: 'Jad Saadeh',     avatarUrl: '', body: 'It hits different when',            timestamp: 32, createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),          likes: 0 },
-  { id: 'c2', userId: 'u2', username: 'Hagar El Soudi', avatarUrl: '', body: '💗',                                timestamp: 88, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 13).toISOString(), likes: 1 },
-  { id: 'c3', userId: 'u3', username: 'Hagar El Soudi', avatarUrl: '', body: 'انا حالي ميسرش عدو ولا حبيب',     timestamp: 2,  createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 13).toISOString(), likes: 1 },
-  { id: 'c4', userId: 'u4', username: 'dr hala',        avatarUrl: '', body: 'ولو نسياني ميضرش',                timestamp: 26, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 20).toISOString(), likes: 0 },
-];
-
-const timeAgo = (dateStr: string) => {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins} minutes ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs} hours ago`;
-  return `${Math.floor(hrs / 24)} days ago`;
-};
-
-const formatTimestamp = (secs: number) => {
-  const m = Math.floor(secs / 60);
-  const s = secs % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
-};
-
-const makeAvatar = (text: string) =>
+const makeOwnerAvatar = (text: string, size = 80): string =>
   `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="#374151"/><text x="50%" y="50%" font-size="14" fill="#F9FAFB" text-anchor="middle" dominant-baseline="central">${text}</text></svg>`
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">` +
+    `<rect width="${size}" height="${size}" rx="${size / 2}" fill="#333"/>` +
+    `<text x="50%" y="50%" font-size="${Math.round(size * 0.35)}" fill="#eee" ` +
+    `text-anchor="middle" dominant-baseline="central" font-family="sans-serif" ` +
+    `font-weight="700">${text}</text></svg>`
   )}`;
 
-const CommentsSection = ({ trackId: _trackId, commentCount }: { trackId: string; commentCount: number }) => {
-  const [comments, setComments] = useState<Comment[]>(mockComments);
-  const [newComment, setNewComment] = useState('');
+const MOCK_FANS = [
+  { rank: 1, username: 'momen',         plays: 291, avatarUrl: makeCommentAvatar('MO') },
+  { rank: 2, username: 'Mostafa Sheta', plays: 170, avatarUrl: makeCommentAvatar('MS') },
+  { rank: 3, username: 'Dalia',         plays: 159, avatarUrl: makeCommentAvatar('DA') },
+  { rank: 4, username: 'User 19494150', plays: 121, avatarUrl: makeCommentAvatar('U4') },
+  { rank: 5, username: 'محمد اشرف',    plays: 111, avatarUrl: makeCommentAvatar('MA') },
+];
 
-  const handlePost = () => {
-    if (!newComment.trim()) return;
-    const c: Comment = {
-      id: `c${Date.now()}`,
-      userId: 'user1',
-      username: 'You',
-      avatarUrl: '',
-      body: newComment.trim(),
-      timestamp: 0,
-      createdAt: new Date().toISOString(),
-      likes: 0,
-    };
-    setComments([c, ...comments]);
-    setNewComment('');
+const WAVEFORM_COMMENTS: WaveformComment[] = [
+  { id: 'wc1', userId: 'u1', username: 'Sasa',  avatarUrl: makeCommentAvatar('SN', 28), body: 'ولو نسياني',    timestamp: 18  },
+  { id: 'wc2', userId: 'u2', username: 'Jad',   avatarUrl: makeCommentAvatar('JS', 28), body: 'hits different', timestamp: 32  },
+  { id: 'wc3', userId: 'u3', username: 'Nour',  avatarUrl: makeCommentAvatar('NO', 28), body: 'love this',      timestamp: 55  },
+  { id: 'wc4', userId: 'u4', username: 'Omar',  avatarUrl: makeCommentAvatar('OM', 28), body: '🎵',             timestamp: 72  },
+  { id: 'wc5', userId: 'u5', username: 'Hagar', avatarUrl: makeCommentAvatar('HS', 28), body: '💗',             timestamp: 88  },
+  { id: 'wc6', userId: 'u6', username: 'Lena',  avatarUrl: makeCommentAvatar('LE', 28), body: 'wow',            timestamp: 110 },
+  { id: 'wc7', userId: 'u7', username: 'Mai',   avatarUrl: makeCommentAvatar('MA', 28), body: 'repeat',         timestamp: 130 },
+  { id: 'wc8', userId: 'u8', username: 'Fatma', avatarUrl: makeCommentAvatar('FA', 28), body: 'انا حالي',      timestamp: 148 },
+  { id: 'wc9', userId: 'u9', username: 'Ali',   avatarUrl: makeCommentAvatar('AL', 28), body: 'great',          timestamp: 162 },
+];
+
+interface WaveformProps {
+  duration:    number;
+  currentTime: number;
+  onSeek:      (t: number) => void;
+  comments:    WaveformComment[];
+}
+
+const Waveform = ({ duration, currentTime, onSeek, comments }: WaveformProps) => {
+  const ref      = useRef<HTMLDivElement>(null);
+  const progress = duration > 0 ? currentTime / duration : 0;
+
+  const heights = useRef<number[]>(
+    Array.from({ length: 140 }, (_, i) =>
+      18 + Math.abs(Math.sin(i * 0.38) * 50 + Math.sin(i * 0.11) * 28)
+    )
+  );
+
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!ref.current || duration === 0) return;
+    const rect  = ref.current.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    onSeek(ratio * duration);
   };
 
   return (
-    <div className="border-t border-zinc-700 px-6 py-6">
+    <div className="w-full">
+      <div
+        ref={ref}
+        onClick={handleClick}
+        className="relative h-[88px] flex items-end gap-px px-1 cursor-pointer select-none"
+        style={{ background: 'transparent' }}
+      >
+        {heights.current.map((h, i) => {
+          const ratio  = i / heights.current.length;
+          const played = ratio < progress;
+          return (
+            <div
+              key={i}
+              className="flex-1 rounded-sm"
+              style={{
+                height:          `${h}%`,
+                backgroundColor: played ? '#f97316' : '#52525b',
+                opacity:         played ? 1 : 0.8,
+                transition:      'background-color 0.1s',
+              }}
+            />
+          );
+        })}
 
-      
-      <div className="flex items-center gap-3 mb-6">
-        <img
-          src={makeAvatar('Y')}
-          alt="you"
-          className="w-9 h-9 rounded-full shrink-0"
-        />
-        <div className="flex-1 flex items-center bg-zinc-800 rounded px-3 py-2 gap-2">
-          <input
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handlePost()}
-            placeholder="Write a comment"
-            className="flex-1 bg-transparent text-sm text-white placeholder-zinc-500 outline-none"
-          />
-          <button onClick={handlePost} className="text-zinc-400 hover:text-white transition">
-            <Share2 className="w-4 h-4" />
-          </button>
-        </div>
+        {duration > 0 && (
+          <div
+            className="absolute top-0 bottom-0 w-px bg-white/50 pointer-events-none"
+            style={{ left: `${progress * 100}%` }}
+          >
+            <span
+              className="absolute -top-6 -translate-x-1/2 text-[10px] text-white
+                         bg-zinc-900 border border-zinc-700 px-1.5 py-0.5 rounded
+                         font-mono whitespace-nowrap"
+            >
+              {formatTimestamp(currentTime)}
+            </span>
+          </div>
+        )}
       </div>
 
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-semibold">
-          {commentCount > 0 ? commentCount : comments.length} comments
-        </h2>
-        <button className="text-xs text-zinc-400 border border-zinc-600 rounded px-3 py-1 flex items-center gap-1 hover:border-zinc-400 transition">
-          Sorted by: Newest
-          <span className="text-zinc-500">∨</span>
+      <div className="relative h-8 w-full mt-0.5">
+        {comments.map(c => {
+          const left = duration > 0 ? (c.timestamp / duration) * 100 : 0;
+          return (
+            <div
+              key={c.id}
+              className="absolute -translate-x-1/2 group/tip"
+              style={{ left: `${left}%` }}
+            >
+              <img
+                src={c.avatarUrl}
+                alt={c.username}
+                className="w-7 h-7 rounded-full ring-1 ring-zinc-600 object-cover
+                           group-hover/tip:ring-orange-400 group-hover/tip:scale-110
+                           cursor-pointer transition-all duration-150"
+              />
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5
+                              bg-zinc-800 border border-zinc-700 text-white text-[10px]
+                              rounded px-2 py-1 whitespace-nowrap pointer-events-none
+                              opacity-0 group-hover/tip:opacity-100 transition-opacity z-10">
+                <span className="font-medium">{c.username}</span>
+                <span className="text-zinc-400 mx-1">at</span>
+                <span className="text-orange-400 font-mono">{formatTimestamp(c.timestamp)}</span>
+                <div className="text-zinc-300 mt-0.5">{c.body}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex justify-between text-[10px] text-zinc-600 font-mono mt-0.5 px-1">
+        <span>0:00</span>
+        <span>{formatTimestamp(duration)}</span>
+      </div>
+    </div>
+  );
+};
+
+interface ShareModalProps { title: string; onClose: () => void }
+
+const ShareModal = ({ title, onClose }: ShareModalProps) => {
+  const [copied, setCopied] = useState(false);
+  const link = window.location.href;
+
+  const copy = () => {
+    navigator.clipboard.writeText(link).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75"
+      onClick={onClose}
+    >
+      <div
+        className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 w-full max-w-md
+                   mx-4 space-y-4 shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        <h3 className="text-white font-semibold text-sm">Share "{title}"</h3>
+
+        <div>
+          <p className="text-xs text-zinc-500 mb-1.5">Link</p>
+          <div className="flex gap-2">
+            <input
+              readOnly value={link}
+              className="flex-1 bg-zinc-800 border border-zinc-700 rounded px-3 py-2
+                         text-xs text-zinc-300 outline-none"
+            />
+            <button
+              onClick={copy}
+              className={`px-4 py-2 rounded text-xs font-medium transition ${
+                copied ? 'bg-green-600 text-white' : 'bg-zinc-700 text-white hover:bg-zinc-600'
+              }`}
+            >
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <p className="text-xs text-zinc-500 mb-1.5">Embed</p>
+          <textarea
+            readOnly rows={3}
+            value={`<iframe width="100%" height="166" scrolling="no" frameborder="no" src="https://w.soundcloud.com/player/?url=${encodeURIComponent(link)}"></iframe>`}
+            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2
+                       text-xs text-zinc-300 outline-none resize-none font-mono"
+          />
+        </div>
+
+        <button
+          onClick={onClose}
+          className="w-full py-2 rounded bg-zinc-800 text-zinc-400 hover:text-white text-sm transition"
+        >
+          Close
         </button>
       </div>
+    </div>
+  );
+};
 
-      <div className="space-y-5">
-        {comments.map((c) => (
-          <div key={c.id} className="flex gap-3">
-            <img
-              src={c.avatarUrl || makeAvatar(c.username.slice(0, 2).toUpperCase())}
-              alt={c.username}
-              className="w-9 h-9 rounded-full shrink-0"
+const TrackPage = () => {
+  const { trackId } = useParams<{ trackId: string }>();
+
+  const [track, setTrack]             = useState<Track | null>(null);
+  const [trackLoading, setLoading]    = useState(true);
+  const [error, setError]             = useState<string | null>(null);
+  const [isPlaying, setIsPlaying]     = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [showShare, setShowShare]     = useState(false);
+  const [fansTab, setFansTab]         = useState<'top' | 'first'>('top');
+
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const {
+    counts, isLiked, isReposted,
+    loading: engLoading, toggleLike, toggleRepost,
+  } = useEngagement(trackId ?? '');
+
+  useEffect(() => {
+    if (!trackId) return;
+    engagementService.getTrackDetails(trackId)
+      .then(setTrack)
+      .catch(() => setError('Failed to load track'))
+      .finally(() => setLoading(false));
+  }, [trackId]);
+
+  useEffect(() => {
+    if (!track?.audioUrl) return;
+    const audio = new Audio(track.audioUrl);
+    audioRef.current = audio;
+    const onTime  = () => setCurrentTime(audio.currentTime);
+    const onEnded = () => setIsPlaying(false);
+    audio.addEventListener('timeupdate', onTime);
+    audio.addEventListener('ended', onEnded);
+    return () => {
+      audio.pause();
+      audio.removeEventListener('timeupdate', onTime);
+      audio.removeEventListener('ended', onEnded);
+    };
+  }, [track?.audioUrl]);
+
+  const handlePlayPause = () => {
+    const a = audioRef.current;
+    if (!a) return;
+    if (isPlaying) { a.pause(); setIsPlaying(false); }
+    else           { a.play().catch(() => {}); setIsPlaying(true); }
+  };
+
+  const handleSeek = (t: number) => {
+    const a = audioRef.current;
+    if (a) { a.currentTime = t; setCurrentTime(t); }
+  };
+
+  if (trackLoading) return <div className="p-8 text-white">Loading…</div>;
+  if (error || !track) return <div className="p-8 text-red-400">{error ?? 'Track not found'}</div>;
+
+  const duration   = (track as any).duration ?? 184;
+  const artworkSrc = (track as any).artworkUrl ?? (track as any).thumbnailUrl ?? '';
+  const ownerInit  = track.artist.slice(0, 2).toUpperCase();
+  const currentUserId = localStorage.getItem('userId') ?? '';
+
+  return (
+    <div className="min-h-screen bg-zinc-950 text-white">
+      {showShare && (
+        <ShareModal title={track.title} onClose={() => setShowShare(false)} />
+      )}
+
+      <div className="max-w-6xl mx-auto">
+        <div className="bg-zinc-800 flex">
+
+          <div className="flex-1 px-6 pt-5 pb-3 space-y-3">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handlePlayPause}
+                className="w-11 h-11 shrink-0 rounded-full bg-orange-500 hover:bg-orange-400
+                           flex items-center justify-center transition-colors shadow-md"
+              >
+                {isPlaying
+                  ? <Pause className="w-5 h-5 fill-white text-white" />
+                  : <Play  className="w-5 h-5 fill-white text-white ml-0.5" />
+                }
+              </button>
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] text-zinc-400 uppercase tracking-widest truncate">
+                  {track.artist}
+                </p>
+                <h1 className="text-base font-bold leading-tight truncate">{track.title}</h1>
+              </div>
+              <span className="text-[11px] text-zinc-500 shrink-0">
+                {new Date((track as any).date ?? (track as any).createdAt ?? '')
+                  .toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
+              </span>
+            </div>
+
+            <Waveform
+              duration={duration}
+              currentTime={currentTime}
+              onSeek={handleSeek}
+              comments={WAVEFORM_COMMENTS}
             />
-            <div className="flex-1">
-              <p className="text-xs text-zinc-400 mb-0.5">
-                <span className="text-white font-medium">{c.username}</span>
-                {' at '}
-                <span className="text-orange-400">{formatTimestamp(c.timestamp)}</span>
-                {' · '}
-                {timeAgo(c.createdAt)}
-              </p>
-              <p className="text-sm text-zinc-200">{c.body}</p>
-              <button className="text-xs text-zinc-500 hover:text-white mt-1 transition">Reply</button>
-            </div>
-            <div className="flex flex-col items-center gap-0.5 shrink-0">
-              <Heart className="w-3.5 h-3.5 text-zinc-500 hover:text-white cursor-pointer transition" />
-              <span className="text-xs text-zinc-500">{c.likes}</span>
-            </div>
           </div>
-        ))}
+
+          <div className="w-[184px] h-[184px] shrink-0 self-start mt-0">
+            {artworkSrc
+              ? <img src={artworkSrc} alt={track.title} className="w-full h-full object-cover" />
+              : <div className="w-full h-full bg-zinc-700 flex items-center justify-center">
+                  <span className="text-4xl font-bold text-zinc-500">{ownerInit}</span>
+                </div>
+            }
+          </div>
+        </div>
+
+        <div className="bg-zinc-900 border-b border-zinc-800">
+          <div className="flex items-center gap-4 px-6 py-3">
+
+            <ActionButtons
+              isLiked={isLiked}
+              isReposted={isReposted}
+              isLoading={engLoading}
+              onLike={toggleLike}
+              onRepost={toggleRepost}
+              onShare={() => setShowShare(true)}
+            />
+
+            <div className="flex-1" />
+
+            <div className="flex items-center gap-5 text-xs text-zinc-400 shrink-0">
+              <span className="flex items-center gap-1.5">
+                <Play className="w-3 h-3 fill-zinc-400" />
+                {(counts.plays ?? (track as any).plays ?? 0).toLocaleString()}
+              </span>
+              <Link
+                to={`/tracks/${trackId}/likes`}
+                className="flex items-center gap-1.5 hover:text-white transition"
+              >
+                <Heart className="w-3 h-3" />
+                {engLoading ? '…' : counts.likes.toLocaleString()}
+              </Link>
+              <Link
+                to={`/tracks/${trackId}/reposts`}
+                className="flex items-center gap-1.5 hover:text-white transition"
+              >
+                <Repeat2 className="w-3 h-3" />
+                {engLoading ? '…' : counts.reposts.toLocaleString()}
+              </Link>
+            </div>
+
+          </div>
+        </div>
+
+        <div className="flex">
+
+          <aside className="w-44 shrink-0 px-5 py-6 border-r border-zinc-800 flex flex-col items-center gap-3">
+            <div className="w-[88px] h-[88px] rounded-full overflow-hidden ring-2 ring-zinc-700">
+              <img
+                src={makeOwnerAvatar(ownerInit, 88)}
+                alt={track.artist}
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            <div className="text-center">
+              <p className="text-sm font-semibold text-white leading-tight">{track.artist}</p>
+              <p className="text-[11px] text-zinc-500 mt-1 flex items-center justify-center gap-2">
+                <span className="flex items-center gap-0.5">
+                  <Users className="w-2.5 h-2.5" />
+                  2,160
+                </span>
+                <span className="text-zinc-700">·</span>
+                <span>28</span>
+              </p>
+            </div>
+
+            <button className="w-full py-1.5 rounded border border-zinc-600 text-xs text-white
+                               hover:border-white hover:bg-white/5 transition-colors font-medium">
+              Follow
+            </button>
+
+            <button className="flex items-center gap-1 text-[11px] text-zinc-500 hover:text-white transition mt-1">
+              <Flag className="w-3 h-3" />
+              Report
+            </button>
+          </aside>
+
+          <div className="flex-1 min-w-0 border-r border-zinc-800">
+            <CommentsSection
+              trackId={trackId ?? ''}
+              commentCount={counts.comments}
+              currentTime={currentTime}
+              currentUserId={currentUserId}
+            />
+          </div>
+
+          <aside className="w-60 shrink-0 px-5 py-6 space-y-4">
+
+            <div className="flex items-center gap-1.5">
+              <h3 className="text-xs font-bold text-white uppercase tracking-widest">Fans</h3>
+              <Info className="w-3 h-3 text-zinc-600" />
+            </div>
+
+            <div className="flex gap-3 text-xs">
+              <button
+                onClick={() => setFansTab('top')}
+                className={`font-medium transition ${
+                  fansTab === 'top' ? 'text-white border-b border-white' : 'text-zinc-500 hover:text-white'
+                }`}
+              >
+                Top
+              </button>
+              <button
+                onClick={() => setFansTab('first')}
+                className={`font-medium transition ${
+                  fansTab === 'first' ? 'text-white border-b border-white' : 'text-zinc-500 hover:text-white'
+                }`}
+              >
+                First
+              </button>
+            </div>
+
+            <p className="text-[10px] text-zinc-500 uppercase tracking-wide leading-relaxed">
+              Fans who have played this track the most:
+            </p>
+
+            <div className="space-y-3">
+              {MOCK_FANS.map(fan => (
+                <div key={fan.rank} className="flex items-center gap-2.5">
+                  <span className="text-xs text-zinc-600 w-3 shrink-0 tabular-nums">
+                    {fan.rank}
+                  </span>
+                  <img
+                    src={fan.avatarUrl}
+                    alt={fan.username}
+                    className="w-7 h-7 rounded-full object-cover shrink-0"
+                  />
+                  <span className="text-xs text-zinc-300 flex-1 truncate">{fan.username}</span>
+                  <span className="text-[11px] text-zinc-500 font-mono shrink-0 tabular-nums">
+                    {fan.plays} plays
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="border-t border-zinc-800 pt-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <img
+                  src={makeCommentAvatar('?', 28)}
+                  alt=""
+                  className="w-7 h-7 rounded-full shrink-0"
+                />
+                <div>
+                  <p className="text-[11px] text-white font-medium">Climb the leaderboard</p>
+                  <p className="text-[10px] text-zinc-500">Complete the steps below:</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5 mt-2">
+                {['Avatar', 'Like', 'Follow', 'Play'].map(a => (
+                  <button
+                    key={a}
+                    className="py-1.5 rounded border border-zinc-700 text-[10px] text-zinc-400
+                               hover:border-zinc-500 hover:text-white transition col-span-1"
+                  >
+                    {a}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+          </aside>
+
+        </div>
       </div>
     </div>
   );

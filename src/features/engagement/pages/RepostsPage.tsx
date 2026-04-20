@@ -1,42 +1,40 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { engagementService } from '../services/engagementService';
-import type { Repost } from '../types';
+import type { PaginatedReposts } from '../types';
 import { ArrowLeft } from 'lucide-react';
 import TrackTabs from '../components/TrackTabs';
 import UserCard from '../components/UserCard';
+import { makeCommentAvatar } from '../components/CommentsSection';
 
 const RepostsPage = () => {
-  const { artist, songName } = useParams<{ artist: string; songName: string }>();
-  const trackId = `${artist}/${songName}`;
-  const [reposts, setReposts] = useState<Repost[]>([]);
+  const { trackId } = useParams<{ trackId: string }>();
+  const [data, setData] = useState<PaginatedReposts | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!trackId) return;
-    engagementService.getTrackReposts(trackId)
-      .then(setReposts)
+    engagementService
+      .getTrackReposts(trackId)
+      .then(setData)
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [trackId]);
 
+  const reposts = data?.reposts ?? [];
+
   return (
     <div className="min-h-screen bg-zinc-900 text-white">
       <div className="max-w-4xl mx-auto px-6 py-8">
-
         <Link
-          to={`/${artist}/${songName}`}
+          to={`/tracks/${trackId}`}
           className="flex items-center gap-2 text-zinc-400 hover:text-white text-sm mb-6 transition"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to track
         </Link>
 
-        <TrackTabs
-          artist={artist ?? ''}
-          songName={songName ?? ''}
-          activeTab="reposts"
-        />
+        <TrackTabs trackId={trackId ?? ''} activeTab="reposts" />
 
         {loading ? (
           <p className="text-zinc-400">Loading...</p>
@@ -44,12 +42,14 @@ const RepostsPage = () => {
           <p className="text-zinc-500 text-center py-12">No reposts yet</p>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-6">
-            {reposts.map((repost) => (
+            {reposts.map((entry) => (
               <UserCard
-                key={repost.id}
-                avatarUrl={repost.user.avatarUrl}
-                username={repost.user.username}
-                followersCount={3}
+                key={entry.repostId}
+                avatarUrl={
+                  entry.avatarUrl ??
+                  makeCommentAvatar((entry.displayName || entry.username).slice(0, 2).toUpperCase())
+                }
+                username={entry.displayName || entry.username}
               />
             ))}
           </div>

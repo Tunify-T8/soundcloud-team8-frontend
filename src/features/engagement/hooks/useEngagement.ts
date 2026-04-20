@@ -10,60 +10,48 @@ export const useEngagement = (trackId: string) => {
   });
   const [loading, setLoading] = useState(true);
 
-  const currentUserId = 'user1';
-  const [currentLikeId, setCurrentLikeId] = useState<string | null>(null);
-  const [currentRepostId, setCurrentRepostId] = useState<string | null>(null);
-
   useEffect(() => {
-    const fetchEngagement = async () => {
-      try {
-        const [counts, likes, reposts] = await Promise.all([
-          engagementService.getEngagementCounts(trackId),
-          engagementService.getTrackLikes(trackId),
-          engagementService.getTrackReposts(trackId),
-        ]);
+    if (!trackId) return;
+    setLoading(true);
 
-        const userLike = likes.find((like) => like.userId === currentUserId);
-        const userRepost = reposts.find((repost) => repost.userId === currentUserId);
-
+    engagementService
+      .getEngagement(trackId)
+      .then((data) => {
         setState({
-          counts,
-          isLiked: Boolean(userLike),
-          isReposted: Boolean(userRepost),
+          counts: {
+            likes: data.likesCount,
+            reposts: data.repostsCount,
+            comments: data.commentsCount,
+            plays: 0,
+          },
+          isLiked: data.isLiked,
+          isReposted: data.isReposted,
         });
-        setCurrentLikeId(userLike?.id ?? null);
-        setCurrentRepostId(userRepost?.id ?? null);
-      } catch (error) {
+      })
+      .catch((error) => {
         console.error('Failed to fetch engagement:', error);
-      } finally {
+      })
+      .finally(() => {
         setLoading(false);
-      }
-    };
-
-    if (trackId) {
-      setLoading(true);
-      fetchEngagement();
-    }
+      });
   }, [trackId]);
 
   const toggleLike = async () => {
     try {
-      if (currentLikeId) {
-        await engagementService.unlikeTrack(currentLikeId, trackId);
-        setState((prev: EngagementState) => ({
+      if (state.isLiked) {
+        await engagementService.unlikeTrack(trackId);
+        setState((prev) => ({
           ...prev,
           counts: { ...prev.counts, likes: Math.max(0, prev.counts.likes - 1) },
           isLiked: false,
         }));
-        setCurrentLikeId(null);
       } else {
-        const created = await engagementService.likeTrack(currentUserId, trackId);
-        setState((prev: EngagementState) => ({
+        await engagementService.likeTrack(trackId);
+        setState((prev) => ({
           ...prev,
           counts: { ...prev.counts, likes: prev.counts.likes + 1 },
           isLiked: true,
         }));
-        setCurrentLikeId(created.id);
       }
     } catch (error) {
       console.error('Failed to toggle like:', error);
@@ -72,22 +60,20 @@ export const useEngagement = (trackId: string) => {
 
   const toggleRepost = async () => {
     try {
-      if (currentRepostId) {
-        await engagementService.unrepostTrack(currentRepostId, trackId);
-        setState((prev: EngagementState) => ({
+      if (state.isReposted) {
+        await engagementService.unrepostTrack(trackId);
+        setState((prev) => ({
           ...prev,
           counts: { ...prev.counts, reposts: Math.max(0, prev.counts.reposts - 1) },
           isReposted: false,
         }));
-        setCurrentRepostId(null);
       } else {
-        const created = await engagementService.repostTrack(currentUserId, trackId);
-        setState((prev: EngagementState) => ({
+        await engagementService.repostTrack(trackId);
+        setState((prev) => ({
           ...prev,
           counts: { ...prev.counts, reposts: prev.counts.reposts + 1 },
           isReposted: true,
         }));
-        setCurrentRepostId(created.id);
       }
     } catch (error) {
       console.error('Failed to toggle repost:', error);
