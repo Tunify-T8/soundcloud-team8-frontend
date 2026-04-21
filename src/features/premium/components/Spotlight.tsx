@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 
+import spotlightImg from "@/assets/spotlight.png";
+
 interface SpotlightSectionProps {
   spotlightTrack?: {
     title: string;
@@ -10,16 +12,15 @@ interface SpotlightSectionProps {
   isMe?: boolean;
 }
 
-export default function Spotlight({ spotlightTrack, isMe }: SpotlightSectionProps) {
+export default function SpotlightSection({ spotlightTrack, isMe }: SpotlightSectionProps) {
   const [showPromo, setShowPromo] = useState(true);
 
   const handleGetSpotlight = () => {
-    //This opens the full PlansPage in a new browser tab.
     window.open("/plans", "_blank");
   };
 
   return (
-    <div className="w-full mt-6">
+    <div className="mt-6">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-white font-bold text-[18px]">Spotlight</h2>
         {isMe && (
@@ -30,35 +31,21 @@ export default function Spotlight({ spotlightTrack, isMe }: SpotlightSectionProp
       </div>
 
       <div className="flex gap-4 items-start">
-        {/* Track thumbnail placeholder */}
+        {/* 155×155 container — image is clipped inside */}
         <div
-          className="w-[155px] h-[155px] flex-shrink-0 rounded border-2 border-dashed border-zinc-600 bg-zinc-900 flex items-center justify-center overflow-hidden cursor-pointer"
-          style={{ minWidth: 155 }}
+          className="flex-shrink-0 rounded cursor-pointer"
+          style={{ width: 155, height: 155 }}
         >
-          {spotlightTrack?.coverUrl ? (
-            <img
-              src={spotlightTrack.coverUrl}
-              alt="Spotlight track"
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-orange-400 via-green-700 to-green-900 relative">
-              {/* Decorative blobs matching screenshot */}
-              <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute top-2 left-4 w-12 h-8 bg-green-800 rounded-full opacity-80" />
-                <div className="absolute top-8 left-2 w-8 h-14 bg-green-700 rounded-full opacity-80" />
-                <div className="absolute bottom-4 left-6 w-10 h-10 bg-orange-500 rounded-full opacity-90" />
-                <div className="absolute top-4 right-6 w-14 h-10 bg-green-600 rounded-full opacity-80" />
-                <div className="absolute bottom-8 right-4 w-8 h-12 bg-green-800 rounded-full opacity-70" />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 w-4 h-4 bg-orange-400 rounded-full opacity-90" />
-              </div>
-            </div>
-          )}
+          <img
+            src={spotlightImg}
+            alt="Spotlight"
+            className="w-full h-full object-cover"
+          />
         </div>
 
         {/* Promo banner */}
         {showPromo && (
-          <div className="relative flex-1 bg-zinc-800/80 rounded-lg px-6 py-5 flex items-center gap-6">
+          <div className="relative bg-zinc-800/80 rounded-lg px-6 py-5 flex items-center gap-6 min-w-0 max-w-[560px]">
             <button
               onClick={() => setShowPromo(false)}
               className="absolute top-3 right-3 text-zinc-400 hover:text-white transition-colors"
@@ -66,7 +53,7 @@ export default function Spotlight({ spotlightTrack, isMe }: SpotlightSectionProp
               <X size={16} />
             </button>
 
-            <div className="flex-1 min-w-0">
+            <div className="min-w-0 pr-2">
               <p className="text-white font-bold text-[16px] mb-1.5 leading-snug">
                 Get more plays with Spotlight
               </p>

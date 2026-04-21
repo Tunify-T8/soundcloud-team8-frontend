@@ -246,7 +246,7 @@ export default function PlansPage() {
         </div>
         <div className="ml-auto flex items-center gap-2">
           <div className="w-7 h-7 rounded-full bg-zinc-600 overflow-hidden" />
-          <span className="text-[13px] text-zinc-300">Nada Serag</span>
+          <span className="text-[13px] text-zinc-300">username</span>
         </div>
       </header>
 

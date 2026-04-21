@@ -155,10 +155,7 @@ const router = createBrowserRouter([
         path: "/:username/following",
         element: <FollowingPage />,
       },
-      {
-        path: "/plans",
-        element: <PlansPage />,
-      }
+      
     ],
   },
   {
@@ -177,6 +174,10 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+  {
+        path: "/plans",
+        element: <PlansPage />,
+  }
 ]);
 
 function App() {
