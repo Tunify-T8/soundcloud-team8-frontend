@@ -35,9 +35,6 @@ import WhoToFollowPage from "./features/following/pages/WhoToFollowPage";
 import DiscoverPage from "./features/discover/pages/DiscoverPage";
 import SearchPage from "./features/feed/pages/SearchPage";
 import LibraryPage from "./features/library/pages/LibraryPage";
-import FollowersPage from "./features/following/pages/FollowersPage";
-import FollowingPage from "./features/following/pages/FollowingPage";
-import WhoToFollowPage from "./features/following/pages/WhoToFollowPage";
 
 const router = createBrowserRouter([
   {
