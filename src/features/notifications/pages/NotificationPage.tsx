@@ -1,14 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 import { ChevronDown, MoreHorizontal } from "lucide-react";
 import { Link } from "react-router-dom";
-import type {
-  NotificationObject,
-  NotificationFilterType,
-} from "@/features/notifications/types"; // adjust path
-import { getNotifications,
+import {
+  getNotifications,
   markAllAsRead,
   markNotificationAsRead,
-  followUser} from "@/features/notifications/service/service"
+  followUser,
+ 
+} from "@/features/notifications/service/service"; 
+import type {
+     NotificationObject,
+  NotificationFilterType
+ } from "@/features/notifications/types"
 const FILTER_OPTIONS: { label: string; value: NotificationFilterType }[] = [
   { label: "All notifications", value: "all" },
   { label: "Likes", value: "like" },
@@ -88,45 +91,48 @@ export default function NotificationsPage() {
       <div className="max-w-[1200px] mx-auto px-6 pt-8 flex gap-8">
         {/* Main content */}
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-black tracking-tight mb-6">
-            Notifications
-          </h1>
+          {/* Header row — title + filter on same level */}
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-2xl font-black tracking-tight">
+              Notifications
+            </h1>
 
-          {/* Filter dropdown */}
-          <div className="relative inline-block mb-6" ref={filterRef}>
-            <button
-              onClick={() => setFilterOpen((v) => !v)}
-              className="flex items-center gap-2 bg-[#1a1a1a] border border-zinc-700 hover:border-zinc-500 rounded-sm px-4 py-2 text-sm font-bold transition-colors"
-            >
-              {currentFilterLabel}
-              <ChevronDown
-                size={16}
-                className={`transition-transform duration-200 ${
-                  filterOpen ? "rotate-180" : ""
-                }`}
-              />
-            </button>
+            {/* Filter dropdown */}
+            <div className="relative inline-block" ref={filterRef}>
+              <button
+                onClick={() => setFilterOpen((v) => !v)}
+                className="flex items-center gap-2 bg-[#1a1a1a] border border-zinc-700 hover:border-zinc-500 rounded-sm px-4 py-2 text-sm font-bold transition-colors"
+              >
+                {currentFilterLabel}
+                <ChevronDown
+                  size={16}
+                  className={`transition-transform duration-200 ${
+                    filterOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
 
-            {filterOpen && (
-              <div className="absolute left-0 top-full mt-1 w-48 bg-[#1a1a1a] border border-zinc-700 rounded-sm shadow-2xl z-50 overflow-hidden">
-                {FILTER_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => {
-                      setFilter(opt.value);
-                      setFilterOpen(false);
-                    }}
-                    className={`w-full text-left px-4 py-2.5 text-sm font-bold transition-colors hover:bg-zinc-800 ${
-                      filter === opt.value
-                        ? "text-white"
-                        : "text-zinc-400 hover:text-white"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            )}
+              {filterOpen && (
+                <div className="absolute right-0 top-full mt-1 w-48 bg-[#1a1a1a] border border-zinc-700 rounded-sm shadow-2xl z-50 overflow-hidden">
+                  {FILTER_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => {
+                        setFilter(opt.value);
+                        setFilterOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-sm font-bold transition-colors hover:bg-zinc-800 ${
+                        filter === opt.value
+                          ? "text-white"
+                          : "text-zinc-400 hover:text-white"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Notification list */}
