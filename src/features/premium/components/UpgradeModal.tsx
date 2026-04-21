@@ -26,7 +26,6 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
       <CheckoutModal
         plan={checkoutPlan}
         onClose={onClose}
-        onBack={() => setCheckoutPlan(null)}
       />
     );
   }

@@ -6,7 +6,6 @@ import lockImg from "@/assets/lock.png";
 interface CheckoutModalProps {
   plan: "artist" | "artist-pro";
   onClose: () => void;
-  onBack: () => void;
 }
 
 const PLAN_CONFIG = {
@@ -28,7 +27,7 @@ const PLAN_CONFIG = {
   },
 };
 
-export default function CheckoutModal({ plan, onClose, onBack }: CheckoutModalProps) {
+export default function CheckoutModal({ plan, onClose }: CheckoutModalProps) {
   const [billing, setBilling] = useState<"yearly" | "monthly">("yearly");
   const [payment, setPayment] = useState<"card" | "paypal" | null>(null);
   const config = PLAN_CONFIG[plan];
@@ -74,7 +73,7 @@ export default function CheckoutModal({ plan, onClose, onBack }: CheckoutModalPr
           {/* Back + Title */}
           <div className="flex items-center gap-3 mb-8">
             <button
-              onClick={onBack}
+              onClick={onClose}
               className="w-8 h-8 rounded-full bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center transition-colors"
             >
               <ChevronLeft size={16} className="text-zinc-600" />

@@ -19,11 +19,11 @@ import pandoraImg from "@/assets/pandora.png";
 import vinylImg from "@/assets/vinyl.png";
 import commentsImg from "@/assets/comment_bubbles.png";
 import { BenefitsSection } from "../components/BenefitsSection";
-import UpgradeModal from "@/features/premium/components/UpgradeModal";
+import CheckoutModal from "@/features/premium/components/CheckoutModal";
 
 
 function UploadBanner() {
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   return (
     <div className="bg-[hsl(0,0%,11%)] border-b border-[hsl(0,0%,18%)] flex items-center justify-between px-8 py-3 shrink-0">
       <div className="flex items-center gap-3">
@@ -35,12 +35,12 @@ function UploadBanner() {
         <span className="text-[hsl(0,100%,99%)] text-sm font-semibold">0 of 180 minutes</span>
       </div>
       <button 
-      onClick={() => setUpgradeOpen(true)}
+      onClick={() => setCheckoutOpen(true)}
       className="bg-black text-white text-sm font-bold tracking-tighter px-5 py-2 rounded-full hover:bg-[hsl(0,0%,20%)] transition-colors">
         Get unlimited uploads
       </button>
 
-      {upgradeOpen && <UpgradeModal onClose={() => setUpgradeOpen(false)} />}
+      {checkoutOpen && <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />}
         
     </div>
   );
