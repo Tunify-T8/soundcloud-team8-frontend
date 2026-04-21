@@ -35,6 +35,7 @@ import WhoToFollowPage from "./features/following/pages/WhoToFollowPage";
 import DiscoverPage from "./features/discover/pages/DiscoverPage";
 import SearchPage from "./features/feed/pages/SearchPage";
 import LibraryPage from "./features/library/pages/LibraryPage";
+import NotificationsPage from "./features/notifications/pages/NotificationPage";
 
 const router = createBrowserRouter([
   {
@@ -79,6 +80,10 @@ const router = createBrowserRouter([
       {
         path: "/discover",
         element: <DiscoverPage />,
+      },
+      {
+        path: "/notifications" , 
+        element: <NotificationsPage />
       },
       {
         path: "/messages",
