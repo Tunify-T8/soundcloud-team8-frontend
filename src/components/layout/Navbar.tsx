@@ -8,7 +8,6 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useMe } from "../../features/profile/context/useMe";
 import { logout } from "../../features/auth/services/index";
-import UpgradeModal from "./UpgradeModal";
 
 export default function Navbar() {
   const location = useLocation();
@@ -18,7 +17,6 @@ export default function Navbar() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -106,12 +104,7 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-5 text-sm">
-         <button
-              onClick={() => setUpgradeOpen(true)}
-              className="border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-1 rounded-sm transition-colors duration-150 text-xs"
-            >
-              Upgrade now
-            </button>
+            <Link to="/pro" className="text-orange-500 hover:text-orange-400 font-bold tracking-tight">Try Artist Pro</Link>
             <Link to="/artists" className="text-zinc-400 hover:text-white font-bold tracking-tight">For Artists</Link>
             <Link to="/upload" className="text-zinc-400 hover:text-white font-bold tracking-tight ml-1">Upload</Link>
 
@@ -122,7 +115,7 @@ export default function Navbar() {
                 title="My Profile"
               >
                 {me?.avatarUrl ? (
-                  <img src={me?.avatarUrl ?? undefined} alt="My Profile" className="w-full h-full object-cover rounded-full" />
+                  <img src={me.avatarUrl} alt="My Profile" className="w-full h-full object-cover rounded-full" />
                 ) : (
                   <span className="text-xs text-white font-bold">
                     {me?.username?.charAt(0).toUpperCase()}
@@ -209,7 +202,6 @@ export default function Navbar() {
         </div>
       </nav>
       <Outlet />
-      {upgradeOpen && <UpgradeModal onClose={() => setUpgradeOpen(false)} />}
     </>
   );
 }

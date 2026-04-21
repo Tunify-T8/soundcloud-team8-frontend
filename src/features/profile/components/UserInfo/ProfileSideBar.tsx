@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
 import {
   FaFacebook,
   FaTwitter,
@@ -16,7 +15,6 @@ import {
 import { FiInfo } from "react-icons/fi";
 import { Ticket } from "lucide-react";
 import type { FollowingUser } from "../../../../shared/types/User";
-import { followingService } from "../../../following/followingService";
 import avatarFallback from '@/assets/avatar.png';
 
 export default function ProfileSideBar({
@@ -26,7 +24,6 @@ export default function ProfileSideBar({
   bio,
   socialAccounts,
   followingUsers,
-  onUnfollowUser,
 }: {
   followers?: number | string;
   following?: number;
@@ -43,19 +40,9 @@ export default function ProfileSideBar({
     soundcloud?: string;
   };
   followingUsers?: FollowingUser[];
-  onUnfollowUser?: () => void;
 }) {
-  const [localFollowingUsers, setLocalFollowingUsers] = useState<FollowingUser[]>(
-    followingUsers ?? [],
-  );
-  const [pendingUnfollowId, setPendingUnfollowId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setLocalFollowingUsers(followingUsers ?? []);
-  }, [followingUsers]);
-
-  const visibleFollowingUsers = localFollowingUsers.slice(0, 3);
-  const followingCount = localFollowingUsers.length;
+  const visibleFollowingUsers = followingUsers?.slice(0, 3) ?? [];
+  const followingCount = followingUsers?.length ?? 0;
   const hasSocialAccounts = Boolean(
     socialAccounts?.facebook ||
     socialAccounts?.instagram ||
@@ -249,26 +236,9 @@ export default function ProfileSideBar({
                   </div>
                   <button
                     type="button"
-                    onClick={async () => {
-                      setPendingUnfollowId(followingUser.id);
-                      try {
-                        await followingService.unfollowUser(followingUser.id);
-                        setLocalFollowingUsers((prev) =>
-                          prev.filter((user) => user.id !== followingUser.id),
-                        );
-                        onUnfollowUser?.();
-                      } finally {
-                        setPendingUnfollowId((current) =>
-                          current === followingUser.id ? null : current,
-                        );
-                      }
-                    }}
-                    disabled={pendingUnfollowId === followingUser.id}
-                    className="rounded-md bg-zinc-800 px-3 py-2 text-[14px] font-bold text-white hover:text-zinc-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-md bg-zinc-800 px-3 py-2 text-[14px] font-bold text-white hover:text-zinc-500 cursor-pointer"
                   >
-                    {pendingUnfollowId === followingUser.id
-                      ? "Unfollowing..."
-                      : "Following"}
+                    Following
                   </button>
                 </div>
               );
