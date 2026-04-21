@@ -5,9 +5,7 @@ import { engagementService } from '../services/engagementService';
 
 vi.mock('../services/engagementService', () => ({
   engagementService: {
-    getEngagementCounts: vi.fn(),
-    getTrackLikes: vi.fn(),
-    getTrackReposts: vi.fn(),
+    getEngagement: vi.fn(),
     likeTrack: vi.fn(),
     unlikeTrack: vi.fn(),
     repostTrack: vi.fn(),
@@ -15,35 +13,33 @@ vi.mock('../services/engagementService', () => ({
   },
 }));
 
-const TRACK_ID = 'dj-sunshine/summer-vibes';
-const CURRENT_USER = 'user1';
+const TRACK_ID = 'some-track-uuid';
 
-const mockCounts = { likes: 2, reposts: 1, plays: 100, comments: 5 };
 
-const mockLikes = [
-  { id: 'like1', userId: 'user3', trackId: TRACK_ID, createdAt: '', user: { id: 'user3', username: 'fan', avatarUrl: '' } },
-];
 
-const mockReposts = [
-  { id: 'repost1', userId: 'user5', trackId: TRACK_ID, createdAt: '', user: { id: 'user5', username: 'sharer', avatarUrl: '' } },
-];
+const baseEngagement = {
+  trackId: TRACK_ID,
+  likesCount: 5,
+  repostsCount: 2,
+  commentsCount: 8,
+  isLiked: false,
+  isReposted: false,
+  isSaved: false,
+};
 
-const mockLikeForCurrentUser = [
-  { id: 'like_user1', userId: CURRENT_USER, trackId: TRACK_ID, createdAt: '', user: { id: CURRENT_USER, username: 'me', avatarUrl: '' } },
-];
+const likedEngagement = { ...baseEngagement, isLiked: true };
+const repostedEngagement = { ...baseEngagement, isReposted: true };
 
-const mockRepostForCurrentUser = [
-  { id: 'repost_user1', userId: CURRENT_USER, trackId: TRACK_ID, createdAt: '', user: { id: CURRENT_USER, username: 'me', avatarUrl: '' } },
-];
+
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(engagementService.getEngagementCounts).mockResolvedValue(mockCounts);
-  vi.mocked(engagementService.getTrackLikes).mockResolvedValue(mockLikes);
-  vi.mocked(engagementService.getTrackReposts).mockResolvedValue(mockReposts);
+  vi.mocked(engagementService.getEngagement).mockResolvedValue(baseEngagement);
 });
 
 describe('useEngagement', () => {
+
+  
 
   describe('initial state', () => {
     it('starts with loading true', () => {
@@ -65,151 +61,232 @@ describe('useEngagement', () => {
       const { result } = renderHook(() => useEngagement(TRACK_ID));
       expect(result.current.counts.likes).toBe(0);
       expect(result.current.counts.reposts).toBe(0);
+      expect(result.current.counts.comments).toBe(0);
     });
   });
 
+
+
   describe('after data loads', () => {
-    it('sets loading to false after fetch', async () => {
+    it('sets loading to false after successful fetch', async () => {
       const { result } = renderHook(() => useEngagement(TRACK_ID));
       await waitFor(() => expect(result.current.loading).toBe(false));
     });
 
-    it('sets correct counts from API', async () => {
+    it('populates counts from getEngagement response', async () => {
       const { result } = renderHook(() => useEngagement(TRACK_ID));
       await waitFor(() => expect(result.current.loading).toBe(false));
-      expect(result.current.counts.likes).toBe(2);
-      expect(result.current.counts.reposts).toBe(1);
+      expect(result.current.counts.likes).toBe(5);
+      expect(result.current.counts.reposts).toBe(2);
+      expect(result.current.counts.comments).toBe(8);
     });
 
-    it('sets isLiked false when current user has not liked', async () => {
+    it('sets isLiked false when API returns isLiked: false', async () => {
       const { result } = renderHook(() => useEngagement(TRACK_ID));
       await waitFor(() => expect(result.current.loading).toBe(false));
       expect(result.current.isLiked).toBe(false);
     });
 
-    it('sets isLiked true when current user has liked', async () => {
-      vi.mocked(engagementService.getTrackLikes).mockResolvedValue(mockLikeForCurrentUser);
+    it('sets isLiked true when API returns isLiked: true', async () => {
+      vi.mocked(engagementService.getEngagement).mockResolvedValue(likedEngagement);
       const { result } = renderHook(() => useEngagement(TRACK_ID));
       await waitFor(() => expect(result.current.loading).toBe(false));
       expect(result.current.isLiked).toBe(true);
     });
 
-    it('sets isReposted true when current user has reposted', async () => {
-      vi.mocked(engagementService.getTrackReposts).mockResolvedValue(mockRepostForCurrentUser);
+    it('sets isReposted true when API returns isReposted: true', async () => {
+      vi.mocked(engagementService.getEngagement).mockResolvedValue(repostedEngagement);
       const { result } = renderHook(() => useEngagement(TRACK_ID));
       await waitFor(() => expect(result.current.loading).toBe(false));
       expect(result.current.isReposted).toBe(true);
     });
 
-    it('handles fetch error gracefully and sets loading false', async () => {
-      vi.mocked(engagementService.getEngagementCounts).mockRejectedValue(new Error('fail'));
+    it('calls getEngagement with the correct trackId', async () => {
+      const { result } = renderHook(() => useEngagement(TRACK_ID));
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      expect(engagementService.getEngagement).toHaveBeenCalledWith(TRACK_ID);
+    });
+
+    it('handles fetch error gracefully — sets loading false and keeps zero counts', async () => {
+      vi.mocked(engagementService.getEngagement).mockRejectedValue(new Error('Network error'));
       const { result } = renderHook(() => useEngagement(TRACK_ID));
       await waitFor(() => expect(result.current.loading).toBe(false));
       expect(result.current.counts.likes).toBe(0);
+      expect(result.current.counts.reposts).toBe(0);
+    });
+
+    it('does not fetch when trackId is empty string', async () => {
+      renderHook(() => useEngagement(''));
+      await new Promise((r) => setTimeout(r, 50));
+      expect(engagementService.getEngagement).not.toHaveBeenCalled();
     });
   });
 
+
+
   describe('toggleLike', () => {
-    it('calls likeTrack and sets isLiked true when not liked', async () => {
-      vi.mocked(engagementService.likeTrack).mockResolvedValue({
-        id: 'like_new', userId: CURRENT_USER, trackId: TRACK_ID, createdAt: '',
-        user: { id: CURRENT_USER, username: 'me', avatarUrl: '' },
-      });
+    it('calls likeTrack with trackId when not liked', async () => {
+      vi.mocked(engagementService.likeTrack).mockResolvedValue(undefined);
       const { result } = renderHook(() => useEngagement(TRACK_ID));
       await waitFor(() => expect(result.current.loading).toBe(false));
+
       await act(async () => { await result.current.toggleLike(); });
-      expect(engagementService.likeTrack).toHaveBeenCalledWith(CURRENT_USER, TRACK_ID);
+
+      expect(engagementService.likeTrack).toHaveBeenCalledWith(TRACK_ID);
+    });
+
+    it('sets isLiked to true after liking', async () => {
+      vi.mocked(engagementService.likeTrack).mockResolvedValue(undefined);
+      const { result } = renderHook(() => useEngagement(TRACK_ID));
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => { await result.current.toggleLike(); });
+
       expect(result.current.isLiked).toBe(true);
     });
 
-    it('increments like count when liking', async () => {
-      vi.mocked(engagementService.likeTrack).mockResolvedValue({
-        id: 'like_new', userId: CURRENT_USER, trackId: TRACK_ID, createdAt: '',
-        user: { id: CURRENT_USER, username: 'me', avatarUrl: '' },
-      });
+    it('increments likes count when liking', async () => {
+      vi.mocked(engagementService.likeTrack).mockResolvedValue(undefined);
       const { result } = renderHook(() => useEngagement(TRACK_ID));
       await waitFor(() => expect(result.current.loading).toBe(false));
       const before = result.current.counts.likes;
+
       await act(async () => { await result.current.toggleLike(); });
+
       expect(result.current.counts.likes).toBe(before + 1);
     });
 
-    it('calls unlikeTrack and sets isLiked false when already liked', async () => {
-      vi.mocked(engagementService.getTrackLikes).mockResolvedValue(mockLikeForCurrentUser);
+    it('calls unlikeTrack with trackId when already liked', async () => {
+      vi.mocked(engagementService.getEngagement).mockResolvedValue(likedEngagement);
       vi.mocked(engagementService.unlikeTrack).mockResolvedValue(undefined);
       const { result } = renderHook(() => useEngagement(TRACK_ID));
       await waitFor(() => expect(result.current.loading).toBe(false));
       expect(result.current.isLiked).toBe(true);
+
       await act(async () => { await result.current.toggleLike(); });
-      expect(engagementService.unlikeTrack).toHaveBeenCalled();
+
+      expect(engagementService.unlikeTrack).toHaveBeenCalledWith(TRACK_ID);
+    });
+
+    it('sets isLiked to false after unliking', async () => {
+      vi.mocked(engagementService.getEngagement).mockResolvedValue(likedEngagement);
+      vi.mocked(engagementService.unlikeTrack).mockResolvedValue(undefined);
+      const { result } = renderHook(() => useEngagement(TRACK_ID));
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => { await result.current.toggleLike(); });
+
       expect(result.current.isLiked).toBe(false);
     });
 
-    it('decrements like count when unliking', async () => {
-      vi.mocked(engagementService.getTrackLikes).mockResolvedValue(mockLikeForCurrentUser);
+    it('decrements likes count when unliking', async () => {
+      vi.mocked(engagementService.getEngagement).mockResolvedValue(likedEngagement);
       vi.mocked(engagementService.unlikeTrack).mockResolvedValue(undefined);
       const { result } = renderHook(() => useEngagement(TRACK_ID));
       await waitFor(() => expect(result.current.loading).toBe(false));
       const before = result.current.counts.likes;
+
       await act(async () => { await result.current.toggleLike(); });
+
       expect(result.current.counts.likes).toBe(Math.max(0, before - 1));
     });
 
-    it('does not go below 0 likes', async () => {
-      vi.mocked(engagementService.getEngagementCounts).mockResolvedValue({ ...mockCounts, likes: 0 });
-      vi.mocked(engagementService.getTrackLikes).mockResolvedValue(mockLikeForCurrentUser);
+    it('does not let likes count go below 0', async () => {
+      vi.mocked(engagementService.getEngagement).mockResolvedValue({
+        ...likedEngagement,
+        likesCount: 0,
+      });
       vi.mocked(engagementService.unlikeTrack).mockResolvedValue(undefined);
       const { result } = renderHook(() => useEngagement(TRACK_ID));
       await waitFor(() => expect(result.current.loading).toBe(false));
+
       await act(async () => { await result.current.toggleLike(); });
+
       expect(result.current.counts.likes).toBe(0);
     });
   });
 
+  
+
   describe('toggleRepost', () => {
-    it('calls repostTrack and sets isReposted true when not reposted', async () => {
-      vi.mocked(engagementService.repostTrack).mockResolvedValue({
-        id: 'repost_new', userId: CURRENT_USER, trackId: TRACK_ID, createdAt: '',
-        user: { id: CURRENT_USER, username: 'me', avatarUrl: '' },
-      });
+    it('calls repostTrack with trackId when not reposted', async () => {
+      vi.mocked(engagementService.repostTrack).mockResolvedValue(undefined);
       const { result } = renderHook(() => useEngagement(TRACK_ID));
       await waitFor(() => expect(result.current.loading).toBe(false));
+
       await act(async () => { await result.current.toggleRepost(); });
-      expect(engagementService.repostTrack).toHaveBeenCalledWith(CURRENT_USER, TRACK_ID);
+
+      expect(engagementService.repostTrack).toHaveBeenCalledWith(TRACK_ID);
+    });
+
+    it('sets isReposted to true after reposting', async () => {
+      vi.mocked(engagementService.repostTrack).mockResolvedValue(undefined);
+      const { result } = renderHook(() => useEngagement(TRACK_ID));
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => { await result.current.toggleRepost(); });
+
       expect(result.current.isReposted).toBe(true);
     });
 
-    it('increments repost count when reposting', async () => {
-      vi.mocked(engagementService.repostTrack).mockResolvedValue({
-        id: 'repost_new', userId: CURRENT_USER, trackId: TRACK_ID, createdAt: '',
-        user: { id: CURRENT_USER, username: 'me', avatarUrl: '' },
-      });
+    it('increments reposts count when reposting', async () => {
+      vi.mocked(engagementService.repostTrack).mockResolvedValue(undefined);
       const { result } = renderHook(() => useEngagement(TRACK_ID));
       await waitFor(() => expect(result.current.loading).toBe(false));
       const before = result.current.counts.reposts;
+
       await act(async () => { await result.current.toggleRepost(); });
+
       expect(result.current.counts.reposts).toBe(before + 1);
     });
 
-    it('calls unrepostTrack and sets isReposted false when already reposted', async () => {
-      vi.mocked(engagementService.getTrackReposts).mockResolvedValue(mockRepostForCurrentUser);
+    it('calls unrepostTrack with trackId when already reposted', async () => {
+      vi.mocked(engagementService.getEngagement).mockResolvedValue(repostedEngagement);
       vi.mocked(engagementService.unrepostTrack).mockResolvedValue(undefined);
       const { result } = renderHook(() => useEngagement(TRACK_ID));
       await waitFor(() => expect(result.current.loading).toBe(false));
       expect(result.current.isReposted).toBe(true);
+
       await act(async () => { await result.current.toggleRepost(); });
-      expect(engagementService.unrepostTrack).toHaveBeenCalled();
+
+      expect(engagementService.unrepostTrack).toHaveBeenCalledWith(TRACK_ID);
+    });
+
+    it('sets isReposted to false after unreposting', async () => {
+      vi.mocked(engagementService.getEngagement).mockResolvedValue(repostedEngagement);
+      vi.mocked(engagementService.unrepostTrack).mockResolvedValue(undefined);
+      const { result } = renderHook(() => useEngagement(TRACK_ID));
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => { await result.current.toggleRepost(); });
+
       expect(result.current.isReposted).toBe(false);
     });
 
-    it('decrements repost count when unreposting', async () => {
-      vi.mocked(engagementService.getTrackReposts).mockResolvedValue(mockRepostForCurrentUser);
+    it('decrements reposts count when unreposting', async () => {
+      vi.mocked(engagementService.getEngagement).mockResolvedValue(repostedEngagement);
       vi.mocked(engagementService.unrepostTrack).mockResolvedValue(undefined);
       const { result } = renderHook(() => useEngagement(TRACK_ID));
       await waitFor(() => expect(result.current.loading).toBe(false));
       const before = result.current.counts.reposts;
+
       await act(async () => { await result.current.toggleRepost(); });
+
       expect(result.current.counts.reposts).toBe(Math.max(0, before - 1));
+    });
+
+    it('does not let reposts count go below 0', async () => {
+      vi.mocked(engagementService.getEngagement).mockResolvedValue({
+        ...repostedEngagement,
+        repostsCount: 0,
+      });
+      vi.mocked(engagementService.unrepostTrack).mockResolvedValue(undefined);
+      const { result } = renderHook(() => useEngagement(TRACK_ID));
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => { await result.current.toggleRepost(); });
+
+      expect(result.current.counts.reposts).toBe(0);
     });
   });
 });
