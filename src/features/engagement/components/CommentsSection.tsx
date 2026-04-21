@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Heart, Send, Trash2 } from 'lucide-react';
+import { engagementService } from '../services/engagementService';
+import type { ApiComment, ApiReply } from '../types';
 
 export interface CommentsSectionProps {
   trackId: string;
@@ -36,153 +38,156 @@ const timeAgo = (dateStr: string): string => {
   return `${days} days ago`;
 };
 
-interface MockReply {
-  replyId: string;
-  username: string;
-  avatarUrl: string;
-  text: string;
-}
-
-interface MockComment {
-  commentId: string;
-  user: {
-    userId: string;
-    username: string;
-    avatarUrl: string;
-  };
-  text: string;
-  likesCount: number;
-  repliesCount: number;
-  createdAt: string;
-  replies: MockReply[];
-}
-
-const MOCK_COMMENTS: MockComment[] = [
-  {
-    commentId: 'c1',
-    user: { userId: 'u1', username: 'Sasa Nour', avatarUrl: makeCommentAvatar('SN') },
-    text: 'ولو نسياني 🔥 this track is everything',
-    likesCount: 12,
-    repliesCount: 2,
-    createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-    replies: [
-      { replyId: 'r1', username: 'Jad S', avatarUrl: makeCommentAvatar('JS', 28), text: 'totally agree!' },
-      { replyId: 'r2', username: 'Nour M', avatarUrl: makeCommentAvatar('NM', 28), text: '💯💯' },
-    ],
-  },
-  {
-    commentId: 'c2',
-    user: { userId: 'u2', username: 'Omar Khaled', avatarUrl: makeCommentAvatar('OK') },
-    text: 'hits different at 3am',
-    likesCount: 8,
-    repliesCount: 1,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    replies: [
-      { replyId: 'r3', username: 'Hagar S', avatarUrl: makeCommentAvatar('HS', 28), text: 'facts 😭' },
-    ],
-  },
-  {
-    commentId: 'c3',
-    user: { userId: 'u3', username: 'Lena Ali', avatarUrl: makeCommentAvatar('LA') },
-    text: 'the production on this is insane, love every second',
-    likesCount: 5,
-    repliesCount: 0,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-    replies: [],
-  },
-  {
-    commentId: 'c4',
-    user: { userId: 'u4', username: 'محمد اشرف', avatarUrl: makeCommentAvatar('MA') },
-    text: 'انا حالي على الريبيت من امبارح 🎵',
-    likesCount: 20,
-    repliesCount: 0,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-    replies: [],
-  },
-  {
-    commentId: 'c5',
-    user: { userId: 'user1', username: 'You', avatarUrl: makeCommentAvatar('YO') },
-    text: 'My previously posted comment — I can delete this one',
-    likesCount: 0,
-    repliesCount: 0,
-    createdAt: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
-    replies: [],
-  },
-];
-
 const CommentsSection = ({
-  trackId: _trackId,
-  currentUserId = 'user1',
+  trackId,
+  currentTime = 0,
+  currentUserId = '',
 }: CommentsSectionProps) => {
-  const [comments, setComments] = useState<MockComment[]>(MOCK_COMMENTS);
+  const [comments, setComments] = useState<ApiComment[]>([]);
+  const [loading, setLoading] = useState(true);
   const [inputBody, setInputBody] = useState('');
+  const [posting, setPosting] = useState(false);
+
   const [likedCommentIds, setLikedCommentIds] = useState<Set<string>>(new Set());
+
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyBody, setReplyBody] = useState('');
+  const [postingReply, setPostingReply] = useState(false);
+
+  const [repliesMap, setRepliesMap] = useState<Record<string, ApiReply[]>>({});
+  const [loadingReplies, setLoadingReplies] = useState<Set<string>>(new Set());
   const [showReplies, setShowReplies] = useState<Set<string>>(new Set());
 
-  const handlePost = () => {
+  useEffect(() => {
+    if (!trackId) return;
+    setLoading(true);
+    engagementService
+      .getTrackComments(trackId)
+      .then((data) => {
+        setComments(data.comments);
+        const initialLiked = new Set(
+          data.comments.filter((c) => c.isLiked).map((c) => c.commentId)
+        );
+        setLikedCommentIds(initialLiked);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [trackId]);
+
+  const handlePost = async () => {
     if (!inputBody.trim()) return;
-    const newComment: MockComment = {
-      commentId: `c_${Date.now()}`,
-      user: { userId: currentUserId, username: 'You', avatarUrl: makeCommentAvatar('YO') },
-      text: inputBody.trim(),
-      likesCount: 0,
-      repliesCount: 0,
-      createdAt: new Date().toISOString(),
-      replies: [],
-    };
-    setComments((prev) => [newComment, ...prev]);
-    setInputBody('');
+    setPosting(true);
+    try {
+      await engagementService.postComment(trackId, inputBody.trim(), currentTime);
+      const data = await engagementService.getTrackComments(trackId);
+      setComments(data.comments);
+      setInputBody('');
+    } catch (error) {
+      console.error('Failed to post comment:', error);
+    } finally {
+      setPosting(false);
+    }
   };
 
-  const handleDelete = (commentId: string) => {
-    setComments((prev) => prev.filter((c) => c.commentId !== commentId));
+  const handleDelete = async (commentId: string) => {
+    try {
+      await engagementService.deleteComment(commentId);
+      setComments((prev) => prev.filter((c) => c.commentId !== commentId));
+    } catch (error) {
+      console.error('Failed to delete comment:', error);
+    }
   };
 
-  const handleLikeComment = (commentId: string) => {
+  const handleLikeComment = async (commentId: string) => {
     const isLiked = likedCommentIds.has(commentId);
-    setLikedCommentIds((prev) => {
-      const next = new Set(prev);
-      isLiked ? next.delete(commentId) : next.add(commentId);
-      return next;
-    });
-    setComments((prev) =>
-      prev.map((c) =>
-        c.commentId === commentId
-          ? { ...c, likesCount: c.likesCount + (isLiked ? -1 : 1) }
-          : c
-      )
-    );
+    try {
+      if (isLiked) {
+        await engagementService.unlikeComment(commentId);
+        setLikedCommentIds((prev) => {
+          const next = new Set(prev);
+          next.delete(commentId);
+          return next;
+        });
+        setComments((prev) =>
+          prev.map((c) =>
+            c.commentId === commentId
+              ? { ...c, likesCount: Math.max(0, c.likesCount - 1) }
+              : c
+          )
+        );
+      } else {
+        await engagementService.likeComment(commentId);
+        setLikedCommentIds((prev) => new Set(prev).add(commentId));
+        setComments((prev) =>
+          prev.map((c) =>
+            c.commentId === commentId
+              ? { ...c, likesCount: c.likesCount + 1 }
+              : c
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Failed to toggle comment like:', error);
+    }
   };
 
-  const handleToggleReplies = (commentId: string) => {
-    setShowReplies((prev) => {
-      const next = new Set(prev);
-      next.has(commentId) ? next.delete(commentId) : next.add(commentId);
-      return next;
-    });
-  };
+  const handleToggleReplies = async (commentId: string) => {
+    const isOpen = showReplies.has(commentId);
+    if (isOpen) {
+      setShowReplies((prev) => {
+        const next = new Set(prev);
+        next.delete(commentId);
+        return next;
+      });
+      return;
+    }
 
-  const handleReply = (commentId: string) => {
-    if (!replyBody.trim()) return;
-    const newReply: MockReply = {
-      replyId: `r_${Date.now()}`,
-      username: 'You',
-      avatarUrl: makeCommentAvatar('YO', 28),
-      text: replyBody.trim(),
-    };
-    setComments((prev) =>
-      prev.map((c) =>
-        c.commentId === commentId
-          ? { ...c, replies: [...c.replies, newReply], repliesCount: c.repliesCount + 1 }
-          : c
-      )
-    );
-    setReplyBody('');
-    setReplyingTo(null);
     setShowReplies((prev) => new Set(prev).add(commentId));
+
+    if (!repliesMap[commentId]) {
+      setLoadingReplies((prev) => new Set(prev).add(commentId));
+      try {
+        const data = await engagementService.getReplies(commentId);
+        setRepliesMap((prev) => ({ ...prev, [commentId]: data.replies }));
+      } catch (error) {
+        console.error('Failed to load replies:', error);
+      } finally {
+        setLoadingReplies((prev) => {
+          const next = new Set(prev);
+          next.delete(commentId);
+          return next;
+        });
+      }
+    }
   };
+
+  const handleReply = async (commentId: string) => {
+    if (!replyBody.trim()) return;
+    setPostingReply(true);
+    try {
+      await engagementService.postReply(commentId, replyBody.trim());
+      const data = await engagementService.getReplies(commentId);
+      setRepliesMap((prev) => ({ ...prev, [commentId]: data.replies }));
+      setComments((prev) =>
+        prev.map((c) =>
+          c.commentId === commentId
+            ? { ...c, repliesCount: c.repliesCount + 1 }
+            : c
+        )
+      );
+      setReplyBody('');
+      setReplyingTo(null);
+      setShowReplies((prev) => new Set(prev).add(commentId));
+    } catch (error) {
+      console.error('Failed to post reply:', error);
+    } finally {
+      setPostingReply(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="p-6 text-zinc-500 text-sm">Loading comments…</div>;
+  }
 
   return (
     <div className="p-6">
@@ -192,11 +197,12 @@ const CommentsSection = ({
           onChange={(e) => setInputBody(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handlePost()}
           placeholder="Write a comment"
+          disabled={posting}
           className="flex-1 bg-zinc-800 px-3 py-2 text-white rounded outline-none focus:ring-1 focus:ring-orange-500"
         />
         <button
           onClick={handlePost}
-          disabled={!inputBody.trim()}
+          disabled={posting || !inputBody.trim()}
           className="w-10 h-10 flex items-center justify-center bg-zinc-700 hover:bg-zinc-600 rounded transition disabled:opacity-40"
         >
           <Send className="w-4 h-4 text-white" />
@@ -210,14 +216,18 @@ const CommentsSection = ({
       {comments.map((c) => {
         const isLiked = likedCommentIds.has(c.commentId);
         const isOpen = showReplies.has(c.commentId);
+        const isLoadingReplies = loadingReplies.has(c.commentId);
+        const replies = repliesMap[c.commentId] ?? [];
         const isOwner = c.user.userId === currentUserId;
+        const initials = c.user.username.slice(0, 2).toUpperCase();
+        const avatarUrl = c.user.avatarUrl ?? makeCommentAvatar(initials);
 
         return (
           <div key={c.commentId} className="mb-6">
             <div className="flex justify-between items-start gap-3">
               <div className="flex gap-3">
                 <img
-                  src={c.user.avatarUrl}
+                  src={avatarUrl}
                   className="w-8 h-8 rounded-full object-cover shrink-0"
                   alt={c.user.username}
                 />
@@ -230,7 +240,9 @@ const CommentsSection = ({
 
                   <div className="flex gap-3 text-xs text-zinc-500 mt-1.5">
                     <button
-                      onClick={() => setReplyingTo(replyingTo === c.commentId ? null : c.commentId)}
+                      onClick={() =>
+                        setReplyingTo(replyingTo === c.commentId ? null : c.commentId)
+                      }
                       className="hover:text-white transition"
                     >
                       Reply
@@ -241,7 +253,9 @@ const CommentsSection = ({
                         onClick={() => handleToggleReplies(c.commentId)}
                         className="hover:text-white transition"
                       >
-                        {isOpen ? 'Hide replies' : `View replies (${c.repliesCount})`}
+                        {isOpen
+                          ? 'Hide replies'
+                          : `View replies (${c.repliesCount})`}
                       </button>
                     )}
 
@@ -282,11 +296,12 @@ const CommentsSection = ({
                   onChange={(e) => setReplyBody(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleReply(c.commentId)}
                   placeholder="Write a reply"
+                  disabled={postingReply}
                   className="flex-1 bg-zinc-800 px-2 py-1 text-white text-sm rounded outline-none focus:ring-1 focus:ring-orange-500"
                 />
                 <button
                   onClick={() => handleReply(c.commentId)}
-                  disabled={!replyBody.trim()}
+                  disabled={postingReply || !replyBody.trim()}
                   className="w-8 h-8 flex items-center justify-center bg-zinc-700 hover:bg-zinc-600 rounded transition disabled:opacity-40"
                 >
                   <Send className="w-3 h-3 text-white" />
@@ -296,19 +311,27 @@ const CommentsSection = ({
 
             {isOpen && (
               <div className="ml-10 mt-3 space-y-3">
-                {c.replies.map((r) => (
-                  <div key={r.replyId} className="flex gap-2">
-                    <img
-                      src={r.avatarUrl}
-                      className="w-7 h-7 rounded-full object-cover shrink-0"
-                      alt={r.username}
-                    />
-                    <div>
-                      <p className="text-white text-xs font-medium">{r.username}</p>
-                      <p className="text-zinc-300 text-xs">{r.text}</p>
-                    </div>
-                  </div>
-                ))}
+                {isLoadingReplies ? (
+                  <p className="text-zinc-500 text-xs">Loading replies…</p>
+                ) : (
+                  replies.map((r) => {
+                    const rInitials = r.user.username.slice(0, 2).toUpperCase();
+                    const rAvatar = r.user.avatarUrl ?? makeCommentAvatar(rInitials, 28);
+                    return (
+                      <div key={r.replyId} className="flex gap-2">
+                        <img
+                          src={rAvatar}
+                          className="w-7 h-7 rounded-full object-cover shrink-0"
+                          alt={r.user.username}
+                        />
+                        <div>
+                          <p className="text-white text-xs font-medium">{r.user.username}</p>
+                          <p className="text-zinc-300 text-xs">{r.text}</p>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             )}
           </div>
