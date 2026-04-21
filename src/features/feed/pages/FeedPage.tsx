@@ -2,8 +2,8 @@ import avatarFallback from "@/assets/avatar.png";
 import SideBar from "../../../components/layout/Sidebar";
 import SongCard from "../../../components/ui/SongCard";
 import { Repeat2 } from "lucide-react";
-import type { FeedItem, FeedResponse } from "@/features/feed/type";
-import { useEffect, useRef, useState } from "react";
+import type { FeedItem } from "@/features/feed/type";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { feedService } from "@/features/feed/feedservice";
 import { profileService } from "@/features/profile/profileService";
@@ -39,6 +39,40 @@ type HoverCardState = {
   isLoading: boolean;
 };
 
+const dedupeFeedByTrackId = (items: FeedItem[]): FeedItem[] => {
+  const byTrackId = new Map<string, FeedItem>();
+
+  for (const item of items) {
+    const existing = byTrackId.get(item.trackId);
+    if (!existing) {
+      byTrackId.set(item.trackId, item);
+      continue;
+    }
+
+    const existingTs = new Date(existing.action.date).getTime();
+    const incomingTs = new Date(item.action.date).getTime();
+
+    const newer = incomingTs > existingTs ? item : existing;
+    const older = incomingTs > existingTs ? existing : item;
+
+    byTrackId.set(item.trackId, {
+      ...newer,
+      numberOfReposts: Math.max(
+        existing.numberOfReposts,
+        item.numberOfReposts,
+      ),
+      isReposted: existing.isReposted || item.isReposted,
+      action:
+        newer.action.action === "repost" || older.action.action !== "repost"
+          ? newer.action
+          : older.action,
+    });
+  }
+
+  return Array.from(byTrackId.values());
+};
+
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function FeedPage() {
@@ -62,7 +96,40 @@ export default function FeedPage() {
   const [followPendingByUserId, setFollowPendingByUserId] = useState<
     Record<string, boolean>
   >({});
+  const [hiddenRepostTrackIds, setHiddenRepostTrackIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   const requestedUserIdsRef = useRef<Set<string>>(new Set());
+
+  const refreshFeed = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    setPage(1);
+    setHasMore(true);
+    lastRequestedPageRef.current = 1;
+
+    try {
+      const data = await feedService.getFeed({ page: 1, limit: FEED_PAGE_LIMIT });
+
+      if (data) {
+        const nextHasMore =
+          typeof (data as any).hasMore === "boolean"
+            ? Boolean((data as any).hasMore)
+            : data.items.length === (data.limit ?? FEED_PAGE_LIMIT);
+
+        setFeedItems(dedupeFeedByTrackId(data.items));
+        setPage(data.page ?? 1);
+        setHasMore(nextHasMore);
+      } else {
+        setFeedItems([]);
+        setHasMore(false);
+      }
+    } catch {
+      setError("Failed to load feed");
+    } finally {
+      setLoading(false);
+    }
+  }, [FEED_PAGE_LIMIT]);
 
   const ensureHoverCardData = async (item: FeedItem) => {
     const userId = item.action.id;
@@ -180,17 +247,7 @@ export default function FeedPage() {
           ? Boolean((data as any).hasMore)
           : data.items.length === (data.limit ?? FEED_PAGE_LIMIT);
 
-      setFeedItems((prev) => {
-        const seen = new Set(prev.map((i) => i.trackId));
-        const merged = [...prev];
-        for (const item of data.items) {
-          if (!seen.has(item.trackId)) {
-            merged.push(item);
-            seen.add(item.trackId);
-          }
-        }
-        return merged;
-      });
+      setFeedItems((prev) => dedupeFeedByTrackId([...prev, ...data.items]));
       setPage(data.page ?? nextPage);
       setHasMore(nextHasMore);
     } finally {
@@ -198,42 +255,42 @@ export default function FeedPage() {
     }
   };
 
+  const handleRepostToggle = (item: FeedItem) => {
+    const trackId = item.trackId;
+    if (!trackId) return;
+
+    setFeedItems((prev) =>
+      prev.map((i) =>
+        i.trackId === trackId
+          ? {
+              ...i,
+              isReposted: !i.isReposted,
+              numberOfReposts: i.isReposted
+                ? Math.max(0, i.numberOfReposts - 1)
+                : i.numberOfReposts + 1,
+            }
+          : i,
+      ),
+    );
+
+    const isTurningOff = item.isReposted;
+    setHiddenRepostTrackIds((prev) => {
+      const next = new Set(prev);
+      if (isTurningOff) {
+        next.add(trackId);
+      } else {
+        next.delete(trackId);
+      }
+      return next;
+    });
+  };
+
   useEffect(() => {
     let isMounted = true;
 
     const fetchFeed = () => {
-      setLoading(true);
-      setError(null);
-      setPage(1);
-      setHasMore(true);
-      lastRequestedPageRef.current = 1;
-
-      feedService
-        .getFeed({ page: 1, limit: FEED_PAGE_LIMIT })
-        .then((data: FeedResponse | null) => {
-          if (!isMounted) return;
-
-          if (data) {
-            const nextHasMore =
-              typeof (data as any).hasMore === "boolean"
-                ? Boolean((data as any).hasMore)
-                : data.items.length === (data.limit ?? FEED_PAGE_LIMIT);
-
-            setFeedItems(data.items);
-            setPage(data.page ?? 1);
-            setHasMore(nextHasMore);
-          } else {
-            setFeedItems([]);
-            setHasMore(false);
-          }
-          setLoading(false);
-        })
-        .catch(() => {
-          if (isMounted) {
-            setError("Failed to load feed");
-            setLoading(false);
-          }
-        });
+      if (!isMounted) return;
+      void refreshFeed();
     };
 
     fetchFeed();
@@ -243,7 +300,7 @@ export default function FeedPage() {
       window.removeEventListener(SOCIAL_GRAPH_UPDATED_EVENT, fetchFeed);
       isMounted = false;
     };
-  }, []);
+  }, [refreshFeed]);
 
   useEffect(() => {
     if (!hasMore || loading || loadingMore) return;
@@ -287,6 +344,9 @@ export default function FeedPage() {
   const visibleItems = showReposts
     ? feedItems
     : feedItems.filter((item) => item.action.action !== "repost");
+  const displayItems = visibleItems.filter(
+    (item) => !hiddenRepostTrackIds.has(item.trackId),
+  );
 
   return (
     <div className="min-h-screen bg-[#0b0b0b] text-white">
@@ -323,13 +383,13 @@ export default function FeedPage() {
 
           {/* Track list */}
           <div className="w-full max-w-220 flex flex-col">
-            {visibleItems.length === 0 && (
+            {displayItems.length === 0 && (
               <p className="text-gray-500 text-sm mt-10">
                 Nothing to show here yet.
               </p>
             )}
 
-            {visibleItems.map((item) => (
+            {displayItems.map((item) => (
               <div
                 key={item.trackId}
                 className="w-full flex flex-col items-stretch mb-5"
@@ -441,6 +501,8 @@ export default function FeedPage() {
                     <SongCard
                       trackId={item.trackId}
                       isLikedInitial={item.isLiked}
+                      isRepostedInitial={item.isReposted}
+                      onToggleRepost={() => handleRepostToggle(item)}
                       artistName={item.artist}
                       title={item.title}
                       coverUrl={item.coverUrl ?? undefined}
