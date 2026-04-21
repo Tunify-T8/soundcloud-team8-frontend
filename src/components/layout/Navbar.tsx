@@ -1,6 +1,7 @@
 import { Bell, Mail, MoreHorizontal, ChevronDown, Heart, ListMusic, Radio, Users, UserPlus, Star, BarChart2, TrendingUp, Share2, 
   User} from "lucide-react";
 import SearchBar from "../ui/SearchBar";
+
 import { SiSoundcloud } from "react-icons/si";
 import { Link, useNavigate } from "react-router-dom";
 import { Outlet } from "react-router-dom";
@@ -8,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useMe } from "../../features/profile/context/useMe";
 import { logout } from "../../features/auth/services/index";
+import UpgradeModal from "./UpgradeModal";
 
 export default function Navbar() {
   const location = useLocation();
@@ -17,13 +19,17 @@ export default function Navbar() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
       }
-      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(e.target as Node)
+      ) {
         setProfileMenuOpen(false);
       }
     };
@@ -104,7 +110,12 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-5 text-sm">
-            <Link to="/pro" className="text-orange-500 hover:text-orange-400 font-bold tracking-tight">Try Artist Pro</Link>
+         <button
+              onClick={() => setUpgradeOpen(true)}
+              className="border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-1 rounded-sm transition-colors duration-150 text-xs"
+            >
+              Upgrade now
+            </button>
             <Link to="/artists" className="text-zinc-400 hover:text-white font-bold tracking-tight">For Artists</Link>
             <Link to="/upload" className="text-zinc-400 hover:text-white font-bold tracking-tight ml-1">Upload</Link>
 
@@ -202,6 +213,7 @@ export default function Navbar() {
         </div>
       </nav>
       <Outlet />
+      {upgradeOpen && <UpgradeModal onClose={() => setUpgradeOpen(false)} />}
     </>
   );
 }
