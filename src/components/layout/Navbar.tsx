@@ -5,11 +5,30 @@ import SearchBar from "../ui/SearchBar";
 import { SiSoundcloud } from "react-icons/si";
 import { Link, useNavigate } from "react-router-dom";
 import { Outlet } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { useMe } from "../../features/profile/context/useMe";
 import { logout } from "../../features/auth/services/index";
 import UpgradeModal from "./UpgradeModal";
+import {
+  getNotifications,
+  getUnreadCount,
+  markAllAsRead,
+  followUser,
+  
+} from "@/features/notifications/service/service"; 
+import type {NotificationObject} from "@/features/notifications/types"
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
 
 export default function Navbar() {
   const location = useLocation();
@@ -17,20 +36,71 @@ export default function Navbar() {
   const { me } = useMe();
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+
+  // Notification state
+  const [notifications, setNotifications] = useState<NotificationObject[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [followedBack, setFollowedBack] = useState<Set<string>>(new Set());
+
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const res = await getUnreadCount();
+      setUnreadCount(res.unreadCount);
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 30_000);
+    return () => clearInterval(interval);
+  }, [fetchUnreadCount]);
+
+  const fetchNotifications = useCallback(async () => {
+    setNotifLoading(true);
+    try {
+      const res = await getNotifications({ limit: 10 });
+      setNotifications(res.data);
+    } catch { /* ignore */ } finally {
+      setNotifLoading(false);
+    }
+  }, []);
+
+  const handleBellClick = async () => {
+    const opening = !notifOpen;
+    setNotifOpen(opening);
+    if (opening) {
+      await fetchNotifications();
+      // mark all as read after opening
+      try {
+        await markAllAsRead();
+        setUnreadCount(0);
+      } catch { /* ignore */ }
+    }
+  };
+
+  const handleFollowBack = async (actorId: string) => {
+    try {
+      await followUser(actorId);
+      setFollowedBack((prev) => new Set([...prev, actorId]));
+    } catch { /* ignore */ }
+  };
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
       }
-      if (
-        profileMenuRef.current &&
-        !profileMenuRef.current.contains(e.target as Node)
-      ) {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
         setProfileMenuOpen(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -55,7 +125,7 @@ export default function Navbar() {
     { to: "/likes",         icon: <Heart size={17} />,       label: "Likes" },
     { to: "/playlists",     icon: <ListMusic size={17} />,   label: "Playlists" },
     { to: "/stations",      icon: <Radio size={17} />,       label: "Stations" },
-    { to: "/me/following",     icon: <Users size={17} />,       label: "Following" },
+    { to: "/me/following",  icon: <Users size={17} />,       label: "Following" },
     { to: "/who-to-follow", icon: <UserPlus size={17} />,    label: "Who to follow" },
     { to: "/pro",           icon: <Star size={17} />,        label: "Try Artist Pro", orange: true },
     { to: "/benefits",      icon: <Star size={17} />,        label: "Benefits" },
@@ -64,30 +134,30 @@ export default function Navbar() {
     { to: "/distribute",    icon: <Share2 size={17} />,      label: "Distribute" },
   ];
 
-  const menuItems : { group: { label: string; href?: string; action?: () => void }[] }[] =  [
-  { group: [
-    { label: "About us",         href: "/about" },
-    { label: "Legal",            href: "/legal" },
-    { label: "Copyright",        href: "/copyright" },
-  ]},
-  { group: [
-    { label: "Mobile apps",      href: "/mobile" },
-    { label: "Artist Membership",href: "/artist-membership" },
-    { label: "Newsroom",         href: "/newsroom" },
-    { label: "Jobs",             href: "/jobs" },
-    { label: "Developers",       href: "/developers" },
-    { label: "SoundCloud Store", href: "/store" },
-  ]},
-  { group: [
-    { label: "Support",          href: "/support" },
-    { label: "Keyboard shortcuts",href: "/shortcuts" },
-  ]},
-  { group: [
-    { label: "Subscription",     href: "/subscription" },
-    { label: "Settings",         href: "/settings" },
-    { label: "Sign out",         action: handleSignOut },
-  ]},
-];
+  const menuItems: { group: { label: string; href?: string; action?: () => void }[] }[] = [
+    { group: [
+      { label: "About us",          href: "/about" },
+      { label: "Legal",             href: "/legal" },
+      { label: "Copyright",         href: "/copyright" },
+    ]},
+    { group: [
+      { label: "Mobile apps",       href: "/mobile" },
+      { label: "Artist Membership", href: "/artist-membership" },
+      { label: "Newsroom",          href: "/newsroom" },
+      { label: "Jobs",              href: "/jobs" },
+      { label: "Developers",        href: "/developers" },
+      { label: "SoundCloud Store",  href: "/store" },
+    ]},
+    { group: [
+      { label: "Support",           href: "/support" },
+      { label: "Keyboard shortcuts",href: "/shortcuts" },
+    ]},
+    { group: [
+      { label: "Subscription",      href: "/subscription" },
+      { label: "Settings",          href: "/settings" },
+      { label: "Sign out",          action: handleSignOut },
+    ]},
+  ];
 
   return (
     <>
@@ -110,7 +180,7 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-5 text-sm">
-         <button
+            <button
               onClick={() => setUpgradeOpen(true)}
               className="border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-1 rounded-sm transition-colors duration-150 text-xs"
             >
@@ -119,6 +189,7 @@ export default function Navbar() {
             <Link to="/artists" className="text-zinc-400 hover:text-white font-bold tracking-tight">For Artists</Link>
             <Link to="/upload" className="text-zinc-400 hover:text-white font-bold tracking-tight ml-1">Upload</Link>
 
+            {/* Profile menu */}
             <div className="relative flex items-center gap-0" ref={profileMenuRef}>
               <Link
                 to="/me"
@@ -163,17 +234,81 @@ export default function Navbar() {
                       {item.label}
                     </Link>
                   ))}
-                 
                 </div>
               )}
             </div>
 
-            <Bell size={18} className="text-zinc-400 hover:text-white cursor-pointer" />
+            {/* Bell with notification dropdown */}
+            <div className="relative" ref={notifRef}>
+              <button
+                onClick={handleBellClick}
+                className="relative text-zinc-400 hover:text-white transition-colors"
+              >
+                <Bell size={18} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full text-[9px] font-black text-white flex items-center justify-center leading-none">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {notifOpen && (
+                <div className="absolute right-0 top-8 w-[380px] bg-[#111] border border-zinc-800 rounded-sm shadow-2xl z-50 overflow-hidden">
+                  {/* Header */}
+                  <div className="flex items-center justify-between px-4 py-4 border-b border-zinc-800">
+                    <span className="text-xl font-black text-white tracking-tight">Notifications</span>
+                    <Link
+                      to="/notifications/settings"
+                      onClick={() => setNotifOpen(false)}
+                      className="text-sm font-semibold text-white hover:text-zinc-300 transition-colors"
+                    >
+                      Settings
+                    </Link>
+                  </div>
+
+                  {/* Notification list */}
+                  <div className="max-h-[400px] overflow-y-auto">
+                    {notifLoading ? (
+                      <div className="px-4 py-8 text-center text-zinc-500 text-sm">
+                        Loading...
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div className="px-4 py-8 text-center text-zinc-500 text-sm">
+                        No notifications yet
+                      </div>
+                    ) : (
+                      notifications.map((notif) => (
+                        <DropdownNotifRow
+                          key={notif.id}
+                          notif={notif}
+                          followedBack={followedBack.has(notif.actor?.id)}
+                          onFollowBack={() => handleFollowBack(notif.actor?.id)}
+                          onClose={() => setNotifOpen(false)}
+                        />
+                      ))
+                    )}
+                  </div>
+
+                  {/* Footer */}
+                  <div className="px-4 py-4 text-center">
+                    <Link
+                      to="/notifications"
+                      onClick={() => setNotifOpen(false)}
+                      className="text-sm font-black text-white hover:text-zinc-300 transition-colors"
+                    >
+                      View all notifications
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <Link to="/messages" className="text-zinc-400 hover:text-white">
               <Mail size={18} className="cursor-pointer" />
             </Link>
 
-           <div className="relative" ref={menuRef}>
+            {/* More menu */}
+            <div className="relative" ref={menuRef}>
               <MoreHorizontal
                 size={18}
                 className="text-zinc-400 hover:text-white cursor-pointer"
@@ -184,7 +319,7 @@ export default function Navbar() {
                   {menuItems.map((section, i) => (
                     <div key={i} className={i !== 0 ? "border-t border-zinc-800" : ""}>
                       {section.group.map((item) =>
-                       item.action ? (
+                        item.action ? (
                           <button
                             key={item.label}
                             type="button"
@@ -215,5 +350,78 @@ export default function Navbar() {
       <Outlet />
       {upgradeOpen && <UpgradeModal onClose={() => setUpgradeOpen(false)} />}
     </>
+  );
+}
+
+// ─── Dropdown notification row ────────────────────────────────────────────────
+
+function DropdownNotifRow({
+  notif,
+  followedBack,
+  onFollowBack,
+  onClose,
+}: {
+  notif: NotificationObject;
+  followedBack: boolean;
+  onFollowBack: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className={`flex items-center gap-3 px-4 py-4 hover:bg-zinc-800/30 transition-colors ${
+        !notif.isRead ? "bg-zinc-800/20" : ""
+      }`}
+    >
+      <Link
+        to={`/users/${notif.actor?.id}`}
+        onClick={onClose}
+        className="w-12 h-12 rounded-full bg-zinc-600 flex-shrink-0 overflow-hidden"
+      >
+        {notif.actor?.avatarUrl ? (
+          <img
+            src={notif.actor.avatarUrl}
+            alt={notif.actor.username}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-zinc-500">
+            <User size={26} className="text-zinc-300" />
+          </div>
+        )}
+      </Link>
+
+      <div className="flex-1 min-w-0">
+        <p className="text-sm text-white leading-snug">
+          <Link
+            to={`/users/${notif.actor?.id}`}
+            onClick={onClose}
+            className="font-bold hover:underline"
+          >
+            {notif.actor?.username}
+          </Link>{" "}
+          <span className="text-white font-normal">
+            {notif.type === "follow" ? "started following you" : notif.message}
+          </span>
+        </p>
+        <p className="flex items-center gap-1 text-xs text-zinc-500 mt-1">
+          <User size={11} className="text-zinc-500" />
+          {timeAgo(notif.createdAt)}
+        </p>
+      </div>
+
+      {notif.type === "follow" && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onFollowBack(); }}
+          disabled={followedBack}
+          className={`px-4 py-2 text-sm font-bold rounded-lg flex-shrink-0 transition-colors ${
+            followedBack
+              ? "bg-zinc-700 text-zinc-400 cursor-default"
+              : "bg-white text-black hover:bg-zinc-200"
+          }`}
+        >
+          {followedBack ? "Following" : "Follow back"}
+        </button>
+      )}
+    </div>
   );
 }
