@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import type { UserSearchResult } from '../../features/feed/type';
+import type { UserSearchResult } from '@/features/feed/types';
 
 export default function UserResultRow({ user }: { user: UserSearchResult }) {
   const navigate = useNavigate();

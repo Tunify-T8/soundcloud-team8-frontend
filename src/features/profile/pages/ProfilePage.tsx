@@ -119,8 +119,6 @@ export default function ProfilePage() {
           country={country}
           city={city}
           bio={user.bio ?? undefined}
-          role={user.role}
-          visibility={isMeProfile(user) ? user.visibility : undefined}
           socialAccounts={isMe ? socialAccounts : undefined}
           isMe={isMe}
           userId={user.id}
