@@ -1,11 +1,14 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { X, Upload, Zap, Share2, RefreshCw, Plus, Star } from "lucide-react";
+import CheckoutModal from "./CheckoutModal";
 
 interface UpgradeModalProps {
   onClose: () => void;
 }
 
 export default function UpgradeModal({ onClose }: UpgradeModalProps) {
+  const [checkoutPlan, setCheckoutPlan] = useState<"artist" | "artist-pro" | null>(null);
+
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -17,6 +20,16 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
       document.body.style.overflow = "";
     };
   }, [onClose]);
+
+  if (checkoutPlan) {
+    return (
+      <CheckoutModal
+        plan={checkoutPlan}
+        onClose={onClose}
+        onBack={() => setCheckoutPlan(null)}
+      />
+    );
+  }
 
   return (
     <div
@@ -62,7 +75,10 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
               </div>
               <p className="text-[11px] text-zinc-400 mb-5">billed yearly for EGP 359.88</p>
 
-              <button className="w-full py-3 bg-zinc-900 hover:bg-zinc-700 text-white text-sm font-bold rounded-lg transition-colors mb-5">
+              <button
+                onClick={() => setCheckoutPlan("artist")}
+                className="w-full py-3 bg-zinc-900 hover:bg-zinc-700 text-white text-sm font-bold rounded-lg transition-colors mb-5"
+              >
                 Get started
               </button>
 
@@ -113,7 +129,10 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
               </div>
               <p className="text-[11px] text-zinc-400 mb-5">billed yearly for EGP 899.88</p>
 
-              <button className="w-full py-3 bg-zinc-900 hover:bg-zinc-700 text-white text-sm font-bold rounded-lg transition-colors mb-5">
+              <button
+                onClick={() => setCheckoutPlan("artist-pro")}
+                className="w-full py-3 bg-zinc-900 hover:bg-zinc-700 text-white text-sm font-bold rounded-lg transition-colors mb-5"
+              >
                 Get started
               </button>
 

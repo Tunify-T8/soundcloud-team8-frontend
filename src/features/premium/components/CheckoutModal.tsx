@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { X, ChevronLeft, Plus, Star } from "lucide-react";
+import { X, ChevronLeft } from "lucide-react";
+import soundcloudImg from "@/assets/silhouette.png";
+import lockImg from "@/assets/lock.png";
 
 interface CheckoutModalProps {
   plan: "artist" | "artist-pro";
@@ -46,7 +48,6 @@ export default function CheckoutModal({ plan, onClose, onBack }: CheckoutModalPr
   const total = billing === "yearly" ? config.yearlyTotal : config.monthlyPrice;
   const billingLabel = billing === "yearly" ? "Yearly" : "Monthly";
 
-  // Next renewal date: 1 year from today
   const renewDate = new Date();
   renewDate.setFullYear(renewDate.getFullYear() + 1);
   const renewDateStr = renewDate.toLocaleDateString("en-GB", {
@@ -88,7 +89,6 @@ export default function CheckoutModal({ plan, onClose, onBack }: CheckoutModalPr
               <section>
                 <h3 className="text-base font-bold text-zinc-900 mb-4">1. Billing cycle</h3>
                 <div className="space-y-3">
-                  {/* Yearly */}
                   <label
                     className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
                       billing === "yearly"
@@ -116,7 +116,6 @@ export default function CheckoutModal({ plan, onClose, onBack }: CheckoutModalPr
                     </div>
                   </label>
 
-                  {/* Monthly */}
                   <label
                     className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
                       billing === "monthly"
@@ -143,29 +142,29 @@ export default function CheckoutModal({ plan, onClose, onBack }: CheckoutModalPr
               <section>
                 <h3 className="text-base font-bold text-zinc-900 mb-1 flex items-center gap-2">
                   2. Payment details
-                  <span className="text-zinc-400">🔒</span>
+                  {/* 👇 Replace the emoji with your image */}
+                  <img src={lockImg} alt="Secure" className="w-4 h-4 object-contain" />
                 </h3>
                 <p className="text-[13px] text-zinc-500 mb-4">Add new payment methods</p>
 
                 <div className="space-y-3">
-                  {/* Card */}
+                  {/* Card option */}
                   <label
                     className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
                       payment === "card"
-                        ? "border-zinc-900"
+                        ? "border-orange-500"
                         : "border-zinc-200 hover:border-zinc-300"
                     }`}
                   >
                     <input
                       type="radio"
                       name="payment"
-                      className="accent-zinc-900"
+                      className="accent-orange-500"
                       checked={payment === "card"}
                       onChange={() => setPayment("card")}
                     />
                     <span className="text-sm font-medium text-zinc-900 flex-1">Card</span>
                     <div className="flex items-center gap-1.5">
-                      {/* Card brand icons as colored blocks */}
                       <span className="w-8 h-5 rounded bg-blue-700 text-white text-[8px] font-black flex items-center justify-center">VISA</span>
                       <span className="w-8 h-5 rounded bg-red-500 text-white text-[7px] font-black flex items-center justify-center">MC</span>
                       <span className="w-8 h-5 rounded bg-blue-500 text-white text-[7px] font-black flex items-center justify-center">AMEX</span>
@@ -173,24 +172,108 @@ export default function CheckoutModal({ plan, onClose, onBack }: CheckoutModalPr
                     </div>
                   </label>
 
-                  {/* PayPal */}
+                  {/* Card fields — shown when card is selected */}
+                  {payment === "card" && (
+                    <div className="space-y-3 px-1">
+                      <input
+                        type="text"
+                        placeholder="First name"
+                        className="w-full px-4 py-3 rounded-xl bg-zinc-100 text-sm text-zinc-900 placeholder-zinc-400 outline-none focus:ring-2 focus:ring-orange-400"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Surname"
+                        className="w-full px-4 py-3 rounded-xl bg-zinc-100 text-sm text-zinc-900 placeholder-zinc-400 outline-none focus:ring-2 focus:ring-orange-400"
+                      />
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="Card number"
+                          className="w-full px-4 py-3 rounded-xl bg-zinc-100 text-sm text-zinc-900 placeholder-zinc-400 outline-none focus:ring-2 focus:ring-orange-400 pr-10"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400">
+                          <svg width="20" height="14" viewBox="0 0 20 14" fill="none">
+                            <rect width="20" height="14" rx="2" fill="#E5E7EB"/>
+                            <rect y="3" width="20" height="3" fill="#9CA3AF"/>
+                          </svg>
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <input
+                          type="text"
+                          placeholder="Exp. month"
+                          className="px-3 py-3 rounded-xl bg-zinc-100 text-sm text-zinc-900 placeholder-zinc-400 outline-none focus:ring-2 focus:ring-orange-400"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Exp. year"
+                          className="px-3 py-3 rounded-xl bg-zinc-100 text-sm text-zinc-900 placeholder-zinc-400 outline-none focus:ring-2 focus:ring-orange-400"
+                        />
+                        <input
+                          type="text"
+                          placeholder="CVV"
+                          className="px-3 py-3 rounded-xl bg-zinc-100 text-sm text-zinc-900 placeholder-zinc-400 outline-none focus:ring-2 focus:ring-orange-400"
+                        />
+                      </div>
+                      <select className="w-full px-4 py-3 rounded-xl bg-zinc-100 text-sm text-zinc-900 outline-none focus:ring-2 focus:ring-orange-400 appearance-none">
+                        <option value="">Billing Country</option>
+                        <option value="EG" selected>Egypt</option>
+                        <option value="US">United States</option>
+                        <option value="GB">United Kingdom</option>
+                        <option value="SA">Saudi Arabia</option>
+                        <option value="AE">UAE</option>
+                      </select>
+                      <input
+                        type="text"
+                        placeholder="Postcode (optional)"
+                        className="w-full px-4 py-3 rounded-xl bg-zinc-100 text-sm text-zinc-900 placeholder-zinc-400 outline-none focus:ring-2 focus:ring-orange-400"
+                      />
+                    </div>
+                  )}
+
+                  {/* PayPal option */}
                   <label
                     className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
                       payment === "paypal"
-                        ? "border-zinc-900"
+                        ? "border-orange-500"
                         : "border-zinc-200 hover:border-zinc-300"
                     }`}
                   >
                     <input
                       type="radio"
                       name="payment"
-                      className="accent-zinc-900"
+                      className="accent-orange-500"
                       checked={payment === "paypal"}
                       onChange={() => setPayment("paypal")}
                     />
                     <span className="text-sm font-medium text-zinc-900 flex-1">PayPal</span>
-                    <span className="text-[#003087] font-black text-base italic">Pay<span className="text-[#009cde]">Pal</span></span>
+                    <span className="text-[#003087] font-black text-base italic">
+                      Pay<span className="text-[#009cde]">Pal</span>
+                    </span>
                   </label>
+
+                  {/* PayPal fields — shown when paypal is selected */}
+                  {payment === "paypal" && (
+                    <div className="space-y-3 px-1">
+                      <select className="w-full px-4 py-3 rounded-xl bg-zinc-100 text-sm text-zinc-900 outline-none focus:ring-2 focus:ring-orange-400 appearance-none">
+                        <option value="">Billing Country</option>
+                        <option value="EG" selected>Egypt</option>
+                        <option value="US">United States</option>
+                        <option value="GB">United Kingdom</option>
+                        <option value="SA">Saudi Arabia</option>
+                        <option value="AE">UAE</option>
+                      </select>
+                      <input
+                        type="text"
+                        placeholder="Postcode (optional)"
+                        className="w-full px-4 py-3 rounded-xl bg-zinc-100 text-sm text-zinc-900 placeholder-zinc-400 outline-none focus:ring-2 focus:ring-orange-400"
+                      />
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" className="accent-orange-500 w-4 h-4" />
+                        <span className="text-[13px] text-zinc-600">Add billing address (visible on invoice)</span>
+                      </label>
+                    </div>
+                  )}
                 </div>
               </section>
             </div>
@@ -199,17 +282,13 @@ export default function CheckoutModal({ plan, onClose, onBack }: CheckoutModalPr
             <div>
               <h3 className="text-base font-bold text-zinc-900 mb-4">3. Review your purchase</h3>
 
-              {/* Plan badge */}
+              {/* Plan badge — rounded square image like SoundCloud */}
               <div className="flex items-center gap-3 mb-4">
-                {plan === "artist" ? (
-                  <div className="w-8 h-8 rounded-full bg-[#5b4ff5] flex items-center justify-center flex-shrink-0">
-                    <Plus size={15} className="text-white" strokeWidth={2.5} />
-                  </div>
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-[#c9a227] flex items-center justify-center flex-shrink-0">
-                    <Star size={13} className="text-white" fill="white" />
-                  </div>
-                )}
+                <img
+                  src={soundcloudImg}
+                  alt="Artist"
+                  className="w-12 h-12 rounded-xl object-cover flex-shrink-0"
+                />
                 <span className="text-base font-bold text-zinc-900">{config.name}</span>
               </div>
 
@@ -236,13 +315,23 @@ export default function CheckoutModal({ plan, onClose, onBack }: CheckoutModalPr
                 <p className="text-[11px] text-zinc-400">All prices in EGP</p>
               </div>
 
-              {/* Buy button */}
-              <button className="w-full py-3.5 bg-zinc-500 hover:bg-zinc-600 text-white text-sm font-bold rounded-lg transition-colors mb-3">
-                Buy subscription
-              </button>
+              {/* Buy / PayPal button — changes based on payment method */}
+              {payment === "paypal" ? (
+                <button className="w-full py-3.5 bg-[#0070ba] hover:bg-[#005ea6] text-white text-sm font-bold rounded-lg transition-colors mb-3 flex items-center justify-center gap-2">
+                  <span className="font-black italic text-base">
+                    <span className="text-white">Pay</span><span className="text-[#70d0f6]">Pal</span>
+                  </span>
+                  Continue with PayPal
+                </button>
+              ) : (
+                <button className="w-full py-3.5 bg-zinc-500 hover:bg-zinc-600 text-white text-sm font-bold rounded-lg transition-colors mb-3">
+                  Buy subscription
+                </button>
+              )}
 
               <p className="text-[11px] text-zinc-400 leading-relaxed">
-                By submitting your payment information and clicking Buy subscription you agree to
+                By submitting your payment information and clicking{" "}
+                {payment === "paypal" ? "Continue with PayPal" : "Buy subscription"} you agree to
                 the{" "}
                 <a href="#" className="underline text-zinc-600">
                   Terms of Use for Artist Subscriptions
