@@ -1,4 +1,4 @@
-import { api } from "@/features/auth/services/api"; // adjust path to your axios instance
+import { api } from "@/features/auth/services/api"; 
 import type { NotificationsResponse  , NotificationPreferences ,GetNotificationsParams , PreferenceChannel } from "../types";
 
 // GET /notifications
