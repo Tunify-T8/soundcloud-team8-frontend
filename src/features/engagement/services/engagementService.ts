@@ -1,4 +1,4 @@
-import { api } from '../../../services/api';
+import { api } from '../../auth/services/api';
 import type {
   GetEngagementResponse,
   PaginatedLikes,
