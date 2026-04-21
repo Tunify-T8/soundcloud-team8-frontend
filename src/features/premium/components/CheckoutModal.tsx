@@ -70,14 +70,8 @@ export default function CheckoutModal({ plan, onClose }: CheckoutModalProps) {
         </button>
 
         <div className="px-8 pt-10 pb-8">
-          {/* Back + Title */}
+          {/* Title */}
           <div className="flex items-center gap-3 mb-8">
-            <button
-              onClick={onClose}
-              className="w-8 h-8 rounded-full bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center transition-colors"
-            >
-              <ChevronLeft size={16} className="text-zinc-600" />
-            </button>
             <h2 className="text-2xl font-semibold text-zinc-700">{config.title}</h2>
           </div>
 
