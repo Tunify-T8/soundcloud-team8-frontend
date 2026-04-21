@@ -29,6 +29,9 @@ import PlayerBar from "./features/playerUI/components/PlayerBar";
 import { usePlayer } from "./features/playerUI/context/usePlayer";
 
 import FeedPage from "./features/feed/pages/FeedPage";
+import FollowersPage from "./features/following/pages/FollowersPage";
+import FollowingPage from "./features/following/pages/FollowingPage";
+import WhoToFollowPage from "./features/following/pages/WhoToFollowPage";
 import DiscoverPage from "./features/discover/pages/DiscoverPage";
 import SearchPage from "./features/feed/pages/SearchPage";
 import LibraryPage from "./features/library/pages/LibraryPage";

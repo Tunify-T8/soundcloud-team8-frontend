@@ -126,7 +126,7 @@ export default function Navbar() {
                 title="My Profile"
               >
                 {me?.avatarUrl ? (
-                  <img src={me.avatarUrl} alt="My Profile" className="w-full h-full object-cover rounded-full" />
+                  <img src={me?.avatarUrl ?? undefined} alt="My Profile" className="w-full h-full object-cover rounded-full" />
                 ) : (
                   <span className="text-xs text-white font-bold">
                     {me?.username?.charAt(0).toUpperCase()}

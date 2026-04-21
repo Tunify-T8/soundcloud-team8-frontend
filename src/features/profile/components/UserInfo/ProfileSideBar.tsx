@@ -16,6 +16,7 @@ import {
 import { FiInfo } from "react-icons/fi";
 import { Ticket } from "lucide-react";
 import type { FollowingUser } from "../../../../shared/types/User";
+import { followingService } from "../../../following/followingService";
 import avatarFallback from '@/assets/avatar.png';
 import { followingService } from "../../../following/followingService";
 
