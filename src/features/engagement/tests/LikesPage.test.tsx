@@ -10,31 +10,52 @@ vi.mock('../services/engagementService', () => ({
   },
 }));
 
-const ARTIST = 'dj-sunshine';
-const SONG = 'summer-vibes';
 
-const mockLikes = [
-  {
-    id: 'like1',
-    userId: 'user3',
-    trackId: `${ARTIST}/${SONG}`,
-    createdAt: '2024-01-01T00:00:00Z',
-    user: { id: 'user3', username: 'musiclover', avatarUrl: '' },
-  },
-  {
-    id: 'like2',
-    userId: 'user4',
-    trackId: `${ARTIST}/${SONG}`,
-    createdAt: '2024-01-02T00:00:00Z',
-    user: { id: 'user4', username: 'beatfan', avatarUrl: '' },
-  },
-];
+
+const TRACK_ID = 'aaa-bbb-ccc-uuid';
+
+const mockLikes = {
+  likes: [
+    {
+      userId: 'user3',
+      username: 'musiclover',
+      displayName: 'Music Lover',
+      avatarUrl: null,
+      isCertified: false,
+    },
+    {
+      userId: 'user4',
+      username: 'beatfan',
+      displayName: 'Beat Fan',
+      avatarUrl: null,
+      isCertified: false,
+    },
+  ],
+  total: 2,
+  page: 1,
+  limit: 20,
+  totalPages: 1,
+  hasNextPage: false,
+  hasPreviousPage: false,
+};
+
+const emptyLikes = {
+  likes: [],
+  total: 0,
+  page: 1,
+  limit: 20,
+  totalPages: 0,
+  hasNextPage: false,
+  hasPreviousPage: false,
+};
+
+
 
 const renderLikesPage = () =>
   render(
-    <MemoryRouter initialEntries={[`/${ARTIST}/${SONG}/likes`]}>
+    <MemoryRouter initialEntries={[`/tracks/${TRACK_ID}/likes`]}>
       <Routes>
-        <Route path="/:artist/:songName/likes" element={<LikesPage />} />
+        <Route path="/tracks/:trackId/likes" element={<LikesPage />} />
       </Routes>
     </MemoryRouter>
   );
@@ -42,6 +63,7 @@ const renderLikesPage = () =>
 beforeEach(() => {
   vi.clearAllMocks();
 });
+
 
 describe('LikesPage', () => {
 
@@ -54,10 +76,12 @@ describe('LikesPage', () => {
   });
 
   describe('empty state', () => {
-    it('shows empty message when no likes', async () => {
-      vi.mocked(engagementService.getTrackLikes).mockResolvedValue([]);
+    it('shows empty message when there are no likes', async () => {
+      vi.mocked(engagementService.getTrackLikes).mockResolvedValue(emptyLikes);
       renderLikesPage();
-      await waitFor(() => expect(screen.getByText('No likes yet')).toBeInTheDocument());
+      await waitFor(() =>
+        expect(screen.getByText('No likes yet')).toBeInTheDocument()
+      );
     });
   });
 
@@ -68,54 +92,73 @@ describe('LikesPage', () => {
 
     it('renders a card for each user who liked', async () => {
       renderLikesPage();
-      await waitFor(() => expect(screen.getByText('musiclover')).toBeInTheDocument());
-      expect(screen.getByText('beatfan')).toBeInTheDocument();
+      await waitFor(() =>
+        expect(screen.getByText('Music Lover')).toBeInTheDocument()
+      );
+      expect(screen.getByText('Beat Fan')).toBeInTheDocument();
     });
 
-    it('renders Follow button for each user', async () => {
+    it('renders a Follow button for each user', async () => {
       renderLikesPage();
       await waitFor(() => {
         const buttons = screen.getAllByRole('button', { name: /follow/i });
-        expect(buttons).toHaveLength(mockLikes.length);
+        expect(buttons).toHaveLength(mockLikes.likes.length);
       });
     });
 
-    it('renders back to track link', async () => {
+    it('renders the back-to-track link', async () => {
       renderLikesPage();
-      await waitFor(() => expect(screen.getByText('Back to track')).toBeInTheDocument());
+      await waitFor(() =>
+        expect(screen.getByText('Back to track')).toBeInTheDocument()
+      );
     });
 
-    it('calls getTrackLikes with correct trackId', async () => {
+    it('calls getTrackLikes with the correct trackId from URL params', async () => {
       renderLikesPage();
       await waitFor(() => {
-        expect(engagementService.getTrackLikes).toHaveBeenCalledWith(`${ARTIST}/${SONG}`);
+        expect(engagementService.getTrackLikes).toHaveBeenCalledWith(TRACK_ID);
       });
     });
   });
 
   describe('tabs', () => {
-  beforeEach(() => {
-    vi.mocked(engagementService.getTrackLikes).mockResolvedValue([]);
-  });
+    beforeEach(() => {
+      vi.mocked(engagementService.getTrackLikes).mockResolvedValue(emptyLikes);
+    });
 
-  it('renders Likes tab', async () => {
-    renderLikesPage();
-    await waitFor(() => expect(screen.getByText('likes')).toBeInTheDocument());
-  });
+  
+    it('renders the likes tab', async () => {
+      renderLikesPage();
+      await waitFor(() =>
+        expect(screen.getByText('likes')).toBeInTheDocument()
+      );
+    });
 
-  it('renders Reposts tab', async () => {
-    renderLikesPage();
-    await waitFor(() => expect(screen.getByText('reposts')).toBeInTheDocument());
-  });
+    it('renders the reposts tab', async () => {
+      renderLikesPage();
+      await waitFor(() =>
+        expect(screen.getByText('reposts')).toBeInTheDocument()
+      );
+    });
 
-  it('renders In albums tab', async () => {
-    renderLikesPage();
-    await waitFor(() => expect(screen.getByText('In albums')).toBeInTheDocument());
+    it('renders the In albums tab', async () => {
+      renderLikesPage();
+      await waitFor(() =>
+        expect(screen.getByText('In albums')).toBeInTheDocument()
+      );
+    });
+
+    it('marks the likes tab as active', async () => {
+      renderLikesPage();
+      await waitFor(() => {
+        const likesTab = screen.getByText('likes');
+        expect(likesTab).toHaveClass('border-white');
+      });
+    });
   });
-});
 
   describe('error state', () => {
-    it('does not crash when API throws', async () => {
+    it('does not crash and hides loading when API throws', async () => {
       vi.mocked(engagementService.getTrackLikes).mockRejectedValue(new Error('fail'));
       renderLikesPage();
       await waitFor(() => {

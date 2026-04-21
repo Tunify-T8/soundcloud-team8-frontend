@@ -10,31 +10,56 @@ vi.mock('../services/engagementService', () => ({
   },
 }));
 
-const ARTIST = 'dj-sunshine';
-const SONG = 'summer-vibes';
 
-const mockReposts = [
-  {
-    id: 'repost1',
-    userId: 'user5',
-    trackId: `${ARTIST}/${SONG}`,
-    createdAt: '2024-01-01T00:00:00Z',
-    user: { id: 'user5', username: 'shareguru', avatarUrl: '' },
-  },
-  {
-    id: 'repost2',
-    userId: 'user6',
-    trackId: `${ARTIST}/${SONG}`,
-    createdAt: '2024-01-02T00:00:00Z',
-    user: { id: 'user6', username: 'wavyrider', avatarUrl: '' },
-  },
-];
+
+const TRACK_ID = 'aaa-bbb-ccc-uuid';
+
+const mockReposts = {
+  reposts: [
+    {
+      repostId: 'repost1',
+      userId: 'user5',
+      username: 'shareguru',
+      displayName: 'Share Guru',
+      avatarUrl: null,
+      isCertified: false,
+      repostedAt: '2024-01-01T00:00:00Z',
+    },
+    {
+      repostId: 'repost2',
+      userId: 'user6',
+      username: 'wavyrider',
+      displayName: 'Wavy Rider',
+      avatarUrl: null,
+      isCertified: false,
+      repostedAt: '2024-01-02T00:00:00Z',
+    },
+  ],
+  total: 2,
+  page: 1,
+  limit: 20,
+  totalPages: 1,
+  hasNextPage: false,
+  hasPreviousPage: false,
+};
+
+const emptyReposts = {
+  reposts: [],
+  total: 0,
+  page: 1,
+  limit: 20,
+  totalPages: 0,
+  hasNextPage: false,
+  hasPreviousPage: false,
+};
+
+
 
 const renderRepostsPage = () =>
   render(
-    <MemoryRouter initialEntries={[`/${ARTIST}/${SONG}/reposts`]}>
+    <MemoryRouter initialEntries={[`/tracks/${TRACK_ID}/reposts`]}>
       <Routes>
-        <Route path="/:artist/:songName/reposts" element={<RepostsPage />} />
+        <Route path="/tracks/:trackId/reposts" element={<RepostsPage />} />
       </Routes>
     </MemoryRouter>
   );
@@ -42,6 +67,8 @@ const renderRepostsPage = () =>
 beforeEach(() => {
   vi.clearAllMocks();
 });
+
+
 
 describe('RepostsPage', () => {
 
@@ -54,10 +81,12 @@ describe('RepostsPage', () => {
   });
 
   describe('empty state', () => {
-    it('shows empty message when no reposts', async () => {
-      vi.mocked(engagementService.getTrackReposts).mockResolvedValue([]);
+    it('shows empty message when there are no reposts', async () => {
+      vi.mocked(engagementService.getTrackReposts).mockResolvedValue(emptyReposts);
       renderRepostsPage();
-      await waitFor(() => expect(screen.getByText('No reposts yet')).toBeInTheDocument());
+      await waitFor(() =>
+        expect(screen.getByText('No reposts yet')).toBeInTheDocument()
+      );
     });
   });
 
@@ -68,54 +97,73 @@ describe('RepostsPage', () => {
 
     it('renders a card for each user who reposted', async () => {
       renderRepostsPage();
-      await waitFor(() => expect(screen.getByText('shareguru')).toBeInTheDocument());
-      expect(screen.getByText('wavyrider')).toBeInTheDocument();
+      await waitFor(() =>
+        expect(screen.getByText('Share Guru')).toBeInTheDocument()
+      );
+      expect(screen.getByText('Wavy Rider')).toBeInTheDocument();
     });
 
-    it('renders Follow button for each user', async () => {
+    it('renders a Follow button for each user', async () => {
       renderRepostsPage();
       await waitFor(() => {
         const buttons = screen.getAllByRole('button', { name: /follow/i });
-        expect(buttons).toHaveLength(mockReposts.length);
+        expect(buttons).toHaveLength(mockReposts.reposts.length);
       });
     });
 
-    it('renders back to track link', async () => {
+    it('renders the back-to-track link', async () => {
       renderRepostsPage();
-      await waitFor(() => expect(screen.getByText('Back to track')).toBeInTheDocument());
+      await waitFor(() =>
+        expect(screen.getByText('Back to track')).toBeInTheDocument()
+      );
     });
 
-    it('calls getTrackReposts with correct trackId', async () => {
+    it('calls getTrackReposts with the correct trackId from URL params', async () => {
       renderRepostsPage();
       await waitFor(() => {
-        expect(engagementService.getTrackReposts).toHaveBeenCalledWith(`${ARTIST}/${SONG}`);
+        expect(engagementService.getTrackReposts).toHaveBeenCalledWith(TRACK_ID);
       });
     });
   });
 
   describe('tabs', () => {
     beforeEach(() => {
-      vi.mocked(engagementService.getTrackReposts).mockResolvedValue([]);
+      vi.mocked(engagementService.getTrackReposts).mockResolvedValue(emptyReposts);
     });
 
-    it('renders Likes tab', async () => {
+    
+    it('renders the likes tab', async () => {
       renderRepostsPage();
-      await waitFor(() => expect(screen.getByText('Likes')).toBeInTheDocument());
+      await waitFor(() =>
+        expect(screen.getByText('likes')).toBeInTheDocument()
+      );
     });
 
-    it('renders Reposts tab', async () => {
+    it('renders the reposts tab', async () => {
       renderRepostsPage();
-      await waitFor(() => expect(screen.getByText('Reposts')).toBeInTheDocument());
+      await waitFor(() =>
+        expect(screen.getByText('reposts')).toBeInTheDocument()
+      );
     });
 
-    it('renders In albums tab', async () => {
+    it('renders the In albums tab', async () => {
       renderRepostsPage();
-      await waitFor(() => expect(screen.getByText('In albums')).toBeInTheDocument());
+      await waitFor(() =>
+        expect(screen.getByText('In albums')).toBeInTheDocument()
+      );
+    });
+
+    it('marks the reposts tab as active', async () => {
+      renderRepostsPage();
+      await waitFor(() => {
+        const repostsTab = screen.getByText('reposts');
+        expect(repostsTab).toHaveClass('border-white');
+      });
     });
   });
 
   describe('error state', () => {
-    it('does not crash when API throws', async () => {
+    it('does not crash and hides loading when API throws', async () => {
       vi.mocked(engagementService.getTrackReposts).mockRejectedValue(new Error('fail'));
       renderRepostsPage();
       await waitFor(() => {
