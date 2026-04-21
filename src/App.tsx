@@ -22,7 +22,7 @@ import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage";
 import MessagesPage from "./features/conversation/pages/MessagesPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import VerifyEmailPage from "./features/auth/pages/VerifyEmailPage";
-import { ProfileProvider } from "./features/profile/context/ProfileContext";
+import { ProfileContext, ProfileProvider } from "./features/profile/context/ProfileContext";
 import useRestoreSession from "./hooks/useRestoreSession";
 import { PlayerProvider } from "./features/playerUI/context/PlayerProvider";
 import PlayerBar from "./features/playerUI/components/PlayerBar";
@@ -35,6 +35,9 @@ import WhoToFollowPage from "./features/following/pages/WhoToFollowPage";
 import DiscoverPage from "./features/discover/pages/DiscoverPage";
 import SearchPage from "./features/feed/pages/SearchPage";
 import LibraryPage from "./features/library/pages/LibraryPage";
+
+import PlansPage from "./features/premium/pages/PlansPage";
+import AllTabPage from  "./features/profile/pages/UserInfoBar/AllTabPage";
 
 const router = createBrowserRouter([
   {
@@ -112,6 +115,7 @@ const router = createBrowserRouter([
         path: "/me",
         element: <ProfilePage />,
         children: [
+          { path: "", element: <AllTabPage /> },
           { path: "popular-tracks", element: <PopularTracksPage /> },
           { path: "tracks", element: <TracksPage /> },
           { path: "albums", element: <AlbumsPage /> },
@@ -151,6 +155,10 @@ const router = createBrowserRouter([
         path: "/:username/following",
         element: <FollowingPage />,
       },
+      {
+        path: "/plans",
+        element: <PlansPage />,
+      }
     ],
   },
   {
