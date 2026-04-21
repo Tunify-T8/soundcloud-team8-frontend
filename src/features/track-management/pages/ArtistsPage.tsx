@@ -22,7 +22,7 @@ import { BenefitsSection } from "../components/BenefitsSection";
 import CheckoutModal from "@/features/premium/components/CheckoutModal";
 
 
-function UploadBanner() {
+export function UploadBanner() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   return (
     <div className="bg-[hsl(0,0%,11%)] border-b border-[hsl(0,0%,18%)] flex items-center justify-between px-8 py-3 shrink-0">
