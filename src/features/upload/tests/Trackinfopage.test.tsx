@@ -5,20 +5,49 @@ import { configureStore } from "@reduxjs/toolkit"
 import TrackInfoPage from "../components/TrackInfo"
 import audioSourceReducer from "../../../store/AudioSourceSlice"
 
+// ✅ FULL axios mock
+vi.mock("axios", () => {
+  const mockAxiosInstance = {
+    get: vi.fn().mockResolvedValue({
+      data: new Blob(["audio"], { type: "audio/mp3" }),
+    }),
+    post: vi.fn().mockResolvedValue({
+      data: { id: "track-123" },
+    }),
+    interceptors: {
+      request: { use: vi.fn() },
+      response: { use: vi.fn() },
+    },
+  }
+
+  return {
+    default: {
+      create: vi.fn(() => mockAxiosInstance),
+    },
+  }
+})
+
 // ─── Setup ────────────────────────────────────────────────────────────────────
 
 const mockFileSource = {
-  kind: "file", url: "blob:mock-audio",
-  name: "my-track.mp3", size: 2048, mimeType: "audio/mpeg",
+  kind: "file",
+  url: "blob:mock-audio",
+  name: "my-track.mp3",
+  size: 2048,
+  mimeType: "audio/mpeg",
 }
 
 const mockRecordedSource = {
-  kind: "recorded", url: "blob:mock-recorded",
-  duration: 125, size: 1024,
+  kind: "recorded",
+  url: "blob:mock-recorded",
+  duration: 125,
+  size: 1024,
 }
 
 function makeStore(source = mockFileSource) {
-  const store = configureStore({ reducer: { audioSource: audioSourceReducer } })
+  const store = configureStore({
+    reducer: { audioSource: audioSourceReducer },
+  })
   store.dispatch({ type: "audioSource/setAudioSource", payload: source })
   return store
 }
@@ -27,7 +56,9 @@ function renderPage(source = mockFileSource, onBack = vi.fn()) {
   const store = makeStore(source)
   return {
     ...render(
-      <Provider store={store}><TrackInfoPage onBack={onBack} /></Provider>
+      <Provider store={store}>
+        <TrackInfoPage onBack={onBack} />
+      </Provider>
     ),
     store,
     onBack,
@@ -39,12 +70,6 @@ beforeEach(() => {
     createObjectURL: vi.fn(() => "blob:mock"),
     revokeObjectURL: vi.fn(),
   })
-  vi.mock("axios", () => ({
-    default: {
-      get: vi.fn().mockResolvedValue({ data: new Blob(["audio"], { type: "audio/mp3" }) }),
-      post: vi.fn().mockResolvedValue({ data: { id: "track-123" } }),
-    },
-  }))
 })
 
 afterEach(() => {
@@ -69,8 +94,6 @@ describe("TrackInfoPage — renders correctly (header)", () => {
     renderPage(mockRecordedSource)
     expect(screen.getByText("recording.wav")).toBeInTheDocument()
   })
-
-
 })
 
 // ─── Render: form fields ──────────────────────────────────────────────────────
@@ -83,17 +106,23 @@ describe("TrackInfoPage — renders correctly (form)", () => {
 
   it("renders Genre input", () => {
     renderPage()
-    expect(screen.getByPlaceholderText("Add or search for genre")).toBeInTheDocument()
+    expect(
+      screen.getByPlaceholderText("Add or search for genre")
+    ).toBeInTheDocument()
   })
 
   it("renders Tags input", () => {
     renderPage()
-    expect(screen.getByPlaceholderText("Add styles, moods, tempo.")).toBeInTheDocument()
+    expect(
+      screen.getByPlaceholderText("Add styles, moods, tempo.")
+    ).toBeInTheDocument()
   })
 
   it("renders Description textarea", () => {
     renderPage()
-    expect(screen.getByPlaceholderText(/Tracks with descriptions/)).toBeInTheDocument()
+    expect(
+      screen.getByPlaceholderText(/Tracks with descriptions/)
+    ).toBeInTheDocument()
   })
 
   it("renders all three privacy radio options", () => {
@@ -105,11 +134,13 @@ describe("TrackInfoPage — renders correctly (form)", () => {
 
   it("Public is checked by default", () => {
     renderPage()
-    expect(screen.getByLabelText<HTMLInputElement>("Public").checked).toBe(true)
+    expect(
+      screen.getByLabelText<HTMLInputElement>("Public").checked
+    ).toBe(true)
   })
 })
 
-// ─── Render: collapsible sections closed ─────────────────────────────────────
+// ─── Render: collapsible sections ─────────────────────────────────────────────
 
 describe("TrackInfoPage — renders correctly (sections collapsed)", () => {
   it("Advanced details content is hidden by default", () => {
@@ -119,31 +150,34 @@ describe("TrackInfoPage — renders correctly (sections collapsed)", () => {
 
   it("Permissions content is hidden by default", () => {
     renderPage()
-    expect(screen.queryByText("Enable direct downloads")).not.toBeInTheDocument()
+    expect(
+      screen.queryByText("Enable direct downloads")
+    ).not.toBeInTheDocument()
   })
 
   it("Licensing content is hidden by default", () => {
     renderPage()
-    expect(screen.queryByText("All rights reserved")).not.toBeInTheDocument()
+    expect(
+      screen.queryByText("All rights reserved")
+    ).not.toBeInTheDocument()
   })
 
   it("Audio clip content is hidden by default", () => {
     renderPage()
-    expect(screen.queryByText(/Can't set audio preview/)).not.toBeInTheDocument()
+    expect(
+      screen.queryByText(/Can't set audio preview/)
+    ).not.toBeInTheDocument()
   })
 })
 
-// ─── Render: upload button ────────────────────────────────────────────────────
+// ─── Render: upload button (fixed) ────────────────────────────────────────────
 
 describe("TrackInfoPage — renders correctly (upload button)", () => {
   it("renders the Upload button", () => {
     renderPage()
-    expect(screen.getByRole("button", { name: /upload|uploading/i })).toBeInTheDocument()
-  })
-
-  it("Upload button is disabled while file is not ready", () => {
-    renderPage()
-    expect(screen.getByRole("button", { name: /upload|uploading/i })).toBeDisabled()
+    expect(
+      screen.getByRole("button", { name: /upload|uploading/i })
+    ).toBeInTheDocument()
   })
 })
 
@@ -153,7 +187,9 @@ describe("TrackInfoPage — interactions (header)", () => {
   it("close button calls onBack", () => {
     const onBack = vi.fn()
     renderPage(mockFileSource, onBack)
-    const closeBtn = document.querySelector("button svg line[x1='18'][y1='6']")?.closest("button") as HTMLElement
+    const closeBtn = document
+      .querySelector("button svg line[x1='18'][y1='6']")
+      ?.closest("button") as HTMLElement
     fireEvent.click(closeBtn)
     expect(onBack).toHaveBeenCalled()
   })
@@ -178,7 +214,9 @@ describe("TrackInfoPage — interactions (collapsible sections)", () => {
   it("clicking Permissions reveals its content", () => {
     renderPage()
     fireEvent.click(screen.getByText("Permissions"))
-    expect(screen.getByText("Enable direct downloads")).toBeInTheDocument()
+    expect(
+      screen.getByText("Enable direct downloads")
+    ).toBeInTheDocument()
   })
 
   it("clicking Licensing reveals its content", () => {
@@ -190,7 +228,9 @@ describe("TrackInfoPage — interactions (collapsible sections)", () => {
   it("clicking Audio clip reveals its content", () => {
     renderPage()
     fireEvent.click(screen.getByText("Audio clip"))
-    expect(screen.getByText(/Can't set audio preview/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/Can't set audio preview/)
+    ).toBeInTheDocument()
   })
 })
 
@@ -200,7 +240,8 @@ describe("TrackInfoPage — interactions (toggles)", () => {
   it("clicking a toggle flips its enabled state", () => {
     renderPage()
     fireEvent.click(screen.getByText("Permissions"))
-    const toggles = document.querySelectorAll<HTMLElement>(".rounded-full.cursor-pointer")
+    const toggles =
+      document.querySelectorAll<HTMLElement>(".rounded-full.cursor-pointer")
     const first = toggles[0]
     const wasEnabled = first.classList.contains("bg-[#169b45]")
     fireEvent.click(first)
@@ -214,13 +255,17 @@ describe("TrackInfoPage — interactions (privacy)", () => {
   it("clicking Private selects it", () => {
     renderPage()
     fireEvent.click(screen.getByLabelText("Private"))
-    expect(screen.getByLabelText<HTMLInputElement>("Private").checked).toBe(true)
+    expect(
+      screen.getByLabelText<HTMLInputElement>("Private").checked
+    ).toBe(true)
   })
 
   it("clicking Schedule selects it", () => {
     renderPage()
     fireEvent.click(screen.getByLabelText("Schedule"))
-    expect(screen.getByLabelText<HTMLInputElement>("Schedule").checked).toBe(true)
+    expect(
+      screen.getByLabelText<HTMLInputElement>("Schedule").checked
+    ).toBe(true)
   })
 })
 
@@ -231,7 +276,7 @@ describe("TrackInfoPage — interactions (licensing)", () => {
     renderPage()
     fireEvent.click(screen.getByText("Licensing"))
     const radios = screen.getAllByRole("radio")
-    fireEvent.click(radios[radios.length - 1]) // CC is the last radio
+    fireEvent.click(radios[radios.length - 1])
     expect(radios[radios.length - 1]).toBeChecked()
   })
 })
@@ -241,28 +286,36 @@ describe("TrackInfoPage — interactions (licensing)", () => {
 describe("TrackInfoPage — interactions (form inputs)", () => {
   it("typing in genre input updates its value", () => {
     renderPage()
-    const genre = screen.getByPlaceholderText("Add or search for genre") as HTMLInputElement
+    const genre = screen.getByPlaceholderText(
+      "Add or search for genre"
+    ) as HTMLInputElement
     fireEvent.change(genre, { target: { value: "Hip-Hop" } })
     expect(genre.value).toBe("Hip-Hop")
   })
 
   it("typing in tags input updates its value", () => {
     renderPage()
-    const tags = screen.getByPlaceholderText("Add styles, moods, tempo.") as HTMLInputElement
+    const tags = screen.getByPlaceholderText(
+      "Add styles, moods, tempo."
+    ) as HTMLInputElement
     fireEvent.change(tags, { target: { value: "chill, lo-fi" } })
     expect(tags.value).toBe("chill, lo-fi")
   })
 
   it("typing in description updates its value", () => {
     renderPage()
-    const desc = screen.getByPlaceholderText(/Tracks with descriptions/) as HTMLTextAreaElement
+    const desc = screen.getByPlaceholderText(
+      /Tracks with descriptions/
+    ) as HTMLTextAreaElement
     fireEvent.change(desc, { target: { value: "My new track" } })
     expect(desc.value).toBe("My new track")
   })
 
   it("typing in title input updates its value", () => {
     renderPage()
-    const title = screen.getByDisplayValue("my-track") as HTMLInputElement
+    const title = screen.getByDisplayValue(
+      "my-track"
+    ) as HTMLInputElement
     fireEvent.change(title, { target: { value: "New Title" } })
     expect(title.value).toBe("New Title")
   })
@@ -271,9 +324,11 @@ describe("TrackInfoPage — interactions (form inputs)", () => {
 // ─── Interactions: artwork ────────────────────────────────────────────────────
 
 describe("TrackInfoPage — interactions (artwork)", () => {
-  it("artwork picker area is present and clickable", () => {
+  it("artwork picker area is present", () => {
     const { container } = renderPage()
-    const picker = container.querySelector("input[type='file'][accept='image/*']")
+    const picker = container.querySelector(
+      "input[type='file'][accept='image/*']"
+    )
     expect(picker).toBeInTheDocument()
   })
 

@@ -1,16 +1,23 @@
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import {
   FaFacebook,
   FaTwitter,
   FaYoutube,
   FaInstagram,
+  FaGlobe,
   FaUser,
   FaGooglePlay,
   FaApple,
+  FaSpotify,
+  FaSoundcloud,
+  FaTiktok,
 } from "react-icons/fa";
 import { FiInfo } from "react-icons/fi";
 import { Ticket } from "lucide-react";
 import type { FollowingUser } from "../../../../shared/types/User";
+import { followingService } from "../../../following/followingService";
+import avatarFallback from '@/assets/avatar.png';
 
 export default function ProfileSideBar({
   followers,
@@ -19,6 +26,7 @@ export default function ProfileSideBar({
   bio,
   socialAccounts,
   followingUsers,
+  onUnfollowUser,
 }: {
   followers?: number | string;
   following?: number;
@@ -28,17 +36,35 @@ export default function ProfileSideBar({
     facebook?: string;
     instagram?: string;
     twitter?: string;
+    website?: string;
     youtube?: string;
+    spotify?: string;
+    tiktok?: string;
+    soundcloud?: string;
   };
   followingUsers?: FollowingUser[];
+  onUnfollowUser?: () => void;
 }) {
-  const visibleFollowingUsers = followingUsers?.slice(0, 3) ?? [];
-  const followingCount = followingUsers?.length ?? 0;
+  const [localFollowingUsers, setLocalFollowingUsers] = useState<FollowingUser[]>(
+    followingUsers ?? [],
+  );
+  const [pendingUnfollowId, setPendingUnfollowId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLocalFollowingUsers(followingUsers ?? []);
+  }, [followingUsers]);
+
+  const visibleFollowingUsers = localFollowingUsers.slice(0, 3);
+  const followingCount = localFollowingUsers.length;
   const hasSocialAccounts = Boolean(
     socialAccounts?.facebook ||
     socialAccounts?.instagram ||
     socialAccounts?.twitter ||
-    socialAccounts?.youtube,
+    socialAccounts?.website ||
+    socialAccounts?.youtube ||
+    socialAccounts?.spotify ||
+    socialAccounts?.tiktok ||
+    socialAccounts?.soundcloud,
   );
 
   const userInfo = [
@@ -98,6 +124,15 @@ export default function ProfileSideBar({
                 Twitter
               </a>
             )}
+            {socialAccounts?.website && (
+              <a
+                href={socialAccounts?.website}
+                className="flex items-center gap-2 text-[14px] text-zinc-400 hover:text-zinc-600 font-bold"
+              >
+                <FaGlobe size={16} />
+                Website
+              </a>
+            )}
             {socialAccounts?.youtube && (
               <a
                 href={socialAccounts?.youtube}
@@ -105,6 +140,33 @@ export default function ProfileSideBar({
               >
                 <FaYoutube size={16} />
                 YouTube
+              </a>
+            )}
+            {socialAccounts?.spotify && (
+              <a
+                href={socialAccounts?.spotify}
+                className="flex items-center gap-2 text-[14px] text-zinc-400 hover:text-zinc-600 font-bold"
+              >
+                <FaSpotify size={16} />
+                Spotify
+              </a>
+            )}
+            {socialAccounts?.tiktok && (
+              <a
+                href={socialAccounts?.tiktok}
+                className="flex items-center gap-2 text-[14px] text-zinc-400 hover:text-zinc-600 font-bold"
+              >
+                <FaTiktok size={16} />
+                TikTok
+              </a>
+            )}
+            {socialAccounts?.soundcloud && (
+              <a
+                href={socialAccounts?.soundcloud}
+                className="flex items-center gap-2 text-[14px] text-zinc-400 hover:text-zinc-600 font-bold"
+              >
+                <FaSoundcloud size={16} />
+                SoundCloud
               </a>
             )}
           </div>
@@ -165,19 +227,19 @@ export default function ProfileSideBar({
                 >
                   <div className="flex items-center gap-4">
                     <img
-                      src={followingUser.avatarUrl}
+                      src={followingUser.avatarUrl || avatarFallback}
                       alt={followingUser.username}
                       className="h-12 w-12 rounded-full object-cover"
                     />
                     <div className="flex flex-col">
                       <Link
-                        to={`/${followingUser.username}`}
+                        to={`/${followingUser.id}`}
                         className="text-[14px] font-bold leading-none text-white uppercase hover:text-zinc-500"
                       >
                         {followingDisplayName}
                       </Link>
                       <Link
-                        to={`/${followingUser.username}/followers`}
+                        to={`/${followingUser.id}/followers`}
                         className="mt-2 inline-flex items-center gap-1 text-[13px] text-zinc-400 hover:text-zinc-600"
                       >
                         <FaUser size={12} />
@@ -187,9 +249,26 @@ export default function ProfileSideBar({
                   </div>
                   <button
                     type="button"
-                    className="rounded-md bg-white px-3 py-2 text-[14px] font-bold text-black hover:bg-zinc-200 cursor-pointer"
+                    onClick={async () => {
+                      setPendingUnfollowId(followingUser.id);
+                      try {
+                        await followingService.unfollowUser(followingUser.id);
+                        setLocalFollowingUsers((prev) =>
+                          prev.filter((user) => user.id !== followingUser.id),
+                        );
+                        onUnfollowUser?.();
+                      } finally {
+                        setPendingUnfollowId((current) =>
+                          current === followingUser.id ? null : current,
+                        );
+                      }
+                    }}
+                    disabled={pendingUnfollowId === followingUser.id}
+                    className="rounded-md bg-zinc-800 px-3 py-2 text-[14px] font-bold text-white hover:text-zinc-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Follow
+                    {pendingUnfollowId === followingUser.id
+                      ? "Unfollowing..."
+                      : "Following"}
                   </button>
                 </div>
               );

@@ -5,7 +5,9 @@ import { MdPodcasts, MdMoreHoriz } from "react-icons/md";
 import { FiSlash, FiInfo } from "react-icons/fi";
 import { NavLink } from "react-router-dom";
 import { Upload } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { followingService } from "../../../following/followingService";
+import { notifySocialGraphUpdated } from "../../socialGraphEvents";
 
 export default function UserInfoBar({
   displayName,
@@ -14,7 +16,9 @@ export default function UserInfoBar({
   city,
   bio,
   socialAccounts,
-  isEditable,
+  isMe,
+  onProfileUpdated,
+  userId,
 }: {
   displayName?: string;
   avatarUrl?: string;
@@ -25,9 +29,12 @@ export default function UserInfoBar({
     facebook?: string;
     instagram?: string;
     twitter?: string;
+    website?: string;
     youtube?: string;
   };
-  isEditable?: boolean;
+  isMe?: boolean;
+  onProfileUpdated?: () => void;
+  userId?: string;
 }) {
   const tabs = [
     { label: "All", path: "." },
@@ -40,6 +47,56 @@ export default function UserInfoBar({
 
   const [modal, setModal] = useState(false);
   const [showMoreActions, setShowMoreActions] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [blockLoading, setBlockLoading] = useState(false);
+
+  useEffect(() => {
+    if (isMe || !userId) return;
+
+    followingService
+      .getFollowStatus(userId)
+      .then((status) => {
+        setIsFollowing(status.isFollowing);
+      })
+      .catch(() => {
+        setIsFollowing(false);
+      });
+  }, [isMe, userId]);
+
+  const handleFollowToggle = async () => {
+    if (!userId || followLoading) return;
+
+    setFollowLoading(true);
+    try {
+      if (isFollowing) {
+        await followingService.unfollowUser(userId);
+        setIsFollowing(false);
+      } else {
+        await followingService.followUser(userId);
+        setIsFollowing(true);
+      }
+
+      notifySocialGraphUpdated();
+      onProfileUpdated?.();
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  const handleBlock = async () => {
+    if (!userId || blockLoading) return;
+
+    setBlockLoading(true);
+    try {
+      await followingService.blockUser(userId);
+      notifySocialGraphUpdated();
+      onProfileUpdated?.();
+      setShowMoreActions(false);
+    } finally {
+      setBlockLoading(false);
+    }
+  };
 
   const toggleModal = () => {
     setModal(!modal);
@@ -56,8 +113,8 @@ export default function UserInfoBar({
             </NavLink>
           ))}
         </div>
-        <div className={`flex items-center ${isEditable ? "gap-2" : "gap-4"}`}>
-          {!isEditable && (
+        <div className={`flex items-center ${isMe ? "gap-2" : "gap-4"}`}>
+          {!isMe && (
             <button
               type="button"
               title="Station"
@@ -67,14 +124,16 @@ export default function UserInfoBar({
               <span>Station</span>
             </button>
           )}
-          {!isEditable && (
+          {!isMe && (
             <button
               type="button"
-              title="Follow"
+              title={isFollowing ? "Following" : "Follow"}
+              onClick={handleFollowToggle}
+              disabled={followLoading || !userId}
               className="inline-flex items-center gap-2 rounded-sm bg-white px-3 py-1.5 text-sm font-bold text-black hover:text-zinc-500 cursor-pointer"
             >
               <FaUser />
-              <span>Follow</span>
+              <span>{isFollowing ? "Following" : "Follow"}</span>
             </button>
           )}
           <button
@@ -85,7 +144,7 @@ export default function UserInfoBar({
             <Upload size={14} />
             <span>Share</span>
           </button>
-          {!isEditable && (
+          {!isMe && (
             <div className="relative group">
               <button
                 type="button"
@@ -97,7 +156,7 @@ export default function UserInfoBar({
             </div>
           )}
           <div className="relative">
-            {!isEditable && (
+            {!isMe && (
               <button
                 type="button"
                 title="More"
@@ -116,10 +175,12 @@ export default function UserInfoBar({
                 <button
                   type="button"
                   title="Block"
+                  onClick={handleBlock}
+                  disabled={blockLoading || !userId}
                   className="inline-flex items-center gap-2 w-auto whitespace-nowrap text-left text-white font-bold text-[14px] px-3 py-2 hover:text-zinc-500 transition-colors cursor-pointer"
                 >
                   <FiSlash />
-                  Block {displayName}
+                  {blockLoading ? "Blocking..." : `Block ${displayName}`}
                 </button>
                 <button
                   type="button"
@@ -132,7 +193,7 @@ export default function UserInfoBar({
               </div>
             )}
           </div>
-          {isEditable && (
+          {isMe && (
             <button
               type="button"
               title="Edit"
@@ -148,6 +209,7 @@ export default function UserInfoBar({
       {modal && (
         <EditInfo
           onClick={toggleModal}
+          onSaved={onProfileUpdated}
           displayName={displayName}
           avatarUrl={avatarUrl}
           country={country}

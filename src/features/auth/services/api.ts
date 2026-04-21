@@ -1,22 +1,23 @@
- import axios from 'axios';
-import { getAccessToken, getRefreshToken, storeTokens, clearTokens } from '../utils/token.utils';
+import axios from 'axios';//library to send api requests instead of using fetch
+import { getAccessToken, getRefreshToken, storeTokens, clearTokens } from '@/features/auth/utils/token.utils';
  
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api';
- 
+import { BASE_URL } from '../../../config/env'; //This imports the base backend URL from your config.
 
-const axiosInstance = axios.create({
+export const api = axios.create({ //create a pre configured axios object
   baseURL: BASE_URL,
-  headers: {
+ headers: {
     'Content-Type': 'application/json',
   },
 });
  
-axiosInstance.interceptors.request.use(
-  (config) => {
+api.interceptors.request.use(
+  (config) => { //config is the request settings object It contains things like: URL headers method data
+
+
     const token = getAccessToken();
  
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      config.headers.Authorization = `Bearer ${token}`;//This is how protected backend routes know who the user is.
     }
  
     return config; // must always return config
@@ -29,7 +30,7 @@ axiosInstance.interceptors.request.use(
  
 // This flag prevents multiple refresh calls happening at the same time
 let isRefreshing = false;
-let failedQueue: Array<{
+let failedQueue: Array<{ //queue of pending requests waiting for refresh to finish.
   resolve: (token: string) => void;
   reject: (error: unknown) => void;
 }> = [];
@@ -45,12 +46,12 @@ const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue = [];
 };
  
-axiosInstance.interceptors.response.use(
+api.interceptors.response.use(
   (response) => response,
  
   async (error) => {
     const originalRequest = error.config;
- 
+  
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
@@ -59,7 +60,7 @@ axiosInstance.interceptors.response.use(
         })
           .then((newToken) => {
             originalRequest.headers.Authorization = `Bearer ${newToken}`;
-            return axiosInstance(originalRequest);
+            return api(originalRequest);
           })
           .catch((err) => Promise.reject(err));
       }
@@ -75,7 +76,7 @@ axiosInstance.interceptors.response.use(
       }
  
       try {
-        const response = await axios.post(`${BASE_URL}/auth/refresh`, {
+        const response = await axios.post(`${BASE_URL}/auth/refresh-token`, {
           refreshToken,
         });
  
@@ -85,7 +86,7 @@ axiosInstance.interceptors.response.use(
  
         processQueue(null, accessToken);
  
-        return axiosInstance(originalRequest);
+        return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
         clearTokens();
@@ -95,9 +96,8 @@ axiosInstance.interceptors.response.use(
         isRefreshing = false;
       }
     }
- 
     return Promise.reject(error);
   }
+  
 );
  
-export default axiosInstance;

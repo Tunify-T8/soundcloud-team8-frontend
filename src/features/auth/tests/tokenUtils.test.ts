@@ -154,3 +154,20 @@ describe('tokenUtils — full flow', () => {
     expect(getRefreshToken()).toBe('third_refresh');
   });
 });
+describe('tokenUtils — expiry edge cases', () => {
+  it('stores expiry with expiresIn of 0', () => {
+    storeTokens('a', 'b', 0);
+    const val = localStorage.getItem('sc_expires_at');
+    expect(Number(val)).toBeGreaterThanOrEqual(Date.now() - 1000);
+  });
+
+  it('returns null for access token when localStorage is empty', () => {
+    localStorage.clear();
+    expect(getAccessToken()).toBeNull();
+  });
+
+  it('returns null for refresh token when localStorage is empty', () => {
+    localStorage.clear();
+    expect(getRefreshToken()).toBeNull();
+  });
+});

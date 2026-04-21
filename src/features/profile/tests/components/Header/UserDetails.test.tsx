@@ -15,8 +15,8 @@ describe("UserDetails", () => {
     expect(screen.getByText("NY")).toBeInTheDocument();
   });
 
-  it("renders verified icon if isVerified", () => {
-    render(<UserDetails displayName="Jane" isVerified />);
+  it("renders certified icon if isCertified", () => {
+    render(<UserDetails displayName="Jane" isCertified />);
     // The icon is present, but for a more robust test, you could add a data-testid in the component
     expect(screen.getByText("Jane")).toBeInTheDocument();
   });

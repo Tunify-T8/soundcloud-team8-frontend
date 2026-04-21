@@ -3,105 +3,143 @@ import UserInfoBar from "../components/UserInfo/UserInfoBar";
 import ProfileSideBar from "../components/UserInfo/ProfileSideBar";
 import { Outlet, useParams } from "react-router-dom";
 import { profileService } from "../profileService";
-import { useEffect, useState } from "react";
-import type { FollowingUser, User } from "../../../shared/types/User";
+import { useEffect, useState, useCallback } from "react";
+import { useMe } from "../context/useMe";
+import type {
+  MeUserProfile,
+  PublicUserProfile,
+  UserFollowing,
+} from "../../../shared/types/User";
+
+function isMeProfile(
+  user: MeUserProfile | PublicUserProfile,
+): user is MeUserProfile {
+  return "lastLogin" in user;
+}
+
 export default function ProfilePage() {
   const { username } = useParams<{ username: string }>();
-  const [user, setUser] = useState<User | null>(null);
-  const [followingUsers, setFollowingUsers] = useState<FollowingUser[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { me, socialAccounts, following, refresh: refreshMe } = useMe();
+  const isMe = !username;
+  const [publicUser, setPublicUser] = useState<PublicUserProfile | null>(null);
+  const [openedFollowing, setOpenedFollowing] = useState<UserFollowing[]>([]);
+  const [loading, setLoading] = useState(!!username);
+  const [error, setError] = useState<string | null>(null);
+
+  const refreshProfile = useCallback(() => {
+    refreshMe();
+  }, [refreshMe]);
+
+  useEffect(() => {
+    if (!username) return;
+    const fetchProfile = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await profileService.getPublicProfile(username);
+        setPublicUser(data);
+      } catch (err: any) {
+        setError(err?.message || "Failed to fetch user");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, [username]);
 
   useEffect(() => {
     let isMounted = true;
 
-    const fetchUser = async () => {
-      setLoading(true);
+    if (isMe) {
+      setOpenedFollowing(following);
+      return;
+    }
 
-      try {
-        const userData = username
-          ? await profileService.getUserByUsername(username)
-          : await profileService.getCurrentUser();
+    const openedUserId = publicUser?.id;
+    if (!openedUserId) {
+      setOpenedFollowing([]);
+      return;
+    }
 
-        if (isMounted) {
-          setUser(userData);
-        }
-
-        if (userData?.username) {
-          try {
-            const followingResponse = await profileService.getFollowing(
-              userData.username,
-            );
-            if (isMounted) {
-              setFollowingUsers(followingResponse);
-            }
-          } catch {
-            if (isMounted) {
-              setFollowingUsers([]);
-            }
-          }
-        } else if (isMounted) {
-          setFollowingUsers([]);
-        }
-      } catch (error) {
-        console.error("Failed to fetch user data:", error);
-        if (isMounted) {
-          setUser(null);
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchUser();
+    profileService
+      .getUserFollowing(openedUserId)
+      .then((res) => {
+        if (!isMounted) return;
+        setOpenedFollowing(res.following ?? []);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setOpenedFollowing([]);
+      });
 
     return () => {
       isMounted = false;
     };
-  }, [username]);
+  }, [isMe, publicUser?.id, following]);
+
+  if (!username && !me) {
+    return <div className="min-h-screen text-white">Loading...</div>;
+  }
 
   if (loading) {
     return <div className="min-h-screen text-white">Loading...</div>;
   }
-  if (!user) {
-    return <div className="min-h-screen text-white">User not found.</div>;
+
+  const user = username ? publicUser : me;
+
+  if (error || !user) {
+    return (
+      <div className="min-h-screen text-white">
+        {error || "User not found."}
+      </div>
+    );
   }
+  const location = user.location ?? "";
+  const locationParts = location.split(",");
+  const city = locationParts[0]?.trim() ?? undefined;
+  const country = locationParts[1]?.trim() ?? undefined;
+
   return (
     <div className="min-h-screen text-white">
       <Header
-        displayName={user.displayName}
+        displayName={user.displayName ?? undefined}
         username={user.username}
-        country={user.country}
-        city={user.city}
-        isVerified={user.isVerified}
-        avatarUrl={user.avatarUrl}
-        coverUrl={user.coverUrl}
-        isEditable={user.isEditable}
+        country={country}
+        city={city}
+        isCertified={isMeProfile(user) ? user.isCertified : false}
+        avatarUrl={user.avatarUrl || ""}
+        coverUrl={user.coverUrl || ""}
+        isMe={isMe}
+        onProfileUpdated={refreshProfile}
       />
       <div className="relative">
         <UserInfoBar
-          displayName={user.displayName}
-          avatarUrl={user.avatarUrl}
-          country={user.country}
-          city={user.city}
-          bio={user.bio}
-          socialAccounts={user.socialAccounts}
-          isEditable={user.isEditable}
+          displayName={user.displayName ?? undefined}
+          avatarUrl={user.avatarUrl || ""}
+          country={country}
+          city={city}
+          bio={user.bio ?? undefined}
+          socialAccounts={isMe ? socialAccounts : undefined}
+          isMe={isMe}
+          userId={user.id}
+          onProfileUpdated={refreshProfile}
         />
         <div className="absolute right-[8.333333%] top-full mt-4">
           <ProfileSideBar
             followers={user.followersCount}
             following={user.followingCount}
-            tracks={user.tracksCount}
-            bio={user.bio}
-            socialAccounts={{
-              facebook: user.socialAccounts?.facebook,
-              instagram: user.socialAccounts?.instagram,
-              twitter: user.socialAccounts?.twitter,
-              youtube: user.socialAccounts?.youtube,
-            }}
-            followingUsers={followingUsers}
+            tracks={"tracksCount" in user ? (user as any).tracksCount : 0}
+            bio={user.bio ?? undefined}
+            socialAccounts={isMe ? socialAccounts : undefined}
+            followingUsers={openedFollowing.map((u) => ({
+              id: u.id,
+              username: u.username,
+              displayName: u.displayName ?? undefined,
+              avatarUrl: u.avatarUrl ?? "",
+              isCertified: u.isCertified ?? false,
+              followersCount: u.followersCount ?? 0,
+            }))}
+            onUnfollowUser={refreshProfile}
           />
         </div>
       </div>

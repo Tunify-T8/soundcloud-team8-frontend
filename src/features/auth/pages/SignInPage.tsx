@@ -1,19 +1,20 @@
-
 import React, { useRef, useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';//This is a library to handle forms (like login forms).
+import { zodResolver } from '@hookform/resolvers/zod'; //(a validation library
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Eye, EyeOff, Loader2, ChevronLeft, AlertCircle } from 'lucide-react';
-import { SiSoundcloud } from "react-icons/si";
+import { useGoogleLogin } from '@react-oauth/google';
 import { signInSchema, type SignInFormData } from '../schemas/auth.schemas';
-import { login, socialLogin } from '../services/index';
+import { login, socialLogin, googleSignIn, googleLink } from '../services/index';
 import { storeTokens } from '../utils/token.utils';
 import { extractErrorMessage } from '../hooks/useAuth';
 import type { SocialProvider } from '../types/auth.types';
-import { isKnownEmail } from '../data/mockUsers';
-
-// ── Icons ──────────────────────────────────────────────────────
-const GoogleIcon: React.FC = () => (
+import { checkEmail } from '../services/index';
+import AuthNavbar from '../components/AuthNavbar';
+import { useDispatch } from 'react-redux';
+import { setUser } from '../../../store/userSlice';
+import type { AppDispatch } from '../../../app/store';
+const GoogleIcon: React.FC = () => ( //creating google icon componenet 
   <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
     <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
@@ -63,24 +64,21 @@ const TunifyLogo: React.FC = () => (
   <Link to="/" className="flex items-center gap-2 no-underline">
     <svg viewBox="0 0 33 15" className="h-6 w-auto sm:h-7" fill="white" aria-hidden="true">
       <path d="M0 11.5c0 .8.7 1.5 1.5 1.5s1.5-.7 1.5-1.5V6c0-.8-.7-1.5-1.5-1.5S0 5.2 0 6v5.5zm4.5 1.5c.8 0 1.5-.7 1.5-1.5V3.5C6 2.7 5.3 2 4.5 2S3 2.7 3 3.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V1.5C10.5.7 9.8 0 9 0S7.5.7 7.5 1.5V11.5C7.5 12.3 8.2 13 9 13zm4.5 0c.8 0 1.5-.7 1.5-1.5V3.5C15 2.7 14.3 2 13.5 2S12 2.7 12 3.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V2.5C19.5 1.7 18.8 1 18 1s-1.5.7-1.5 1.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V4.5C24 3.7 23.3 3 22.5 3S21 3.7 21 4.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V4.5C27 3.7 26.3 3 25.5 3S24 3.7 24 4.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V2.5C33 1.7 32.3 1 31.5 1S30 1.7 30 2.5V11.5c0 .8.7 1.5 1.5 1.5z" />
-   </svg>
-    <span className="text-white font-bold text-sm sm:text-base tracking-widest uppercase">SOUNDCLOUD</span>
+    </svg>
+    <span className="text-white font-bold text-sm sm:text-base tracking-widest uppercase">SoundCloud</span>
   </Link>
 );
 
-type Step = 'social' | 'email' | 'password';
-
+type Step = 'social' | 'email' | 'password'; //to controll which part of the sign in process is showing 
 const isValidEmail = (val: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
-
-// const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-// const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
-// const currentYear = new Date().getFullYear();
-// const YEARS = Array.from({ length: 100 }, (_, i) => currentYear - 13 - i);
 
 const SignInPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch<AppDispatch>();
   const from = (location.state as { from?: Location })?.from?.pathname ?? '/';
+  const prefillEmailState = (location.state as { email?: string; prefillStep?: string })?.email ?? '';
+  const prefillStep = (location.state as { prefillStep?: string })?.prefillStep ?? '';
 
   const [step, setStep] = useState<Step>('social');
   const [emailInput, setEmailInput] = useState('');
@@ -90,6 +88,10 @@ const SignInPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [socialLoading, setSocialLoading] = useState<SocialProvider | null>(null);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [linkingToken, setLinkingToken] = useState<string | null>(null);
+  const [showLinkPassword, setShowLinkPassword] = useState(false);
+  const [linkPassword, setLinkPassword] = useState('');
+  const [isLinking, setIsLinking] = useState(false);
 
   const emailRef = useRef<HTMLInputElement>(null);
 
@@ -98,15 +100,73 @@ const SignInPage: React.FC = () => {
   });
 
   useEffect(() => {
-    return () => {
-      setStep('social');
-      setEmailInput('');
-      setEmailError(null);
+  if (prefillEmailState && prefillStep === 'password') {
+    setEmailInput(prefillEmailState);
+    setValue('email', prefillEmailState);
+    setStep('password');
+  }
+  return () => {
+    setStep('social');
+    setEmailInput('');
+    setEmailError(null);
+    setApiError(null);
+    setShowPassword(false);
+    reset();
+  };
+}, []);
+
+  // ── Google OAuth ───────────────────────────────────────────────
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (response) => {
       setApiError(null);
-      setShowPassword(false);
-      reset();
-    };
-  }, []);
+      setSocialLoading('google');
+      try {
+        const res = await googleSignIn(response.code);
+        if (res.requiresLinking) {
+          setLinkingToken(res.linkingToken);
+          setShowLinkPassword(true);
+          setSocialLoading(null);
+          return;
+        }
+        storeTokens(res.accessToken, res.refreshToken, 3600);
+        if (res.user) {
+          dispatch(setUser({
+            id: res.user.id,
+            username: res.user.username,
+            email: res.user.email,
+            role: res.user.role,
+            isVerified: res.user.isCertified,
+            avatarUrl: res.user.avatarUrl ?? null,
+          }));
+        }
+        navigate(from);
+      } catch (error) {
+        setApiError(extractErrorMessage(error));
+      } finally {
+        setSocialLoading(null);
+      }
+    },
+    onError: () => {
+      setApiError('Google sign-in failed. Please try again.');
+      setSocialLoading(null);
+    },
+    flow: 'auth-code',
+    redirect_uri: 'postmessage',});
+  // ── Google account linking ─────────────────────────────────────
+  const handleGoogleLink = async () => {
+    if (!linkingToken || !linkPassword) return;
+    setIsLinking(true);
+    setApiError(null);
+    try {
+      const res = await googleLink(linkingToken, linkPassword);
+      storeTokens(res.accessToken, res.refreshToken, 3600);
+      navigate(from); // ← no replace
+    } catch (error) {
+      setApiError(extractErrorMessage(error));
+    } finally {
+      setIsLinking(false);
+    }
+  };
 
   const handleEmailFocus = () => { if (step === 'social') setStep('email'); };
 
@@ -125,14 +185,19 @@ const SignInPage: React.FC = () => {
     }
     setEmailError(null);
     setIsCheckingEmail(true);
-    await new Promise((r) => setTimeout(r, 400));
-    if (!isKnownEmail(email)) {
-      navigate('/create-account', { state: { email } });
-      return;
+    try {
+      const result = await checkEmail(email);
+      if (!result.exists) {
+        navigate('/create-account', { state: { email } });
+        return;
+      }
+      setValue('email', email);
+      setStep('password');
+    } catch (error) {
+      setEmailError('Something went wrong. Please try again.');
+    } finally {
+      setIsCheckingEmail(false);
     }
-    setValue('email', email);
-    setStep('password');
-    setIsCheckingEmail(false);
   };
 
   const onSubmit = async (data: SignInFormData) => {
@@ -140,16 +205,37 @@ const SignInPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       const res = await login(data);
-      storeTokens(res.accessToken, res.refreshToken, res.expiresIn);
-      navigate(from, { replace: true });
+      if (res.user && res.user.isCertified === false) {
+        navigate('/verify-email', { state: { email: data.email } });
+        return;
+      }
+      if (!res.accessToken) {
+        setApiError('Login failed. Please try again.');
+        return;
+      }
+      storeTokens(res.accessToken, res.refreshToken, res.expiresIn ?? 3600);
+      if (res.user) {
+        dispatch(setUser({
+          id: res.user.id,
+          username: res.user.username,
+          email: res.user.email,
+          role: res.user.role,
+          isVerified: res.user.isCertified,
+          avatarUrl: res.user.avatarUrl ?? null,
+        }));
+      }
+      navigate(from);
     } catch (error) {
       const msg = extractErrorMessage(error);
-      if (msg.includes('No account') || msg.includes('not found')) {
+      const isNotFound = msg.toLowerCase().includes('no account') || 
+                         msg.toLowerCase().includes('user not found') ||
+                         msg.toLowerCase().includes('email not found');
+      if (isNotFound) {
         navigate('/create-account', { state: { email: data.email } });
       } else {
-        setApiError(msg);
+        setApiError('This password is incorrect.');
       }
-    } finally {
+    }finally {
       setIsSubmitting(false);
     }
   };
@@ -160,7 +246,7 @@ const SignInPage: React.FC = () => {
     try {
       const res = await socialLogin({ provider, providerToken: 'mock_oauth_token' });
       storeTokens(res.accessToken, res.refreshToken, res.expiresIn);
-      navigate(from, { replace: true });
+      navigate(from); // ← no replace
     } catch (error) {
       setApiError(extractErrorMessage(error));
     } finally {
@@ -170,7 +256,6 @@ const SignInPage: React.FC = () => {
 
   const isSocialDisabled = socialLoading !== null || isSubmitting || isCheckingEmail;
 
-  // ── Shared back button ──
   const BackButton = ({ onClick }: { onClick: () => void }) => (
     <button
       type="button"
@@ -184,49 +269,74 @@ const SignInPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#0d0d0d] flex flex-col">
 
-      {/* ── Responsive Navbar ── */}
-      <header className="flex items-center justify-between px-4 sm:px-6 py-3 bg-[#0d0d0d] border-b border-[#222]">
-        <TunifyLogo />
-        {/* Nav links — hidden on mobile */}
-        <nav className="hidden md:flex items-center gap-8">
-          <Link to="/" className="text-white text-sm font-medium hover:text-white/80">Home</Link>
-          <Link to="/stream" className="text-white/60 text-sm hover:text-white">Feed</Link>
-          <Link to="/discover" className="text-white/60 text-sm hover:text-white">Library</Link>
-        </nav>
-        <div className="flex items-center gap-2 sm:gap-4">
-          <Link to="/signin" className="text-white text-sm font-medium hover:text-white/80">Sign in</Link>
-          <Link to="/create-account" className="hidden sm:inline-flex border border-white text-white text-sm font-medium px-5 py-1.5 rounded-full hover:bg-white hover:text-black transition-all">
-            Create account
-          </Link>
-          <button className="text-white/60 text-lg hover:text-white hidden sm:block">···</button>
-        </div>
-      </header>
+      <AuthNavbar />
 
       {/* ── Main ── */}
-      {/* Responsive layout*/}
-        <main className="flex-1 flex items-center justify-center px-4 py-10">
+      <main className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-[480px]">
-
           <div className="border sm:border-[#3a3a3a] sm:rounded-sm sm:p-[3px] sm:bg-[#111]">
             <div className="border sm:border-[#555] sm:rounded-sm bg-[#181818] sm:min-h-[520px]">
 
               {/* ══ STEP: social ══ */}
               {step === 'social' && (
                 <div className="px-6 py-8 sm:p-8 flex flex-col gap-3">
-                  
                   <h1 className="text-white text-2xl sm:text-xl font-bold mb-1 text-left sm:text-center leading-tight">
                     Sign in or create an account
                   </h1>
                   <p className="text-[#999] text-xs mb-2 leading-relaxed text-left sm:text-center">
                     By clicking "Continue" you agree to SoundCloud's{' '}
-                    <a href="#" className="text-[#0066cc] hover:underline">Terms of Use</a>{' '}
+                    <a href="https://soundcloud.com/terms-of-use" target="_blank" rel="noreferrer" className="text-[#0066cc] hover:underline">Terms of Use</a>{' '}
                     and acknowledge our{' '}
-                    <a href="#" className="text-[#0066cc] hover:underline">Privacy Policy</a>.
+                    <a href="https://soundcloud.com/pages/privacy" target="_blank" rel="noreferrer" className="text-[#0066cc] hover:underline">Privacy Policy</a>.
                   </p>
 
                   <SocialButton provider="facebook" label="Continue with Facebook" icon={<FacebookIcon />} bgColor="bg-[#1877f2]" hoverColor="hover:bg-[#1565d8]" onClick={handleSocialLogin} disabled={isSocialDisabled} />
-                  <SocialButton provider="google" label="Continue with Google" icon={<GoogleIcon />} bgColor="bg-[#3c3c3c]" hoverColor="hover:bg-[#4a4a4a]" onClick={handleSocialLogin} disabled={isSocialDisabled} />
+
+                  <button
+                    type="button"
+                    disabled={isSocialDisabled}
+                    onClick={() => googleLogin()}
+                    className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-sm font-medium text-sm text-white transition-colors duration-150 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed bg-[#3c3c3c] hover:bg-[#4a4a4a]"
+                  >
+                    <GoogleIcon />
+                    <span>Continue with Google</span>
+                  </button>
+
                   <SocialButton provider="apple" label="Continue with Apple" icon={<AppleIcon />} bgColor="bg-black" hoverColor="hover:bg-[#1a1a1a]" borderColor="border-[#555]" onClick={handleSocialLogin} disabled={isSocialDisabled} />
+
+                  {showLinkPassword && (
+                    <div className="bg-[#2a2a2a] border border-[#555] rounded-sm p-4 flex flex-col gap-3">
+                      <p className="text-white text-sm font-medium">This email is already registered.</p>
+                      <p className="text-[#aaa] text-xs">Enter your Tunify password to link your Google account.</p>
+                      {apiError && <p className="text-red-400 text-xs">{apiError}</p>}
+                      <input
+                        type="password"
+                        value={linkPassword}
+                        onChange={(e) => setLinkPassword(e.target.value)}
+                        placeholder="Your Tunify password"
+                        className="w-full bg-[#1a1a1a] border border-[#555] rounded-sm px-4 py-3 text-white text-sm placeholder-[#666] focus:outline-none focus:border-[#888]"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleGoogleLink}
+                        disabled={!linkPassword || isLinking}
+                        className={`w-full py-3 rounded-sm text-sm font-semibold transition-all ${
+                          linkPassword && !isLinking
+                            ? 'bg-white text-black hover:bg-gray-100 cursor-pointer'
+                            : 'bg-[#333] text-[#888] cursor-not-allowed border border-[#444]'
+                        }`}
+                      >
+                        {isLinking ? 'Linking...' : 'Link Google account'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowLinkPassword(false); setLinkPassword(''); setApiError(null); }}
+                        className="text-[#0066cc] text-xs hover:underline text-left"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
 
                   <div className="flex items-center gap-3 my-1">
                     <div className="flex-1 h-px bg-[#444]" />
@@ -251,12 +361,12 @@ const SignInPage: React.FC = () => {
                     Continue
                   </button>
                   <div className="text-left sm:text-center">
-                    <Link to="/forgot-password" className="text-[#0066cc] text-sm hover:underline">Need help?</Link>
+                    <a href="https://help.soundcloud.com/hc/en-us/sections/46266771825691" target="_blank" rel="noreferrer" className="text-[#0066cc] text-sm hover:underline">Need help?</a>
                   </div>
                 </div>
               )}
 
-              {/* ══ STEP: email focused ══ */}
+              {/* ══ STEP: email ══ */}
               {step === 'email' && (
                 <div className="p-8">
                   <div className="flex items-center gap-4 mb-6">
@@ -292,8 +402,7 @@ const SignInPage: React.FC = () => {
                   >
                     {isCheckingEmail ? <><Loader2 className="h-4 w-4 animate-spin" /> Checking…</> : 'Continue'}
                   </button>
-
-                  <Link to="/forgot-password" className="text-[#0066cc] text-sm hover:underline">Need help?</Link>
+                  <a href="https://help.soundcloud.com/hc/en-us/sections/46266771825691" target="_blank" rel="noreferrer" className="text-[#0066cc] text-sm hover:underline">Need help?</a>
                 </div>
               )}
 

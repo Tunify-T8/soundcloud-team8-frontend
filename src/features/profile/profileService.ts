@@ -1,121 +1,168 @@
-import { api } from "../../services/api";
-import type { FollowingUser, User } from "../../shared/types/User";
+import { api } from "../auth/services/api";
+import { followingService } from "../following/followingService";
+import type {
+  MeUserProfile,
+  PublicUserProfile,
+  UpdateUserProfileRequest,
+  UserSocialLinks,
+  UserGenres,
+  UserTracksResponse,
+  UserFollowingResponse,
+  UserFollowersResponse,
+  FollowStatus,
+  BlockedUsersResponse,
+  SuggestedUsersResponse,
+} from "../../shared/types/User";
 
-type UsersResponse = User | User[] | { users?: User[]; data?: User[] };
-type FollowingApiResponse = FollowingUser[] | { following?: FollowingUser[] };
-type UserWithFollowing = User & { following?: FollowingApiResponse };
-
-const normalizeUsername = (value: string) =>
-  decodeURIComponent(value).trim().replace(/^@/, "").toLowerCase();
-
-const toUsersArray = (payload: UsersResponse): User[] => {
-  if (Array.isArray(payload)) {
-    return payload;
-  }
-
-  if (payload && typeof payload === "object") {
-    if ("username" in payload) {
-      return [payload as User];
-    }
-
-    if (Array.isArray(payload.users)) {
-      return payload.users;
-    }
-
-    if (Array.isArray(payload.data)) {
-      return payload.data;
-    }
-  }
-
-  return [];
+type SocialAccountsMap = {
+  instagram?: string;
+  youtube?: string;
+  spotify?: string;
+  tiktok?: string;
+  soundcloud?: string;
+  twitter?: string;
 };
 
-const findUserByUsername = (users: User[], username: string): User | null => {
-  const target = normalizeUsername(username);
-  return (
-    users.find((user) => normalizeUsername(user.username) === target) ?? null
-  );
+type RawSocialLink = {
+  platform?: string | null;
+  url?: string | null;
 };
+
+function normalizeSocialLinksResponse(payload: unknown): SocialAccountsMap {
+  const map: SocialAccountsMap = {};
+
+  const rawLinks: RawSocialLink[] = Array.isArray(payload)
+    ? payload
+    : Array.isArray((payload as { links?: unknown })?.links)
+      ? ((payload as { links: RawSocialLink[] }).links ?? [])
+      : [];
+
+  rawLinks.forEach((item) => {
+    const platform = (item?.platform ?? "").toUpperCase();
+    const url = item?.url?.trim();
+    if (!url) return;
+
+    if (platform === "INSTAGRAM") map.instagram = url;
+    if (platform === "YOUTUBE") map.youtube = url;
+    if (platform === "SPOTIFY") map.spotify = url;
+    if (platform === "TIKTOK") map.tiktok = url;
+    if (platform === "SOUNDCLOUD") map.soundcloud = url;
+    if (platform === "TWITTER") map.twitter = url;
+  });
+
+  return map;
+}
 
 export const profileService = {
-  async getCurrentUser(): Promise<User | null> {
-    const { data } = await api.get<User>("/my-profile");
-    return data ?? null;
+  async getMeProfile(): Promise<MeUserProfile> {
+    const { data } = await api.get<MeUserProfile>("/users/me");
+    return data;
   },
 
-  async getUserByUsername(username: string): Promise<User | null> {
-    const target = username.trim().replace(/^@/, "");
-
-    try {
-      const { data } = await api.get<UsersResponse>(
-        `/users?username=${encodeURIComponent(target)}`,
-      );
-      const matchedUser = findUserByUsername(toUsersArray(data), target);
-      if (matchedUser) {
-        return matchedUser;
-      }
-    } catch {}
-
-    try {
-      const { data } = await api.get<UsersResponse>(
-        `/users/${encodeURIComponent(target)}`,
-      );
-      const directUser = findUserByUsername(toUsersArray(data), target);
-      if (directUser) {
-        return directUser;
-      }
-    } catch {}
-
-    const { data } = await api.get<UsersResponse>("/users");
-    return findUserByUsername(toUsersArray(data), target);
+  async getPublicProfile(userIdOrUsername: string): Promise<PublicUserProfile> {
+    const { data } = await api.get<PublicUserProfile>(
+      `/users/${encodeURIComponent(userIdOrUsername)}`,
+    );
+    return data;
   },
 
-  async getFollowing(
-    username: string,
+  async updateMeProfile(
+    payload: UpdateUserProfileRequest,
+  ): Promise<MeUserProfile> {
+    const { data } = await api.patch<MeUserProfile>(
+      "/users/me/profile",
+      payload,
+    );
+    return data;
+  },
+
+  async getMeSocialLinks(): Promise<SocialAccountsMap> {
+    const { data } = await api.get<UserSocialLinks | RawSocialLink[]>(
+      "/users/me/social-links",
+    );
+    return normalizeSocialLinksResponse(data);
+  },
+
+  async updateMeSocialLinks(
+    payload: UserSocialLinks,
+  ): Promise<UserSocialLinks> {
+    const { data } = await api.patch<UserSocialLinks>(
+      "/users/me/social-links",
+      payload,
+    );
+    return data;
+  },
+
+  async getMeGenres(): Promise<UserGenres> {
+    const { data } = await api.get<UserGenres>("/users/me/genres");
+    return data;
+  },
+
+  async updateMeGenres(payload: UserGenres): Promise<UserGenres> {
+    const { data } = await api.patch<UserGenres>("/users/me/genres", payload);
+    return data;
+  },
+
+  async getMeTracks(page = 1, limit = 20): Promise<UserTracksResponse> {
+    const { data } = await api.get<UserTracksResponse>(
+      `/users/me/tracks?page=${page}&limit=${limit}`,
+    );
+    return data;
+  },
+
+  // Backward-compatible wrappers. Source of truth is in followingService.
+  async getMeFollowing(page = 1, limit = 20): Promise<UserFollowingResponse> {
+    return followingService.getMeFollowing(page, limit);
+  },
+
+  async getUserFollowing(
+    userIdOrUsername: string,
     page = 1,
     limit = 20,
-  ): Promise<FollowingUser[]> {
-    const target = username.trim().replace(/^@/, "");
+  ): Promise<UserFollowingResponse> {
+    return followingService.getUserFollowing(userIdOrUsername, page, limit);
+  },
 
-    try {
-      const { data } = await api.get<FollowingApiResponse>(
-        `/users/${encodeURIComponent(target)}/following`,
-        {
-          params: { page, limit },
-        },
-      );
+  async getUserFollowers(
+    userIdOrUsername: string,
+    page = 1,
+    limit = 20,
+  ): Promise<UserFollowersResponse> {
+    return followingService.getUserFollowers(userIdOrUsername, page, limit);
+  },
 
-      if (Array.isArray(data)) {
-        return data;
-      }
+  async getFollowStatus(userId: string): Promise<FollowStatus> {
+    return followingService.getFollowStatus(userId);
+  },
 
-      if (data && Array.isArray(data.following)) {
-        return data.following;
-      }
-    } catch {}
+  async followUser(userId: string): Promise<void> {
+    return followingService.followUser(userId);
+  },
 
-    try {
-      const { data } = await api.get<UsersResponse>(
-        `/users?username=${encodeURIComponent(target)}`,
-      );
-      const matchedUser = findUserByUsername(
-        toUsersArray(data),
-        target,
-      ) as UserWithFollowing | null;
+  async unfollowUser(userId: string): Promise<void> {
+    return followingService.unfollowUser(userId);
+  },
 
-      if (!matchedUser?.following) {
-        return [];
-      }
+  async getBlockedUsers(page = 1, limit = 20): Promise<BlockedUsersResponse> {
+    return followingService.getBlockedUsers(page, limit);
+  },
 
-      if (Array.isArray(matchedUser.following)) {
-        return matchedUser.following;
-      }
+  async blockUser(userId: string): Promise<void> {
+    return followingService.blockUser(userId);
+  },
 
-      if (Array.isArray(matchedUser.following.following)) {
-        return matchedUser.following.following;
-      }
-    } catch {}
+  async unblockUser(userId: string): Promise<void> {
+    return followingService.unblockUser(userId);
+  },
 
-    return [];
+  async getSuggestedUsers(
+    page = 1,
+    limit = 10,
+  ): Promise<SuggestedUsersResponse> {
+    return followingService.getSuggestedUsers(page, limit);
+  },
+
+  async removeMeSocialLink(platform: string): Promise<void> {
+    await api.delete(`/users/me/social-links/${platform.toLowerCase()}`);
   },
 };

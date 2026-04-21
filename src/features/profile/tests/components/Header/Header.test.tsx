@@ -10,10 +10,10 @@ describe("Header", () => {
         username="johndoe"
         country="USA"
         city="NY"
-        isVerified
+        isCertified
         avatarUrl="avatar.jpg"
         coverUrl="cover.jpg"
-        isEditable
+        isMe
       />,
     );
     expect(screen.getByText("John Doe")).toBeInTheDocument();
