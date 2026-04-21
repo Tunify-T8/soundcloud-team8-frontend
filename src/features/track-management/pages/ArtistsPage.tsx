@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, Upload, Plus, Globe, DollarSign, SlidersHorizontal, ArrowUpDown, BarChart, Users, Gift } from "lucide-react";
 import TrackList from "../components/TrackList";
 import ArtistsNavbar from "../components/ArtistsNavbar";
@@ -6,7 +6,7 @@ import ArtistsSidebar from "../components/ArtistsSidebar";
 import { trackService } from "../trackService";
 import type { Track } from "@/shared/types/Track";
 //import { SampleTracks } from "../tests/SampleTracks";
-import { Link } from "react-router-dom";
+
 import wwwImg from "@/assets/www.png";
 import spotifyImg from "@/assets/spotify.png";
 import appleMusicImg from "@/assets/appleMusic.png";
@@ -19,7 +19,6 @@ import tidalImg from "@/assets/tidal.png";
 import pandoraImg from "@/assets/pandora.png";
 import vinylImg from "@/assets/vinyl.png";
 import commentsImg from "@/assets/comment_bubbles.png";
-import { BenefitsSection } from "../components/BenefitsSection";
 
 
 function UploadBanner() {
@@ -435,22 +434,19 @@ const filteredTracks = useMemo(() => {
               {/* Action buttons */}
               <div className="flex items-center gap-3 flex-wrap">
                 {[
-                { icon: Plus, label: "Upload or drop tracks", to: "/upload" },
-                { icon: Globe, label: "Distribute tracks", to: null },
-                { icon: DollarSign, label: "Monetize tracks", to: null },
-                { icon: SlidersHorizontal, label: "Master track audio", to: null },
-                ].map(({ icon: Icon, label, to }) => {
-                    const btn = (
-                      <button
-                        key={label}
-                        className="flex items-center gap-2 bg-[hsl(0,0%,16%)] hover:bg-[hsl(0,0%,21%)] border border-[hsl(0,0%,26%)] text-white text-sm font-medium px-4 py-2.5 rounded transition-colors"
-                      >
-                        <Icon className="w-4 h-4" />
-                        {label}
-                      </button>
-                    );
-                    return to ? <Link key={label} to={to}>{btn}</Link> : btn;
-              })}
+                  { icon: Plus, label: "Upload or drop tracks" },
+                  { icon: Globe, label: "Distribute tracks" },
+                  { icon: DollarSign, label: "Monetize tracks" },
+                  { icon: SlidersHorizontal, label: "Master track audio" },
+                ].map(({ icon: Icon, label }) => (
+                  <button
+                    key={label}
+                    className="flex items-center gap-2 bg-[hsl(0,0%,16%)] hover:bg-[hsl(0,0%,21%)] border border-[hsl(0,0%,26%)] text-white text-sm font-medium px-4 py-2.5 rounded transition-colors"
+                  >
+                    <Icon className="w-4 h-4" />
+                    {label}
+                  </button>
+                ))}
               </div>
 
               {/* Search + filters + count */}
@@ -499,7 +495,6 @@ const filteredTracks = useMemo(() => {
               </div>
 
               <TrackList tracks={filteredTracks} onDelete={handleDeleteTrack} onUpdate={handleUpdate} />
-              <BenefitsSection />
             </div>
           )}
 

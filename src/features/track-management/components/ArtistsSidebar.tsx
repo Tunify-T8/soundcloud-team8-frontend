@@ -4,7 +4,7 @@ import { SiSoundcloud } from "react-icons/si";
 
 export default function ArtistsSidebar() {
   return (
- <nav className="w-[90px] bg-black border-r border-[hsl(0,0%,15%)] flex flex-col items-center pt-4 pb-6 gap-1 shrink-0 sticky top-0 h-screen">
+  <nav className="w-[90px] bg-black border-r border-[hsl(0,0%,15%)] flex flex-col items-center pt-4 pb-6 gap-1 shrink-0">
    <a href="/">
       <div className="flex items-center gap-6">
         <SiSoundcloud size={35} />
