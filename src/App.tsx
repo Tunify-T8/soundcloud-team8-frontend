@@ -14,10 +14,6 @@ import TracksPage from "./features/profile/pages/UserInfoBar/TracksPage";
 import AlbumsPage from "./features/profile/pages/UserInfoBar/AlbumsPage";
 import PlaylistsPage from "./features/profile/pages/UserInfoBar/PlaylistsPage";
 import ProfileRepostsPage from "./features/profile/pages/UserInfoBar/RepostsPage";
-import FollowersPage from "./features/profile/pages/UserInfoBar/FollowersPage";
-import FollowingPage from "./features/profile/pages/UserInfoBar/FollowingPage";
-import SuggestedUsersPage from "./features/profile/pages/UserInfoBar/SuggestedUsersPage";
-import BlockedUsersPage from "./features/profile/pages/UserInfoBar/BlockedUsersPage";
 import SignInPage from "./features/auth/pages/SignInPage";
 import SignUpPage from "./features/auth/pages/SignUpPage";
 import PublicOnlyRoute from "./routes/PublicOnlyRoute";
@@ -33,6 +29,9 @@ import PlayerBar from "./features/playerUI/components/PlayerBar";
 import { usePlayer } from "./features/playerUI/context/usePlayer";
 
 import FeedPage from "./features/feed/pages/FeedPage";
+import FollowersPage from "./features/following/pages/FollowersPage";
+import FollowingPage from "./features/following/pages/FollowingPage";
+import WhoToFollowPage from "./features/following/pages/WhoToFollowPage";
 import DiscoverPage from "./features/discover/pages/DiscoverPage";
 import SearchPage from "./features/feed/pages/SearchPage";
 import LibraryPage from "./features/library/pages/LibraryPage";
@@ -113,10 +112,6 @@ const router = createBrowserRouter([
         path: "/me",
         element: <ProfilePage />,
         children: [
-          { path: "followers", element: <FollowersPage /> },
-          { path: "following", element: <FollowingPage /> },
-          { path: "suggested-users", element: <SuggestedUsersPage /> },
-          { path: "blocked-users", element: <BlockedUsersPage /> },
           { path: "popular-tracks", element: <PopularTracksPage /> },
           { path: "tracks", element: <TracksPage /> },
           { path: "albums", element: <AlbumsPage /> },
@@ -129,14 +124,32 @@ const router = createBrowserRouter([
         path: "/:username",
         element: <ProfilePage />,
         children: [
-          { path: "followers", element: <FollowersPage /> },
-          { path: "following", element: <FollowingPage /> },
           { path: "popular-tracks", element: <PopularTracksPage /> },
           { path: "tracks", element: <TracksPage /> },
           { path: "albums", element: <AlbumsPage /> },
           { path: "playlists", element: <PlaylistsPage /> },
           { path: "reposts", element: <ProfileRepostsPage /> },
         ],
+      },
+      {
+        path: "/me/followers",
+        element: <FollowersPage />,
+      },
+      {
+        path: "/me/following",
+        element: <FollowingPage />,
+      },
+      {
+        path: "/who-to-follow",
+        element: <WhoToFollowPage />,
+      },
+      {
+        path: "/:username/followers",
+        element: <FollowersPage />,
+      },
+      {
+        path: "/:username/following",
+        element: <FollowingPage />,
       },
     ],
   },

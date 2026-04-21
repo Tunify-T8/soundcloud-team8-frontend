@@ -139,6 +139,7 @@ export default function ProfilePage() {
               isCertified: u.isCertified ?? false,
               followersCount: u.followersCount ?? 0,
             }))}
+            onUnfollowUser={refreshProfile}
           />
         </div>
       </div>
