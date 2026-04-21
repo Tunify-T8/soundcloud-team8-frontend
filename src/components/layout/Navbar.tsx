@@ -1,6 +1,7 @@
 import { Bell, Mail, MoreHorizontal, ChevronDown, Heart, ListMusic, Radio, Users, UserPlus, Star, BarChart2, TrendingUp, Share2, 
   User} from "lucide-react";
 import SearchBar from "../ui/SearchBar";
+
 import { SiSoundcloud } from "react-icons/si";
 import { Link, useNavigate } from "react-router-dom";
 import { Outlet } from "react-router-dom";
@@ -25,7 +26,10 @@ export default function Navbar() {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
       }
-      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(e.target as Node)
+      ) {
         setProfileMenuOpen(false);
       }
     };
@@ -122,7 +126,7 @@ export default function Navbar() {
                 title="My Profile"
               >
                 {me?.avatarUrl ? (
-                  <img src={me?.avatarUrl ?? undefined} alt="My Profile" className="w-full h-full object-cover rounded-full" />
+                  <img src={me.avatarUrl} alt="My Profile" className="w-full h-full object-cover rounded-full" />
                 ) : (
                   <span className="text-xs text-white font-bold">
                     {me?.username?.charAt(0).toUpperCase()}
