@@ -1,9 +1,17 @@
-import type { CollectionItem } from "../types";
+import { useEffect, useMemo, useState } from "react";
+import { playlistService } from "../libraryService";
+import type { CollectionPreview } from "../types";
 
 const COLS = 6;
-const playlists: CollectionItem[] = [];
 
-function PlaylistCard({ item }: { item: CollectionItem }) {
+type PlaylistGridItem = {
+  id: string;
+  title: string;
+  subtitle: string;
+  coverUrl: string | null;
+};
+
+function PlaylistCard({ item }: { item: PlaylistGridItem }) {
   return (
     <div className="cursor-pointer group">
       <div className="w-full aspect-square rounded-sm overflow-hidden mb-2 relative bg-[#282828]">
@@ -30,7 +38,54 @@ function PlaylistCard({ item }: { item: CollectionItem }) {
 }
 
 export default function PlaylistsTab() {
-  const totalSlots = Math.ceil(Math.max(playlists.length, 1) / COLS) * COLS;
+  const [query, setQuery] = useState("");
+  const [playlists, setPlaylists] = useState<CollectionPreview[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchPlaylists = async () => {
+      setLoading(true);
+      setError(null);
+
+      const res = await playlistService.getMyCollections(1, 20, "PLAYLIST");
+
+      if (!mounted) return;
+
+      if (!res?.data) {
+        setPlaylists([]);
+        setError("Failed to load playlists.");
+        setLoading(false);
+        return;
+      }
+
+      setPlaylists(res.data);
+      setLoading(false);
+    };
+
+    void fetchPlaylists();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const filteredItems = useMemo<PlaylistGridItem[]>(() => {
+    const q = query.trim().toLowerCase();
+
+    return playlists
+      .filter((p) => (q ? p.title.toLowerCase().includes(q) : true))
+      .map((p) => ({
+        id: p.id,
+        title: p.title,
+        subtitle: `${p.trackCount} track${p.trackCount === 1 ? "" : "s"}`,
+        coverUrl: p.coverUrl,
+      }));
+  }, [playlists, query]);
+
+  const totalSlots =
+    Math.ceil(Math.max(filteredItems.length, 1) / COLS) * COLS;
 
   return (
     <div>
@@ -38,18 +93,28 @@ export default function PlaylistsTab() {
         <h2 className="text-white font-bold text-sm">Hear your own playlists and the playlists you've liked:</h2>
         <input
           placeholder="Filter"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
           className="bg-[#282828] border border-zinc-700 rounded-sm px-3 py-1 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 w-64"
         />
       </div>
 
-      {playlists.length === 0 ? (
+      {loading ? (
+        <p className="text-zinc-400 font-semibold text-sm text-center py-20">
+          Loading playlists...
+        </p>
+      ) : error ? (
+        <p className="text-red-400 font-semibold text-sm text-center py-20">
+          {error}
+        </p>
+      ) : filteredItems.length === 0 ? (
           <p className="text-white font-bold text-lg text-center py-20">
             You have not liked any playlists yet
           </p>
         ) : (
           <div className="grid grid-cols-6 gap-4">
         {Array.from({ length: totalSlots }).map((_, i) => {
-          const item = playlists[i];
+          const item = filteredItems[i];
           return item ? (
             <PlaylistCard key={item.id} item={item} />
           ) : (

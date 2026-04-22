@@ -273,6 +273,22 @@ const TRENDING_ALBUM_ITEMS = [
     type: 'album',
     score: 88,
   },
+  {
+    id: 'alb_005',
+    name: 'Skyline Pulse',
+    artist: 'jordan_beats',
+    coverUrl: 'https://picsum.photos/seed/trending-album-5/500/500',
+    type: 'album',
+    score: 85,
+  },
+  {
+    id: 'alb_006',
+    name: 'After Midnight',
+    artist: 'ava_mix',
+    coverUrl: 'https://picsum.photos/seed/trending-album-6/500/500',
+    type: 'album',
+    score: 82,
+  },
 ];
 
 let conversations = [
@@ -328,6 +344,104 @@ let genres = { genres: ['ambient', 'electronic', 'jazz_and_blues', 'pop'] };
 let following = [
   { id: 'user-uuid-2', username: 'jordan_beats', avatarUrl: 'https://i.pravatar.cc/150?img=3', isCertified: true },
   { id: 'user-uuid-3', username: 'ava_mix', avatarUrl: 'https://i.pravatar.cc/150?img=4', isCertified: false },
+];
+
+const DISCOVER_TRACKS = [
+  {
+    id: 'disc_trk_001',
+    title: 'Crimson Echo',
+    artist: 'tunify_dev',
+    coverUrl: 'https://picsum.photos/seed/discover-track-1/500/500',
+    waveformUrl: '',
+    durationSeconds: 214,
+    genre: 'electronic',
+    createdAt: '2026-03-10T00:00:00.000Z',
+  },
+  {
+    id: 'disc_trk_002',
+    title: 'Dawn Streets',
+    artist: 'ava_mix',
+    coverUrl: 'https://picsum.photos/seed/discover-track-2/500/500',
+    waveformUrl: '',
+    durationSeconds: 186,
+    genre: 'pop',
+    createdAt: '2026-03-08T00:00:00.000Z',
+  },
+  {
+    id: 'disc_trk_003',
+    title: 'Blue Lanterns',
+    artist: 'jordan_beats',
+    coverUrl: 'https://picsum.photos/seed/discover-track-3/500/500',
+    waveformUrl: '',
+    durationSeconds: 201,
+    genre: 'hip_hop_and_rap',
+    createdAt: '2026-03-05T00:00:00.000Z',
+  },
+  {
+    id: 'disc_trk_004',
+    title: 'Quiet Orbit',
+    artist: 'tunify_dev',
+    coverUrl: 'https://picsum.photos/seed/discover-track-4/500/500',
+    waveformUrl: '',
+    durationSeconds: 240,
+    genre: 'ambient',
+    createdAt: '2026-03-03T00:00:00.000Z',
+  },
+  {
+    id: 'disc_trk_005',
+    title: 'Amber Tide',
+    artist: 'lina_noor',
+    coverUrl: 'https://picsum.photos/seed/discover-track-5/500/500',
+    waveformUrl: '',
+    durationSeconds: 198,
+    genre: 'jazz_and_blues',
+    createdAt: '2026-03-02T00:00:00.000Z',
+  },
+  {
+    id: 'disc_trk_006',
+    title: 'Metro Lullaby',
+    artist: 'test_user',
+    coverUrl: 'https://picsum.photos/seed/discover-track-6/500/500',
+    waveformUrl: '',
+    durationSeconds: 175,
+    genre: 'classical',
+    createdAt: '2026-03-01T00:00:00.000Z',
+  },
+];
+
+const SUGGESTED_ARTISTS = [
+  {
+    id: 'user-uuid-2',
+    username: 'jordan_beats',
+    displayName: 'Jordan Beats',
+    avatarUrl: 'https://i.pravatar.cc/150?img=3',
+    followersCount: 1200,
+    isCertified: true,
+  },
+  {
+    id: 'user-uuid-3',
+    username: 'ava_mix',
+    displayName: 'Ava Mix',
+    avatarUrl: 'https://i.pravatar.cc/150?img=4',
+    followersCount: 430,
+    isCertified: false,
+  },
+  {
+    id: 'user-uuid-4',
+    username: 'ahmed_beats',
+    displayName: 'Ahmed Beats',
+    avatarUrl: 'https://i.pravatar.cc/150?img=5',
+    followersCount: 210,
+    isCertified: false,
+  },
+  {
+    id: 'mock-user-001',
+    username: 'tunify_dev',
+    displayName: 'TunifyTest',
+    avatarUrl: 'https://i.pravatar.cc/150?img=1',
+    followersCount: 340,
+    isCertified: true,
+  },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -828,10 +942,12 @@ app.get('/feed/trending', async (req, res) => {
 
   const type = (req.query.type || 'track').toString();
   const period = (req.query.period || 'week').toString();
+  const periodSizes = { day: 3, week: 6, month: TRENDING_ALBUM_ITEMS.length };
+  const albumCount = periodSizes[period] ?? periodSizes.week;
 
   if (type === 'album') {
     return res.json({
-      items: TRENDING_ALBUM_ITEMS,
+      items: TRENDING_ALBUM_ITEMS.slice(0, albumCount),
       type: 'album',
       period,
     });
@@ -853,6 +969,45 @@ app.get('/feed/trending', async (req, res) => {
     items,
     type: type === 'playlist' ? 'playlist' : 'track',
     period,
+  });
+});
+
+app.get('/feed/discover', async (req, res) => {
+  await delay();
+
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+  const genreId = req.query.genreId ? String(req.query.genreId) : '';
+
+  const filtered = genreId
+    ? DISCOVER_TRACKS.filter((track) => track.genre === genreId)
+    : DISCOVER_TRACKS;
+
+  const start = (page - 1) * limit;
+  const paginated = filtered.slice(start, start + limit);
+
+  res.json({
+    items: paginated,
+    page,
+    limit,
+    hasMore: start + limit < filtered.length,
+    personalized: false,
+  });
+});
+
+app.get('/feed/suggested-artists', async (req, res) => {
+  await delay();
+
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const start = (page - 1) * limit;
+  const paginated = SUGGESTED_ARTISTS.slice(start, start + limit);
+
+  res.json({
+    items: paginated,
+    page,
+    limit,
+    hasMore: start + limit < SUGGESTED_ARTISTS.length,
   });
 });
 
@@ -891,7 +1046,51 @@ app.get('/feed', async (req, res) => {
   });
 });
 
-// ─── Artists Route ────────────────────────────────────────────────────────────
+// ─── Mock Collections/Playlists ──────────────────────────────
+let collections = [
+  {
+    id: "playlist-001",
+    name: "My Playlist",
+    type: "PLAYLIST",
+    ownerId: "mock-user-001",
+    createdAt: "2026-03-01T10:00:00.000Z",
+    updatedAt: "2026-03-20T12:00:00.000Z",
+    tracks: ["trk_001", "trk_003", "trk_005"],
+    coverUrl: "https://picsum.photos/seed/playlist1/400/400",
+    isPrivate: false,
+  },
+  {
+    id: "album-001",
+    name: "My Album",
+    type: "ALBUM",
+    ownerId: "mock-user-001",
+    createdAt: "2026-02-01T10:00:00.000Z",
+    updatedAt: "2026-02-20T12:00:00.000Z",
+    tracks: ["trk_002", "trk_004"],
+    coverUrl: "https://picsum.photos/seed/album1/400/400",
+    isPrivate: false,
+  },
+];
+
+// GET /collections/me
+app.get('/collections/me', async (req, res) => {
+  await delay();
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+  const type = req.query.type;
+  let filtered = collections.filter(c => c.ownerId === 'mock-user-001');
+  if (type) filtered = filtered.filter(c => c.type === type);
+  const start = (page - 1) * limit;
+  const paginated = filtered.slice(start, start + limit);
+  res.json({
+    data: paginated,
+    meta: {
+      page,
+      limit,
+      total: filtered.length,
+    },
+  });
+});
 
 // GET /artists
 app.get('/artists', async (req, res) => {
