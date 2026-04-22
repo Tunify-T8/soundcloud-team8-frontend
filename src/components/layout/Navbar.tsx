@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useMe } from "../../features/profile/context/useMe";
 import { logout } from "../../features/auth/services/index";
-import UpgradeModal from "./UpgradeModal";
+import UpgradeModal from "../../features/premium/components/UpgradeModal";
 
 export default function Navbar() {
   const location = useLocation();

@@ -36,6 +36,9 @@ import DiscoverPage from "./features/discover/pages/DiscoverPage";
 import SearchPage from "./features/feed/pages/SearchPage";
 import LibraryPage from "./features/library/pages/LibraryPage";
 
+import PlansPage from "./features/premium/pages/PlansPage";
+import AllTabPage from  "./features/profile/pages/UserInfoBar/AllTabPage";
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -112,6 +115,7 @@ const router = createBrowserRouter([
         path: "/me",
         element: <ProfilePage />,
         children: [
+          { path: "", element: <AllTabPage /> },
           { path: "popular-tracks", element: <PopularTracksPage /> },
           { path: "tracks", element: <TracksPage /> },
           { path: "albums", element: <AlbumsPage /> },
@@ -151,6 +155,7 @@ const router = createBrowserRouter([
         path: "/:username/following",
         element: <FollowingPage />,
       },
+      
     ],
   },
   {
@@ -165,10 +170,20 @@ const router = createBrowserRouter([
     path: "/artists",
     element: (
       <ProtectedRoute>
-        <ArtistsPage />
+        <ProfileProvider>
+          <ArtistsPage />
+        </ProfileProvider>
       </ProtectedRoute>
     ),
   },
+  {
+        path: "/plans",
+        element: (
+          <ProfileProvider>
+            <PlansPage />
+          </ProfileProvider>
+        )
+      }
 ]);
 
 function App() {
