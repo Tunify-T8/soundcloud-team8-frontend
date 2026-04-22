@@ -3,9 +3,12 @@ import SideBar from "../../../components/layout/Sidebar";
 import SongCard from "../../../components/ui/SongCard";
 import { Repeat2 } from "lucide-react";
 import type { FeedItem, FeedResponse } from "@/features/feed/type";
-import { useEffect, useState } from "react";
-import { SOCIAL_GRAPH_UPDATED_EVENT } from "@/features/profile/socialGraphEvents";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { feedService } from "@/features/feed/feedservice";
+import { profileService } from "@/features/profile/profileService";
+import { useMe } from "@/features/profile/context/useMe";
+import { SOCIAL_GRAPH_UPDATED_EVENT } from "@/features/profile/socialGraphEvents";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatTimeAgo(dateStr: string): string {
