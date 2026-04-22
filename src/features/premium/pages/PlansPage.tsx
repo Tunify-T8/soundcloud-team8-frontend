@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Upload, Zap, Share2, RefreshCw, Plus, Star, Check, X } from "lucide-react";
+import { Upload, Zap, Share2, RefreshCw, Plus, Star, Check } from "lucide-react";
 import { MdEqualizer } from "react-icons/md";
 import { useMe } from "@/features/profile/context/useMe";
+import { useLocation } from "react-router-dom";
+import soundcloudImg from "@/assets/graysound.png";
 
 const sections = [
   {
@@ -201,7 +203,7 @@ function Cell({ value, highlight }: { value: string | null; highlight?: boolean 
   }
   if (value === "badge-artist") {
     return (
-      <span className="inline-flex items-center gap-1.5 text-[12px] font-black text-[#5b4ff5] bg-[#ebe9fd] px-2.5 py-1 rounded-full">
+      <span className="inline-flex items-center gap-1.5 text-[12px] text-black bg-[#ebe9fd] px-2.5 py-1 rounded-full">
         <Plus size={11} strokeWidth={3} />
         ARTIST
       </span>
@@ -209,7 +211,7 @@ function Cell({ value, highlight }: { value: string | null; highlight?: boolean 
   }
   if (value === "badge-pro") {
     return (
-      <span className="inline-flex items-center gap-1.5 text-[12px] font-black text-[#c9a227] bg-[#fdf3d7] px-2.5 py-1 rounded-full">
+      <span className="inline-flex items-center gap-1.5 text-[12px] text-black bg-[#fdf3d7] px-2.5 py-1 rounded-full">
         <Star size={11} fill="#c9a227" />
         ARTIST PRO
       </span>
@@ -227,7 +229,9 @@ function Cell({ value, highlight }: { value: string | null; highlight?: boolean 
 export default function PlansPage() {
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const { me } = useMe();
-  const plansRef = useRef<HTMLElement>(null);   
+  const location = useLocation();
+  const plansRef = useRef<HTMLElement>(null);
+  const comparisonRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const prev = document.title;
@@ -235,32 +239,45 @@ export default function PlansPage() {
     return () => { document.title = prev; };
   }, []);
 
+  useEffect(() => {
+    if (location.hash !== "#plans-comparison") return;
+
+    const frame = window.requestAnimationFrame(() => {
+      comparisonRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [location.hash]);
+
   const scrollToPlans = () => {
     plansRef.current?.scrollIntoView({ behavior: "smooth" });
   };
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-gray-900 text-white">
       {/* Top nav */}
-      <header className="bg-zinc-950 border-b border-zinc-800 h-12 flex items-center px-6 gap-3">
-        <div className="flex items-center gap-1.5">
-          <div className="flex gap-0.5">
-            <div className="w-1.5 h-3 bg-white rounded-sm" />
-            <div className="w-1.5 h-3 bg-white rounded-sm" />
-            <div className="w-1.5 h-3 bg-white rounded-sm opacity-60" />
+      <header className="sticky top-0 z-50 h-[52px] border-b border-white/5 bg-[#373434]">
+        <div className="mx-auto flex h-full max-w-[1400px] items-center gap-3 px-6">
+          <div className="flex items-center gap-2.5">
+            <img
+              src={soundcloudImg}
+              alt="SoundCloud"
+              className="h-[20px] w-[54px] object-cover object-center"
+            />
+            <span className="text-[15px] font-bold tracking-[0.18em] text-white uppercase">SoundCloud</span>
           </div>
-          <span className="text-white font-black text-[15px] tracking-widest uppercase">SoundCloud</span>
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-zinc-600 overflow-hidden">
-          {me?.avatarUrl ? (
-            <img src={me.avatarUrl} alt="avatar" className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-xs text-white font-bold flex items-center justify-center h-full">
-              {me?.username?.charAt(0).toUpperCase()}
-            </span>
-          )}
-        </div>
-        <span className="text-[13px] text-zinc-300">{me?.username}</span>
+          
+          <div className="ml-auto flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-white/15 ring-1 ring-white/10">
+              {me?.avatarUrl ? (
+                <img src={me.avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+              ) : (
+                <span className="flex h-full items-center justify-center text-xs font-bold text-white">
+                  {me?.username?.charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
+            <span className="text-[13px] font-medium text-zinc-100">{me?.username}</span>
+          </div>
         </div>
       </header>
 
@@ -294,7 +311,7 @@ export default function PlansPage() {
         />
 
         <div className="relative max-w-5xl mx-auto px-6 pt-20 pb-16 text-left">   {/* ← left-aligned like screenshot 2 */}
-          <h1 className="text-[72px] font-black leading-none tracking-tight text-white mb-5">
+          <h1 className="text-[92px] font-black leading-none tracking-tight text-white mb-5">
             Reach more listeners.
           </h1>
           <div className="flex items-center gap-2 mb-10">
@@ -347,10 +364,10 @@ export default function PlansPage() {
             {/* Artist */}
             <div className="border border-zinc-200 rounded-2xl p-8">
               <div className="flex items-center gap-2 mb-3">
+                <h3 className="text-zinc-900 font-black text-2xl">Artist</h3>
                 <div className="w-6 h-6 rounded-full bg-[#5b4ff5] flex items-center justify-center">
                   <Plus size={13} className="text-white" strokeWidth={2.5} />
                 </div>
-                <h3 className="text-zinc-900 font-black text-2xl">Artist</h3>
               </div>
               <p className="text-zinc-500 text-[13px] mb-6">Tailored access to essential artist tools</p>
 
@@ -391,10 +408,10 @@ export default function PlansPage() {
               </div>
 
               <div className="flex items-center gap-2 mb-3">
+                <h3 className="text-zinc-900 font-black text-2xl">Artist Pro</h3>
                 <div className="w-6 h-6 rounded-full bg-[#c9a227] flex items-center justify-center">
                   <Star size={11} className="text-white" fill="white" />
                 </div>
-                <h3 className="text-zinc-900 font-black text-2xl">Artist Pro</h3>
               </div>
               <p className="text-zinc-500 text-[13px] mb-6">Unlimited access to all artist tools</p>
 
@@ -444,14 +461,18 @@ export default function PlansPage() {
       </section>
 
       {/* Compare features */}
-      <section className="bg-white pb-24">
+      <section
+        ref={comparisonRef}
+        id="plans-comparison"
+        className="scroll-mt-20 bg-white pb-24"
+      >
         <div className="max-w-4xl mx-auto px-6">
           <h2 className="text-zinc-900 font-black text-[52px] tracking-tight mb-14 text-center">
             Compare features.
           </h2>
 
           {/* Sticky header */}
-          <div className="sticky top-0 z-20 bg-white pt-4 pb-2 border-b border-zinc-200 mb-0">
+          <div className="sticky top-[52px] z-20 bg-white pt-4 pb-2 border-b border-zinc-200 mb-0">
             <div className="grid grid-cols-[2fr_1fr_1fr_1fr]">
               <div />
               <div className="text-center">

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X, ChevronLeft } from "lucide-react";
+import { X } from "lucide-react";
 import soundcloudImg from "@/assets/silhouette.png";
 import lockImg from "@/assets/lock.png";
 

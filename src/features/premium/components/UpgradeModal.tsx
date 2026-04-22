@@ -35,7 +35,7 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="relative bg-white rounded-2xl w-full max-w-[760px] max-h-[90vh] overflow-y-auto shadow-2xl animate-in">
+      <div className="relative bg-white w-full max-w-[1000px] max-h-[90vh] overflow-y-auto shadow-2xl animate-in">
         {/* Close button */}
         <button
           onClick={onClose}
@@ -47,7 +47,7 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
         <div className="px-8 pt-10 pb-6">
           {/* Header */}
           <div className="text-center mb-8">
-            <h2 className="text-[26px] font-black text-zinc-900 tracking-tight mb-2">
+            <h2 className="text-[26px] text-2xl font-semibold text-zinc-700 tracking-tight mb-2">
               Unlock artist tools and reach more listeners
             </h2>
             <p className="text-sm text-zinc-500">Select the plan that suits you best</p>
@@ -58,10 +58,10 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
             {/* Artist Plan */}
             <div className="border border-zinc-200 rounded-2xl p-6">
               <div className="flex items-center gap-2 mb-3">
+               <h3 className="text-xl font-semibold text-zinc-700 tracking-tight">Artist</h3>
                 <div className="w-6 h-6 rounded-full bg-[#5b4ff5] flex items-center justify-center">
                   <Plus size={13} className="text-white" strokeWidth={2.5} />
                 </div>
-                <h3 className="text-xl font-black text-zinc-900">Artist</h3>
               </div>
 
               <p className="text-[13px] text-zinc-500 mb-4">
@@ -69,7 +69,7 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
               </p>
 
               <div className="mb-1">
-                <span className="text-xl font-black text-[#5b4ff5]">EGP 29.99</span>
+                <span className="text-xl font-semibold text-[#5b4ff5]">EGP 29.99</span>
                 <span className="text-sm text-zinc-400 ml-1">/ month</span>
               </div>
               <p className="text-[11px] text-zinc-400 mb-5">billed yearly for EGP 359.88</p>
@@ -112,10 +112,10 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
               </div>
 
               <div className="flex items-center gap-2 mb-3">
+                <h3 className="text-xl font-semibold text-zinc-700 tracking-tight">Artist Pro</h3>
                 <div className="w-6 h-6 rounded-full bg-[#c9a227] flex items-center justify-center">
                   <Star size={11} className="text-white" fill="white" />
                 </div>
-                <h3 className="text-xl font-black text-zinc-900">Artist Pro</h3>
               </div>
 
               <p className="text-[13px] text-zinc-500 mb-4">
@@ -123,7 +123,7 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
               </p>
 
               <div className="mb-1">
-                <span className="text-xl font-black text-[#c9a227]">EGP 74.99</span>
+                <span className="text-xl font-semibold text-[#c9a227]">EGP 74.99</span>
                 <span className="text-sm text-zinc-400 ml-1">/ month</span>
               </div>
               <p className="text-[11px] text-zinc-400 mb-5">billed yearly for EGP 899.88</p>
@@ -158,7 +158,10 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
               </ul>
 
               <div className="text-center mt-4">
-                <button className="text-[12px] text-[#5b4ff5] hover:underline font-medium">
+                <button
+                  onClick={() => window.open("/plans#plans-comparison", "_blank")}
+                  className="text-[12px] text-[#5b4ff5] hover:underline font-medium"
+                >
                   See all benefits
                 </button>
               </div>
