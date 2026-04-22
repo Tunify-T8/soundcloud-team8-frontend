@@ -4,11 +4,7 @@ import { FaUser, FaMusic, FaGooglePlay, FaApple } from "react-icons/fa";
 import { Heart, Play } from "lucide-react";
 import { SiSoundcloud } from "react-icons/si";
 import { Link } from "react-router-dom";
-import { HiOutlineSpeakerphone } from "react-icons/hi";
-import { FiRefreshCcw } from "react-icons/fi";
-import { TbWorld } from "react-icons/tb";
-import { MdOutlineAutoFixHigh } from "react-icons/md";
-import { IoAddCircle, IoChevronDown } from "react-icons/io5";
+import { IoChevronDown } from "react-icons/io5";
 import { feedService } from "../../features/feed/feedservice";
 import type { LikedTrack } from "@/features/feed/type";
 import { api } from '../../features/auth/services/api';
@@ -26,6 +22,29 @@ interface SuggestedArtist {
   tracksCount: number;
 }
 
+type ArtistTool = {
+  id: string;
+  label: string;
+  imageSrc?: string;
+  badge: "plus" | "star";
+  hoverTheme: "purple" | "gold";
+};
+
+const artistToolRows: ArtistTool[][] = [
+  [
+    { id: "amplify", label: "Amplify", badge: "plus", hoverTheme: "purple" },
+    { id: "replace", label: "Replace", badge: "plus", hoverTheme: "purple" },
+    { id: "distribute", label: "Distribute", badge: "plus", hoverTheme: "purple" },
+    { id: "master", label: "Master", badge: "plus", hoverTheme: "purple" },
+  ],
+  [
+    { id: "monetize", label: "Monetize", badge: "plus", hoverTheme: "purple" },
+    { id: "spotlight", label: "Spotlight", badge: "plus", hoverTheme: "purple" },
+    { id: "top-fans", label: "Top fans", badge: "star", hoverTheme: "gold" },
+    { id: "comments", label: "Comments", badge: "star", hoverTheme: "gold" },
+  ],
+];
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function SideBar() {
@@ -39,6 +58,10 @@ export default function SideBar() {
   // Likes state
   const [likedTracks, setLikedTracks]   = useState<LikedTrack[]>([]);
   const [likesLoading, setLikesLoading] = useState(true);
+
+  const handleArtistToolClick = (_tool: ArtistTool) => {
+    // Hook all artist tool cards to the same action here.
+  };
 
   // ── Fetch artists ────────────────────────────────────────────────────────────
   const fetchArtists = async () => {
@@ -73,33 +96,45 @@ export default function SideBar() {
       <div className="ml-auto flex flex-col w-1xl mr-25">
 
         {/* ── ARTIST TOOLS ──────────────────────────────────────────────────── */}
-        <div className="w-full">
+        <div className="w-full rounded-none bg-[#151515] px-4 py-4">
           <div
             onClick={() => setOpen(!open)}
-            className="flex items-center justify-between cursor-pointer text-xs text-zinc-400 font-semibold tracking-wide mb-3"
+            className="mb-6 flex cursor-pointer items-center justify-between border-b border-zinc-800 pb-5"
           >
-            <span>ARTIST TOOLS</span>
+            <span className="text-[18px] font-black tracking-tight text-white">
+              ARTIST TOOLS
+            </span>
             <IoChevronDown
-              size={14}
-              className={`transition-transform ${open ? "rotate-180" : ""}`}
+              size={22}
+              className={`text-white transition-transform ${open ? "rotate-180" : ""}`}
             />
           </div>
 
-          <div className="grid grid-cols-4 gap-3 mb-3">
-            <Tool icon={<HiOutlineSpeakerphone size={20} />} label="Amplify" />
-            <Tool icon={<FiRefreshCcw size={20} />}          label="Replace" />
-            <Tool icon={<TbWorld size={20} />}               label="Distribute" />
-            <Tool icon={<MdOutlineAutoFixHigh size={20} />}  label="Master" />
+          <div className="mb-4 grid grid-cols-4 gap-3">
+            {artistToolRows[0].map((tool) => (
+              <Tool key={tool.id} tool={tool} onClick={handleArtistToolClick} />
+            ))}
           </div>
 
           {open && (
-            <div className="grid grid-cols-4 gap-3">
-              <Tool icon={<HiOutlineSpeakerphone size={20} />} label="Promote" />
-              <Tool icon={<FiRefreshCcw size={20} />}          label="Insights" />
-              <Tool icon={<TbWorld size={20} />}               label="Monetize" />
-              <Tool icon={<MdOutlineAutoFixHigh size={20} />}  label="Pro Tools" />
+            <div className="mb-4 grid grid-cols-4 gap-3">
+              {artistToolRows[1].map((tool) => (
+                <Tool key={tool.id} tool={tool} onClick={handleArtistToolClick} />
+              ))}
             </div>
           )}
+
+          <button
+            type="button"
+            className="flex w-full items-center gap-3 rounded-[14px] bg-[#433873] px-4 py-4 text-left text-white transition-colors hover:bg-[#4b3f80]"
+          >
+            <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#735ef2] text-[22px] font-black leading-none">
+              +
+            </span>
+            <span className="text-[14px] font-medium leading-snug">
+              Unlock Artist tools from EGP 29.99/month.
+            </span>
+          </button>
         </div>
 
         {/* ── ARTISTS YOU SHOULD FOLLOW ──────────────────────────────────────── */}
@@ -274,17 +309,61 @@ export default function SideBar() {
 // ─── Tool component ───────────────────────────────────────────────────────────
 
 type ToolProps = {
-  icon: React.ReactNode;
-  label: string;
+  tool: ArtistTool;
+  onClick: (tool: ArtistTool) => void;
 };
 
-function Tool({ icon, label }: ToolProps) {
+function Tool({ tool, onClick }: ToolProps) {
+  const badgeClasses =
+    tool.badge === "star"
+      ? "bg-[#f5efd9] text-[#c5a64f]"
+      : "bg-[#2f255f] text-[#8d74ff]";
+
+  const hoverBarClasses =
+    tool.hoverTheme === "gold"
+      ? "bg-[#d4bf7b] text-[#171717]"
+      : "bg-[#735ef2] text-[#171717]";
+
+  const badgeSymbol = tool.badge === "star" ? "★" : "+";
+
   return (
-    <div className="relative flex flex-col items-center justify-center w-17.5 h-17.5 bg-zinc-950 border border-zinc-800 rounded-lg hover:bg-zinc-900 hover:border-zinc-700 cursor-pointer transition">
-      <IoAddCircle size={14} className="absolute top-1 right-1 text-purple-500" />
-      <div className="text-zinc-300">{icon}</div>
-      <span className="text-[11px] mt-1 text-zinc-400">{label}</span>
-    </div>
+    <button
+      type="button"
+      onClick={() => onClick(tool)}
+      className="group relative h-[128px] overflow-hidden rounded-[20px] border-[3px] border-[#363636] bg-[#171717] transition-colors hover:border-[#4a4a4a]"
+    >
+      <span
+        className={`absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full text-[16px] font-black ${badgeClasses}`}
+      >
+        {badgeSymbol}
+      </span>
+
+      <div className="flex h-full flex-col items-center justify-start px-2 pt-5">
+        <div className="flex h-[44px] w-[44px] items-center justify-center">
+          {tool.imageSrc ? (
+            <img
+              src={tool.imageSrc}
+              alt={tool.label}
+              className="h-full w-full object-contain"
+            />
+          ) : (
+            <div className="h-full w-full rounded-2xl border border-dashed border-zinc-600/80 bg-zinc-900/40" />
+          )}
+        </div>
+
+        <span className="mt-3 text-center text-[12px] font-medium leading-tight tracking-tight text-white transition-opacity group-hover:opacity-0">
+          {tool.label}
+        </span>
+      </div>
+
+      <div
+        className={`absolute inset-x-0 bottom-3 translate-y-full px-2 opacity-0 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100`}
+      >
+        <div className={`flex h-7 items-center justify-center rounded-[4px] text-[11px] font-black ${hoverBarClasses}`}>
+          Upgrade
+        </div>
+      </div>
+    </button>
   );
 }
 // ─── LikedTrackRow component ──────────────────────────────────────────────────
