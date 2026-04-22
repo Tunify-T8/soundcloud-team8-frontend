@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { Upload, Zap, Share2, RefreshCw, Plus, Star, Check } from "lucide-react";
+import { Upload, Zap, Share2, RefreshCw, Plus, Star, Check, ChevronDown } from "lucide-react";
 import { MdEqualizer } from "react-icons/md";
 import { useMe } from "@/features/profile/context/useMe";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import soundcloudImg from "@/assets/graysound.png";
 import CheckoutModal from "../components/CheckoutModal";
+import { logout } from "@/features/auth/services";
 
 const sections = [
   {
@@ -229,10 +230,13 @@ function Cell({ value, highlight }: { value: string | null; highlight?: boolean 
 
 export default function PlansPage() {
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const { me } = useMe();
   const location = useLocation();
+  const navigate = useNavigate();
   const plansRef = useRef<HTMLElement>(null);
   const comparisonRef = useRef<HTMLElement>(null);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
   const [checkoutPlan, setCheckoutPlan] = useState<"artist" | "artist-pro">("artist-pro");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
@@ -240,6 +244,17 @@ export default function PlansPage() {
     const prev = document.title;
     document.title = "Stand out with Artist Pro";
     return () => { document.title = prev; };
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+        setProfileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -255,10 +270,19 @@ export default function PlansPage() {
   const scrollToPlans = () => {
     plansRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  const handleSignOut = async () => {
+    try {
+      await logout();
+    } catch {
+      // clear tokens regardless
+    }
+    navigate("/signin");
+  };
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       {/* Top nav */}
-      <header className="sticky top-0 z-50 h-[52px] border-b border-white/5 bg-[#373434]">
+      <header className="sticky top-0 z-50 h-[52px] border-b border-white/5 bg-[#3a3838]">
         <div className="mx-auto flex h-full max-w-[1400px] items-center gap-3 px-6">
           <div className="flex items-center gap-2.5">
             <img
@@ -275,11 +299,40 @@ export default function PlansPage() {
                 <img src={me.avatarUrl} alt="avatar" className="h-full w-full object-cover" />
               ) : (
                 <span className="flex h-full items-center justify-center text-xs font-semibold text-white">
-                  {me?.username?.charAt(0).toUpperCase()}
+                  {(me?.displayName || me?.username)?.charAt(0).toUpperCase()}
                 </span>
               )}
             </div>
-            <span className="text-[13px] font-medium text-zinc-100">{me?.username}</span>
+
+            <div className="relative" ref={profileMenuRef}>
+              <button
+                type="button"
+                onClick={() => setProfileMenuOpen((open) => !open)}
+                className="group flex items-center gap-1.5"
+              >
+                <span className="text-[13px] font-medium text-zinc-200 transition-colors group-hover:text-white">
+                  {me?.displayName || me?.username}
+                </span>
+                <ChevronDown
+                  size={14}
+                  className={`text-zinc-300 transition-all duration-200 group-hover:text-white ${
+                    profileMenuOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {profileMenuOpen && (
+                <div className="absolute right-0 top-[calc(100%+12px)] z-50 min-w-[150px] border border-white/5 bg-[#121212] py-2 shadow-2xl">
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    className="block w-full px-4 py-2 text-left text-[14px] text-white/90 transition-colors hover:bg-white/5 hover:text-white"
+                  >
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -357,7 +410,7 @@ export default function PlansPage() {
           ].map((f) => (
             <div key={f.title}>
               <div className="text-2xl text-zinc-400 mb-3 font-mono">{f.icon}</div>
-              <h3 className="text-white text-[15px] mb-2">{f.title}</h3>
+              <h3 className="text-white text-[15px] mb-2 font-semibold">{f.title}</h3>
               <p className="text-zinc-500 text-[13px] leading-relaxed">{f.desc}</p>
             </div>
           ))}
@@ -543,7 +596,7 @@ export default function PlansPage() {
           {/* Feature rows */}
           {sections.map((section) => (
             <div key={section.title} className="mt-10">
-              <h3 className="text-zinc-900 font-black text-[20px] mb-4">{section.title}</h3>
+              <h3 className="text-zinc-900 font-semibold text-[20px] mb-4">{section.title}</h3>
               <div className="border-t border-zinc-200">
                 {section.rows.map((row) => {
                   const rowKey = section.title + row.name;
@@ -576,6 +629,33 @@ export default function PlansPage() {
           ))}
         </div>
       </section>
+      <footer className="bg-white pb-6">
+        <div className="mx-auto max-w-4xl px-6 text-[13px] text-zinc-600">
+          <div className="border-t border-zinc-200 pt-6">
+            <div className="mb-4">
+              <span>Signed in as {me?.displayName || me?.username || "User"}. </span>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="text-[#004cff] hover:underline"
+              >
+                Sign out
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[#004cff]">
+              {["Legal", "Privacy", "Cookies", "Consent Manager", "Imprint", "Help Center"].map((item, index) => (
+                <div key={item} className="flex items-center gap-x-2">
+                  {index > 0 && <span className="text-zinc-500">-</span>}
+                  <a href="#" className="hover:underline">
+                    {item}
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </footer>
       {checkoutOpen && <CheckoutModal plan = {checkoutPlan} onClose={() => setCheckoutOpen(false)} />}
     </div>
   );
