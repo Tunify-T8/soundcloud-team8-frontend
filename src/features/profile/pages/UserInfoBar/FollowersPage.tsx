@@ -13,8 +13,8 @@ export default function FollowersPage() {
   useEffect(() => {
     const id = username ?? me?.id;
     if (!id) {
-      setFollowers([]);
-      setLoading(false);
+      if (followers.length !== 0) setFollowers([]);
+      if (loading) setLoading(false);
       return;
     }
 
@@ -31,7 +31,11 @@ export default function FollowersPage() {
   }, [username, me?.id]);
 
   if (loading) {
-    return <div className="w-10/12 mx-auto mt-8 text-zinc-400">Loading followers...</div>;
+    return (
+      <div className="w-10/12 mx-auto mt-8 text-zinc-400">
+        Loading followers...
+      </div>
+    );
   }
 
   return (

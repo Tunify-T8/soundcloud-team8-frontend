@@ -103,8 +103,8 @@ export default function SearchPage() {
   // Re-fetch when query or filter changes
   useEffect(() => {
     if (!query.trim()) {
-      setResults([]);
-      setLoading(false);
+      if (results.length !== 0) setResults([]);
+      if (loading) setLoading(false);
       return;
     }
     setLoading(true);

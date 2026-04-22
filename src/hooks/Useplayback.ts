@@ -13,33 +13,34 @@ export function usePlayback({
   privateToken,
   autoPlay = false,
 }: usePlaybackOptions): usePlaybackReturn {
-  const audioRef        = useRef<HTMLAudioElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const streamExpiryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const trackIdRef      = useRef(trackId);
+  const trackIdRef = useRef(trackId);
 
   useEffect(() => {
     trackIdRef.current = trackId;
   }, [trackId]);
 
-  const [bundle,      setBundle]      = useState<playbackBundle | null>(null);
-  const [status,      setStatus]      = useState<playerStatus>("idle");
-  const [error,       setError]       = useState<string | null>(null);
+  const [bundle, setBundle] = useState<playbackBundle | null>(null);
+  const [status, setStatus] = useState<playerStatus>("idle");
+  const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
-  const [volume,      setVolumeState] = useState(1);
-  const [isMuted,     setIsMuted]     = useState(false);
-  const [buffered,    setBuffered]    = useState(0);
+  const [volume, setVolumeState] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const [buffered, setBuffered] = useState(0);
 
   const access = usePlaybackAccessibility(bundle);
 
   const duration = bundle?.durationSeconds ?? 0;
 
-  const previewSecondsRemaining =
-    access.isPreview
-      ? Math.max(0, access.previewDurationSeconds - currentTime)
-      : null;
+  const previewSecondsRemaining = access.isPreview
+    ? Math.max(0, access.previewDurationSeconds - currentTime)
+    : null;
 
   // ── Stream refresh (uses ref to avoid self-reference lint error) ──────────
-  const scheduleRefreshRef = useRef<(expiresInSeconds: number) => void>(()=>{});
+  const scheduleRefreshRef = useRef<(expiresInSeconds: number) => void>(
+    () => {},
+  );
 
   useEffect(() => {
     scheduleRefreshRef.current = (expiresInSeconds: number) => {
@@ -62,7 +63,7 @@ export function usePlayback({
               audio.currentTime = resumeTime;
               if (wasPlaying) audio.play().catch(() => {});
             },
-            { once: true }
+            { once: true },
           );
           scheduleRefreshRef.current?.(fresh.stream.expiresInSeconds);
         } catch {
@@ -81,14 +82,14 @@ export function usePlayback({
       audio.load();
       scheduleRefreshRef.current?.(expiresInSeconds);
     },
-    []
+    [],
   );
 
   // ── Load track ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!trackId) {
-      setStatus("idle");
-      setBundle(null);
+      if (status !== "idle") setStatus("idle");
+      if (bundle !== null) setBundle(null);
       return;
     }
 
@@ -100,7 +101,10 @@ export function usePlayback({
     const load = async () => {
       try {
         // Step 1: fetch playback bundle
-        const b = await playbackService.getPlaybackBundle(trackId, privateToken);
+        const b = await playbackService.getPlaybackBundle(
+          trackId,
+          privateToken,
+        );
         if (cancelled) return;
         setBundle(b);
 
@@ -125,7 +129,7 @@ export function usePlayback({
                 audioRef.current.currentTime = b.preview.previewStartSeconds;
               }
             },
-            { once: true }
+            { once: true },
           );
         }
 
@@ -173,7 +177,8 @@ export function usePlayback({
       if (
         access.isPreview &&
         access.previewDurationSeconds > 0 &&
-        audio.currentTime >= access.previewStartSeconds + access.previewDurationSeconds
+        audio.currentTime >=
+          access.previewStartSeconds + access.previewDurationSeconds
       ) {
         audio.pause();
         audio.currentTime = access.previewStartSeconds;
@@ -182,11 +187,13 @@ export function usePlayback({
 
       // Update buffered progress
       if (audio.buffered.length > 0) {
-        setBuffered(audio.buffered.end(audio.buffered.length - 1) / (duration || 1));
+        setBuffered(
+          audio.buffered.end(audio.buffered.length - 1) / (duration || 1),
+        );
       }
     };
 
-    const onPlay  = () => setStatus("playing");
+    const onPlay = () => setStatus("playing");
     const onPause = () => setStatus("paused");
 
     const onEnded = () => {
@@ -202,17 +209,17 @@ export function usePlayback({
     };
 
     audio.addEventListener("timeupdate", onTimeUpdate);
-    audio.addEventListener("play",       onPlay);
-    audio.addEventListener("pause",      onPause);
-    audio.addEventListener("ended",      onEnded);
-    audio.addEventListener("error",      onError);
+    audio.addEventListener("play", onPlay);
+    audio.addEventListener("pause", onPause);
+    audio.addEventListener("ended", onEnded);
+    audio.addEventListener("error", onError);
 
     return () => {
       audio.removeEventListener("timeupdate", onTimeUpdate);
-      audio.removeEventListener("play",       onPlay);
-      audio.removeEventListener("pause",      onPause);
-      audio.removeEventListener("ended",      onEnded);
-      audio.removeEventListener("error",      onError);
+      audio.removeEventListener("play", onPlay);
+      audio.removeEventListener("pause", onPause);
+      audio.removeEventListener("ended", onEnded);
+      audio.removeEventListener("error", onError);
     };
   }, [trackId, access, duration]);
 
@@ -234,13 +241,13 @@ export function usePlayback({
       if (access.isPreview) {
         target = Math.min(
           Math.max(seconds, access.previewStartSeconds),
-          access.previewStartSeconds + access.previewDurationSeconds - 1
+          access.previewStartSeconds + access.previewDurationSeconds - 1,
         );
       }
 
       audio.currentTime = target;
     },
-    [access]
+    [access],
   );
 
   const setVolume = useCallback((v: number) => {
