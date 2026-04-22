@@ -1,12 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Upload, Zap, Share2, RefreshCw, Plus, Star, Check, X } from "lucide-react";
 import { MdEqualizer } from "react-icons/md";
-
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-type PlanKey = "basic" | "artist" | "artist-pro";
-
-// ─── Feature comparison data ──────────────────────────────────────────────────
+import { useMe } from "@/features/profile/context/useMe";
 
 const sections = [
   {
@@ -231,7 +226,18 @@ function Cell({ value, highlight }: { value: string | null; highlight?: boolean 
 
 export default function PlansPage() {
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+  const { me } = useMe();
+  const plansRef = useRef<HTMLElement>(null);   
 
+  useEffect(() => {
+    const prev = document.title;
+    document.title = "Stand out with Artist Pro";
+    return () => { document.title = prev; };
+  }, []);
+
+  const scrollToPlans = () => {
+    plansRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Top nav */}
@@ -245,8 +251,16 @@ export default function PlansPage() {
           <span className="text-white font-black text-[15px] tracking-widest uppercase">SoundCloud</span>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-zinc-600 overflow-hidden" />
-          <span className="text-[13px] text-zinc-300">username</span>
+          <div className="w-7 h-7 rounded-full bg-zinc-600 overflow-hidden">
+          {me?.avatarUrl ? (
+            <img src={me.avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-xs text-white font-bold flex items-center justify-center h-full">
+              {me?.username?.charAt(0).toUpperCase()}
+            </span>
+          )}
+        </div>
+        <span className="text-[13px] text-zinc-300">{me?.username}</span>
         </div>
       </header>
 
@@ -280,8 +294,11 @@ export default function PlansPage() {
             <button className="bg-white text-zinc-900 font-black text-[14px] px-6 py-3 rounded-full hover:bg-zinc-100 transition-colors">
               Get Artist Pro
             </button>
-            <button className="border border-zinc-600 text-white font-bold text-[14px] px-6 py-3 rounded-full hover:border-zinc-400 transition-colors">
-              See all plans
+           <button
+              onClick={scrollToPlans}
+              className="border border-zinc-600 text-white font-bold text-[14px] px-6 py-3 rounded-full hover:border-zinc-400 transition-colors"
+            >
+                See all plans
             </button>
           </div>
         </div>
@@ -304,7 +321,7 @@ export default function PlansPage() {
       </section>
 
       {/* Available Plans */}
-      <section className="bg-white py-20">
+      <section ref={plansRef} className="bg-white py-20">
         <div className="max-w-4xl mx-auto px-6">
           <h2 className="text-zinc-900 font-black text-[52px] tracking-tight mb-14 text-center">
             Available plans.

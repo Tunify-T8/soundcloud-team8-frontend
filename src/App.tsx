@@ -22,7 +22,7 @@ import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage";
 import MessagesPage from "./features/conversation/pages/MessagesPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import VerifyEmailPage from "./features/auth/pages/VerifyEmailPage";
-import { ProfileContext, ProfileProvider } from "./features/profile/context/ProfileContext";
+import { ProfileProvider } from "./features/profile/context/ProfileContext";
 import useRestoreSession from "./hooks/useRestoreSession";
 import { PlayerProvider } from "./features/playerUI/context/PlayerProvider";
 import PlayerBar from "./features/playerUI/components/PlayerBar";
@@ -170,14 +170,20 @@ const router = createBrowserRouter([
     path: "/artists",
     element: (
       <ProtectedRoute>
-        <ArtistsPage />
+        <ProfileProvider>
+          <ArtistsPage />
+        </ProfileProvider>
       </ProtectedRoute>
     ),
   },
   {
         path: "/plans",
-        element: <PlansPage />,
-  }
+        element: (
+          <ProfileProvider>
+            <PlansPage />
+          </ProfileProvider>
+        )
+      }
 ]);
 
 function App() {

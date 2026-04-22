@@ -12,7 +12,7 @@ interface SpotlightSectionProps {
   isMe?: boolean;
 }
 
-export default function SpotlightSection({ spotlightTrack, isMe }: SpotlightSectionProps) {
+export default function Spotlight({ isMe }: SpotlightSectionProps) {
   const [showPromo, setShowPromo] = useState(true);
 
   const handleGetSpotlight = () => {

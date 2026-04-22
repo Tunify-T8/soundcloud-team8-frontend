@@ -4,7 +4,7 @@ export default function AllTabPage() {
   return (
     <div className="flex justify-center w-full">
       <div className="w-10/12">
-        <Spotlight isMe={true} spotlightTrack={null} />
+        <Spotlight isMe={true} />
  
       </div>
     </div>

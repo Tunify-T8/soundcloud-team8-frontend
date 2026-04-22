@@ -368,6 +368,7 @@ export default function ArtistsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [visibilityFilter, setVisibilityFilter] = useState<"all" | "public" | "private">("all");
   const [tracks, setTracks] = useState<Track[]>([]);
+  
 
 const handleUpdate = (updatedTrack: Track) => {
   setTracks(prev =>
