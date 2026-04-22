@@ -57,7 +57,7 @@ export default function SideBar() {
   const [open, setOpen] = useState(true);
 
   // Artists state — typed so TypeScript knows the shape
-  const [suggestedUsers, setSuggestedUsers] = useState<SuggestedArtist[]>([]);
+ const [suggestedUsers, setSuggestedUsers] = useState<SuggestedArtist[]>([]);
   const [loading, setLoading]               = useState(true);
   const [error, setError]                   = useState<string | null>(null);
 
