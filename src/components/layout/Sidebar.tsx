@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-// import axios from "axios";
 import { FaUser, FaMusic, FaGooglePlay, FaApple } from "react-icons/fa";
 import { Heart, Play } from "lucide-react";
 import { SiSoundcloud } from "react-icons/si";
@@ -7,10 +6,17 @@ import { Link } from "react-router-dom";
 import { IoChevronDown } from "react-icons/io5";
 import { feedService } from "../../features/feed/feedservice";
 import type { LikedTrack } from "@/features/feed/type";
+import UpgradeModal from "@/features/premium/components/UpgradeModal";
 import { api } from '../../features/auth/services/api';
 import avatarFallback from "@/assets/avatar.png";
-
-// ─── Local types ──────────────────────────────────────────────────────────────
+import amplifyImg from "@/assets/amplifytool.png";
+import replaceImg from "@/assets/replace.png";
+import distributeImg from "@/assets/distribute.png";
+import masterImg from "@/assets/master.png";
+import monetizeImg from "@/assets/monetize.png";
+import spotlightImg from "@/assets/spotlightool.png";
+import topFansImg from "@/assets/top_fans.png";
+import commentsImg from "@/assets/comments.png";
 
 interface SuggestedArtist {
   id: string;
@@ -32,16 +38,16 @@ type ArtistTool = {
 
 const artistToolRows: ArtistTool[][] = [
   [
-    { id: "amplify", label: "Amplify", badge: "plus", hoverTheme: "purple" },
-    { id: "replace", label: "Replace", badge: "plus", hoverTheme: "purple" },
-    { id: "distribute", label: "Distribute", badge: "plus", hoverTheme: "purple" },
-    { id: "master", label: "Master", badge: "plus", hoverTheme: "purple" },
+    { id: "amplify", label: "Amplify", imageSrc: amplifyImg, badge: "plus", hoverTheme: "purple" },
+    { id: "replace", label: "Replace", imageSrc: replaceImg, badge: "plus", hoverTheme: "purple" },
+    { id: "distribute", label: "Distribute", imageSrc: distributeImg, badge: "plus", hoverTheme: "purple" },
+    { id: "master", label: "Master", imageSrc: masterImg, badge: "plus", hoverTheme: "purple" },
   ],
   [
-    { id: "monetize", label: "Monetize", badge: "plus", hoverTheme: "purple" },
-    { id: "spotlight", label: "Spotlight", badge: "plus", hoverTheme: "purple" },
-    { id: "top-fans", label: "Top fans", badge: "star", hoverTheme: "gold" },
-    { id: "comments", label: "Comments", badge: "star", hoverTheme: "gold" },
+    { id: "monetize", label: "Monetize", imageSrc: monetizeImg, badge: "plus", hoverTheme: "purple" },
+    { id: "spotlight", label: "Spotlight", imageSrc: spotlightImg, badge: "plus", hoverTheme: "purple" },
+    { id: "top-fans", label: "Top fans", imageSrc: topFansImg, badge: "star", hoverTheme: "gold" },
+    { id: "comments", label: "Comments", imageSrc: commentsImg, badge: "star", hoverTheme: "gold" },
   ],
 ];
 
@@ -58,9 +64,10 @@ export default function SideBar() {
   // Likes state
   const [likedTracks, setLikedTracks]   = useState<LikedTrack[]>([]);
   const [likesLoading, setLikesLoading] = useState(true);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const handleArtistToolClick = (_tool: ArtistTool) => {
-    // Hook all artist tool cards to the same action here.
+    setUpgradeOpen(true);
   };
 
   // ── Fetch artists ────────────────────────────────────────────────────────────
@@ -93,15 +100,15 @@ export default function SideBar() {
 
   return (
     <header className="flex flex-col justify-end mt-2">
-      <div className="ml-auto flex flex-col w-1xl mr-25">
+      <div className="ml-auto flex flex-col w-[310px] mr-6">
 
         {/* ── ARTIST TOOLS ──────────────────────────────────────────────────── */}
-        <div className="w-full rounded-none bg-[#151515] px-4 py-4">
+        <div className="w-full rounded-none bg-transparent px-0 py-4">
           <div
             onClick={() => setOpen(!open)}
             className="mb-6 flex cursor-pointer items-center justify-between border-b border-zinc-800 pb-5"
           >
-            <span className="text-[18px] font-black tracking-tight text-white">
+            <span className="text-[18px] font-bold tracking-tight text-white">
               ARTIST TOOLS
             </span>
             <IoChevronDown
@@ -300,13 +307,11 @@ export default function SideBar() {
             </a>
           </div>
         </div>
-
+      {upgradeOpen && <UpgradeModal onClose={() => setUpgradeOpen(false)} />}
       </div>
     </header>
   );
 }
-
-// ─── Tool component ───────────────────────────────────────────────────────────
 
 type ToolProps = {
   tool: ArtistTool;
@@ -322,7 +327,7 @@ function Tool({ tool, onClick }: ToolProps) {
   const hoverBarClasses =
     tool.hoverTheme === "gold"
       ? "bg-[#d4bf7b] text-[#171717]"
-      : "bg-[#735ef2] text-[#171717]";
+      : "bg-[#735ef2] text-white";
 
   const badgeSymbol = tool.badge === "star" ? "★" : "+";
 
@@ -330,16 +335,18 @@ function Tool({ tool, onClick }: ToolProps) {
     <button
       type="button"
       onClick={() => onClick(tool)}
-      className="group relative h-[128px] overflow-hidden rounded-[20px] border-[3px] border-[#363636] bg-[#171717] transition-colors hover:border-[#4a4a4a]"
+      className="group relative h-[86px] w-full overflow-hidden rounded-2xl border border-zinc-700/60 bg-[#1a1a1a] transition-colors hover:border-zinc-600"
     >
+      {/* Badge */}
       <span
-        className={`absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full text-[16px] font-black ${badgeClasses}`}
+        className={`absolute right-2.5 top-2.5 flex h-6 w-6 items-center justify-center rounded-full text-[13px] font-black ${badgeClasses}`}
       >
         {badgeSymbol}
       </span>
 
-      <div className="flex h-full flex-col items-center justify-start px-2 pt-5">
-        <div className="flex h-[44px] w-[44px] items-center justify-center">
+      {/* Icon + Label */}
+      <div className="flex h-full flex-col items-center justify-center">
+        <div className="flex h-[40px] w-[45px] items-center justify-center">
           {tool.imageSrc ? (
             <img
               src={tool.imageSrc}
@@ -351,22 +358,20 @@ function Tool({ tool, onClick }: ToolProps) {
           )}
         </div>
 
-        <span className="mt-3 text-center text-[12px] font-medium leading-tight tracking-tight text-white transition-opacity group-hover:opacity-0">
+        <span className="text-center text-[13px] font-semibold leading-tight tracking-tight text-white transition-opacity group-hover:opacity-0">
           {tool.label}
         </span>
       </div>
 
-      <div
-        className={`absolute inset-x-0 bottom-3 translate-y-full px-2 opacity-0 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100`}
-      >
-        <div className={`flex h-7 items-center justify-center rounded-[4px] text-[11px] font-black ${hoverBarClasses}`}>
+      {/* Upgrade bar — slides up on hover */}
+      <div className="absolute inset-x-0 bottom-0 translate-y-full transition-transform duration-200 group-hover:translate-y-0">
+        <div className={`flex h-11 items-center justify-center text-[13px] font-black ${hoverBarClasses}`}>
           Upgrade
         </div>
       </div>
     </button>
   );
 }
-// ─── LikedTrackRow component ──────────────────────────────────────────────────
 
 function LikedTrackRow({
   track,
