@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { DiscoverTrack } from "@/shared/types/Discover";
+import type { DiscoverTrack } from "@/features/discover/Discover";
 import { DiscoverCard } from "./discoverCard";
 
 type DiscoverTrackCarouselProps = {

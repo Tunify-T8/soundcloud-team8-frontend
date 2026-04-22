@@ -1,12 +1,17 @@
-import type { DiscoverTrack } from "@/shared/types/Discover";
+import type { DiscoverTrack } from "@/features/discover/Discover";
+import imageFallback from "@/assets/track.jpg";
 
 export function DiscoverCard({ item }: { item: DiscoverTrack }) {
   return (
     <div className="w-37.5 shrink-0 cursor-pointer group">
       <div className="relative overflow-hidden rounded-sm bg-zinc-800 shadow-sm shadow-black/30">
         <img
-          src={item.coverUrl}
+          src={item.coverUrl || imageFallback}
           alt={item.title}
+          onError={(event) => {
+            event.currentTarget.onerror = null;
+            event.currentTarget.src = imageFallback;
+          }}
           className="h-37.5 w-37.5 object-cover transition-transform duration-300 group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-black/50 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />

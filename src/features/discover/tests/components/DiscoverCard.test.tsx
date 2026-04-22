@@ -2,7 +2,7 @@ import React from "react";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { DiscoverCard } from "../../components/discoverCard";
-import type { DiscoverTrack } from "@/shared/types/Discover";
+import type { DiscoverTrack } from "@/features/discover/Discover";
 
 const item: DiscoverTrack = {
   id: "track-1",
@@ -28,6 +28,9 @@ describe("DiscoverCard", () => {
 
     const image = screen.getByRole("img", { name: "Moonlit Harbor" });
     expect(image).toBeInTheDocument();
-    expect(image).toHaveAttribute("src", "https://example.com/moonlit-harbor.jpg");
+    expect(image).toHaveAttribute(
+      "src",
+      "https://example.com/moonlit-harbor.jpg",
+    );
   });
 });
