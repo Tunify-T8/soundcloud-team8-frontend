@@ -4,8 +4,10 @@ import {
   RouterProvider,
   Navigate,
 } from "react-router-dom";
-// import LikesPage from "./features/engagement/pages/LikesPage"
-// import RepostsPage from "./features/engagement/pages/RepostsPage"
+import LikesPage from "./features/engagement/pages/LikesPage"
+import RepostsPage from "./features/engagement/pages/RepostsPage"
+import TrackPage from "./features/engagement/pages/TrackPage";
+
 import UploadPage from "./features/upload/pages/UploadPage";
 import ArtistsPage from "./features/track-management/pages/ArtistsPage";
 import ProfilePage from "./features/profile/pages/ProfilePage";
@@ -90,7 +92,9 @@ const router = createBrowserRouter([
       },
       {
         path: '/tracks/:trackId/likes',
-        element: <LikesPage />,
+        element: <LikesPage />
+      },
+      {
         path: "/feed",
         element: <FeedPage />,
       },
@@ -113,6 +117,8 @@ const router = createBrowserRouter([
       {
         path: '/tracks/:trackId/reposts',
         element: <RepostsPage />,
+      },
+      {
         path: '/library',
         element: <LibraryPage />
       },
