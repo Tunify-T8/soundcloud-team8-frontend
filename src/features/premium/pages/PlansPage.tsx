@@ -4,6 +4,7 @@ import { MdEqualizer } from "react-icons/md";
 import { useMe } from "@/features/profile/context/useMe";
 import { useLocation } from "react-router-dom";
 import soundcloudImg from "@/assets/graysound.png";
+import CheckoutModal from "../components/CheckoutModal";
 
 const sections = [
   {
@@ -224,7 +225,7 @@ function Cell({ value, highlight }: { value: string | null; highlight?: boolean 
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+
 
 export default function PlansPage() {
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
@@ -232,6 +233,8 @@ export default function PlansPage() {
   const location = useLocation();
   const plansRef = useRef<HTMLElement>(null);
   const comparisonRef = useRef<HTMLElement>(null);
+  const [checkoutPlan, setCheckoutPlan] = useState<"artist" | "artist-pro">("artist-pro");
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   useEffect(() => {
     const prev = document.title;
@@ -263,7 +266,7 @@ export default function PlansPage() {
               alt="SoundCloud"
               className="h-[20px] w-[54px] object-cover object-center"
             />
-            <span className="text-[15px] font-bold tracking-[0.18em] text-white uppercase">SoundCloud</span>
+            <span className="text-[15px] font-semibold tracking-[0.08em] text-white uppercase">SoundCloud</span>
           </div>
           
           <div className="ml-auto flex items-center gap-2">
@@ -271,7 +274,7 @@ export default function PlansPage() {
               {me?.avatarUrl ? (
                 <img src={me.avatarUrl} alt="avatar" className="h-full w-full object-cover" />
               ) : (
-                <span className="flex h-full items-center justify-center text-xs font-bold text-white">
+                <span className="flex h-full items-center justify-center text-xs font-semibold text-white">
                   {me?.username?.charAt(0).toUpperCase()}
                 </span>
               )}
@@ -324,7 +327,15 @@ export default function PlansPage() {
           </div>
 
           <div className="flex items-center gap-4">
-            <button className="bg-white text-zinc-900 font-black text-[14px] px-6 py-3 rounded-full hover:bg-zinc-100 transition-colors">
+            <button className="bg-white text-zinc-900 font-semibold text-[14px] px-6 py-3 rounded-full hover:bg-zinc-100 transition-colors"
+             onClick={
+              () => {
+                setCheckoutPlan("artist-pro"); 
+                setCheckoutOpen(true);
+                document.title = "Get Artist Pro";
+              } 
+            }
+              >
               Get Artist Pro
             </button>
            <button
@@ -346,7 +357,7 @@ export default function PlansPage() {
           ].map((f) => (
             <div key={f.title}>
               <div className="text-2xl text-zinc-400 mb-3 font-mono">{f.icon}</div>
-              <h3 className="text-white font-bold text-[15px] mb-2">{f.title}</h3>
+              <h3 className="text-white text-[15px] mb-2">{f.title}</h3>
               <p className="text-zinc-500 text-[13px] leading-relaxed">{f.desc}</p>
             </div>
           ))}
@@ -356,7 +367,7 @@ export default function PlansPage() {
       {/* Available Plans */}
       <section ref={plansRef} className="bg-white py-20">
         <div className="max-w-4xl mx-auto px-6">
-          <h2 className="text-zinc-900 font-black text-[52px] tracking-tight mb-14 text-center">
+          <h2 className="text-zinc-900 font-semibold text-[52px] tracking-tight mb-14 text-center">
             Available plans.
           </h2>
 
@@ -364,7 +375,7 @@ export default function PlansPage() {
             {/* Artist */}
             <div className="border border-zinc-200 rounded-2xl p-8">
               <div className="flex items-center gap-2 mb-3">
-                <h3 className="text-zinc-900 font-black text-2xl">Artist</h3>
+                <h3 className="text-zinc-900 font-semibold text-[25px]">Artist</h3>
                 <div className="w-6 h-6 rounded-full bg-[#5b4ff5] flex items-center justify-center">
                   <Plus size={13} className="text-white" strokeWidth={2.5} />
                 </div>
@@ -372,11 +383,18 @@ export default function PlansPage() {
               <p className="text-zinc-500 text-[13px] mb-6">Tailored access to essential artist tools</p>
 
               <div className="mb-1">
-                <span className="text-2xl font-black text-[#5b4ff5]">EGP 29.99</span>
+                <span className="text-2xl font-semibold text-[#5b4ff5]">EGP 29.99</span>
                 <span className="text-zinc-400 text-sm ml-1">/ month, billed yearly for EGP 359.88</span>
               </div>
 
-              <button className="w-full mt-6 mb-6 py-3 bg-zinc-900 hover:bg-zinc-700 text-white font-black text-[14px] rounded-xl transition-colors">
+              <button className="w-full mt-6 mb-6 py-3 bg-zinc-900 hover:bg-zinc-700 text-white font-semibold text-[14px] rounded-xl transition-colors"
+              onClick={
+              () => {
+                setCheckoutPlan("artist"); 
+                setCheckoutOpen(true);
+                document.title = "Get Artist";
+              } 
+            }>
                 Get started
               </button>
 
@@ -403,12 +421,12 @@ export default function PlansPage() {
 
             {/* Artist Pro */}
             <div className="border-2 border-[#c9a227] rounded-2xl p-8 relative overflow-hidden">
-              <div className="absolute top-0 right-0 bg-[#c9a227] text-white text-[10px] font-black tracking-widest px-5 py-2 rounded-bl-xl rounded-tr-2xl">
+              <div className="absolute top-0 right-0 bg-[#c9a227] text-white text-[10px] font-semibold tracking-widest px-5 py-2 rounded-bl-xl rounded-tr-2xl">
                 MOST POPULAR
               </div>
 
               <div className="flex items-center gap-2 mb-3">
-                <h3 className="text-zinc-900 font-black text-2xl">Artist Pro</h3>
+                <h3 className="text-zinc-900 font-semibold text-[25px]">Artist Pro</h3>
                 <div className="w-6 h-6 rounded-full bg-[#c9a227] flex items-center justify-center">
                   <Star size={11} className="text-white" fill="white" />
                 </div>
@@ -416,11 +434,18 @@ export default function PlansPage() {
               <p className="text-zinc-500 text-[13px] mb-6">Unlimited access to all artist tools</p>
 
               <div className="mb-1">
-                <span className="text-2xl font-black text-[#c9a227]">EGP 74.99</span>
+                <span className="text-2xl font-semibold text-[#c9a227]">EGP 74.99</span>
                 <span className="text-zinc-400 text-sm ml-1">/ month, billed yearly for EGP 899.88</span>
               </div>
 
-              <button className="w-full mt-6 mb-6 py-3 bg-zinc-700 hover:bg-zinc-600 text-white font-black text-[14px] rounded-xl transition-colors">
+              <button className="w-full mt-6 mb-6 py-3 bg-zinc-700 hover:bg-zinc-600 text-white font-semibold text-[14px] rounded-xl transition-colors"
+              onClick={
+              () => {
+                setCheckoutPlan("artist-pro"); 
+                setCheckoutOpen(true);
+                document.title = "Get Artist Pro";
+              } 
+            }>
                 Get started
               </button>
 
@@ -467,7 +492,7 @@ export default function PlansPage() {
         className="scroll-mt-20 bg-white pb-24"
       >
         <div className="max-w-4xl mx-auto px-6">
-          <h2 className="text-zinc-900 font-black text-[52px] tracking-tight mb-14 text-center">
+          <h2 className="text-zinc-900 font-semibold text-[52px] tracking-tight mb-14 text-center">
             Compare features.
           </h2>
 
@@ -476,7 +501,7 @@ export default function PlansPage() {
             <div className="grid grid-cols-[2fr_1fr_1fr_1fr]">
               <div />
               <div className="text-center">
-                <div className="text-zinc-900 font-black text-[18px]">Basic</div>
+                <div className="text-zinc-900 font-semibold text-[30px]">Basic</div>
                 <div className="text-zinc-500 text-[13px]">Free</div>
                 <div className="mt-3">
                   <span className="text-[12px] text-zinc-500 border border-zinc-300 rounded-full px-4 py-1.5 font-medium">
@@ -485,16 +510,30 @@ export default function PlansPage() {
                 </div>
               </div>
               <div className="text-center">
-                <div className="text-zinc-900 font-black text-[18px]">Artist</div>
+                <div className="text-zinc-900 font-semibold text-[30px]">Artist</div>
                 <div className="text-zinc-500 text-[13px]">EGP 29.99 <span className="text-[11px]">/month, billed yearly for EGP 359.88</span></div>
-                <button className="mt-3 bg-zinc-900 hover:bg-zinc-700 text-white font-black text-[12px] px-5 py-2 rounded-full transition-colors">
+                <button className="mt-3 bg-zinc-900 hover:bg-zinc-700 text-white font-semibold text-[12px] px-5 py-2 rounded-full transition-colors"
+                onClick={
+                  () => {
+                    setCheckoutPlan("artist"); 
+                    setCheckoutOpen(true);
+                    document.title = "Get Artist";
+                  } 
+                }>
                   Get started
                 </button>
               </div>
               <div className="text-center">
-                <div className="text-zinc-900 font-black text-[18px]">Artist Pro</div>
+                <div className="text-zinc-900 font-semibold text-[30px]">Artist Pro</div>
                 <div className="text-[#1db954] text-[13px] font-medium">EGP 74.99 <span className="text-[11px] text-zinc-500">/month, billed yearly for EGP 899.88</span></div>
-                <button className="mt-3 bg-zinc-900 hover:bg-zinc-700 text-white font-black text-[12px] px-5 py-2 rounded-full transition-colors">
+                <button className="mt-3 bg-zinc-900 hover:bg-zinc-700 text-white font-semibold text-[12px] px-5 py-2 rounded-full transition-colors"
+                onClick={
+                  () => {
+                    setCheckoutPlan("artist-pro"); 
+                    setCheckoutOpen(true);
+                    document.title = "Get Artist Pro";
+                  } 
+                }>
                   Get started
                 </button>
               </div>
@@ -537,6 +576,7 @@ export default function PlansPage() {
           ))}
         </div>
       </section>
+      {checkoutOpen && <CheckoutModal plan = {checkoutPlan} onClose={() => setCheckoutOpen(false)} />}
     </div>
   );
 }
