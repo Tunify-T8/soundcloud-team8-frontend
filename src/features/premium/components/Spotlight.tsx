@@ -65,7 +65,7 @@ export default function Spotlight({ isMe }: SpotlightSectionProps) {
 
             <button
               onClick={handleGetSpotlight}
-              className="flex-shrink-0 bg-white hover:bg-zinc-100 text-zinc-900 font-bold text-[13px] px-5 py-2.5 rounded transition-colors whitespace-nowrap"
+              className="flex-shrink-0 bg-white text-zinc-900 font-bold text-[13px] px-5 py-2.5 rounded transition-all whitespace-nowrap hover:brightness-125 hover:shadow-[0_0_16px_rgba(255,255,255,0.5)]"
             >
               Get Spotlight
             </button>

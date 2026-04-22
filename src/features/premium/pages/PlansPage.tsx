@@ -265,32 +265,48 @@ export default function PlansPage() {
       </header>
 
       {/* Hero */}
-      <section className="relative bg-black overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          {/* Subtle dot grid */}
-          <div
-            className="absolute inset-0 opacity-[0.07]"
-            style={{
-              backgroundImage: "radial-gradient(circle, #ffffff 1px, transparent 1px)",
-              backgroundSize: "28px 28px",
-            }}
-          />
-        </div>
+      <section 
+       className="relative overflow-hidden"
+        style={{
+          background: `
+            radial-gradient(ellipse at 70% 50%, rgba(255,255,255,0.03) 0%, transparent 60%),
+            #111
+          `,
+        }}
+      >
+        <div
+          className="absolute right-0 top-0 bottom-0 w-1/2 pointer-events-none"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='500' viewBox='0 0 600 500'%3E%3Crect x='320' y='20' width='180' height='120' rx='8' fill='none' stroke='%23333' stroke-width='1.5'/%3E%3Crect x='330' y='30' width='160' height='100' rx='4' fill='%231a1a1a'/%3E%3Ccircle cx='370' cy='80' r='20' fill='none' stroke='%23444' stroke-width='1.5'/%3E%3Ccircle cx='430' cy='80' r='20' fill='none' stroke='%23444' stroke-width='1.5'/%3E%3Ccircle cx='490' cy='80' r='15' fill='none' stroke='%23444' stroke-width='1.5'/%3E%3Crect x='50' y='200' width='500' height='80' rx='6' fill='none' stroke='%23333' stroke-width='1'/%3E%3Crect x='60' y='210' width='8' height='60' rx='2' fill='%23222'/%3E%3Crect x='80' y='215' width='8' height='50' rx='2' fill='%23222'/%3E%3Crect x='100' y='205' width='8' height='65' rx='2' fill='%23222'/%3E%3Crect x='120' y='220' width='8' height='40' rx='2' fill='%23222'/%3E%3Ccircle cx='450' cy='350' r='80' fill='none' stroke='%23333' stroke-width='2'/%3E%3Ccircle cx='450' cy='350' r='55' fill='none' stroke='%232a2a2a' stroke-width='1.5'/%3E%3Ccircle cx='450' cy='350' r='20' fill='%231a1a1a' stroke='%23444' stroke-width='1.5'/%3E%3Cpath d='M 200 300 Q 250 280 300 300 Q 350 320 400 300' fill='none' stroke='%23333' stroke-width='1.5'/%3E%3C/svg%3E")`,
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "right center",
+            backgroundSize: "contain",
+            opacity: 0.6,
+          }}
+        />
+       {/* Dot grid */}
+        <div
+          className="absolute inset-0 opacity-[0.04] pointer-events-none"
+          style={{
+            backgroundImage: "radial-gradient(circle, #ffffff 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
+          }}
+        />
 
-        <div className="relative max-w-5xl mx-auto px-6 pt-20 pb-16 text-center">
-          <h1 className="text-[64px] font-black leading-none tracking-tight text-white mb-5">
+        <div className="relative max-w-5xl mx-auto px-6 pt-20 pb-16 text-left">   {/* ← left-aligned like screenshot 2 */}
+          <h1 className="text-[72px] font-black leading-none tracking-tight text-white mb-5">
             Reach more listeners.
           </h1>
-          <div className="flex items-center justify-center gap-2 mb-10">
+          <div className="flex items-center gap-2 mb-10">
             <div className="flex -space-x-2">
               <div className="w-8 h-8 rounded-full bg-zinc-600 border-2 border-black" />
               <div className="w-8 h-8 rounded-full bg-zinc-500 border-2 border-black" />
               <div className="w-8 h-8 rounded-full bg-zinc-700 border-2 border-black" />
             </div>
-            <p className="text-zinc-400 text-[15px]">Join millions of artists that use SoundCloud to get heard.</p>
+            <p className="text-zinc-300 text-[16px]">Join millions of artists that use SoundCloud to get heard.</p>
           </div>
 
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex items-center gap-4">
             <button className="bg-white text-zinc-900 font-black text-[14px] px-6 py-3 rounded-full hover:bg-zinc-100 transition-colors">
               Get Artist Pro
             </button>
@@ -304,7 +320,7 @@ export default function PlansPage() {
         </div>
 
         {/* Feature highlights */}
-        <div className="max-w-5xl mx-auto px-6 pb-16 grid grid-cols-4 gap-8">
+        <div className="relative max-w-5xl mx-auto px-6 pb-20 grid grid-cols-4 gap-8">
           {[
             { icon: "◎", title: "Grow your audience", desc: "Artist Pro subscribers get on average 400% more listens, thanks to our audio algorithm and featured playlists." },
             { icon: "▨", title: "Know your audience", desc: "Get advanced fan insights and custom listening reports to build connections and plan promotions, releases, and tours." },
