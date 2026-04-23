@@ -10,6 +10,7 @@ import { useLocation } from "react-router-dom";
 import { useMe } from "../../features/profile/context/useMe";
 import { logout } from "../../features/auth/services/index";
 import UpgradeModal from "./UpgradeModal";
+import { io, Socket } from "socket.io-client";
 import {
   getNotifications,
   getUnreadCount,
@@ -18,6 +19,8 @@ import {
   
 } from "@/features/notifications/service/service"; 
 import type {NotificationObject} from "@/features/notifications/types"
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -30,6 +33,35 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
+/**
+ * The backend emits e.g. "user_followed" but our NotificationType uses "follow".
+ * Normalise any incoming socket payload so it fits NotificationObject.
+ */
+function normaliseSocketPayload(raw: Record<string, unknown>): NotificationObject {
+  const typeMap: Record<string, string> = {
+    user_followed: "follow",
+    track_liked: "like",
+    track_commented: "comment",
+    track_reposted: "repost",
+  };
+
+  const rawType = raw.type as string;
+  const normalisedType = typeMap[rawType] ?? rawType;
+
+  return {
+    id: raw.id as string,
+    type: normalisedType as NotificationObject["type"],
+    actor: raw.actor as NotificationObject["actor"],
+    referenceId: (raw.referenceId ?? null) as string | null,
+    message: raw.message as string,
+    isRead: false,
+    readAt: null,
+    createdAt: raw.createdAt as string,
+  };
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -41,6 +73,7 @@ export default function Navbar() {
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const socketRef = useRef<Socket | null>(null);
 
   // Notification state
   const [notifications, setNotifications] = useState<NotificationObject[]>([]);
@@ -48,6 +81,7 @@ export default function Navbar() {
   const [notifLoading, setNotifLoading] = useState(false);
   const [followedBack, setFollowedBack] = useState<Set<string>>(new Set());
 
+  // ── REST: initial unread count ────────────────────────────────────────────
   const fetchUnreadCount = useCallback(async () => {
     try {
       const res = await getUnreadCount();
@@ -57,10 +91,58 @@ export default function Navbar() {
 
   useEffect(() => {
     fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30_000);
+    // Fallback polling every 60 s in case the socket is disconnected
+    const interval = setInterval(fetchUnreadCount, 60_000);
     return () => clearInterval(interval);
   }, [fetchUnreadCount]);
 
+  // ── Socket.IO ─────────────────────────────────────────────────────────────
+  useEffect(() => {
+    // Grab the JWT however your app stores it (adjust if needed)
+    const token =
+      localStorage.getItem("accessToken") ??
+      sessionStorage.getItem("accessToken") ??
+      "";
+
+    if (!token) return; // Not logged in — skip socket
+
+    const socket = io("https://tunify.duckdns.org/notifications", {
+      query: { token },
+      transports: ["websocket"],
+      reconnectionAttempts: 5,
+      reconnectionDelay: 3000,
+    });
+
+    socketRef.current = socket;
+
+    // Any notification event the server emits
+    const handleNewNotification = (raw: Record<string, unknown>) => {
+      try {
+        const notif = normaliseSocketPayload(raw);
+        // Prepend to the dropdown list (keep max 20)
+        setNotifications((prev) => [notif, ...prev].slice(0, 20));
+        // Bump the badge
+        setUnreadCount((prev) => prev + 1);
+      } catch {
+        // Malformed payload — ignore
+      }
+    };
+
+    // The server emits a generic "notification" event — listen to it.
+    // Also listen to the specific event names as a fallback.
+    socket.on("notification", handleNewNotification);
+    socket.on("user_followed", handleNewNotification);
+    socket.on("track_liked", handleNewNotification);
+    socket.on("track_commented", handleNewNotification);
+    socket.on("track_reposted", handleNewNotification);
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [me?.id]); // Re-connect if the logged-in user changes
+
+  // ── Bell click ────────────────────────────────────────────────────────────
   const fetchNotifications = useCallback(async () => {
     setNotifLoading(true);
     try {
@@ -76,10 +158,10 @@ export default function Navbar() {
     setNotifOpen(opening);
     if (opening) {
       await fetchNotifications();
-      // mark all as read after opening
       try {
         await markAllAsRead();
         setUnreadCount(0);
+        setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       } catch { /* ignore */ }
     }
   };
@@ -91,6 +173,7 @@ export default function Navbar() {
     } catch { /* ignore */ }
   };
 
+  // ── Outside-click handler ─────────────────────────────────────────────────
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -243,6 +326,7 @@ export default function Navbar() {
               <button
                 onClick={handleBellClick}
                 className="relative text-zinc-400 hover:text-white transition-colors"
+                aria-label="Notifications"
               >
                 <Bell size={18} />
                 {unreadCount > 0 && (
@@ -290,7 +374,7 @@ export default function Navbar() {
                   </div>
 
                   {/* Footer */}
-                  <div className="px-4 py-4 text-center">
+                  <div className="px-4 py-4 text-center border-t border-zinc-800">
                     <Link
                       to="/notifications"
                       onClick={() => setNotifOpen(false)}
