@@ -59,10 +59,22 @@ export default function PlayerBar() {
 
   // ── Sync actual audio state → context (e.g. natural pause/end) ────────
   useEffect(() => {
-    if (isPlaying !== contextIsPlaying) {
-      setIsPlaying(isPlaying);
+    const prevStatus = prevStatusRef.current;
+
+    if (status === "playing" && !contextIsPlaying) {
+      setIsPlaying(true);
     }
-  }, [isPlaying, contextIsPlaying, setIsPlaying]);
+
+    if (
+      (status === "paused" || status === "idle" || status === "blocked" || status === "error") &&
+      prevStatus === "playing" &&
+      contextIsPlaying
+    ) {
+      setIsPlaying(false);
+    }
+
+    prevStatusRef.current = status;
+  }, [status, contextIsPlaying, setIsPlaying]);
 
   useEffect(() => {
     const nextProgress = duration > 0 ? Math.min(1, Math.max(0, currentTime / duration)) : 0;
@@ -76,6 +88,7 @@ export default function PlayerBar() {
 
   const hideTimer     = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPlayingRef  = useRef(isPlaying);
+  const prevStatusRef = useRef(status);
 
   const { next, prev, shuffle, repeat, toggleShuffle, toggleRepeat, loadQueue } = useQueue();
 
