@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Play, Pause, Heart, Repeat2,
@@ -11,6 +11,7 @@ import type { Track }          from '../types/Track';
 import ActionButtons           from '../components/ActionButtons';
 import CommentsSection         from '../components/CommentsSection';
 import { makeCommentAvatar, formatTimestamp } from '../components/CommentsSection';
+import { usePlayer }           from '@/features/playerUI/context/usePlayer';
 
 interface WaveformComment {
   id: string;
@@ -225,12 +226,16 @@ const TrackPage = () => {
   const [track, setTrack]             = useState<Track | null>(null);
   const [trackLoading, setLoading]    = useState(true);
   const [error, setError]             = useState<string | null>(null);
-  const [isPlaying, setIsPlaying]     = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
   const [showShare, setShowShare]     = useState(false);
   const [fansTab, setFansTab]         = useState<'top' | 'first'>('top');
-
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const {
+    currentTrack,
+    isPlaying,
+    progress: playerProgress,
+    setCurrentTrack,
+    setIsPlaying,
+    requestSeek,
+  } = usePlayer();
 
   const {
     counts, isLiked, isReposted,
@@ -239,38 +244,13 @@ const TrackPage = () => {
 
   useEffect(() => {
     if (!trackId) return;
+    setLoading(true);
+    setError(null);
     engagementService.getTrackDetails(trackId)
       .then(setTrack)
       .catch(() => setError('Failed to load track'))
       .finally(() => setLoading(false));
   }, [trackId]);
-
-  useEffect(() => {
-    if (!track?.audioUrl) return;
-    const audio = new Audio(track.audioUrl);
-    audioRef.current = audio;
-    const onTime  = () => setCurrentTime(audio.currentTime);
-    const onEnded = () => setIsPlaying(false);
-    audio.addEventListener('timeupdate', onTime);
-    audio.addEventListener('ended', onEnded);
-    return () => {
-      audio.pause();
-      audio.removeEventListener('timeupdate', onTime);
-      audio.removeEventListener('ended', onEnded);
-    };
-  }, [track?.audioUrl]);
-
-  const handlePlayPause = () => {
-    const a = audioRef.current;
-    if (!a) return;
-    if (isPlaying) { a.pause(); setIsPlaying(false); }
-    else           { a.play().catch(() => {}); setIsPlaying(true); }
-  };
-
-  const handleSeek = (t: number) => {
-    const a = audioRef.current;
-    if (a) { a.currentTime = t; setCurrentTime(t); }
-  };
 
   if (trackLoading) return <div className="p-8 text-white">Loading…</div>;
   if (error || !track) return <div className="p-8 text-red-400">{error ?? 'Track not found'}</div>;
@@ -285,6 +265,39 @@ const TrackPage = () => {
   const artworkSrc = (track as any).artworkUrl ?? (track as any).thumbnailUrl ?? '';
   const ownerInit  = artistName.slice(0, 2).toUpperCase();
   const currentUserId = localStorage.getItem('userId') ?? '';
+  const isThisTrack = currentTrack?.id === track.id;
+  const currentTime = isThisTrack ? playerProgress * duration : 0;
+  const pageIsPlaying = isThisTrack && isPlaying;
+
+  const ensureCurrentTrack = () => {
+    if (isThisTrack) return;
+
+    setCurrentTrack({
+      id: track.id,
+      title: track.title,
+      artist: artistName,
+      thumbnailUrl: artworkSrc || undefined,
+      artworkUrl: artworkSrc || undefined,
+      duration,
+    });
+  };
+
+  const handlePlayPause = () => {
+    ensureCurrentTrack();
+
+    if (isThisTrack) {
+      setIsPlaying(!isPlaying);
+    } else {
+      setIsPlaying(true);
+    }
+  };
+
+  const handleSeek = (t: number) => {
+    if (!track.id || duration <= 0) return;
+
+    ensureCurrentTrack();
+    requestSeek(track.id, t / duration);
+  };
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
@@ -302,7 +315,7 @@ const TrackPage = () => {
                 className="w-11 h-11 shrink-0 rounded-full bg-orange-500 hover:bg-orange-400
                            flex items-center justify-center transition-colors shadow-md"
               >
-                {isPlaying
+                {pageIsPlaying
                   ? <Pause className="w-5 h-5 fill-white text-white" />
                   : <Play  className="w-5 h-5 fill-white text-white ml-0.5" />
                 }
