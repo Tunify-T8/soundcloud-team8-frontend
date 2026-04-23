@@ -132,7 +132,7 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
                 onClick={() => setCheckoutPlan("artist-pro")}
                 className="w-full py-3 bg-zinc-900 hover:bg-zinc-700 text-white text-sm font-bold rounded-lg transition-colors mb-5"
               >
-                Get started
+                Start 7-day free trial
               </button>
 
               <ul className="space-y-3">

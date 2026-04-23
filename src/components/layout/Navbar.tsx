@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useMe } from "../../features/profile/context/useMe";
 import { logout } from "../../features/auth/services/index";
-import UpgradeModal from "../../features/premium/components/UpgradeModal";
+import CheckoutModal from "../../features/premium/components/CheckoutModal";
 
 export default function Navbar() {
   const location = useLocation();
@@ -19,7 +19,7 @@ export default function Navbar() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -111,10 +111,10 @@ export default function Navbar() {
 
           <div className="flex items-center gap-5 text-sm">
          <button
-              onClick={() => setUpgradeOpen(true)}
+              onClick={() => setCheckoutOpen(true)}
               className="border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-1 rounded-sm transition-colors duration-150 text-xs"
             >
-              Upgrade now
+              Try Free
             </button>
             <Link to="/artists" className="text-zinc-400 hover:text-white font-bold tracking-tight">For Artists</Link>
             <Link to="/upload" className="text-zinc-400 hover:text-white font-bold tracking-tight ml-1">Upload</Link>
@@ -213,7 +213,7 @@ export default function Navbar() {
         </div>
       </nav>
       <Outlet />
-      {upgradeOpen && <UpgradeModal onClose={() => setUpgradeOpen(false)} />}
+      {checkoutOpen && <CheckoutModal plan = "artist-pro" onClose={() => setCheckoutOpen(false)} />}
     </>
   );
 }
