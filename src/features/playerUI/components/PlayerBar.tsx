@@ -58,12 +58,21 @@ export default function PlayerBar() {
   // When SongCard sets isPlaying=true in context, trigger real playback here
   useEffect(() => {
     if (!trackId) return;
-    if (contextIsPlaying && status === "ready") {
-      play();
-    } else if (!contextIsPlaying && status === "playing") {
+    if (contextIsPlaying) {
+      if (status === "paused") {
+        play();
+      }
+    } else if (status === "playing") {
       pause();
     }
-  }, [contextIsPlaying, status, trackId, play, pause]);
+  }, [contextIsPlaying, trackId, play, pause]);
+
+  useEffect(() => {
+    if (!trackId) return;
+    if (contextIsPlaying && status === "ready") {
+      play();
+    }
+  }, [contextIsPlaying, status, trackId, play]);
 
   // ── Sync actual audio state → context (e.g. natural pause/end) ────────
   useEffect(() => {
