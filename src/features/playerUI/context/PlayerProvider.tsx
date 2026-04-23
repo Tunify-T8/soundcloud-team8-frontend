@@ -31,14 +31,16 @@ function pushRecentlyPlayed(track: TrackMeta) {
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [currentTrack, setCurrentTrackState] = useState<TrackMeta | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   const setCurrentTrack = (track: TrackMeta) => {
     pushRecentlyPlayed(track);
     setCurrentTrackState(track);
+    setProgress(0);
   };
 
   return (
-    <PlayerContext.Provider value={{ currentTrack, isPlaying, setCurrentTrack, setIsPlaying }}>
+    <PlayerContext.Provider value={{ currentTrack, isPlaying, progress, setCurrentTrack, setIsPlaying, setProgress }}>
       {children}
     </PlayerContext.Provider>
   );

@@ -10,8 +10,10 @@ export interface TrackMeta {
 export interface PlayerContextValue {
   currentTrack: TrackMeta | null;
   isPlaying: boolean;
+  progress: number;
   setCurrentTrack: (track: TrackMeta) => void;
   setIsPlaying: (v: boolean) => void;
+  setProgress: (v: number) => void;
 }
 
 // Shape stored in localStorage for recently played entries

@@ -21,7 +21,7 @@ const formatTime = (s: number) => {
 
 export default function PlayerBar() {
   // ── Pull active track from global context ──────────────────────────────
-  const { currentTrack, isPlaying: contextIsPlaying, setIsPlaying } = usePlayer();
+  const { currentTrack, isPlaying: contextIsPlaying, setIsPlaying, setProgress } = usePlayer();
 
   const trackId      = currentTrack?.id      ?? "";
   const trackTitle   = currentTrack?.title   ?? "";
@@ -62,7 +62,12 @@ export default function PlayerBar() {
     if (isPlaying !== contextIsPlaying) {
       setIsPlaying(isPlaying);
     }
-  }, [isPlaying]);
+  }, [isPlaying, contextIsPlaying, setIsPlaying]);
+
+  useEffect(() => {
+    const nextProgress = duration > 0 ? Math.min(1, Math.max(0, currentTime / duration)) : 0;
+    setProgress(nextProgress);
+  }, [currentTime, duration, setProgress]);
 
   const [showVolume,  setShowVolume]  = useState(false);
   const [isDragging,  setIsDragging]  = useState(false);

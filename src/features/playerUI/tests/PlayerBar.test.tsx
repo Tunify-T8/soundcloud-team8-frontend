@@ -15,6 +15,7 @@ const mockSeek            = vi.fn();
 const mockSetVolume       = vi.fn();
 const mockToggleMute      = vi.fn();
 const mockSetIsPlaying    = vi.fn();
+const mockSetProgress     = vi.fn();
 const mockSetCurrentTrack = vi.fn();
 const mockToggleShuffle   = vi.fn();
 const mockToggleRepeat    = vi.fn();
@@ -80,8 +81,10 @@ const baseCurrentTrack = {
 const basePlayer: PlayerContextValue = {
   currentTrack:    baseCurrentTrack,
   isPlaying:       false,
+  progress:        0,
   setCurrentTrack: mockSetCurrentTrack,
   setIsPlaying:    mockSetIsPlaying,
+  setProgress:     mockSetProgress,
 };
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
