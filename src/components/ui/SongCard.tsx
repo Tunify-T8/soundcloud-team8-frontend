@@ -179,6 +179,7 @@ export default function SongCard({
           {bars.map((height, i) => {
             const pos = i / (bars.length - 1);
             const played = pos <= displayProgress;
+            const showPlayedProgress = isThisTrack && played;
             const inactiveColor = isWaveHovered ? "#f5f5f5" : "#d6d6d6";
             return (
               <div
@@ -189,8 +190,8 @@ export default function SongCard({
                   minWidth: 0,
                   maxWidth: "2px",
                   height: `${(0.28 + height * 0.5) * 100}%`,
-                  backgroundColor: played && playing ? "#F94C00" : inactiveColor,
-                  opacity: played && playing ? 1 : isWaveHovered ? 1 : 0.92,
+                  backgroundColor: showPlayedProgress ? "#F94C00" : inactiveColor,
+                  opacity: showPlayedProgress ? 1 : isWaveHovered ? 1 : 0.92,
                   borderRadius: "1px",
                 }}
               />
