@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useMe } from "../../features/profile/context/useMe";
 import { logout } from "../../features/auth/services/index";
-import UpgradeModal from "./UpgradeModal";
+import CheckoutModal from "../../features/premium/components/CheckoutModal";
 
 export default function Navbar() {
   const location = useLocation();
@@ -19,7 +19,7 @@ export default function Navbar() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -57,7 +57,7 @@ export default function Navbar() {
     { to: "/stations",      icon: <Radio size={17} />,       label: "Stations" },
     { to: "/me/following",     icon: <Users size={17} />,       label: "Following" },
     { to: "/who-to-follow", icon: <UserPlus size={17} />,    label: "Who to follow" },
-    { to: "/pro",           icon: <Star size={17} />,        label: "Try Artist Pro", orange: true },
+    { to: "#",           icon: <Star size={17} />,        label: "Try Artist Pro", orange: true, action: () => window.open("/plans", "_blank")},
     { to: "/benefits",      icon: <Star size={17} />,        label: "Benefits" },
     { to: "/tracks",        icon: <BarChart2 size={17} />,   label: "Tracks" },
     { to: "/insights",      icon: <TrendingUp size={17} />,  label: "Insights" },
@@ -111,10 +111,10 @@ export default function Navbar() {
 
           <div className="flex items-center gap-5 text-sm">
          <button
-              onClick={() => setUpgradeOpen(true)}
+              onClick={() => setCheckoutOpen(true)}
               className="border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-1 rounded-sm transition-colors duration-150 text-xs"
             >
-              Upgrade now
+              Try Free
             </button>
             <Link to="/artists" className="text-zinc-400 hover:text-white font-bold tracking-tight">For Artists</Link>
             <Link to="/upload" className="text-zinc-400 hover:text-white font-bold tracking-tight ml-1">Upload</Link>
@@ -144,25 +144,38 @@ export default function Navbar() {
 
               {profileMenuOpen && (
                 <div className="absolute left-0 top-10 w-40 bg-[#111] border border-zinc-800 rounded-sm shadow-2xl z-50 overflow-hidden">
-                  {profileMenuItems.map((item) => (
-                    <Link
-                      key={item.to}
-                      to={item.to}
-                      onClick={() => setProfileMenuOpen(false)}
-                      className={`
-                        flex items-center gap-3 px-4 py-1.5
-                        font-bold text-sm tracking-tight
-                        transition-colors duration-150
-                        ${item.orange
-                          ? "text-orange-500 hover:text-orange-400"
-                          : "text-white hover:text-zinc-400"
-                        }
-                      `}
-                    >
-                      <span className={item.orange ? "text-orange-500" : "text-white"}>{item.icon}</span>
-                      {item.label}
-                    </Link>
-                  ))}
+                 {profileMenuItems.map((item) =>
+                    item.action ? (
+                      <button
+                        key={item.label}
+                        onClick={() => { item.action?.(); setProfileMenuOpen(false); }}
+                        className={`
+                          flex items-center gap-3 px-4 py-1.5 w-full text-left
+                          font-bold text-sm tracking-tight
+                          transition-colors duration-150
+                          ${item.orange ? "text-orange-500 hover:text-orange-400" : "text-white hover:text-zinc-400"}
+                        `}
+                      >
+                        <span className={item.orange ? "text-orange-500" : "text-white"}>{item.icon}</span>
+                        {item.label}
+                      </button>
+                    ) : (
+                      <Link
+                        key={item.to}
+                        to={item.to}
+                        onClick={() => setProfileMenuOpen(false)}
+                        className={`
+                          flex items-center gap-3 px-4 py-1.5
+                          font-bold text-sm tracking-tight
+                          transition-colors duration-150
+                          ${item.orange ? "text-orange-500 hover:text-orange-400" : "text-white hover:text-zinc-400"}
+                        `}
+                      >
+                        <span className={item.orange ? "text-orange-500" : "text-white"}>{item.icon}</span>
+                        {item.label}
+                      </Link>
+                    )
+                  )}
                  
                 </div>
               )}
@@ -213,7 +226,7 @@ export default function Navbar() {
         </div>
       </nav>
       <Outlet />
-      {upgradeOpen && <UpgradeModal onClose={() => setUpgradeOpen(false)} />}
+      {checkoutOpen && <CheckoutModal plan = "artist-pro" onClose={() => setCheckoutOpen(false)} />}
     </>
   );
 }

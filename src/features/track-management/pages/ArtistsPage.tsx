@@ -138,8 +138,8 @@ function DistributionTab() {
             and others — extending your reach and audience.
           </p>
           <button className="bg-white text-black text-sm font-bold px-6 py-2.5 rounded-full hover:bg-zinc-200 transition-colors"
-           onClick={() => setCheckoutOpen(true)}
-           >
+          onClick={() => setCheckoutOpen(true)}
+          >
             Get Artist Pro
           </button>
         </div>

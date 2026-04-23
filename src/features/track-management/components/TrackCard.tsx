@@ -7,8 +7,7 @@ import type { Track } from "@/shared/types/Track";
 import { trackService } from "../trackService";
 import { usePlayer } from "@/features/playerUI/context/usePlayer";
 import amplify from "@/assets/amplify.png";
-import silhouette from "@/assets/silhouette.png";
-
+import CheckoutModal from "@/features/premium/components/CheckoutModal";
 
 function formatDate(raw: string): string {
   const d = new Date(raw);
@@ -102,212 +101,8 @@ function DeleteConfirmModal({
   );
 }
 
-function ArtistProPurchaseModal({ onClose }: { onClose: () => void }) {
-  const [billing, setBilling] = useState<"yearly" | "monthly">("yearly");
-  const [payment, setPayment] = useState<"card" | "paypal">("card");
-  const [couponOpen, setCouponOpen] = useState(false);
-  const [coupon, setCoupon] = useState("");
-
-  const total = billing === "yearly" ? "EGP 899.88" : "EGP 149.99";
-  const cycle = billing === "yearly" ? "Yearly" : "Monthly";
-
-  return (
-    <>
-     <div className="fixed inset-0 z-50" style={{ background: "rgba(246, 235, 235, 0.83)" }} onClick={onClose} />
-      <div className="fixed inset-0 bg-black/60 z-[60]" onClick={onClose} />
-      <div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none">
-        <div
-          className="bg-white rounded-2xl w-[860px] max-h-[90vh] overflow-y-auto pointer-events-auto shadow-2xl"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="p-10 grid grid-cols-2 gap-12">
-            {/* Left column */}
-            <div>
-              <h2 className="text-gray-900 text-2xl font-bold mb-8">Get Artist Pro</h2>
-
-              {/* Step 1 */}
-              <h3 className="text-gray-900 text-base font-semibold mb-4">1. Billing cycle</h3>
-
-              {/* Yearly */}
-              <label
-                className={`flex items-center gap-3 px-4 py-4 rounded-lg border-2 cursor-pointer mb-3 transition-colors
-                  ${billing === "yearly" ? "border-orange-500 bg-white" : "border-gray-200 bg-white hover:border-gray-300"}`}
-              >
-                <input
-                  type="radio"
-                  name="billing"
-                  value="yearly"
-                  checked={billing === "yearly"}
-                  onChange={() => setBilling("yearly")}
-                  className="accent-orange-500 w-4 h-4 flex-shrink-0"
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-gray-900 text-sm font-semibold">Yearly billing</p>
-                  <p className="text-gray-500 text-xs mt-0.5">EGP 899.88, that's EGP 74.99/month</p>
-                </div>
-                <span className="text-xs font-bold text-white bg-orange-500 px-2 py-1 rounded flex-shrink-0">
-                  50% YEARLY DISCOUNT
-                </span>
-              </label>
-
-              {/* Monthly */}
-              <label
-                className={`flex items-center gap-3 px-4 py-4 rounded-lg border-2 cursor-pointer mb-8 transition-colors
-                  ${billing === "monthly" ? "border-orange-500 bg-white" : "border-gray-200 bg-white hover:border-gray-300"}`}
-              >
-                <input
-                  type="radio"
-                  name="billing"
-                  value="monthly"
-                  checked={billing === "monthly"}
-                  onChange={() => setBilling("monthly")}
-                  className="accent-orange-500 w-4 h-4 flex-shrink-0"
-                />
-                <div className="flex-1">
-                  <p className="text-gray-900 text-sm font-semibold">Monthly billing</p>
-                  <p className="text-gray-500 text-xs mt-0.5">EGP 149.99/month</p>
-                </div>
-              </label>
-
-              {/* Step 2 */}
-              <h3 className="text-gray-900 text-base font-semibold mb-1 flex items-center gap-2">
-                2. Payment details
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400">
-                  <rect x="3" y="11" width="18" height="11" rx="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-              </h3>
-              <p className="text-gray-500 text-xs mb-4">Add new payment methods</p>
-
-              {/* Card */}
-              <label
-                className={`flex items-center gap-3 px-4 py-4 rounded-lg border-2 cursor-pointer mb-3 transition-colors
-                  ${payment === "card" ? "border-orange-500" : "border-gray-200 hover:border-gray-300"}`}
-              >
-                <input
-                  type="radio"
-                  name="payment"
-                  value="card"
-                  checked={payment === "card"}
-                  onChange={() => setPayment("card")}
-                  className="accent-orange-500 w-4 h-4 flex-shrink-0"
-                />
-                <span className="text-gray-900 text-sm font-semibold flex-1">Card</span>
-                <div className="flex items-center gap-1">
-                  {/* Card brand icons as colored pills */}
-                  {[
-                    { label: "VISA", bg: "#1a1f71", color: "white" },
-                    { label: "MC", bg: "#eb001b", color: "white" },
-                    { label: "AMEX", bg: "#2e77bc", color: "white" },
-                    { label: "UP", bg: "#e21836", color: "white" },
-                    { label: "MIR", bg: "#019e3f", color: "white" },
-                    { label: "••••", bg: "#888", color: "white" },
-                  ].map(({ label, bg, color }) => (
-                    <span
-                      key={label}
-                      style={{ background: bg, color }}
-                      className="text-[9px] font-bold px-1.5 py-0.5 rounded"
-                    >
-                      {label}
-                    </span>
-                  ))}
-                </div>
-              </label>
-
-              {/* PayPal */}
-              <label
-                className={`flex items-center gap-3 px-4 py-4 rounded-lg border-2 cursor-pointer transition-colors
-                  ${payment === "paypal" ? "border-orange-500" : "border-gray-200 hover:border-gray-300"}`}
-              >
-                <input
-                  type="radio"
-                  name="payment"
-                  value="paypal"
-                  checked={payment === "paypal"}
-                  onChange={() => setPayment("paypal")}
-                  className="accent-orange-500 w-4 h-4 flex-shrink-0"
-                />
-                <span className="text-gray-900 text-sm font-semibold flex-1">PayPal</span>
-                <span className="text-[#003087] font-black text-sm italic">Pay<span className="text-[#009cde]">Pal</span></span>
-              </label>
-            </div>
-
-            {/* Right column */}
-            <div>
-              <h3 className="text-gray-900 text-base font-semibold mb-6 mt-14">3. Review your purchase</h3>
-
-              {/* Product row */}
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center flex-shrink-0">
-                  <img src={silhouette} alt="Artist" className="w-full h-full object-cover" />
-                </div>
-                <span className="text-gray-900 text-sm font-semibold">Artist Pro</span>
-              </div>
-
-              {/* Coupon */}
-              <button
-                onClick={() => setCouponOpen((p) => !p)}
-                className="text-blue-600 text-sm hover:underline mb-4 block"
-              >
-                Do you have a coupon code?
-              </button>
-              {couponOpen && (
-                <div className="flex gap-2 mb-4">
-                  <input
-                    type="text"
-                    value={coupon}
-                    onChange={(e) => setCoupon(e.target.value)}
-                    placeholder="Enter coupon code"
-                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-orange-500"
-                  />
-                  <button className="px-4 py-2 bg-gray-900 hover:bg-gray-700 text-white text-sm rounded-lg font-semibold transition-colors">
-                    Apply
-                  </button>
-                </div>
-              )}
-
-              {/* Summary box */}
-              <div className="bg-gray-50 rounded-xl p-5 mb-6">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-gray-900 text-sm font-semibold">Total</span>
-                  <span className="text-gray-900 text-sm font-bold">{total}</span>
-                </div>
-                <div className="flex justify-between items-center pb-3 border-b border-gray-200 mb-3">
-                  <span className="text-gray-500 text-sm">Billing cycle</span>
-                  <span className="text-gray-700 text-sm">{cycle}</span>
-                </div>
-                <p className="text-gray-400 text-xs leading-relaxed">
-                  Subscription will automatically renew at {total} every {billing === "yearly" ? "year" : "month"}, starting{" "}
-                  {billing === "yearly" ? "9 Apr 2027" : "9 May 2026"}, unless you cancel before the day of your next renewal in your subscription settings.
-                </p>
-                <p className="text-gray-400 text-xs mt-2">All prices in EGP</p>
-              </div>
-
-              {/* Buy button */}
-              <button className="w-full py-3 bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold rounded-xl transition-colors mb-4">
-                Buy subscription
-              </button>
-
-              <p className="text-gray-400 text-xs leading-relaxed">
-                By submitting your payment information and clicking Buy subscription you agree to the{" "}
-                <a href="#" className="text-blue-500 hover:underline">Terms of Use for Artist Subscriptions</a>
-                {" "}and{" "}
-                <a href="#" className="text-blue-500 hover:underline">Privacy Policy</a>.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
-
 function AmplifyModal({ onClose }: { onClose: () => void }) {
-  const [showPurchase, setShowPurchase] = useState(false);
-
-  if (showPurchase) {
-    return <ArtistProPurchaseModal onClose={onClose} />;
-  }
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   return (
     <>
@@ -371,7 +166,7 @@ function AmplifyModal({ onClose }: { onClose: () => void }) {
   {/* Footer buttons */}
         <div className="flex items-center justify-start gap-4 px-10 pb-10">
               <button
-                onClick={() => setShowPurchase(true)}
+                onClick={() => setCheckoutOpen(true)}
                 className="px-6 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold transition-colors tracking-tight"
               >
                 Unlock with Artist Pro
@@ -383,7 +178,7 @@ function AmplifyModal({ onClose }: { onClose: () => void }) {
               Maybe later
             </button>
           </div>
-
+           {checkoutOpen && <CheckoutModal plan = "artist-pro" onClose={() => setCheckoutOpen(false)} />}
         </div>
       </div>
     </>
@@ -626,8 +421,29 @@ export default function TrackCard({
             <MenuItem icon={<SlidersHorizontal className="w-4 h-4" />} label="Master" onClick={() => { onMaster?.(track.id); setMenuOpen(false); }} />
             <MenuItem icon={<Share2 className="w-4 h-4" />} label="Distribute" onClick={() => { onDistribute?.(track.id); setMenuOpen(false); }} />
             <MenuItem icon={<TrendingUp className="w-4 h-4" />} label="Track insights" onClick={() => { onTrackInsights?.(track.id); setMenuOpen(false); }} />
-            <MenuItem icon={<Download className="w-4 h-4" />} label="Download file" onClick={() => { onDownload?.(track.id); setMenuOpen(false); }} />
-            <MenuItem icon={<Link className="w-4 h-4" />} label="Copy link" onClick={() => { onCopyLink?.(track.id); setMenuOpen(false); }} />
+     
+<MenuItem
+  icon={<Download className="w-4 h-4" />}
+  label="Download file"
+  onClick={async () => {
+    setMenuOpen(false);
+    if (track.audioUrl) {
+      try {
+       const a = document.createElement("a");
+      a.href = track.audioUrl;
+      a.download = `${track.title}.mp3`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      } catch (e) {
+        console.error("Download failed:", e);
+      }
+    } else {
+      onDownload?.(track.id);
+    }
+  }}
+/>
+ <MenuItem icon={<Link className="w-4 h-4" />} label="Copy link" onClick={() => { onCopyLink?.(track.id); setMenuOpen(false); }} />
             <div className="my-1 border-t border-zinc-700" />
             <MenuItem icon={<Trash2 className="w-4 h-4" />} label="Delete track" onClick={() => { setMenuOpen(false); setShowDeleteModal(true); }} danger />
           </div>
