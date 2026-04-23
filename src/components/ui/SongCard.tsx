@@ -10,6 +10,7 @@ import { usePlayer } from "@/features/playerUI/context/usePlayer";
 interface PlayerProps {
   trackId?: string;
   isLikedInitial?: boolean;
+  isRepostedInitial?: boolean;
   artistName?: string;
   title?: string;
   coverUrl?: string;
@@ -21,11 +22,14 @@ interface PlayerProps {
   comments?: string;
   progress?: number;
   waveformSeed?: number;
+  repostDisabled?: boolean;
+  onToggleRepost?: () => void;
 }
 
 export default function SongCard({
   trackId = "",
   isLikedInitial = false,
+  isRepostedInitial = false,
   artistName = "",
   title = "",
   coverUrl = "",
@@ -37,6 +41,8 @@ export default function SongCard({
   comments = "",
   progress = 0,
   waveformSeed = 0,
+  repostDisabled = false,
+  onToggleRepost,
 }: PlayerProps) {
   const { currentTrack, isPlaying, progress: playerProgress, setCurrentTrack, setIsPlaying } = usePlayer();
 
@@ -175,14 +181,25 @@ export default function SongCard({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={toggleLike}
               className="flex items-center gap-1.5 text-[hsl(0,0%,50%)] hover:text-[hsl(14,90%,58%)] transition-colors text-[11px] px-2 py-1 rounded border border-[hsl(0,0%,18%)] hover:border-[hsl(14,90%,40%)]"
             >
               <Heart size={12} fill={isLiked ? "#F94C00" : "none"} style={{ color: isLiked ? "#F94C00" : undefined }} />
               <span>{likesCount}</span>
             </button>
-            <button className="flex items-center gap-1.5 text-[hsl(0,0%,50%)] hover:text-white transition-colors text-[11px] px-2 py-1 rounded border border-[hsl(0,0%,18%)] hover:border-[hsl(0,0%,35%)]">
-              <Repeat2 size={12} /><span>{reposts}</span>
+            <button
+              type="button"
+              onClick={onToggleRepost}
+              disabled={repostDisabled}
+              aria-label={isRepostedInitial ? "Undo repost" : "Repost"}
+              className="flex items-center gap-1.5 text-[hsl(0,0%,50%)] hover:text-white transition-colors text-[11px] px-2 py-1 rounded border border-[hsl(0,0%,18%)] hover:border-[hsl(0,0%,35%)] disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <Repeat2
+                size={12}
+                style={{ color: isRepostedInitial ? "#F94C00" : undefined }}
+              />
+              <span>{reposts}</span>
             </button>
             <button className="flex items-center gap-1.5 text-[hsl(0,0%,50%)] hover:text-white transition-colors text-[11px] px-2 py-1 rounded border border-[hsl(0,0%,18%)] hover:border-[hsl(0,0%,35%)]">
               <Share2 size={12} />
