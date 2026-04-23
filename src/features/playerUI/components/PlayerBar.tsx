@@ -53,6 +53,7 @@ export default function PlayerBar() {
   } = usePlayback({ trackId, autoPlay: false });
 
   const isPlaying = status === "playing";
+  const uiIsPlaying = contextIsPlaying || isPlaying;
 
   // ── Sync context isPlaying → actual audio ─────────────────────────────
   // When SongCard sets isPlaying=true in context, trigger real playback here
@@ -77,10 +78,6 @@ export default function PlayerBar() {
   // ── Sync actual audio state → context (e.g. natural pause/end) ────────
   useEffect(() => {
     const prevStatus = prevStatusRef.current;
-
-    if (status === "playing" && !contextIsPlaying) {
-      setIsPlaying(true);
-    }
 
     if (
       (status === "paused" || status === "idle" || status === "blocked" || status === "error") &&
@@ -127,8 +124,8 @@ export default function PlayerBar() {
   }, []);
 
   useEffect(() => {
-    isPlayingRef.current = isPlaying;
-  }, [isPlaying]);
+    isPlayingRef.current = uiIsPlaying;
+  }, [uiIsPlaying]);
 
   // Space bar shortcut
   useEffect(() => {
@@ -139,18 +136,12 @@ export default function PlayerBar() {
         !(e.target instanceof HTMLTextAreaElement)
       ) {
         e.preventDefault();
-        if (isPlayingRef.current) {
-          pause();
-          setIsPlaying(false);
-        } else {
-          play();
-          setIsPlaying(true);
-        }
+        setIsPlaying(!isPlayingRef.current);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [play, pause, setIsPlaying]);
+  }, [setIsPlaying]);
 
   if (!currentTrack) return null;
 
@@ -179,13 +170,7 @@ export default function PlayerBar() {
   const bufferedPct  = Math.min(100, Math.max(0, buffered * 100));
 
   const handlePlayPause = () => {
-    if (isPlaying) {
-      pause();
-      setIsPlaying(false);
-    } else {
-      play();
-      setIsPlaying(true);
-    }
+    setIsPlaying(!uiIsPlaying);
   };
 
   return (
@@ -210,9 +195,9 @@ export default function PlayerBar() {
           <button
             onClick={handlePlayPause}
             className="w-9 h-9 rounded-full bg-white flex items-center justify-center hover:scale-105 transition-transform"
-            aria-label={isPlaying ? "Pause" : "Play"}
+            aria-label={uiIsPlaying ? "Pause" : "Play"}
           >
-            {isPlaying ? (
+            {uiIsPlaying ? (
               <svg width="14" height="14" viewBox="0 0 14 14" fill="black">
                 <rect x="1" y="1" width="4" height="12" />
                 <rect x="9" y="1" width="4" height="12" />
