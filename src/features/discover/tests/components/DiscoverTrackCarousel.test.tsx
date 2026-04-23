@@ -2,7 +2,7 @@ import React from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { DiscoverTrackCarousel } from "../../components/DiscoverTrackCarousel";
-import type { DiscoverTrack } from "@/shared/types/Discover";
+import type { DiscoverTrack } from "@/features/discover/Discover";
 
 const tracks: DiscoverTrack[] = [
   {
@@ -56,7 +56,7 @@ describe("DiscoverTrackCarousel", () => {
 
   it("scrolls right when right button is clicked", async () => {
     const { container } = render(
-      <DiscoverTrackCarousel tracks={tracks} scrollStep={120} />
+      <DiscoverTrackCarousel tracks={tracks} scrollStep={120} />,
     );
 
     const scroller = getScroller(container);
@@ -83,7 +83,9 @@ describe("DiscoverTrackCarousel", () => {
     fireEvent.scroll(scroller);
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Scroll right" })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Scroll right" }),
+      ).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Scroll right" }));
@@ -96,7 +98,7 @@ describe("DiscoverTrackCarousel", () => {
 
   it("scrolls left when left button is clicked", async () => {
     const { container } = render(
-      <DiscoverTrackCarousel tracks={tracks} scrollStep={150} />
+      <DiscoverTrackCarousel tracks={tracks} scrollStep={150} />,
     );
 
     const scroller = getScroller(container);
@@ -123,7 +125,9 @@ describe("DiscoverTrackCarousel", () => {
     fireEvent.scroll(scroller);
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Scroll left" })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Scroll left" }),
+      ).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Scroll left" }));

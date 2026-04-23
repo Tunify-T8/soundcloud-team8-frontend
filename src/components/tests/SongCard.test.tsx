@@ -76,7 +76,7 @@ describe("SongCard", () => {
 
   it("renders 140 waveform bars", () => {
     const { container } = renderCard();
-    const waveContainer = container.querySelector(".h-\\[52px\\]");
+    const waveContainer = container.querySelector(".h-\\[44px\\]");
     const bars = waveContainer?.querySelectorAll(".flex-1.rounded-\\[1px\\]");
     expect(bars).toHaveLength(140);
   });
@@ -86,35 +86,29 @@ describe("SongCard", () => {
     expect(waveGenerators[0]).toHaveBeenCalledWith(3);
   });
 
-  it("colors bars before progress threshold as orange (#F94C00)", () => {
+  it("keeps the waveform white for non-playing tracks even when progress is passed in", () => {
     const { container } = renderCard({ progress: 0.5 });
-    const waveContainer = container.querySelector(".h-\\[52px\\]");
+    const waveContainer = container.querySelector(".h-\\[44px\\]");
     const bars = waveContainer?.querySelectorAll(".flex-1.rounded-\\[1px\\]");
     const firstBar = bars?.[0] as HTMLElement;
-    expect(firstBar.style.backgroundColor).toBe("rgb(249, 76, 0)");
+    expect(firstBar.style.backgroundColor).toBe("rgb(214, 214, 214)");
   });
 
-  it("colors bars after progress threshold as grey", () => {
+  it("uses a brighter white on waveform hover", () => {
     const { container } = renderCard({ progress: 0 });
-    const waveContainer = container.querySelector(".h-\\[52px\\]");
-    const bars = waveContainer?.querySelectorAll(".flex-1.rounded-\\[1px\\]");
-    // With progress=0 all bars should be grey
-    const firstBar = bars?.[0] as HTMLElement;
-    expect(firstBar.style.backgroundColor).toBe("rgb(71, 71, 71)");
-  });
-
-  it("updates hoverProgress on mouse move over waveform", () => {
-    const { container } = renderCard({ progress: 0 });
-    const waveContainer = container.querySelector(".h-\\[52px\\]")!;
-    // Simulate hover at midpoint
-    Object.defineProperty(waveContainer, "getBoundingClientRect", {
-      value: () => ({ left: 0, width: 200 }),
-    });
-    fireEvent.mouseMove(waveContainer, { clientX: 100 });
-    // At 50% hover, first bar should now be orange
+    const waveContainer = container.querySelector(".h-\\[44px\\]")!;
+    fireEvent.mouseEnter(waveContainer);
     const bars = waveContainer.querySelectorAll(".flex-1.rounded-\\[1px\\]");
     const firstBar = bars[0] as HTMLElement;
-    expect(firstBar.style.backgroundColor).toBe("rgb(249, 76, 0)");
+    expect(firstBar.style.backgroundColor).toBe("rgb(245, 245, 245)");
+  });
+
+  it("uses the default white when not hovered", () => {
+    const { container } = renderCard({ progress: 0 });
+    const waveContainer = container.querySelector(".h-\\[44px\\]");
+    const bars = waveContainer?.querySelectorAll(".flex-1.rounded-\\[1px\\]");
+    const firstBar = bars?.[0] as HTMLElement;
+    expect(firstBar.style.backgroundColor).toBe("rgb(214, 214, 214)");
   });
 
  
