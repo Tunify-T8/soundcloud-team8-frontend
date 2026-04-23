@@ -66,7 +66,7 @@ export default function SideBar() {
   const [likesLoading, setLikesLoading] = useState(true);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
-  const handleArtistToolClick = (_tool: ArtistTool) => {
+  const handleArtistToolClick = () => {
     setUpgradeOpen(true);
   };
 
@@ -133,14 +133,16 @@ export default function SideBar() {
 
           <button
             type="button"
-            className="flex w-full items-center gap-3 rounded-[14px] bg-[#433873] px-4 py-4 text-left text-white transition-colors hover:bg-[#4b3f80]"
+            className="flex w-full items-center rounded-[9px] bg-[#433873] px-3 py-3.5 text-left text-white transition-colors hover:bg-[#4b3f80]"
           >
-            <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#735ef2] text-[22px] font-black leading-none">
+            <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#735ef2] text-[22px] font-black leading-none">
               +
             </span>
-            <span className="text-[14px] font-medium leading-snug">
+            <button onClick = {handleArtistToolClick} className = "px-1">
+            <span className="text-[13px] font-medium tracking-tight leading-snug">
               Unlock Artist tools from EGP 29.99/month.
             </span>
+            </button>
           </button>
         </div>
 

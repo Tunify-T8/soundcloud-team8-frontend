@@ -123,16 +123,16 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
               </p>
 
               <div className="mb-1">
-                <span className="text-xl font-semibold text-[#c9a227]">EGP 74.99</span>
-                <span className="text-sm text-zinc-400 ml-1">/ month</span>
-              </div>
-              <p className="text-[11px] text-zinc-400 mb-5">billed yearly for EGP 899.88</p>
+              <span className="text-xl font-bold text-[#c9a227]">Free</span>
+              <span className="text-sm text-zinc-700 font-semibold ml-1">for 7 days</span>
+            </div>
+            <p className="text-[11px] text-zinc-400 mb-5">then EGP 74.99/month, billed yearly for EGP 899.88</p>
 
               <button
                 onClick={() => setCheckoutPlan("artist-pro")}
                 className="w-full py-3 bg-zinc-900 hover:bg-zinc-700 text-white text-sm font-bold rounded-lg transition-colors mb-5"
               >
-                Get started
+                Start 7-day free trial
               </button>
 
               <ul className="space-y-3">
