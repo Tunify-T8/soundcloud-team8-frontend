@@ -275,9 +275,15 @@ const TrackPage = () => {
   if (trackLoading) return <div className="p-8 text-white">Loading…</div>;
   if (error || !track) return <div className="p-8 text-red-400">{error ?? 'Track not found'}</div>;
 
+  const artistName =
+    track.artist ??
+    (track as any).artistName ??
+    (track as any).owner?.displayName ??
+    (track as any).owner?.username ??
+    'Unknown Artist';
   const duration   = (track as any).duration ?? 184;
   const artworkSrc = (track as any).artworkUrl ?? (track as any).thumbnailUrl ?? '';
-  const ownerInit  = track.artist.slice(0, 2).toUpperCase();
+  const ownerInit  = artistName.slice(0, 2).toUpperCase();
   const currentUserId = localStorage.getItem('userId') ?? '';
 
   return (
@@ -303,7 +309,7 @@ const TrackPage = () => {
               </button>
               <div className="flex-1 min-w-0">
                 <p className="text-[11px] text-zinc-400 uppercase tracking-widest truncate">
-                  {track.artist}
+                  {artistName}
                 </p>
                 <h1 className="text-base font-bold leading-tight truncate">{track.title}</h1>
               </div>
@@ -375,13 +381,13 @@ const TrackPage = () => {
             <div className="w-[88px] h-[88px] rounded-full overflow-hidden ring-2 ring-zinc-700">
               <img
                 src={makeOwnerAvatar(ownerInit, 88)}
-                alt={track.artist}
+                alt={artistName}
                 className="w-full h-full object-cover"
               />
             </div>
 
             <div className="text-center">
-              <p className="text-sm font-semibold text-white leading-tight">{track.artist}</p>
+              <p className="text-sm font-semibold text-white leading-tight">{artistName}</p>
               <p className="text-[11px] text-zinc-500 mt-1 flex items-center justify-center gap-2">
                 <span className="flex items-center gap-0.5">
                   <Users className="w-2.5 h-2.5" />
