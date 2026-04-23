@@ -12,6 +12,8 @@ import type {
   NotificationObject,
   NotificationFilterType,
 } from "@/features/notifications/types";
+import { getAccessToken } from "@/features/auth/utils/token.utils";
+
 
 const FILTER_OPTIONS: { label: string; value: NotificationFilterType }[] = [
   { label: "All notifications", value: "all" },
@@ -99,10 +101,8 @@ export default function NotificationsPage() {
 
   // ── Socket.IO – real-time updates ──────────────────────────────────────────
   useEffect(() => {
-    const token =
-      localStorage.getItem("accessToken") ??
-      sessionStorage.getItem("accessToken") ??
-      "";
+
+    const token = getAccessToken() ?? "";
 
     if (!token) return;
 
