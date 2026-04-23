@@ -1,11 +1,10 @@
-import React, { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, Upload, Plus, Globe, DollarSign, SlidersHorizontal, ArrowUpDown, BarChart, Users, Gift } from "lucide-react";
 import TrackList from "../components/TrackList";
 import ArtistsNavbar from "../components/ArtistsNavbar";
 import ArtistsSidebar from "../components/ArtistsSidebar";
 import { trackService } from "../trackService";
 import type { Track } from "@/shared/types/Track";
-//import { SampleTracks } from "../tests/SampleTracks";
 import { Link } from "react-router-dom";
 import wwwImg from "@/assets/www.png";
 import spotifyImg from "@/assets/spotify.png";
@@ -20,9 +19,11 @@ import pandoraImg from "@/assets/pandora.png";
 import vinylImg from "@/assets/vinyl.png";
 import commentsImg from "@/assets/comment_bubbles.png";
 import { BenefitsSection } from "../components/BenefitsSection";
+import CheckoutModal from "@/features/premium/components/CheckoutModal";
 
 
-function UploadBanner() {
+export function UploadBanner() {
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   return (
     <div className="bg-[hsl(0,0%,11%)] border-b border-[hsl(0,0%,18%)] flex items-center justify-between px-8 py-3 shrink-0">
       <div className="flex items-center gap-3">
@@ -33,9 +34,14 @@ function UploadBanner() {
         </div>
         <span className="text-[hsl(0,100%,99%)] text-sm font-semibold">0 of 180 minutes</span>
       </div>
-      <button className="bg-black text-white text-sm font-bold tracking-tighter px-5 py-2 rounded-full hover:bg-[hsl(0,0%,20%)] transition-colors">
+      <button 
+      onClick={() => setCheckoutOpen(true)}
+      className="bg-black text-white text-sm font-bold tracking-tighter px-5 py-2 rounded-full hover:bg-[hsl(0,0%,20%)] transition-colors">
         Get unlimited uploads
       </button>
+
+      {checkoutOpen && <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />}
+        
     </div>
   );
 }
@@ -102,6 +108,7 @@ function StudioHeader() {
 
 
 function DistributionTab() {
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const platforms = [
     { img: spotifyImg,      alt: "Spotify"       },
     { img: appleMusicImg,   alt: "Apple Music"   },
@@ -130,7 +137,9 @@ function DistributionTab() {
             get your music on to social media like Instagram, TikTok, Facebook
             and others — extending your reach and audience.
           </p>
-          <button className="bg-white text-black text-sm font-bold px-6 py-2.5 rounded-full hover:bg-zinc-200 transition-colors">
+          <button className="bg-white text-black text-sm font-bold px-6 py-2.5 rounded-full hover:bg-zinc-200 transition-colors"
+           onClick={() => setCheckoutOpen(true)}
+           >
             Get Artist Pro
           </button>
         </div>
@@ -188,11 +197,13 @@ function DistributionTab() {
           ))}
         </div>
       </div>
+       {checkoutOpen && <CheckoutModal plan = "artist-pro" onClose={() => setCheckoutOpen(false)} />}
     </div>
   );
 }
 
 function VinylRecordsTab() {
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   return (
     <div className="px-8 py-10 text-white">
 
@@ -217,7 +228,9 @@ function VinylRecordsTab() {
             way, you get paid for every sale.
           </p>
           <div className="flex items-center gap-3">
-            <button className="bg-white text-black text-sm font-bold px-6 py-2.5 rounded-full hover:bg-zinc-200 transition-colors">
+            <button className="bg-white text-black text-sm font-bold px-6 py-2.5 rounded-full hover:bg-zinc-200 transition-colors"
+            onClick={() => setCheckoutOpen(true)}
+            >
               Get Artist Pro
             </button>
             <button className="bg-[hsl(0,0%,16%)] text-white text-sm font-bold px-6 py-2.5 rounded-full hover:bg-[hsl(0,0%,22%)] border border-[hsl(0,0%,26%)] transition-colors">
@@ -319,12 +332,13 @@ function VinylRecordsTab() {
           ))}
         </div>
       </div>
-
+       {checkoutOpen && <CheckoutModal plan = "artist-pro" onClose={() => setCheckoutOpen(false)} />}
     </div>
   );
 }
 
 function CommentsTab() {
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   return (
     <div className="px-8 py-10 text-white">
       <div className="flex items-start justify-between">
@@ -342,7 +356,9 @@ function CommentsTab() {
             fans are saying about you. Read, moderate and respond to your
             comments, all in one place.
           </p>
-          <button className="bg-white text-black text-sm font-bold px-6 py-2.5 rounded-full hover:bg-zinc-200 transition-colors">
+          <button className="bg-white text-black text-sm font-bold px-6 py-2.5 rounded-full hover:bg-zinc-200 transition-colors"
+           onClick={() => setCheckoutOpen(true)}
+           >
             Get Artist Pro
           </button>
         </div>
@@ -351,6 +367,7 @@ function CommentsTab() {
           <img src={commentsImg} alt="Comments Hub" className="w-full h-full object-contain" />
         </div>
       </div>
+       {checkoutOpen && <CheckoutModal plan = "artist-pro" onClose={() => setCheckoutOpen(false)} />}
     </div>
   );
 }
@@ -362,6 +379,7 @@ export default function ArtistsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [visibilityFilter, setVisibilityFilter] = useState<"all" | "public" | "private">("all");
   const [tracks, setTracks] = useState<Track[]>([]);
+  
 
 const handleUpdate = (updatedTrack: Track) => {
   setTracks(prev =>
