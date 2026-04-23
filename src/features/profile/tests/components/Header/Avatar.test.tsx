@@ -13,13 +13,13 @@ describe("Avatar", () => {
     expect(screen.getByAltText("Avatar")).toHaveAttribute("src", "test.jpg");
   });
 
-  it("shows update button if editable", () => {
-    render(<Avatar displayName="Jane" isEditable />);
-    expect(screen.getByText(/update image/i)).toBeInTheDocument();
+  it("shows upload button if editable and no avatar exists", () => {
+    render(<Avatar displayName="Jane" isMe />);
+    expect(screen.getByText(/upload image/i)).toBeInTheDocument();
   });
 
-  it("toggles actions on update button click", () => {
-    render(<Avatar displayName="Jane" isEditable />);
+  it("toggles actions on update button click when avatar exists", () => {
+    render(<Avatar avatarUrl="test.jpg" displayName="Jane" isMe />);
     const updateBtn = screen.getByText(/update image/i);
     fireEvent.click(updateBtn);
     expect(screen.getByText(/replace image/i)).toBeInTheDocument();

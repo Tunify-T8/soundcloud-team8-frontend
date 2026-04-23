@@ -12,13 +12,11 @@ export const storeTokens = (
 ): void => {
   localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
   localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
-  if (expiresIn) {
-    // Store expiry time as a timestamp so we can check later
-    const expiresAt = Date.now() + expiresIn * 1000;
-    localStorage.setItem('sc_expires_at', String(expiresAt));
-  }
+  // Default to 15 minutes if backend doesn't send expiresIn
+  const expiry = expiresIn ?? 900;
+  const expiresAt = Date.now() + expiry * 1000;
+  localStorage.setItem('sc_expires_at', String(expiresAt));
 };
-
 // ── Get tokens ────────────────────────────────────────────────
 export const getAccessToken = (): string | null =>
   localStorage.getItem(ACCESS_TOKEN_KEY);

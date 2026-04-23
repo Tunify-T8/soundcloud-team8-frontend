@@ -25,7 +25,7 @@ describe("UserInfoBar", () => {
   it("shows Edit button if editable", () => {
     render(
       <MemoryRouter>
-        <UserInfoBar isEditable displayName="John" />
+        <UserInfoBar isMe displayName="John" />
       </MemoryRouter>,
     );
     expect(screen.getByText(/edit/i)).toBeInTheDocument();
@@ -34,7 +34,7 @@ describe("UserInfoBar", () => {
   it("opens EditInfo modal on Edit click", () => {
     render(
       <MemoryRouter>
-        <UserInfoBar isEditable displayName="John" />
+        <UserInfoBar isMe displayName="John" />
       </MemoryRouter>,
     );
     fireEvent.click(screen.getByText(/edit/i));

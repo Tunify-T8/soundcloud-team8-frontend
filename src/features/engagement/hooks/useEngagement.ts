@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import { engagementService } from '../services/engagementService';
 import type { EngagementState } from '../types';
 
-export const useEngagement = (trackId: string) => {
-  const [state, setState] = useState<EngagementState>({
-    counts: { likes: 0, reposts: 0, plays: 0, comments: 0 },
-    isLiked: false,
-    isReposted: false,
-  });
+ export const useEngagement = (trackId: string) => {
+   const [state, setState] = useState<EngagementState>({
+     counts: { likes: 0, reposts: 0, plays: 0, comments: 0 },
+     isLiked: false,
+     isReposted: false,
+   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
