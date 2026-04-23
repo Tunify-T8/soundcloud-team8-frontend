@@ -34,7 +34,7 @@ export default function ArtistsSidebar() {
 
     <button className="flex flex-col items-center gap-1.5 text-[hsl(0,0%,45%)] hover:text-white transition-colors w-full py-3">
       <Star className="w-5 h-5" />
-      <span className="text-[10px]">Featured</span>
+      <span className="text-[10px]">For Artists</span>
     </button>
       <div className="mt-auto">
         <button className="flex flex-col gap-[3px] items-center text-[hsl(0,0%,45%)] hover:text-white transition-colors px-3 py-2">
