@@ -17,10 +17,6 @@ export default function Spotlight({ isMe }: SpotlightSectionProps) {
   const [showEditPopover, setShowEditPopover] = useState(false);
   const hoverTimeoutRef = useRef<number | null>(null);
 
-  const handleGetSpotlight = () => {
-    window.open("/plans", "_blank");
-  };
-
   const handleEditMouseEnter = () => {
     if (hoverTimeoutRef.current) {
       window.clearTimeout(hoverTimeoutRef.current);
@@ -36,6 +32,7 @@ export default function Spotlight({ isMe }: SpotlightSectionProps) {
   };
 
   return (
+    <>
     <div className="mt-6 w-full xl:max-w-[calc(100%-23rem)]">
       <div className="mb-3 flex items-center justify-between pr-8">
         <h2 className="text-white font-bold text-[18px]">Spotlight</h2>
@@ -62,7 +59,7 @@ export default function Spotlight({ isMe }: SpotlightSectionProps) {
 
                 <div className="mt-4 flex justify-end">
                   <button
-                    onClick={handleGetSpotlight}
+                    onClick={()=> window.open("/plans", "_blank")}
                     className="rounded-md bg-white px-4 py-2 text-[13px] font-bold text-zinc-900 transition-colors hover:bg-zinc-100"
                   >
                     Learn more
@@ -108,7 +105,7 @@ export default function Spotlight({ isMe }: SpotlightSectionProps) {
             </div>
 
             <button
-              onClick={handleGetSpotlight}
+              onClick={()=> window.open("/plans", "_blank")}
               className="flex-shrink-0 bg-white text-zinc-900 font-bold text-[13px] px-5 py-2.5 rounded transition-all whitespace-nowrap hover:brightness-125 hover:shadow-[0_0_16px_rgba(255,255,255,0.5)]"
             >
               Get Spotlight
@@ -121,5 +118,6 @@ export default function Spotlight({ isMe }: SpotlightSectionProps) {
         Highlight your best tracks and playlists: put them in Spotlight so that your audience will find them first when they visit your profile.
       </p>
     </div>
+    </>
   );
 }
