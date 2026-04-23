@@ -11,9 +11,12 @@ export interface PlayerContextValue {
   currentTrack: TrackMeta | null;
   isPlaying: boolean;
   progress: number;
+  pendingSeek: { trackId: string; progress: number } | null;
   setCurrentTrack: (track: TrackMeta) => void;
   setIsPlaying: (v: boolean) => void;
   setProgress: (v: number) => void;
+  requestSeek: (trackId: string, progress: number) => void;
+  clearPendingSeek: () => void;
 }
 
 // Shape stored in localStorage for recently played entries

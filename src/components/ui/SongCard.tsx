@@ -44,7 +44,7 @@ export default function SongCard({
   repostDisabled = false,
   onToggleRepost,
 }: PlayerProps) {
-  const { currentTrack, isPlaying, progress: playerProgress, setCurrentTrack, setIsPlaying } = usePlayer();
+  const { currentTrack, isPlaying, progress: playerProgress, setCurrentTrack, setIsPlaying, requestSeek } = usePlayer();
 
   const isThisTrack = currentTrack?.id === trackId;
   const playing = isThisTrack && isPlaying;
@@ -82,6 +82,26 @@ export default function SongCard({
   }, [generatorIndex, waveformSeed]);
 
   const displayProgress = isThisTrack ? playerProgress : progress;
+
+  const handleWaveformClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!trackId) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+
+    if (!isThisTrack) {
+      setCurrentTrack({
+        id: trackId,
+        title,
+        artist: artistName,
+        thumbnailUrl: coverUrl || undefined,
+        duration: 0,
+      });
+      setIsPlaying(true);
+    }
+
+    requestSeek(trackId, pct);
+  };
 
   return (
     <div className="bg-[#1a1a1a] border border-[hsl(0,0%,13%)] rounded-sm flex gap-0 overflow-hidden w-full font-sans">
@@ -152,6 +172,7 @@ export default function SongCard({
         <div
           className="flex items-end h-[44px] cursor-pointer mt-1 mb-2 w-full"
           style={{ gap: `${GAP}px` }}
+          onClick={handleWaveformClick}
           onMouseEnter={() => setIsWaveHovered(true)}
           onMouseLeave={() => setIsWaveHovered(false)}
         >

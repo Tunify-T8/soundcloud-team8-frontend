@@ -21,7 +21,15 @@ const formatTime = (s: number) => {
 
 export default function PlayerBar() {
   // ── Pull active track from global context ──────────────────────────────
-  const { currentTrack, isPlaying: contextIsPlaying, setIsPlaying, setProgress } = usePlayer();
+  const {
+    currentTrack,
+    isPlaying: contextIsPlaying,
+    pendingSeek,
+    setIsPlaying,
+    setProgress,
+    requestSeek,
+    clearPendingSeek,
+  } = usePlayer();
 
   const trackId      = currentTrack?.id      ?? "";
   const trackTitle   = currentTrack?.title   ?? "";
@@ -80,6 +88,14 @@ export default function PlayerBar() {
     const nextProgress = duration > 0 ? Math.min(1, Math.max(0, currentTime / duration)) : 0;
     setProgress(nextProgress);
   }, [currentTime, duration, setProgress]);
+
+  useEffect(() => {
+    if (!pendingSeek || pendingSeek.trackId !== trackId || duration <= 0) return;
+    if (status !== "ready" && status !== "playing" && status !== "paused") return;
+
+    seek(pendingSeek.progress * duration);
+    clearPendingSeek();
+  }, [pendingSeek, trackId, duration, status, seek, clearPendingSeek]);
 
   const [showVolume,  setShowVolume]  = useState(false);
   const [isDragging,  setIsDragging]  = useState(false);
@@ -233,7 +249,7 @@ export default function PlayerBar() {
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               const pct  = (e.clientX - rect.left) / rect.width;
-              seek(pct * duration);
+              requestSeek(trackId, pct);
             }}
           >
             <div className="absolute left-0 top-0 h-full bg-zinc-500 rounded-full" style={{ width: `${bufferedPct}%` }} />
