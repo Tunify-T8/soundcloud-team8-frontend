@@ -57,15 +57,16 @@ interface WaveformProps {
   comments:    WaveformComment[];
 }
 
+const WAVEFORM_HEIGHTS = Array.from({ length: 140 }, (_, i) =>
+  18 + Math.abs(Math.sin(i * 0.38) * 50 + Math.sin(i * 0.11) * 28)
+);
+
+
 const Waveform = ({ duration, currentTime, onSeek, comments }: WaveformProps) => {
   const ref      = useRef<HTMLDivElement>(null);
   const progress = duration > 0 ? currentTime / duration : 0;
 
-  const heights = useRef<number[]>(
-    Array.from({ length: 140 }, (_, i) =>
-      18 + Math.abs(Math.sin(i * 0.38) * 50 + Math.sin(i * 0.11) * 28)
-    )
-  );
+  
 
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!ref.current || duration === 0) return;
@@ -82,8 +83,8 @@ const Waveform = ({ duration, currentTime, onSeek, comments }: WaveformProps) =>
         className="relative h-[88px] flex items-end gap-px px-1 cursor-pointer select-none"
         style={{ background: 'transparent' }}
       >
-        {heights.current.map((h, i) => {
-          const ratio  = i / heights.current.length;
+        {WAVEFORM_HEIGHTS.map((h, i) => {
+          const ratio  = i / WAVEFORM_HEIGHTS.length;
           const played = ratio < progress;
           return (
             <div
