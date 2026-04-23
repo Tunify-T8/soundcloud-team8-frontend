@@ -1,17 +1,18 @@
 import { useState, useEffect, useRef } from "react";
 import { ChevronDown, MoreHorizontal } from "lucide-react";
 import { Link } from "react-router-dom";
+import { io } from "socket.io-client";
 import {
   getNotifications,
   markAllAsRead,
   markNotificationAsRead,
   followUser,
- 
-} from "@/features/notifications/service/service"; 
+} from "@/features/notifications/service/service";
 import type {
-     NotificationObject,
-  NotificationFilterType
- } from "@/features/notifications/types"
+  NotificationObject,
+  NotificationFilterType,
+} from "@/features/notifications/types";
+
 const FILTER_OPTIONS: { label: string; value: NotificationFilterType }[] = [
   { label: "All notifications", value: "all" },
   { label: "Likes", value: "like" },
@@ -32,6 +33,30 @@ function timeAgo(dateStr: string): string {
   return `${days} day${days !== 1 ? "s" : ""} ago`;
 }
 
+/**
+ * Normalise the raw socket payload to match NotificationObject.
+ * The backend emits e.g. type:"user_followed" but our type union uses "follow".
+ */
+function normaliseSocketPayload(raw: Record<string, unknown>): NotificationObject {
+  const typeMap: Record<string, string> = {
+    user_followed: "follow",
+    track_liked: "like",
+    track_commented: "comment",
+    track_reposted: "repost",
+  };
+  const rawType = raw.type as string;
+  return {
+    id: raw.id as string,
+    type: (typeMap[rawType] ?? rawType) as NotificationObject["type"],
+    actor: raw.actor as NotificationObject["actor"],
+    referenceId: (raw.referenceId ?? null) as string | null,
+    message: raw.message as string,
+    isRead: false,
+    readAt: null,
+    createdAt: raw.createdAt as string,
+  };
+}
+
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<NotificationObject[]>([]);
   const [filter, setFilter] = useState<NotificationFilterType>("follow");
@@ -43,6 +68,7 @@ export default function NotificationsPage() {
   const currentFilterLabel =
     FILTER_OPTIONS.find((o) => o.value === filter)?.label ?? "Follows";
 
+  // ── Outside-click for filter dropdown ──────────────────────────────────────
   useEffect(() => {
     const handleOutside = (e: MouseEvent) => {
       if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
@@ -53,6 +79,7 @@ export default function NotificationsPage() {
     return () => document.removeEventListener("mousedown", handleOutside);
   }, []);
 
+  // ── Fetch on filter change ──────────────────────────────────────────────────
   useEffect(() => {
     fetchNotifications();
   }, [filter]);
@@ -60,8 +87,7 @@ export default function NotificationsPage() {
   async function fetchNotifications() {
     setLoading(true);
     try {
-      const params =
-        filter === "all" ? {} : { type: filter };
+      const params = filter === "all" ? {} : { type: filter };
       const res = await getNotifications({ limit: 50, ...params });
       setNotifications(res.data);
     } catch {
@@ -71,6 +97,48 @@ export default function NotificationsPage() {
     }
   }
 
+  // ── Socket.IO – real-time updates ──────────────────────────────────────────
+  useEffect(() => {
+    const token =
+      localStorage.getItem("accessToken") ??
+      sessionStorage.getItem("accessToken") ??
+      "";
+
+    if (!token) return;
+
+    const socket = io("https://tunify.duckdns.org/notifications", {
+      query: { token },
+      transports: ["websocket"],
+      reconnectionAttempts: 5,
+      reconnectionDelay: 3000,
+    });
+
+    const handleNewNotification = (raw: Record<string, unknown>) => {
+      try {
+        const notif = normaliseSocketPayload(raw);
+        // Only prepend if it matches the active filter (or "all")
+        const matches =
+          filter === "all" || notif.type === filter;
+        if (matches) {
+          setNotifications((prev) => [notif, ...prev]);
+        }
+      } catch {
+        // Malformed payload — ignore
+      }
+    };
+
+    socket.on("notification", handleNewNotification);
+    socket.on("user_followed", handleNewNotification);
+    socket.on("track_liked", handleNewNotification);
+    socket.on("track_commented", handleNewNotification);
+    socket.on("track_reposted", handleNewNotification);
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [filter]);
+
+  // ── Actions ────────────────────────────────────────────────────────────────
   async function handleFollowBack(actorId: string, notifId: string) {
     try {
       await followUser(actorId);

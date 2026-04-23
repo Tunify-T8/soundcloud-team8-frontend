@@ -19,6 +19,8 @@ import {
   
 } from "@/features/notifications/service/service"; 
 import type {NotificationObject} from "@/features/notifications/types"
+import { getAccessToken } from "@/features/auth/utils/token.utils";
+
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -99,10 +101,8 @@ export default function Navbar() {
   // ── Socket.IO ─────────────────────────────────────────────────────────────
   useEffect(() => {
     // Grab the JWT however your app stores it (adjust if needed)
-    const token =
-      localStorage.getItem("accessToken") ??
-      sessionStorage.getItem("accessToken") ??
-      "";
+    const token = getAccessToken() ?? "";
+
 
     if (!token) return; // Not logged in — skip socket
 
