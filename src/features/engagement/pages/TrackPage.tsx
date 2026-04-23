@@ -244,8 +244,6 @@ const TrackPage = () => {
 
   useEffect(() => {
     if (!trackId) return;
-    setLoading(true);
-    setError(null);
     engagementService.getTrackDetails(trackId)
       .then(setTrack)
       .catch(() => setError('Failed to load track'))
