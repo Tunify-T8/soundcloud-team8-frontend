@@ -100,6 +100,30 @@ const router = createBrowserRouter([
         element: <LibraryPage />
       },
       {
+        path: '/me/likes',
+        element: <LibraryPage />
+      },
+      {
+        path: '/me/albums',
+        element: <LibraryPage />
+      },
+      {
+        path: '/me/sets',
+        element: <LibraryPage />
+      },
+      {
+        path: '/me/stations',
+        element: <LibraryPage />
+      },
+       {
+        path: '/me/following',
+        element: <LibraryPage />
+      },
+      {
+        path: '/me/history',
+        element: <LibraryPage />
+      },
+      {
         path: "/me",
         element: <ProfilePage />,
         children: [
