@@ -106,10 +106,10 @@ function StudioHeader() {
           <Link to = "/me/insights/fanz"> 
         <button className="group flex flex-col items-center gap-1.5 transition-colors">
         
-          <div className="relative">
-            <img src={fansImg}      alt="Fans" className="w-10 h-10 object-contain transition-all duration-200 group-hover:scale-130 group-hover:opacity-0 absolute" />
+          <div className="relative overview-visible">
+            <img src={fansImg}      alt="Fans" className="w-10 h-11 object-contain transition-all duration-200 group-hover:scale-130 group-hover:opacity-0 absolute" />
             <img src={fansHoverImg} alt="Fans" className="w-8 h-8 object-contain transition-all duration-200 group-hover:scale-125 opacity-0 group-hover:opacity-100" />
-            <span className="absolute -top-1 -right-2 w-3.5 h-3.5 bg-yellow-400 rounded-full flex items-center justify-center text-black" style={{ fontSize: "8px", fontWeight: 900 }}>★</span>
+            <span className="absolute top-1 right-[-7px] right-0.5 w-3.5 h-3.5 bg-yellow-400 rounded-full flex items-center justify-center text-black" style={{ fontSize: "8px", fontWeight: 900 }}>★</span>
           </div>
           <span className="text-xs font-bold text-[hsl(0,0%,65%)] group-hover:text-white transition-colors">Fans</span>
           <span className="text-[10px] font-bold tracking-widest text-yellow-400 opacity-0 group-hover:opacity-100 transition-opacity -mt-1">ARTIST PRO</span>
@@ -119,10 +119,10 @@ function StudioHeader() {
 
         {/* Benefits */}
         <button className="group flex flex-col items-center gap-1.5 transition-colors">
-          <div className="relative">
+          <div className="relative overview-visible">
             <img src={benefitsImg}      alt="Benefits" className="w-8 h-8 object-contain transition-all duration-200 group-hover:scale-125 group-hover:opacity-0 absolute" />
             <img src={benefitsHoverImg} alt="Benefits" className="w-8 h-8 object-contain transition-all duration-200 group-hover:scale-125 opacity-0 group-hover:opacity-100" />
-            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold" style={{ fontSize: "9px" }}>+</span>
+            <span className="absolute top-1 right-[-7px] w-3.5 h-3.5 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold" style={{ fontSize: "9px" }}>+</span>
           </div>
           <span className="text-xs font-bold text-[hsl(0,0%,65%)] group-hover:text-white transition-colors">Benefits</span>
           <span className="text-[10px] font-bold tracking-widest text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity -mt-1">ARTIST</span>
@@ -457,7 +457,7 @@ export default function ArtistsPage() {
         <ArtistsNavbar />
         <UploadBanner />
 
-        <div className="flex-1 overflow-y-auto [overflow-x:clip]">
+        <div className="flex-1 overflow-y-auto overflow-x-visible">
           <StudioHeader />
 
           {/* Tabs — horizontally scrollable on mobile */}
