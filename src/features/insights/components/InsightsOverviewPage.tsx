@@ -266,6 +266,7 @@ export default function InsightsOverviewPage() {
               <button
                 type="button"
                 className="border border-white px-6 py-3 text-sm font-bold text-white hover:bg-white hover:text-black transition-colors cursor-pointer"
+                onClick={() => window.open("/plans", "_blank")}
               >
                 Upgrade to Artist Pro
               </button>
@@ -297,6 +298,7 @@ export default function InsightsOverviewPage() {
               <button
                 type="button"
                 className="border border-white px-6 py-3 text-sm font-bold text-white hover:bg-white hover:text-black transition-colors cursor-pointer"
+                onClick={() => window.open("/plans", "_blank")}
               >
                 Upgrade to Artist Pro
               </button>
