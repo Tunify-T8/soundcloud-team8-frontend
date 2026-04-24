@@ -4,8 +4,7 @@ import {
   RouterProvider,
   Navigate,
 } from "react-router-dom";
-// import LikesPage from "./features/engagement/pages/LikesPage"
-// import RepostsPage from "./features/engagement/pages/RepostsPage"
+
 import UploadPage from "./features/upload/pages/UploadPage";
 import ArtistsPage from "./features/track-management/pages/ArtistsPage";
 import ProfilePage from "./features/profile/pages/ProfilePage";
@@ -38,6 +37,7 @@ import LibraryPage from "./features/library/pages/LibraryPage";
 
 import PlansPage from "./features/premium/pages/PlansPage";
 import AllTabPage from  "./features/profile/pages/UserInfoBar/AllTabPage";
+import InsightsOverviewPage from "./features/insights/components/InsightsOverviewPage";
 
 const router = createBrowserRouter([
   {
@@ -95,18 +95,6 @@ const router = createBrowserRouter([
         path: "/search",
         element: <SearchPage />,
       },
-      // {
-      //   path: '/:artist/:songName',
-      //   element: <TrackPage />
-      // },
-      // {
-      //   path: '/:artist/:songName/likes',
-      //   element: <LikesPage />
-      // },
-      // {
-      //   path: '/:artist/:songName/reposts',
-      //   element: <RepostsPage />
-      // },
       {
         path: '/library',
         element: <LibraryPage />
@@ -123,7 +111,7 @@ const router = createBrowserRouter([
           { path: "reposts", element: <ProfileRepostsPage /> },
         ],
       },
-      // Add public user profile route
+      { path: "/me/insights/overview", element: <InsightsOverviewPage /> },
       {
         path: "/:username",
         element: <ProfilePage />,
