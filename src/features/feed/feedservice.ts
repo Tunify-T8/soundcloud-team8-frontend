@@ -33,7 +33,6 @@ export const feedService = {
     }
   },
 
-  // ─── Likes ──────────────────────────────────────────────────────────────────
   async likeTrack(trackId: string): Promise<void> {
     await api.post(`/tracks/${trackId}/like`);
   },
@@ -42,21 +41,37 @@ export const feedService = {
     await api.delete(`/tracks/${trackId}/like`);
   },
 
-  // ─── Search ─────────────────────────────────────────────────────────────────
-  // Used by both the dropdown (no type) and the full search page (with type)
-  async search(query: string, type?: string): Promise<SearchResult[]> {
+  async searchTracks(query: string): Promise<SearchResult[]> {
     if (!query.trim()) return [];
     try {
-      const params: Record<string, string> = { q: query };
-      if (type) params.type = type;
-      const response = await api.get("/search", { params });
-      return response.data.data;
-    } catch {
-      return [];
-    }
+      const response = await api.get("/search/tracks/", { params: { q: query.toLowerCase() } });
+      return response.data.data ?? [];
+    } catch { return []; }
   },
 
-  // ─── My Likes (sidebar section) ─────────────────────────────────────────────
+  async searchPeople(query: string): Promise<SearchResult[]> {
+    if (!query.trim()) return [];
+    try {
+      const response = await api.get("/search/people/", { params: { q: query.toLowerCase() } });
+      return response.data.data ?? [];
+    } catch { return []; }
+  },
+
+  async searchCollections(query: string): Promise<SearchResult[]> {
+    if (!query.trim()) return [];
+    try {
+      const response = await api.get("/search/collections/", { params: { q: query.toLowerCase() } });
+      return response.data.data ?? [];
+    } catch { return []; }
+  },
+  async search(query: string): Promise<SearchResult[]> {
+    if (!query.trim()) return [];
+    try {
+      const response = await api.get("/search/", { params: { q: query.toLowerCase() } });
+      return response.data.data ?? [];
+    } catch { return []; }
+  },
+
   async getMyLikes(limit = 4): Promise<LikedTrack[]> {
     try {
       const response = await api.get("/users/me/likes", { params: { limit } });

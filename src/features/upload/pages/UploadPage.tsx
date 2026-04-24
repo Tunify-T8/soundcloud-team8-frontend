@@ -5,12 +5,15 @@ import { useDispatch } from "react-redux";
 import { useAppSelector } from "../../../app/hooks"; // Add this import
 import { setAudioSource } from "../../../store/AudioSourceSlice";
 import { SiSoundcloud } from "react-icons/si";
+import CheckoutModal from "@/features/premium/components/CheckoutModal";
+import { Upload } from "lucide-react";
 
 
 export default function SoundCloudUpload() {
   const [isDragging, setIsDragging] = useState(false);
   const [micOpen, setMicOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   const dispatch = useDispatch();
   const readyToNavigate = useAppSelector((s) => s.audioSource.readyToNavigate);
@@ -79,17 +82,24 @@ export default function SoundCloudUpload() {
       <main className="flex-1 flex justify-center px-6 py-10">
         <div className="w-full max-w-[1100px]">
 
-          {/* PROGRESS */}
-          <div className="bg-[#1f1f1f] border border-[#2a2a2a] rounded-lg px-6 py-4 flex items-center gap-4 mb-10 shadow-[0_0_0_1px_rgba(255,255,255,0.02),0_10px_30px_rgba(0,0,0,0.6)]">
-            <span className="text-[13px] text-[#aaa] whitespace-nowrap">0% of uploads used</span>
-            <div className="flex-1 h-[6px] bg-[#2c2c2c] rounded-full overflow-hidden">
-              <div className="h-full w-0 bg-[#ff5500]" />
-            </div>
-            <span className="text-[13px] text-[#aaa] whitespace-nowrap">0 of 120 minutes</span>
-            <button className="ml-auto border border-[#444] text-[13px] px-4 py-1.5 rounded-full hover:bg-[#2a2a2a] transition">
-              Get unlimited uploads
-            </button>
-          </div>
+          <div className="bg-[hsl(0,0%,11%)] border-b border-[hsl(0,0%,18%)] flex items-center justify-between px-8 py-3 shrink-0">
+               <div className="flex items-center gap-3">
+                 <Upload className="w-4 h-4 text-[hsl(0,0%,60%)]" />
+                 <span className="text-white text-sm font-medium tracking-tighter">0% of uploads used</span>
+                 <div className="w-44 h-1.5 bg-[hsl(0,0%,23%)] rounded-full overflow-hidden">
+                   <div className="h-full bg-[hsl(0,0%,50%)] rounded-full" style={{ width: "0%" }} />
+                 </div>
+                 <span className="text-[hsl(0,100%,99%)] text-sm font-semibold">0 of 180 minutes</span>
+               </div>
+               <button 
+               onClick={() => setCheckoutOpen(true)}
+               className="bg-black text-white text-sm font-bold tracking-tighter px-5 py-2 rounded-full hover:bg-[hsl(0,0%,20%)] transition-colors">
+                 Get unlimited uploads
+               </button>
+         
+               {checkoutOpen && <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />}
+                 
+             </div>
 
           {/* TITLE */}
           <h1 className="text-[26px] font-semibold mb-2">Upload your audio files.</h1>
@@ -151,6 +161,7 @@ export default function SoundCloudUpload() {
           </footer>
         </div>
       </main>
+       {checkoutOpen && <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />}
     </div>
   );
 }

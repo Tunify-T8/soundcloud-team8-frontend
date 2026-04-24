@@ -13,8 +13,8 @@ export default function FollowingPage() {
   useEffect(() => {
     const isMeRoute = !username;
     if (isMeRoute && !me?.id) {
-      setFollowing([]);
-      setLoading(false);
+      if (following.length !== 0) setFollowing([]);
+      if (loading) setLoading(false);
       return;
     }
 
@@ -34,7 +34,11 @@ export default function FollowingPage() {
   }, [username, me?.id]);
 
   if (loading) {
-    return <div className="w-10/12 mx-auto mt-8 text-zinc-400">Loading following...</div>;
+    return (
+      <div className="w-10/12 mx-auto mt-8 text-zinc-400">
+        Loading following...
+      </div>
+    );
   }
 
   return (
@@ -47,7 +51,7 @@ export default function FollowingPage() {
           {following.map((user) => (
             <Link
               key={user.id}
-              to={`/${user.username}`}
+              to={`/${user.id}`}
               className="flex items-center justify-between rounded border border-zinc-800 bg-zinc-900/50 px-4 py-3 hover:border-zinc-700"
             >
               <div className="flex items-center gap-3">
