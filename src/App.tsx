@@ -38,6 +38,8 @@ import LibraryPage from "./features/library/pages/LibraryPage";
 import PlansPage from "./features/premium/pages/PlansPage";
 import AllTabPage from  "./features/profile/pages/UserInfoBar/AllTabPage";
 import InsightsOverviewPage from "./features/insights/components/InsightsOverviewPage";
+import { AdPopup } from "./features/premium/components/AdPopUp";
+
 
 const router = createBrowserRouter([
   {
@@ -75,6 +77,7 @@ const router = createBrowserRouter([
       <ProtectedRoute>
         <ProfileProvider>
           <NavBar />
+          <AdPopup />
         </ProfileProvider>
       </ProtectedRoute>
     ),
