@@ -59,7 +59,7 @@ export default function Navbar() {
     { to: "/who-to-follow", icon: <UserPlus size={17} />,    label: "Who to follow" },
     { to: "#",           icon: <Star size={17} />,        label: "Try Artist Pro", orange: true, action: () => window.open("/plans", "_blank")},
     { to: "/benefits",      icon: <Star size={17} />,        label: "Benefits" },
-    { to: "/tracks",        icon: <BarChart2 size={17} />,   label: "Tracks" },
+    { to: "/artists",        icon: <BarChart2 size={17} />,   label: "Tracks" },
     { to: "/me/insights/overview",      icon: <TrendingUp size={17} />,  label: "Insights" },
     { to: "#",    icon: <Share2 size={17} />,      label: "Distribute", action: () => window.open("/plans", "_blank") },
   ];
