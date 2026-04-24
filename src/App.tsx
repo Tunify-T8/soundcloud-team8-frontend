@@ -54,13 +54,13 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/create-account",
-    element: (
-      <PublicOnlyRoute>
-        <SignUpPage />
-      </PublicOnlyRoute>
-    ),
-  },
+  path: "/create-account",
+  element: (
+    <PublicOnlyRoute>
+      <SignUpPage />
+    </PublicOnlyRoute>
+  ),
+},
   {
     path: "/forgot-password",
     element: <ForgotPasswordPage />,

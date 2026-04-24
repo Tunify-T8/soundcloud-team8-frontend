@@ -45,7 +45,6 @@ export default function Navbar() {
     try {
       await logout();
     } catch {
-      // clear tokens regardless
     }
     navigate("/signin");
   };
@@ -94,7 +93,6 @@ export default function Navbar() {
       <nav className="w-full h-12 bg-black text-white border-b border-zinc-800 sticky top-0 z-50">
         <div className="max-w-[1200px] mx-auto h-full flex items-center justify-between px-6">
 
-          {/* Left links */}
           <div className="flex items-center gap-6">
             <Link to="/" className="text-white">
               <SiSoundcloud size={35} />
@@ -104,7 +102,6 @@ export default function Navbar() {
             <Link to="/library" className="text-zinc-400 hover:text-white font-bold tracking-tight">Library</Link>
           </div>
 
-          {/* Search */}
           <div className="relative w-[420px]">
             <SearchBar />
           </div>
