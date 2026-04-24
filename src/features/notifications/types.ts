@@ -1,11 +1,12 @@
 
 export type NotificationType =
-  | "follow"
-  | "like"
-  | "comment"
-  | "repost"
+  | "user_followed"
+  | "track_liked"
+  | "track_commented"
+  | "track_reposted"
+  | "new_release"
+  | "new_message"
   | "system"
-  | "reaction"
   | "subscription";
  
 export interface NotificationActor {
@@ -59,10 +60,14 @@ export interface PreferenceChannel {
  
 export type NotificationFilterType =
   | "all"
-  | "like"
-  | "comment"
-  | "follow"
-  | "repost";
+  | "track_liked"
+  | "track_commented"
+  | "user_followed"
+  | "track_reposted"
+  | "new_release"
+  | "new_message"
+  | "system"
+  | "subscription";
  
 export interface GetNotificationsParams {
   page?: number;

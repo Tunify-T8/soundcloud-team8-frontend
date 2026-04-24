@@ -40,19 +40,9 @@ function timeAgo(dateStr: string): string {
  * Normalise any incoming socket payload so it fits NotificationObject.
  */
 function normaliseSocketPayload(raw: Record<string, unknown>): NotificationObject {
-  const typeMap: Record<string, string> = {
-    user_followed: "follow",
-    track_liked: "like",
-    track_commented: "comment",
-    track_reposted: "repost",
-  };
-
-  const rawType = raw.type as string;
-  const normalisedType = typeMap[rawType] ?? rawType;
-
   return {
     id: raw.id as string,
-    type: normalisedType as NotificationObject["type"],
+    type: raw.type as NotificationObject["type"],
     actor: raw.actor as NotificationObject["actor"],
     referenceId: (raw.referenceId ?? null) as string | null,
     message: raw.message as string,
@@ -484,7 +474,7 @@ function DropdownNotifRow({
             {notif.actor?.username}
           </Link>{" "}
           <span className="text-white font-normal">
-            {notif.type === "follow" ? "started following you" : notif.message}
+            {notif.type === "user_followed" ? "started following you" : notif.message}
           </span>
         </p>
         <p className="flex items-center gap-1 text-xs text-zinc-500 mt-1">
@@ -493,7 +483,7 @@ function DropdownNotifRow({
         </p>
       </div>
 
-      {notif.type === "follow" && (
+      {notif.type === "user_followed" && (
         <button
           onClick={(e) => { e.stopPropagation(); onFollowBack(); }}
           disabled={followedBack}
