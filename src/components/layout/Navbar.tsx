@@ -60,7 +60,7 @@ export default function Navbar() {
     { to: "#",           icon: <Star size={17} />,        label: "Try Artist Pro", orange: true, action: () => window.open("/plans", "_blank")},
     { to: "/benefits",      icon: <Star size={17} />,        label: "Benefits" },
     { to: "/tracks",        icon: <BarChart2 size={17} />,   label: "Tracks" },
-    { to: "/insights",      icon: <TrendingUp size={17} />,  label: "Insights" },
+    { to: "/me/insights/overview",      icon: <TrendingUp size={17} />,  label: "Insights" },
     { to: "/distribute",    icon: <Share2 size={17} />,      label: "Distribute" },
   ];
 

@@ -1,3 +1,5 @@
+import allPlatformsImg from "@/assets/all_platforms.png";
+import fansImg from "@/assets/fanz.png";
 import { useState } from "react";
 import { ChevronDown, X } from "lucide-react";
 import { MdPlayArrow } from "react-icons/md";
@@ -34,69 +36,7 @@ const STAT_ICONS: Record<StatKey, React.ReactNode> = {
   downloads: <FaDownload size={13} />,
 };
 
-// ── Decorative SVG for All Platforms upsell card ──────────────────────────────
-function AllPlatformsIllustration() {
-  return (
-    <svg viewBox="0 0 260 260" xmlns="http://www.w3.org/2000/svg" className="w-56 h-56">
-      <rect x="60" y="60" width="130" height="120" rx="18" fill="#2d1b6e" />
-      <rect x="72" y="72" width="106" height="90" rx="12" fill="#1a0f3c" />
-      <rect x="85" y="100" width="8" height="30" rx="4" fill="#7c3aed" opacity="0.9" />
-      <rect x="99" y="90" width="8" height="50" rx="4" fill="#a855f7" opacity="0.9" />
-      <rect x="113" y="105" width="8" height="25" rx="4" fill="#7c3aed" opacity="0.9" />
-      <rect x="127" y="85" width="8" height="55" rx="4" fill="#ec4899" opacity="0.9" />
-      <rect x="141" y="98" width="8" height="32" rx="4" fill="#a855f7" opacity="0.9" />
-      <rect x="155" y="110" width="8" height="20" rx="4" fill="#7c3aed" opacity="0.9" />
-      <circle cx="125" cy="158" r="12" fill="#2d1b6e" stroke="#7c3aed" strokeWidth="1.5" />
-      <polygon points="122,154 122,162 131,158" fill="#a855f7" />
-      <g transform="translate(100,158)">
-        <polygon points="-6,-5 -6,5 0,0" fill="#555" />
-        <rect x="1" y="-5" width="2" height="10" rx="1" fill="#555" />
-      </g>
-      <g transform="translate(150,158)">
-        <polygon points="6,-5 6,5 0,0" fill="#555" />
-        <rect x="-3" y="-5" width="2" height="10" rx="1" fill="#555" />
-      </g>
-      <path d="M125 180 C125 210, 160 200, 175 230" stroke="#7c3aed" strokeWidth="4" fill="none" strokeLinecap="round" />
-      <circle cx="175" cy="233" r="5" fill="#555" />
-      <path d="M180 70 C190 50, 210 60, 220 45 C230 30, 215 20, 225 10" stroke="#ec4899" strokeWidth="3" fill="none" strokeLinecap="round" />
-      <path d="M185 75 C200 65, 215 75, 225 60" stroke="#f472b6" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.6" />
-      <polygon points="100,130 115,105 130,130" fill="#ec4899" opacity="0.25" />
-    </svg>
-  );
-}
 
-// ── Decorative SVG for Fans upsell card ──────────────────────────────────────
-function FansIllustration() {
-  return (
-    <svg viewBox="0 0 280 220" xmlns="http://www.w3.org/2000/svg" className="w-64 h-52">
-      {/* back card */}
-      <rect x="10" y="20" width="180" height="100" rx="10" fill="#1c1c1c" stroke="#333" strokeWidth="1" />
-      <circle cx="45" cy="55" r="20" fill="#7c3aed" opacity="0.8" />
-      <circle cx="45" cy="48" r="8" fill="#a78bfa" />
-      <ellipse cx="45" cy="70" rx="13" ry="8" fill="#a78bfa" />
-      <rect x="72" y="44" width="70" height="8" rx="4" fill="#444" />
-      <rect x="72" y="58" width="50" height="6" rx="3" fill="#333" />
-      <rect x="72" y="72" width="90" height="5" rx="2.5" fill="#222" />
-      <rect x="72" y="72" width="55" height="5" rx="2.5" fill="#ec4899" />
-      <rect x="72" y="82" width="38" height="16" rx="4" fill="#333" />
-      <rect x="116" y="82" width="38" height="16" rx="4" fill="#7c3aed" opacity="0.7" />
-      {/* front card */}
-      <rect x="90" y="100" width="175" height="100" rx="10" fill="#1c1c1c" stroke="#333" strokeWidth="1" />
-      <circle cx="125" cy="135" r="20" fill="#be185d" opacity="0.8" />
-      <circle cx="125" cy="128" r="8" fill="#f9a8d4" />
-      <ellipse cx="125" cy="150" rx="13" ry="8" fill="#f9a8d4" />
-      <rect x="152" y="124" width="70" height="8" rx="4" fill="#444" />
-      <rect x="152" y="138" width="50" height="6" rx="3" fill="#333" />
-      <rect x="152" y="152" width="90" height="5" rx="2.5" fill="#222" />
-      <rect x="152" y="152" width="72" height="5" rx="2.5" fill="#7c3aed" />
-      <rect x="152" y="162" width="38" height="16" rx="4" fill="#333" />
-      <rect x="196" y="162" width="38" height="16" rx="4" fill="#be185d" opacity="0.7" />
-      {/* sparkles */}
-      <path d="M200 25 L203 18 L206 25 L213 28 L206 31 L203 38 L200 31 L193 28 Z" fill="white" opacity="0.9" />
-      <path d="M255 55 L257 50 L259 55 L264 57 L259 59 L257 64 L255 59 L250 57 Z" fill="white" opacity="0.5" />
-    </svg>
-  );
-}
 
 export default function InsightsOverviewPage() {
   const [activeTab, setActiveTab] = useState<InsightsTab>("soundcloud");
@@ -254,7 +194,7 @@ export default function InsightsOverviewPage() {
         {activeTab === "all-platforms" && (
           <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-10 flex items-center justify-between gap-8">
             <div className="max-w-lg">
-              <h2 className="text-3xl font-bold mb-5 leading-snug tracking-tight">
+              <h2 className="text-3xl font-bold mb-5 leading-snug">
                 Unlock key performance and audience insights across multiple platforms for your music
               </h2>
               <p className="text-sm text-zinc-300 mb-3 leading-relaxed">
@@ -272,7 +212,11 @@ export default function InsightsOverviewPage() {
               </button>
             </div>
             <div className="shrink-0 hidden md:block">
-              <AllPlatformsIllustration />
+              <img
+                src={allPlatformsImg}
+                alt="All platforms illustration"
+                className="w-56 h-auto object-contain"
+              />
             </div>
           </div>
         )}
@@ -304,7 +248,11 @@ export default function InsightsOverviewPage() {
               </button>
             </div>
             <div className="shrink-0 hidden md:block">
-              <FansIllustration />
+              <img
+                src={fansImg}
+                alt="Fans illustration"
+                className="w-56 h-auto object-contain"
+              />
             </div>
           </div>
         )}
@@ -317,7 +265,7 @@ export default function InsightsOverviewPage() {
           onClick={() => setShowAboutModal(false)}
         >
           <div
-            className="relative bg-zinc-950 rounded-lg max-w-lg w-full mx-4 p-8 flex gap-6 shadow-2xl border border-zinc-800"
+            className="relative bg-zinc-950 max-w-2xl w-full mx-4 p-8 flex gap-6 shadow-2xl border border-zinc-800"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex-1">
@@ -350,8 +298,12 @@ export default function InsightsOverviewPage() {
               </button>
             </div>
             {/* Illustration */}
-            <div className="hidden sm:flex items-center justify-center w-40 shrink-0">
-              <AllPlatformsIllustration />
+            <div className="hidden sm:flex items-center justify-center w-60 shrink-0">
+              <img
+                src={allPlatformsImg}
+                alt="All platforms illustration"
+                className="w-full h-auto object-contain"
+              />
             </div>
             <button
               type="button"
