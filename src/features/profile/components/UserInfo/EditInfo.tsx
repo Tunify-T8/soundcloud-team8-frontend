@@ -1,6 +1,7 @@
 import Avatar from "../Header/Avatar";
 import { useEffect, useState } from "react";
 import { FiInfo } from "react-icons/fi";
+import { X } from "lucide-react";
 import { profileService } from "../../profileService";
 import type {
   SocialPlatform,
@@ -166,8 +167,16 @@ export default function EditInfo({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-white/40">
-      <div className="mx-auto my-6 flex max-h-[90vh] w-[95%] max-w-3xl flex-col overflow-y-auto rounded-md bg-zinc-900 p-6">
+    <div className="fixed inset-0 z-50 overflow-y-auto hide-scrollbar bg-white/40">
+      <button
+        onClick={onClick}
+        className="fixed right-6 top-6 z-[72] flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800 text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white"
+        aria-label="Close edit profile overlay"
+      >
+        <X className="h-5 w-5" />
+      </button>
+
+      <div className="mx-auto my-6 flex max-h-[90vh] w-[95%] max-w-3xl flex-col overflow-y-auto hide-scrollbar rounded-md bg-zinc-900 p-6">
         <h2 className="text-lg font-bold mb-6">Edit your Profile</h2>
 
         {errorMsg && (

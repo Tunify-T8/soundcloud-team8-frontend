@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { playlistService } from "../libraryService";
-import type { CollectionPreview } from "../types";
+import { playlistService } from "../../libraryService";
+import type { CollectionPreview } from "../../types";
 
 const COLS = 6;
 
