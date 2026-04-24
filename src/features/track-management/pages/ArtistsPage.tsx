@@ -21,6 +21,12 @@ import commentsImg from "@/assets/comment_bubbles.png";
 import { BenefitsSection } from "../components/BenefitsSection";
 import CheckoutModal from "@/features/premium/components/CheckoutModal";
 
+import insightsImg from "@/assets/insights.png";
+import earningsImg from "@/assets/monetize.png";
+import fansImg from "@/assets/top_fans.png";
+import benefitsImg from "@/assets/benefits.png";
+import fansHoverImg from "@/assets/top_fans_hover.png";
+import benefitsHoverImg from "@/assets/benefits_hover.png";
 
 export function UploadBanner() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -79,32 +85,49 @@ function StudioHeader() {
           </div>
         </div>
 
-        <div className="w-px bg-[hsl(0,0%,20%)] self-stretch mx-5 sm:mx-7 shrink-0" />
+     
+       <div className="w-px bg-[hsl(0,0%,20%)] self-stretch mx-7" />
 
-        <div className="flex items-center gap-5 sm:gap-7 shrink-0">
-          <button className="flex flex-col items-center gap-1.5 text-[hsl(0,0%,65%)] hover:text-white transition-colors">
-            <BarChart className="w-5 h-5 sm:w-6 sm:h-6" />
-            <span className="text-xs">Insights</span>
-          </button>
-          <button className="flex flex-col items-center gap-1.5 text-[hsl(0,0%,65%)] hover:text-white transition-colors">
-            <DollarSign className="w-5 h-5 sm:w-6 sm:h-6" />
-            <span className="text-xs">Earnings</span>
-          </button>
-          <button className="flex flex-col items-center gap-1.5 text-[hsl(0,0%,65%)] hover:text-white transition-colors">
-            <div className="relative">
-              <Users className="w-5 h-5 sm:w-6 sm:h-6" />
-              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-yellow-400 rounded-full flex items-center justify-center text-black" style={{ fontSize: "8px", fontWeight: 900 }}>★</span>
-            </div>
-            <span className="text-xs">Fans</span>
-          </button>
-          <button className="flex flex-col items-center gap-1.5 text-[hsl(0,0%,65%)] hover:text-white transition-colors">
-            <div className="relative">
-              <Gift className="w-5 h-5 sm:w-6 sm:h-6" />
-              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold" style={{ fontSize: "9px" }}>+</span>
-            </div>
-            <span className="text-xs">Benefits</span>
-          </button>
-        </div>
+      <div className="flex items-center justify-between flex-1">
+        {/* Insights */}
+        <button className="group flex flex-col items-center gap-1.5 transition-colors">
+          <img src={insightsImg} alt="Insights" className="w-8 h-8 object-contain transition-transform duration-200 group-hover:scale-125" />
+          <span className="text-xs font-bold text-[hsl(0,0%,65%)] group-hover:text-white transition-colors">Insights</span>
+          <span className="text-[10px] font-bold tracking-tight text-[hsl(0,0%,65%)] opacity-0 group-hover:opacity-100 transition-opacity -mt-1">Limited</span>
+        </button>
+
+        {/* Earnings */}
+        <button className="group flex flex-col items-center gap-1.5 transition-colors">
+          <img src={earningsImg} alt="Earnings" className="w-8 h-8 object-contain transition-transform duration-200 group-hover:scale-125" />
+          <span className="text-xs font-bold text-[hsl(0,0%,65%)] group-hover:text-white transition-colors">Earnings</span>
+             </button>
+
+        {/* Fans */}
+          <Link to = "/me/insights/fanz"> 
+        <button className="group flex flex-col items-center gap-1.5 transition-colors">
+        
+          <div className="relative">
+            <img src={fansImg}      alt="Fans" className="w-10 h-10 object-contain transition-all duration-200 group-hover:scale-130 group-hover:opacity-0 absolute" />
+            <img src={fansHoverImg} alt="Fans" className="w-8 h-8 object-contain transition-all duration-200 group-hover:scale-125 opacity-0 group-hover:opacity-100" />
+            <span className="absolute -top-1 -right-2 w-3.5 h-3.5 bg-yellow-400 rounded-full flex items-center justify-center text-black" style={{ fontSize: "8px", fontWeight: 900 }}>★</span>
+          </div>
+          <span className="text-xs font-bold text-[hsl(0,0%,65%)] group-hover:text-white transition-colors">Fans</span>
+          <span className="text-[10px] font-bold tracking-widest text-yellow-400 opacity-0 group-hover:opacity-100 transition-opacity -mt-1">ARTIST PRO</span>
+        
+        </button>
+        </Link>
+
+        {/* Benefits */}
+        <button className="group flex flex-col items-center gap-1.5 transition-colors">
+          <div className="relative">
+            <img src={benefitsImg}      alt="Benefits" className="w-8 h-8 object-contain transition-all duration-200 group-hover:scale-125 group-hover:opacity-0 absolute" />
+            <img src={benefitsHoverImg} alt="Benefits" className="w-8 h-8 object-contain transition-all duration-200 group-hover:scale-125 opacity-0 group-hover:opacity-100" />
+            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold" style={{ fontSize: "9px" }}>+</span>
+          </div>
+          <span className="text-xs font-bold text-[hsl(0,0%,65%)] group-hover:text-white transition-colors">Benefits</span>
+          <span className="text-[10px] font-bold tracking-widest text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity -mt-1">ARTIST</span>
+        </button>
+      </div>
       </div>
     </div>
   );

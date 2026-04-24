@@ -272,7 +272,7 @@ export default function PlansPage() {
             opacity: 0.6,
           }}
         />
-        <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ backgroundImage: "radial-gradient(circle, #ffffff 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
+        <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ backgroundImage: "radial-gradient(circle, #ffffff 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
 
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-10 sm:pb-16">
           <h1 className="text-[48px] sm:text-[72px] lg:text-[92px] font-black leading-none tracking-tight text-white mb-5">
@@ -304,7 +304,7 @@ export default function PlansPage() {
         </div>
 
         {/* Feature highlights — 2 cols on mobile, 4 on desktop */}
-        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 pb-14 sm:pb-20 grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 pb-40 sm:pb-45 grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
           {[
             { icon: "◎", title: "Grow your audience", desc: "Artist Pro subscribers get on average 400% more listens, thanks to our audio algorithm and featured playlists." },
             { icon: "▨", title: "Know your audience", desc: "Get advanced fan insights and custom listening reports to build connections and plan promotions, releases, and tours." },

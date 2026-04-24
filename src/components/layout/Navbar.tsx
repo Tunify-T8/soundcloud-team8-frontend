@@ -52,16 +52,16 @@ export default function Navbar() {
 
   const profileMenuItems = [
     { to: "/me",            icon: <User size={17} />,        label: "Profile" },
-    { to: "/likes",         icon: <Heart size={17} />,       label: "Likes" },
-    { to: "/playlists",     icon: <ListMusic size={17} />,   label: "Playlists" },
-    { to: "/stations",      icon: <Radio size={17} />,       label: "Stations" },
+    { to: "/me/likes",         icon: <Heart size={17} />,       label: "Likes" },
+    { to: "/me/sets",     icon: <ListMusic size={17} />,   label: "Playlists" },
+    { to: "/me/stations",      icon: <Radio size={17} />,       label: "Stations" },
     { to: "/me/following",     icon: <Users size={17} />,       label: "Following" },
     { to: "/who-to-follow", icon: <UserPlus size={17} />,    label: "Who to follow" },
     { to: "#",           icon: <Star size={17} />,        label: "Try Artist Pro", orange: true, action: () => window.open("/plans", "_blank")},
     { to: "/benefits",      icon: <Star size={17} />,        label: "Benefits" },
-    { to: "/tracks",        icon: <BarChart2 size={17} />,   label: "Tracks" },
-    { to: "/insights",      icon: <TrendingUp size={17} />,  label: "Insights" },
-    { to: "/distribute",    icon: <Share2 size={17} />,      label: "Distribute" },
+    { to: "/artists",        icon: <BarChart2 size={17} />,   label: "Tracks" },
+    { to: "/me/insights/overview",      icon: <TrendingUp size={17} />,  label: "Insights" },
+    { to: "#",    icon: <Share2 size={17} />,      label: "Distribute", action: () => window.open("/plans", "_blank") },
   ];
 
   const menuItems : { group: { label: string; href?: string; action?: () => void }[] }[] =  [
