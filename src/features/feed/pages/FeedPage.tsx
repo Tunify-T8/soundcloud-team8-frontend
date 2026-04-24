@@ -9,6 +9,7 @@ import { feedService } from "@/features/feed/feedservice";
 import { profileService } from "@/features/profile/profileService";
 import { useMe } from "@/features/profile/context/useMe";
 import { SOCIAL_GRAPH_UPDATED_EVENT } from "@/features/profile/socialGraphEvents";
+import { FaUser } from "react-icons/fa";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatTimeAgo(dateStr: string): string {
