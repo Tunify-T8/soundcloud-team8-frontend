@@ -99,7 +99,9 @@ function StudioHeader() {
              </button>
 
         {/* Fans */}
+          <Link to = "/me/insights/fanz"> 
         <button className="group flex flex-col items-center gap-1.5 transition-colors">
+        
           <div className="relative">
             <img src={fansImg}      alt="Fans" className="w-10 h-10 object-contain transition-all duration-200 group-hover:scale-130 group-hover:opacity-0 absolute" />
             <img src={fansHoverImg} alt="Fans" className="w-8 h-8 object-contain transition-all duration-200 group-hover:scale-125 opacity-0 group-hover:opacity-100" />
@@ -107,7 +109,9 @@ function StudioHeader() {
           </div>
           <span className="text-xs font-bold text-[hsl(0,0%,65%)] group-hover:text-white transition-colors">Fans</span>
           <span className="text-[10px] font-bold tracking-widest text-yellow-400 opacity-0 group-hover:opacity-100 transition-opacity -mt-1">ARTIST PRO</span>
+        
         </button>
+        </Link>
 
         {/* Benefits */}
         <button className="group flex flex-col items-center gap-1.5 transition-colors">

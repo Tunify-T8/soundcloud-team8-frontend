@@ -136,6 +136,8 @@ const router = createBrowserRouter([
         ],
       },
       { path: "/me/insights/overview", element: <InsightsOverviewPage /> },
+      { path: "/me/insights/all-platforms", element: <InsightsOverviewPage /> },
+      { path: "/me/insights/fanz", element: <InsightsOverviewPage /> },
       {
         path: "/:username",
         element: <ProfilePage />,

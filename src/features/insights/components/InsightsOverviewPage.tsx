@@ -1,14 +1,27 @@
 import allPlatformsImg from "@/assets/all_platforms.png";
 import fansImg from "@/assets/fanz.png";
 import { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ChevronDown, X } from "lucide-react";
 import { MdPlayArrow } from "react-icons/md";
 import { FaHeart, FaComment, FaDownload } from "react-icons/fa";
 import { BiRepost } from "react-icons/bi";
 
-type InsightsTab = "soundcloud" | "all-platforms" | "fans";
 type TimeRange = "Today" | "Last 7 days" | "Last 30 days" | "Last 12 months" | "All time" | "Custom range";
 type StatKey = "plays" | "likes" | "comments" | "reposts" | "downloads";
+
+const TABS = ["SoundCloud", "All Platforms", "Fans"] as const;
+type InsightsTab = typeof TABS[number];
+
+const TAB_TO_PATH: Record<InsightsTab, string> = {
+  "SoundCloud":    "/me/insights/overview",
+  "All Platforms": "/me/insights/all-platforms",
+  "Fans":          "/me/insights/fanz",
+};
+
+const PATH_TO_TAB: Record<string, InsightsTab> = Object.fromEntries(
+  Object.entries(TAB_TO_PATH).map(([tab, path]) => [path, tab as InsightsTab])
+);
 
 const TIME_RANGES: TimeRange[] = [
   "Today",
@@ -29,34 +42,68 @@ const TIME_RANGE_LABELS: Record<TimeRange, string> = {
 };
 
 const STAT_ICONS: Record<StatKey, React.ReactNode> = {
-  plays: <MdPlayArrow size={16} />,
-  likes: <FaHeart size={13} />,
-  comments: <FaComment size={13} />,
-  reposts: <BiRepost size={16} />,
+  plays:     <MdPlayArrow size={16} />,
+  likes:     <FaHeart size={13} />,
+  comments:  <FaComment size={13} />,
+  reposts:   <BiRepost size={16} />,
   downloads: <FaDownload size={13} />,
 };
 
-
-
 export default function InsightsOverviewPage() {
-  const [activeTab, setActiveTab] = useState<InsightsTab>("soundcloud");
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+
+  const activeTab: InsightsTab = PATH_TO_TAB[pathname] ?? "SoundCloud";
+
   const [selectedRange, setSelectedRange] = useState<TimeRange>("Last 30 days");
   const [activeStat, setActiveStat] = useState<StatKey>("plays");
   const [showDropdown, setShowDropdown] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
 
   const stats: StatKey[] = ["plays", "likes", "comments", "reposts", "downloads"];
-
   const rangeLabel = TIME_RANGE_LABELS[selectedRange];
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="max-w-6xl mx-auto px-6 py-10">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-6">
-          <h1 className="text-3xl font-bold tracking-tight">Insights</h1>
-          <div className="flex items-center gap-3">
-            {activeTab === "all-platforms" && (
+
+    <div className="pl-48 pr-6 pt-10">
+        <h1 className="text-3xl font-bold tracking-tight mb-6">Insights</h1>
+      </div>
+
+      {/* Tab bar — matches Library style */}
+      <div className="border-b border-zinc-800 sticky top-[48px] bg-black z-40">
+        <div className="flex items-center gap-0 pl-48 pr-6">
+          {/* Tabs on the left */}
+          <div className="flex gap-0 flex-1">
+            {TABS.map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => navigate(TAB_TO_PATH[tab])}
+                className="px-5 py-3 transition-colors relative whitespace-nowrap flex items-center gap-2"
+                style={{
+                  color:         activeTab === tab ? "white" : "#71717a",
+                  fontWeight:    activeTab === tab ? 700 : 600,
+                  fontSize:      "18px",
+                  letterSpacing: "-0.01em",
+                }}
+              >
+                {tab}
+                {tab === "Fans" && (
+                  <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                    NEW
+                  </span>
+                )}
+                {activeTab === tab && (
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white" />
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Controls on the right */}
+          <div className="flex items-center gap-3 py-2">
+            {activeTab === "All Platforms" && (
               <button
                 type="button"
                 onClick={() => setShowAboutModal(true)}
@@ -65,7 +112,6 @@ export default function InsightsOverviewPage() {
                 About these Insights
               </button>
             )}
-            {/* Time range dropdown */}
             <div className="relative">
               <button
                 type="button"
@@ -81,18 +127,13 @@ export default function InsightsOverviewPage() {
                     <button
                       key={range}
                       type="button"
-                      onClick={() => {
-                        setSelectedRange(range);
-                        setShowDropdown(false);
-                      }}
+                      onClick={() => { setSelectedRange(range); setShowDropdown(false); }}
                       className="flex items-center justify-between px-4 py-2.5 text-sm text-left hover:bg-zinc-800 transition-colors cursor-pointer"
                     >
                       <span className={range === selectedRange ? "font-bold text-white" : "text-zinc-400"}>
                         {range}
                       </span>
-                      {range === selectedRange && (
-                        <span className="text-white">✓</span>
-                      )}
+                      {range === selectedRange && <span className="text-white">✓</span>}
                     </button>
                   ))}
                 </div>
@@ -100,56 +141,19 @@ export default function InsightsOverviewPage() {
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Tabs */}
-        <div className="flex gap-6 border-b border-zinc-800 mb-8">
-          <button
-            type="button"
-            onClick={() => setActiveTab("soundcloud")}
-            className={`pb-3 text-sm font-semibold cursor-pointer transition-colors border-b-2 -mb-px ${
-              activeTab === "soundcloud"
-                ? "border-white text-white"
-                : "border-transparent text-zinc-500 hover:text-white"
-            }`}
-          >
-            SoundCloud
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("all-platforms")}
-            className={`pb-3 text-sm font-semibold cursor-pointer transition-colors border-b-2 -mb-px ${
-              activeTab === "all-platforms"
-                ? "border-white text-white"
-                : "border-transparent text-zinc-500 hover:text-white"
-            }`}
-          >
-            All Platforms
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("fans")}
-            className={`pb-3 text-sm font-semibold cursor-pointer transition-colors border-b-2 -mb-px flex items-center gap-2 ${
-              activeTab === "fans"
-                ? "border-white text-white"
-                : "border-transparent text-zinc-500 hover:text-white"
-            }`}
-          >
-            Fans
-            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
-              NEW
-            </span>
-          </button>
-        </div>
+      {/* Page content */}
+      <div className="pl-48 pr-6 pt-8 max-w-7xl">
 
-        {/* SoundCloud Tab Content */}
-        {activeTab === "soundcloud" && (
+        {/* SoundCloud Tab */}
+        {activeTab === "SoundCloud" && (
           <div>
             <h2 className="text-4xl font-bold tracking-tight mb-6">
               0 {activeStat} in {rangeLabel}{" "}
               <span className="text-zinc-500">(0%)</span>
             </h2>
 
-            {/* Stat pills */}
             <div className="flex flex-wrap gap-3 mb-10">
               {stats.map((stat) => (
                 <button
@@ -171,7 +175,6 @@ export default function InsightsOverviewPage() {
               </span>
             </div>
 
-            {/* Empty state */}
             <div className="flex flex-col items-center justify-center py-24 text-center">
               <p className="text-base font-bold text-white mb-2">
                 Looks like there is no activity for the selected timeframe
@@ -190,8 +193,8 @@ export default function InsightsOverviewPage() {
           </div>
         )}
 
-        {/* All Platforms Tab Content */}
-        {activeTab === "all-platforms" && (
+        {/* All Platforms Tab */}
+        {activeTab === "All Platforms" && (
           <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-10 flex items-center justify-between gap-8">
             <div className="max-w-lg">
               <h2 className="text-3xl font-bold mb-5 leading-snug">
@@ -212,17 +215,13 @@ export default function InsightsOverviewPage() {
               </button>
             </div>
             <div className="shrink-0 hidden md:block">
-              <img
-                src={allPlatformsImg}
-                alt="All platforms illustration"
-                className="w-56 h-auto object-contain"
-              />
+              <img src={allPlatformsImg} alt="All platforms illustration" className="w-56 h-auto object-contain" />
             </div>
           </div>
         )}
 
-        {/* Fans Tab Content */}
-        {activeTab === "fans" && (
+        {/* Fans Tab */}
+        {activeTab === "Fans" && (
           <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-10 flex items-center justify-between gap-8">
             <div className="max-w-lg">
               <h2 className="text-3xl font-bold mb-5 leading-snug">
@@ -248,11 +247,7 @@ export default function InsightsOverviewPage() {
               </button>
             </div>
             <div className="shrink-0 hidden md:block">
-              <img
-                src={fansImg}
-                alt="Fans illustration"
-                className="w-56 h-auto object-contain"
-              />
+              <img src={fansImg} alt="Fans illustration" className="w-56 h-auto object-contain" />
             </div>
           </div>
         )}
@@ -271,23 +266,17 @@ export default function InsightsOverviewPage() {
             <div className="flex-1">
               <h2 className="text-2xl font-bold mb-4">All Platform Insights</h2>
               <p className="text-sm text-zinc-300 mb-4 leading-relaxed">
-                Your All Platforms Insights only shows Spotify and Apple Music data
-                for tracks you've released using{" "}
+                Your All Platforms Insights only shows Spotify and Apple Music data for tracks you've released using{" "}
                 <span className="font-bold text-white">SoundCloud Distribution</span>.
               </p>
               <p className="text-sm text-zinc-300 mb-4 leading-relaxed">
-                If you've distributed songs through other services, those streams
-                won't appear here—so your totals may differ from what you see on
-                other platforms. If you want to migrate previously released tracks to
+                If you've distributed songs through other services, those streams won't appear here—so your totals may
+                differ from what you see on other platforms. If you want to migrate previously released tracks to
                 SoundCloud, simply{" "}
-                <a href="#" className="underline text-white hover:text-zinc-400">
-                  follow these instructions
-                </a>
-                .
+                <a href="#" className="underline text-white hover:text-zinc-400">follow these instructions</a>.
               </p>
               <p className="text-sm text-zinc-300 mb-6 leading-relaxed">
-                Once a track is released through SoundCloud, its data will appear in
-                your All Platforms Insights within 24–48 hours.
+                Once a track is released through SoundCloud, its data will appear in your All Platforms Insights within 24–48 hours.
               </p>
               <button
                 type="button"
@@ -297,13 +286,8 @@ export default function InsightsOverviewPage() {
                 Close
               </button>
             </div>
-            {/* Illustration */}
             <div className="hidden sm:flex items-center justify-center w-60 shrink-0">
-              <img
-                src={allPlatformsImg}
-                alt="All platforms illustration"
-                className="w-full h-auto object-contain"
-              />
+              <img src={allPlatformsImg} alt="All platforms illustration" className="w-full h-auto object-contain" />
             </div>
             <button
               type="button"
