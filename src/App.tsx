@@ -19,7 +19,7 @@ import FollowingPage from "./features/profile/pages/UserInfoBar/FollowingPage";
 import SuggestedUsersPage from "./features/profile/pages/UserInfoBar/SuggestedUsersPage";
 import BlockedUsersPage from "./features/profile/pages/UserInfoBar/BlockedUsersPage";
 import SignInPage from "./features/auth/pages/SignInPage";
-// import SignUpPage from "./features/auth/pages/SignUpPage";
+import SignUpPage from "./features/auth/pages/SignUpPage";
 import PublicOnlyRoute from "./routes/PublicOnlyRoute";
 import ForgotPasswordPage from "./features/auth/pages/ForgotPasswordPage";
 import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage";
@@ -51,14 +51,14 @@ const router = createBrowserRouter([
       </PublicOnlyRoute>
     ),
   },
-  // {
-  //   path: "/create-account",
-  //   element: (
-  //     <PublicOnlyRoute>
-  //       <SignUpPage />
-  //     </PublicOnlyRoute>
-  //   ),
-  // },
+  {
+  path: "/create-account",
+  element: (
+    <PublicOnlyRoute>
+      <SignUpPage />
+    </PublicOnlyRoute>
+  ),
+},
   {
     path: "/forgot-password",
     element: <ForgotPasswordPage />,
