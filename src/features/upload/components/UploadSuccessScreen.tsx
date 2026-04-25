@@ -2,14 +2,14 @@ import { SiSoundcloud } from "react-icons/si";
 
 export default function UploadSuccessScreen() {
   return (
-    <div className="min-h-screen bg-[#111111] text-white flex flex-col font-sans">
+    <div className="min-h-screen bg-[#111111] text-white flex flex-col font-sans" data-testid="upload-success-page">
 
       {/* Header */}
-      <header className="flex items-center justify-between px-8 py-4 border-b border-[#222]">
+      <header className="flex items-center justify-between px-8 py-4 border-b border-[#222]" data-testid="success-header">
         <a href="/" className="hover:opacity-80 transition">
           <SiSoundcloud size={36} color="white" />
         </a>
-        <button className="text-[#888] hover:text-white transition">
+        <button className="text-[#888] hover:text-white transition" data-testid="success-close-btn">
           <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18"/>
             <line x1="6" y1="6" x2="18" y2="18"/>
@@ -18,11 +18,11 @@ export default function UploadSuccessScreen() {
       </header>
 
       {/* Content */}
-      <main className="flex-1 flex flex-col justify-center px-16 py-16 max-w-[800px]">
+      <main className="flex-1 flex flex-col justify-center px-16 py-16 max-w-[800px]" data-testid="success-main">
 
         <div className="flex items-start gap-10 mb-20">
           {/* Icon chain */}
-          <div className="flex flex-col items-center flex-shrink-0">
+          <div className="flex flex-col items-center flex-shrink-0" data-testid="success-icon-chain">
             <div className="w-20 h-20 rounded-full border-2 border-white flex items-center justify-center bg-[#111]">
               <SiSoundcloud size={32} color="white" />
             </div>
@@ -67,19 +67,19 @@ export default function UploadSuccessScreen() {
 
           {/* Text content */}
           <div className="pt-2">
-            <h1 className="text-[36px] font-bold text-white mb-3">Saved to SoundCloud.</h1>
+            <h1 className="text-[36px] font-bold text-white mb-3" data-testid="success-heading">Saved to SoundCloud.</h1>
             <p className="text-[15px] text-[#aaa] mb-6">Congratulations! Your tracks are now on SoundCloud.</p>
-            <button className="border border-white text-white px-6 py-2 rounded-full text-[14px] font-semibold hover:bg-white hover:text-black transition">
+            <button className="border border-white text-white px-6 py-2 rounded-full text-[14px] font-semibold hover:bg-white hover:text-black transition" data-testid="view-track-btn">
               View track
             </button>
 
             <div className="mt-16">
-              <h2 className="text-[28px] font-bold text-white mb-3">Distribute to more streaming services?</h2>
+              <h2 className="text-[28px] font-bold text-white mb-3" data-testid="distribute-heading">Distribute to more streaming services?</h2>
               <p className="text-[14px] text-[#aaa] mb-6">
                 Easily send your SoundCloud tracks to Spotify, Apple Music, TikTok, Instagram and more with a Artist Pro subscription.{" "}
                 <a className="underline cursor-pointer hover:text-white">Learn more.</a>
               </p>
-              <button className="border border-white text-white px-6 py-2 rounded-full text-[14px] font-semibold hover:bg-white hover:text-black transition">
+              <button className="border border-white text-white px-6 py-2 rounded-full text-[14px] font-semibold hover:bg-white hover:text-black transition" data-testid="unlock-artist-pro-btn">
                 Unlock with Artist Pro
               </button>
             </div>
@@ -89,7 +89,7 @@ export default function UploadSuccessScreen() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-[#1e1e1e] py-4 flex justify-center flex-wrap gap-2 text-[12px] text-[#666]">
+      <footer className="border-t border-[#1e1e1e] py-4 flex justify-center flex-wrap gap-2 text-[12px] text-[#666]" data-testid="success-footer">
         {["Legal","Privacy","Cookie Policy","Cookie Manager","Imprint","About us","Copyright","Feedback"].map((item, i) => (
           <span key={i} className="flex items-center">
             <a className="hover:text-[#aaa] px-1 cursor-pointer">{item}</a>
