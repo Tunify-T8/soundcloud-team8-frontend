@@ -200,10 +200,6 @@ export default function Navbar() {
 
   const profileMenuItems = [
     { to: "/me",            icon: <User size={17} />,        label: "Profile" },
-    { to: "/likes",         icon: <Heart size={17} />,       label: "Likes" },
-    { to: "/playlists",     icon: <ListMusic size={17} />,   label: "Playlists" },
-    { to: "/stations",      icon: <Radio size={17} />,       label: "Stations" },
-    { to: "/me/following",  icon: <Users size={17} />,       label: "Following" },
     { to: "/me/likes",         icon: <Heart size={17} />,       label: "Likes" },
     { to: "/me/sets",     icon: <ListMusic size={17} />,   label: "Playlists" },
     { to: "/me/stations",      icon: <Radio size={17} />,       label: "Stations" },
