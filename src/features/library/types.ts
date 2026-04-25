@@ -14,12 +14,12 @@ export interface TrackItem {
   durationSeconds?: number;
 }
 
-// export interface CollectionItem {
-//   id: string;
-//   title: string;
-//   subtitle?: string;
-//   coverUrl?: string;
-// }
+export interface CollectionItem {
+  id: string;
+  title: string;
+  subtitle?: string;
+  coverUrl?: string;
+}
 
 export interface FollowingUser {
   id: string;

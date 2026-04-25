@@ -4,7 +4,6 @@ import FollowingSection from "../components/FollowingSection";
 import TrackRow from "../components/TrackRow";
 import { useRecentlyPlayed } from "@/features/playerUI/context/useRecentlyPlayed";
 import { LIKED_TRACKS, FOLLOWING } from "../tests/mockdata";
-import { Link } from "react-router-dom";
 
 const COLS = 6;
 
@@ -16,35 +15,38 @@ export default function OverviewTab() {
     id: entry.id,
     title: entry.title,
     subtitle: "",
-    coverUrl: entry.artworkUrl, // ← fix: artworkUrl → coverUrl
+    coverUrl: entry.artworkUrl,
   }));
 
   return (
-    <div>
-      <CollectionGrid items={recentlyPlayedItems} title="Recently played" />
+    <div data-testid="overview-tab">
+      {recentlyPlayedItems.length > 0 && (
+        <CollectionGrid items={recentlyPlayedItems} title="Recently played" />
+      )}
 
-      <section className="mb-8">
+      <section className="mb-8" data-testid="overview-likes-section">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-white font-bold text-sm">Likes</h2>
-          <Link to="/discover" className="text-zinc-500 text-xs hover:text-white transition-colors duration-150 cursor-pointer">
-            Browse trending playlists
-          </Link>
         </div>
-        <div className="grid grid-cols-6 gap-4">
-          {Array.from({ length: totalSlots }).map((_, i) => {
-            const track = LIKED_TRACKS[i];
-            return track ? (
-              <TrackRow key={track.id} track={track} view="grid" />
-            ) : (
-              <div key={i} className="w-full aspect-square rounded-sm bg-[#282828]" />
-            );
-          })}
-        </div>
+        {LIKED_TRACKS.length === 0 ? (
+          <EmptyCollectionGrid title="" emptyMessage="You haven't liked any tracks yet" />
+        ) : (
+          <div className="grid grid-cols-6 gap-4">
+            {Array.from({ length: totalSlots }).map((_, i) => {
+              const track = LIKED_TRACKS[i];
+              return track ? (
+                <TrackRow key={track.id} track={track} view="grid" isLiked={true} />
+              ) : (
+                <div key={i} data-testid={`likes-empty-slot-${i}`} className="w-full aspect-square rounded-sm bg-[#282828]" />
+              );
+            })}
+          </div>
+        )}
       </section>
 
-      <EmptyCollectionGrid title="Playlists" />
-      <EmptyCollectionGrid title="Albums" />
-      <EmptyCollectionGrid title="Liked Stations" />
+      <EmptyCollectionGrid title="Playlists" emptyMessage="You have no playlists yet" />
+      <EmptyCollectionGrid title="Albums" emptyMessage="You haven't liked any albums yet" />
+      <EmptyCollectionGrid title="Liked Stations" emptyMessage="You haven't liked any stations yet" />
       <FollowingSection users={FOLLOWING} />
     </div>
   );
