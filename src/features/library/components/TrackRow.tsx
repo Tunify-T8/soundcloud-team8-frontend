@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Heart, UserPlus, AlignJustify } from "lucide-react";
+import { Heart, UserPlus, MoreHorizontal, Repeat2, Share2, Link, ListEnd, ListPlus, Radio } from "lucide-react";
 import SongCard from "@/components/ui/SongCard";
 import type { TrackItem } from "../types";
 import { usePlayer } from "@/features/playerUI/context/usePlayer";
@@ -9,11 +9,21 @@ interface TrackRowProps {
   view?: "grid" | "list";
   isLiked?: boolean;
 }
+  const MENU_ITEMS = [
+  { label: "Repost", icon: Repeat2 },
+  { label: "Share", icon: Share2 },
+  { label: "Copy Link", icon: Link },
+  { label: "Add to Next up", icon: ListEnd },
+  { label: "Add to Playlist", icon: ListPlus },
+  { label: "Station", icon: Radio },
+];
 
 export default function TrackRow({ track, view = "list", isLiked = false }: TrackRowProps) {
   const { currentTrack, isPlaying, setCurrentTrack, setIsPlaying } = usePlayer();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuAbove, setMenuAbove] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
 
   const isThisTrack = currentTrack?.id === track.id;
   const playing = isThisTrack && isPlaying;
@@ -51,7 +61,7 @@ export default function TrackRow({ track, view = "list", isLiked = false }: Trac
         className="cursor-pointer group relative"
         onClick={handlePlayToggle}
       >
-        <div className="w-full aspect-square rounded-sm overflow-hidden mb-2 relative bg-[#282828]">
+        <div className="w-full aspect-square rounded-sm overflow-hidden mb-2 relative bg-[#282828] group-hover:bg-[#1a1a1a] transition-colors duration-300">
           {track.coverUrl && (
             <img
               src={track.coverUrl}
@@ -60,7 +70,7 @@ export default function TrackRow({ track, view = "list", isLiked = false }: Trac
             />
           )}
 
-          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-sm" />
 
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center shadow-2xl">
@@ -76,56 +86,65 @@ export default function TrackRow({ track, view = "list", isLiked = false }: Trac
               )}
             </div>
           </div>
+        </div>
 
-          <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-2 pb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">            <button
-              data-testid={`track-like-btn-${track.id}`}
-              onClick={(e) => e.stopPropagation()}
+        <div className="absolute bottom-8 left-0 right-0 flex items-center justify-end gap-2 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
+          <button
+            data-testid={`track-like-btn-${track.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="hover:scale-110 transition-transform"
+          >
+            <Heart
+              size={15}
+              fill={isLiked ? "#ff5500" : "transparent"}
+              color={isLiked ? "#ff5500" : "white"}
+            />
+          </button>
+
+          <button
+            data-testid={`track-follow-btn-${track.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="hover:scale-110 transition-transform"
+          >
+            <UserPlus size={15} color="white" />
+          </button>
+
+          <div className="relative" ref={menuRef}>
+            <button
+              ref={btnRef}
+              data-testid={`track-menu-btn-${track.id}`}
+              title="More"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (btnRef.current) {
+                  const rect = btnRef.current.getBoundingClientRect();
+                  setMenuAbove(window.innerHeight - rect.bottom < 220);
+                }
+                setMenuOpen((v) => !v);
+              }}
               className="hover:scale-110 transition-transform"
             >
-              <Heart
-                size={15}
-                fill={isLiked ? "#ff5500" : "transparent"}
-                color={isLiked ? "#ff5500" : "white"}
-              />
+              <MoreHorizontal size={15} color="white" />
             </button>
 
-            <div className="flex items-center gap-2">
-              <button
-                data-testid={`track-follow-btn-${track.id}`}
-                onClick={(e) => e.stopPropagation()}
-                className="hover:scale-110 transition-transform"
+            {menuOpen && (
+              <div
+                data-testid={`track-dropdown-${track.id}`}
+                className={`absolute right-0 ${menuAbove ? "bottom-full mb-2" : "top-full mt-2"} w-52 bg-[#1a1a1a] border border-zinc-800 rounded shadow-2xl z-50 py-1`}
               >
-                <UserPlus size={15} color="white" />
-              </button>
-
-              <div className="relative" ref={menuRef}>
-                <button
-                  data-testid={`track-menu-btn-${track.id}`}
-                  onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
-                  className="hover:scale-110 transition-transform"
-                >
-                  <AlignJustify size={15} color="white" />
-                </button>
-
-                {menuOpen && (
-                  <div
-                    data-testid={`track-dropdown-${track.id}`}
-                    className="absolute bottom-full right-0 mb-2 w-44 bg-[#1a1a1a] border border-zinc-800 rounded shadow-xl z-50 py-1"
+                {MENU_ITEMS.map(({ label, icon: Icon }) => (
+                  <button
+                    key={label}
+                    data-testid={`track-menu-${label.toLowerCase().replace(/ /g, "-")}-${track.id}`}
+                    onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white hover:bg-zinc-800 transition-colors"
                   >
-                    {["Repost", "Share", "Copy Link", "Add to Next up", "Add to Playlist", "Station"].map((item) => (
-                      <button
-                        key={item}
-                        data-testid={`track-menu-${item.toLowerCase().replace(/ /g, "-")}-${track.id}`}
-                        onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }}
-                        className="w-full text-left px-4 py-2 text-sm text-white hover:bg-zinc-800 transition-colors"
-                      >
-                        {item}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                    <Icon size={15} className="text-zinc-400 shrink-0" />
+                    {label}
+                  </button>
+                ))}
               </div>
-            </div>
+            )}
           </div>
         </div>
 
