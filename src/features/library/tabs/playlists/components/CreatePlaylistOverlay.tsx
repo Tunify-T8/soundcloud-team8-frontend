@@ -157,7 +157,10 @@ export default function CreatePlaylistOverlay({
         <X className="h-5 w-5" />
       </button>
 
-      <div className="fixed inset-0 z-71 overflow-y-auto hide-scrollbar">
+      <div
+        className="fixed inset-0 z-71 overflow-y-auto hide-scrollbar"
+        onClick={onClose}
+      >
         <div className="flex min-h-full items-start justify-center px-4 py-24">
           <div
             className="w-full max-w-2xl rounded-sm border border-zinc-700 bg-[#0b0b0b] p-4 text-white shadow-2xl"

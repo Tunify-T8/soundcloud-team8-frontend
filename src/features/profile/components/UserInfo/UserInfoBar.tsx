@@ -1,18 +1,10 @@
 import UserInfoBarTab from "./UsetInfoBarTab";
 import EditInfo from "./EditInfo";
-import {
-  FaUser,
-  FaPen,
-  FaEnvelope,
-  FaTwitter,
-  FaFacebookF,
-  FaTumblr,
-  FaPinterestP,
-} from "react-icons/fa";
+import { FaUser, FaPen, FaEnvelope } from "react-icons/fa";
 import { MdPodcasts, MdMoreHoriz } from "react-icons/md";
 import { FiSlash, FiInfo } from "react-icons/fi";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Upload, BarChart2 } from "lucide-react";
+import { Upload, BarChart2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { followingService } from "../../../following/followingService";
 import { notifySocialGraphUpdated } from "../../socialGraphEvents";
@@ -24,18 +16,25 @@ function ShareOverlay({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 z-[120] flex items-center justify-center bg-black/55 px-4"
+      className="fixed inset-0 z-[120] flex items-start justify-center bg-white/40 px-4 pt-28"
       onClick={onClose}
     >
+      <button
+        onClick={onClose}
+        className="fixed right-6 top-6 z-[121] flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800 text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white"
+        aria-label="Close share overlay"
+      >
+        <X className="h-5 w-5" />
+      </button>
       <div
-        className="w-full max-w-[560px] rounded-[3px] border border-zinc-800 bg-[#090909] p-5"
+        className="w-full max-w-[540px] rounded-[3px] border border-zinc-800 bg-zinc-900 p-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center gap-7 border-b border-zinc-800">
           <button
             type="button"
             onClick={() => setActiveTab("share")}
-            className={`pb-2 text-[34px] font-bold tracking-tight ${
+            className={`pb-2 text-[20px] font-bold tracking-tight sm:text-[22px] ${
               activeTab === "share"
                 ? "border-b-2 border-white text-white"
                 : "text-zinc-500 hover:text-zinc-300"
@@ -46,7 +45,7 @@ function ShareOverlay({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             onClick={() => setActiveTab("message")}
-            className={`pb-2 text-[34px] font-bold tracking-tight ${
+            className={`pb-2 text-[20px] font-bold tracking-tight sm:text-[22px] ${
               activeTab === "message"
                 ? "border-b-2 border-white text-white"
                 : "text-zinc-500 hover:text-zinc-300"
@@ -58,33 +57,15 @@ function ShareOverlay({ onClose }: { onClose: () => void }) {
 
         {activeTab === "share" ? (
           <>
-            <div className="mb-4 flex items-center gap-4">
-              <button className="flex h-11 w-11 items-center justify-center rounded-full bg-[#1da1f2] text-white">
-                <FaTwitter size={20} />
-              </button>
-              <button className="flex h-11 w-11 items-center justify-center rounded-full bg-[#1877f2] text-white">
-                <FaFacebookF size={20} />
-              </button>
-              <button className="flex h-11 w-11 items-center justify-center rounded-full bg-[#334c6b] text-white">
-                <FaTumblr size={20} />
-              </button>
-              <button className="flex h-11 w-11 items-center justify-center rounded-full bg-[#e60023] text-white">
-                <FaPinterestP size={20} />
-              </button>
-              <button className="flex h-11 w-11 items-center justify-center rounded-full bg-[#2a2a2a] text-zinc-300">
-                <FaEnvelope size={18} />
-              </button>
-            </div>
-
             <div className="mb-3 rounded-[3px] bg-[#242424] px-4 py-3">
               <input
                 readOnly
                 value={url}
-                className="w-full bg-transparent text-[24px] font-semibold text-zinc-100 outline-none"
+                className="w-full bg-transparent text-[14px] font-semibold text-zinc-100 outline-none sm:text-[15px]"
               />
             </div>
 
-            <label className="flex cursor-pointer items-center gap-3 text-[26px] font-semibold text-zinc-100">
+            <label className="flex cursor-pointer items-center gap-3 text-[14px] font-semibold text-zinc-100 sm:text-[15px]">
               <input
                 type="checkbox"
                 checked={shortenLink}
