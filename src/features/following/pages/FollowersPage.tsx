@@ -28,10 +28,8 @@ export default function FollowersPage() {
           setAvatarUrl(me.avatarUrl ?? null);
           setFollowers(data.followers ?? []);
         } else if (username) {
-          const [profile, data] = await Promise.all([
-            profileService.getPublicProfile(username),
-            followingService.getUserFollowers(username),
-          ]);
+          const profile = await profileService.getPublicProfile(username);
+          const data = await followingService.getUserFollowers(profile.id);
           if (!mounted) return;
           setTitleName(profile.displayName || profile.username);
           setAvatarUrl(profile.avatarUrl ?? null);
@@ -58,20 +56,20 @@ export default function FollowersPage() {
   const basePath = username ? `/${username}` : "/me";
 
   return (
-    <div className="mx-auto mt-10 w-9/12 text-white">
+    <div data-testid="followers-page" className="mx-auto mt-10 w-9/12 text-white">
       <SocialInfoBar
         avatarUrl={avatarUrl}
         title={`Followers of ${titleName || "user"}`}
         basePath={basePath}
       />
       {loading ? (
-        <div className="mt-20 text-center text-zinc-400">Loading followers...</div>
+        <div data-testid="followers-loading" className="mt-20 text-center text-zinc-400">Loading followers...</div>
       ) : followers.length === 0 ? (
-        <p className="mt-20 text-center text-3xl font-semibold text-white">
+        <p data-testid="followers-empty" className="mt-20 text-center text-3xl font-semibold text-white">
           No one is following yet.
         </p>
       ) : (
-        <div className="mt-8 flex flex-wrap gap-6">
+        <div data-testid="followers-list" className="mt-8 flex flex-wrap gap-6">
           <UserGrid
             users={followers.map((u) => ({
               id: u.id,
