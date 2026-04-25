@@ -70,20 +70,20 @@ export default function FollowingPage() {
   const basePath = username ? `/${username}` : "/me";
 
   return (
-    <div className="mx-auto mt-10 w-9/12 text-white">
+    <div data-testid="following-page" className="mx-auto mt-10 w-9/12 text-white">
       <SocialInfoBar
         avatarUrl={avatarUrl}
         title={`${titleName || "User"} is following`}
         basePath={basePath}
       />
       {loading ? (
-        <div className="mt-20 text-center text-zinc-400">Loading following...</div>
+        <div data-testid="following-loading" className="mt-20 text-center text-zinc-400">Loading following...</div>
       ) : following.length === 0 ? (
-        <p className="mt-20 text-center text-xl font-semibold text-white">
+        <p data-testid="following-empty" className="mt-20 text-center text-xl font-semibold text-white">
           Not following anyone yet.
         </p>
       ) : (
-        <div className="mt-8 flex flex-wrap gap-6">
+        <div data-testid="following-list" className="mt-8 flex flex-wrap gap-6">
           <UserGrid
             users={following.map((u) => ({
               id: u.id,
@@ -94,6 +94,7 @@ export default function FollowingPage() {
             placeholders={5}
             renderAction={(user) => (
               <button
+                data-testid={`unfollow-btn-${user.id}`}
                 type="button"
                 onClick={() => handleUnfollow(user.id)}
                 disabled={pendingUnfollowId === user.id}
