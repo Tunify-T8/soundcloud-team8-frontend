@@ -61,8 +61,6 @@ export default function NotificationsPage() {
   const [followedBack, setFollowedBack] = useState<Set<string>>(new Set());
   const filterRef = useRef<HTMLDivElement>(null);
 
-  // Keep a stable ref to the current filter so the socket handler
-  // always sees the latest value without needing to reconnect.
   const filterRef2 = useRef<NotificationFilterType>(filter);
   useEffect(() => {
     filterRef2.current = filter;
@@ -71,7 +69,6 @@ export default function NotificationsPage() {
   const currentFilterLabel =
     FILTER_OPTIONS.find((o) => o.value === filter)?.label ?? "All notifications";
 
-  // ── Outside-click for filter dropdown ──────────────────────────────────────
   useEffect(() => {
     const handleOutside = (e: MouseEvent) => {
       if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
@@ -82,7 +79,6 @@ export default function NotificationsPage() {
     return () => document.removeEventListener("mousedown", handleOutside);
   }, []);
 
-  // ── Fetch — stable reference via useCallback so the effect dep is safe ────
   const fetchNotifications = useCallback(async (currentFilter: NotificationFilterType) => {
     if (!getAccessToken()) return;
     setLoading(true);
@@ -95,73 +91,72 @@ export default function NotificationsPage() {
     } finally {
       setLoading(false);
     }
-  }, []); // no deps — filter is passed explicitly, not closed over
+  }, []);
 
-  // Re-fetch whenever filter changes (also runs on mount with "all")
   useEffect(() => {
     fetchNotifications(filter);
   }, [filter, fetchNotifications]);
 
-  // ── Socket — one stable connection, never reconnects on filter change ──────
   const [token, setToken] = useState(() => getAccessToken() ?? "");
 
-// Poll until token is available (handles delayed session restore)
-useEffect(() => {
-  if (token) return;
-  const interval = setInterval(() => {
-    const t = getAccessToken();
-    if (t) {
-      setToken(t);
-      clearInterval(interval);
-    }
-  }, 200);
-  return () => clearInterval(interval);
-}, [token]);
+  useEffect(() => {
+    if (token) return;
+    const interval = setInterval(() => {
+      const t = getAccessToken();
+      if (t) {
+        setToken(t);
+        clearInterval(interval);
+      }
+    }, 200);
+    return () => clearInterval(interval);
+  }, [token]);
 
-// Socket — re-runs when token becomes available
-useEffect(() => {
-  let socket: ReturnType<typeof io> | null = null;
+  useEffect(() => {
+    let socket: ReturnType<typeof io> | null = null;
 
-  const connect = async () => {
-    try {
-      await api.get("/notifications/unread-count"); // forces token refresh
-    } catch { /* ignore */ }
-
-    const freshToken = getAccessToken() ?? "";
-    if (!freshToken) return;
-
-    socket = io("https://tunify.duckdns.org/notifications", {
-      query: { token: freshToken },
-      transports: ["websocket"],
-      reconnectionAttempts: 10,
-      reconnectionDelay: 400,
-    });
-
-    const handle = (raw: Record<string, unknown>) => {
+    const connect = async () => {
       try {
-        const notif = normaliseSocketPayload(raw);
-        setNotifications((prev) => {
-          if (prev.some((n) => n.id === notif.id)) return prev;
-          const activeFilter = filterRef2.current;
-          if (activeFilter !== "all" && notif.type !== activeFilter) return prev;
-          return [notif, ...prev];
-        });
+        await api.get("/notifications/unread-count");
       } catch { /* ignore */ }
+
+      const freshToken = getAccessToken() ?? "";
+      if (!freshToken) return;
+      console.log("connecting to:", `https://tunify.duckdns.org/notifications`);
+      socket = io("https://tunify.duckdns.org", {
+        path: "/notifications/socket.io",
+        query: { token: freshToken },
+        transports: ["websocket"],
+        reconnectionAttempts: 10,
+        reconnectionDelay: 400,
+      });
+      socket.on("connect", () => console.log("socket connected ✅"));
+      socket.on("connect_error", (e) => console.log("connect_error:", e.message));
+
+      const handle = (raw: Record<string, unknown>) => {
+        try {
+          const notif = normaliseSocketPayload(raw);
+          setNotifications((prev) => {
+            if (prev.some((n) => n.id === notif.id)) return prev;
+            const activeFilter = filterRef2.current;
+            if (activeFilter !== "all" && notif.type !== activeFilter) return prev;
+            return [notif, ...prev];
+          });
+        } catch { /* ignore */ }
+      };
+
+      const eventNames = [
+        "notification", "track_liked", "track_commented", "track_reposted",
+        "user_followed", "new_release", "new_message", "system", "subscription",
+      ] as const;
+
+      eventNames.forEach((event) => socket!.on(event, handle));
     };
 
-    const eventNames = [
-      "notification", "track_liked", "track_commented", "track_reposted",
-      "user_followed", "new_release", "new_message", "system", "subscription",
-    ] as const;
+    connect();
 
-    eventNames.forEach((event) => socket!.on(event, handle));
-  };
+    return () => { socket?.disconnect(); };
+  }, []);
 
-  connect();
-
-  return () => { socket?.disconnect(); };
-}, []); // empty — the api.get handles the refresh
-  // ── Actions ────────────────────────────────────────────────────────────────
   async function handleFollowBack(actorId: string, notifId: string) {
     try {
       await followUser(actorId);
@@ -177,23 +172,24 @@ useEffect(() => {
   );
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
+    <div className="min-h-screen bg-[#0a0a0a] text-white" data-testid="notifications-page">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 pt-6 sm:pt-8 flex gap-8">
 
         {/* ── Main content ──────────────────────────────────────────────────── */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0" data-testid="notifications-main">
 
           {/* Header row */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-6" data-testid="notifications-header">
             <h1 className="text-xl sm:text-2xl font-black tracking-tight">
               Notifications
             </h1>
 
             {/* Filter dropdown */}
-            <div className="relative inline-block" ref={filterRef}>
+            <div className="relative inline-block" ref={filterRef} data-testid="filter-dropdown-container">
               <button
                 onClick={() => setFilterOpen((v) => !v)}
                 aria-label={currentFilterLabel}
+                data-testid="filter-dropdown-trigger"
                 className="flex items-center gap-2 bg-[#1a1a1a] border border-zinc-700 hover:border-zinc-500 rounded-sm px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold transition-colors"
               >
                 <span className="hidden sm:inline" aria-hidden="true">{currentFilterLabel}</span>
@@ -209,7 +205,10 @@ useEffect(() => {
               </button>
 
               {filterOpen && (
-                <div className="absolute right-0 top-full mt-1 w-48 bg-[#1a1a1a] border border-zinc-700 rounded-sm shadow-2xl z-50 overflow-hidden">
+                <div
+                  className="absolute right-0 top-full mt-1 w-48 bg-[#1a1a1a] border border-zinc-700 rounded-sm shadow-2xl z-50 overflow-hidden"
+                  data-testid="filter-dropdown-menu"
+                >
                   {FILTER_OPTIONS.map((opt) => (
                     <button
                       key={opt.value}
@@ -217,6 +216,7 @@ useEffect(() => {
                         setFilter(opt.value);
                         setFilterOpen(false);
                       }}
+                      data-testid={`filter-option-${opt.value}`}
                       className={`w-full text-left px-4 py-2.5 text-sm font-bold transition-colors hover:bg-zinc-800 ${
                         filter === opt.value
                           ? "text-white"
@@ -232,11 +232,11 @@ useEffect(() => {
           </div>
 
           {/* Notification list */}
-          <div className="space-y-0">
+          <div className="space-y-0" data-testid="notifications-list">
             {loading ? (
-              <div className="text-zinc-500 text-sm py-8">Loading...</div>
+              <div className="text-zinc-500 text-sm py-8" data-testid="notifications-loading">Loading...</div>
             ) : notifications.length === 0 ? (
-              <div className="text-zinc-500 text-sm py-8">
+              <div className="text-zinc-500 text-sm py-8" data-testid="notifications-empty">
                 No notifications yet.
               </div>
             ) : (
@@ -258,9 +258,10 @@ useEffect(() => {
         <aside
           className="w-[260px] flex-shrink-0 pt-14 max-lg:hidden"
           aria-label="followers sidebar"
+          data-testid="notifications-sidebar"
         >
           {recentFollowers.length > 0 && (
-            <div>
+            <div data-testid="sidebar-followers-section">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-xs font-black tracking-widest uppercase text-white">
                   Recent Followers
@@ -268,11 +269,12 @@ useEffect(() => {
                 <Link
                   to="/me/followers"
                   className="text-xs text-zinc-400 hover:text-white transition-colors"
+                  data-testid="sidebar-view-all-link"
                 >
                   View all
                 </Link>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-3" data-testid="sidebar-followers-list">
                 {recentFollowers.slice(0, 3).map((notif) => (
                   <SidebarFollower
                     key={notif.id}
@@ -285,7 +287,7 @@ useEffect(() => {
                 ))}
               </div>
 
-              <div className="mt-8 pt-6 border-t border-zinc-800 flex flex-wrap gap-x-2 gap-y-1">
+              <div className="mt-8 pt-6 border-t border-zinc-800 flex flex-wrap gap-x-2 gap-y-1" data-testid="sidebar-footer-links">
                 {[
                   "Legal", "Privacy", "Cookie Policy", "Cookie Manager",
                   "Imprint", "Artist Resources", "Newsroom", "Charts",
@@ -300,7 +302,7 @@ useEffect(() => {
                   </Link>
                 ))}
               </div>
-              <div className="mt-3">
+              <div className="mt-3" data-testid="sidebar-language">
                 <span className="text-[11px] text-zinc-500">Language: </span>
                 <Link
                   to="#"
@@ -330,11 +332,15 @@ function NotificationRow({
     notif.type === "user_followed" ? "started following you" : notif.message;
 
   return (
-    <div className="flex items-center justify-between py-3 sm:py-4 border-b border-zinc-800/50 group">
+    <div
+      className="flex items-center justify-between py-3 sm:py-4 border-b border-zinc-800/50 group"
+      data-testid={`notification-row-${notif.id}`}
+    >
       <div className="flex items-center gap-3 min-w-0">
         <Link
           to={`/users/${notif.actor?.id}`}
           className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-zinc-700 flex-shrink-0 overflow-hidden"
+          data-testid={`notification-actor-avatar-${notif.id}`}
         >
           {notif.actor?.avatarUrl ? (
             <img
@@ -354,12 +360,21 @@ function NotificationRow({
             <Link
               to={`/users/${notif.actor?.id}`}
               className="font-bold hover:underline"
+              data-testid={`notification-actor-username-${notif.id}`}
             >
               {notif.actor?.username}
             </Link>{" "}
-            <span className="font-normal text-zinc-300">{messageText}</span>
+            <span
+              className="font-normal text-zinc-300"
+              data-testid={`notification-message-${notif.id}`}
+            >
+              {messageText}
+            </span>
           </p>
-          <p className="text-[11px] sm:text-xs text-zinc-500 mt-0.5">
+          <p
+            className="text-[11px] sm:text-xs text-zinc-500 mt-0.5"
+            data-testid={`notification-timestamp-${notif.id}`}
+          >
             {timeAgo(notif.createdAt)}
           </p>
         </div>
@@ -370,6 +385,7 @@ function NotificationRow({
           <button
             onClick={onFollowBack}
             disabled={followedBack}
+            data-testid={`follow-back-btn-${notif.id}`}
             className={`px-2 sm:px-3 py-1.5 text-xs font-bold border rounded-sm transition-colors ${
               followedBack
                 ? "border-zinc-600 text-zinc-500 cursor-default"
@@ -379,7 +395,10 @@ function NotificationRow({
             {followedBack ? "Following" : "Follow back"}
           </button>
         )}
-        <button className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity p-1 text-zinc-400 hover:text-white">
+        <button
+          className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity p-1 text-zinc-400 hover:text-white"
+          data-testid={`notification-more-btn-${notif.id}`}
+        >
           <MoreHorizontal size={16} />
         </button>
       </div>
@@ -397,10 +416,14 @@ function SidebarFollower({
   onFollowBack: () => void;
 }) {
   return (
-    <div className="flex items-center gap-3">
+    <div
+      className="flex items-center gap-3"
+      data-testid={`sidebar-follower-${notif.id}`}
+    >
       <Link
         to={`/users/${notif.actor?.id}`}
         className="w-9 h-9 rounded-full bg-zinc-700 flex-shrink-0 overflow-hidden"
+        data-testid={`sidebar-follower-avatar-${notif.id}`}
       >
         {notif.actor?.avatarUrl ? (
           <img
@@ -418,6 +441,7 @@ function SidebarFollower({
         <Link
           to={`/users/${notif.actor?.id}`}
           className="text-sm font-bold text-white hover:underline block truncate"
+          data-testid={`sidebar-follower-username-${notif.id}`}
         >
           {notif.actor?.username}
         </Link>
@@ -425,6 +449,7 @@ function SidebarFollower({
       <button
         onClick={onFollowBack}
         disabled={followedBack}
+        data-testid={`sidebar-follow-back-btn-${notif.id}`}
         className={`px-3 py-1.5 text-xs font-bold border rounded-sm transition-colors flex-shrink-0 ${
           followedBack
             ? "border-zinc-600 text-zinc-500 cursor-default"

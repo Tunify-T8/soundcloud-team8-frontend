@@ -97,6 +97,8 @@ export default function Navbar() {
 
 
     if (!token) return; // Not logged in — skip socket
+    
+    console.log("navbar connecting to:", `https://tunify.duckdns.org/notifications`);
 
     const socket = io("https://tunify.duckdns.org/notifications", {
       query: { token },
@@ -106,6 +108,8 @@ export default function Navbar() {
     });
 
     socketRef.current = socket;
+    socket.on("connect", () => console.log("socket connected ✅"));
+    socket.on("connect_error", (e) => console.log("connect_error:", e.message));
 
     // Any notification event the server emits
     const handleNewNotification = (raw: Record<string, unknown>) => {
