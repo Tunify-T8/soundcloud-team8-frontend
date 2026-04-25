@@ -123,8 +123,9 @@ export default function NotificationsPage() {
       if (!freshToken) return;
       console.log("connecting to:", `https://tunify.duckdns.org/notifications`);
       socket = io("https://tunify.duckdns.org", {
-        path: "/notifications/socket.io",
-        query: { token: freshToken },
+        path:"/notifications/socket.io",
+        
+        auth: { token: freshToken },
         transports: ["websocket"],
         reconnectionAttempts: 10,
         reconnectionDelay: 400,
