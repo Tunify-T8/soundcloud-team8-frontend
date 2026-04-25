@@ -102,7 +102,6 @@ export default function Navbar() {
 
     const socket = io("https://tunify.duckdns.org/notifications", {
       query: { token },
-      transports: ["websocket"],
       reconnectionAttempts: 10,
       reconnectionDelay: 400,
     });
@@ -114,6 +113,7 @@ export default function Navbar() {
     // Any notification event the server emits
     const handleNewNotification = (raw: Record<string, unknown>) => {
       try {
+        console.log(raw);
         const notif = normaliseSocketPayload(raw);
         // Prepend to the dropdown list (keep max 20)
         setNotifications((prev) => [notif, ...prev].slice(0, 20));

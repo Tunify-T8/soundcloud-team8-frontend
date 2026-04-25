@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ChevronDown, MoreHorizontal } from "lucide-react";
+import { ChevronDown, MoreHorizontal, Rows } from "lucide-react";
 import { Link } from "react-router-dom";
 import { io } from "socket.io-client";
 import { BASE_URL } from "@/config/env";
@@ -122,20 +122,20 @@ export default function NotificationsPage() {
       const freshToken = getAccessToken() ?? "";
       if (!freshToken) return;
       console.log("connecting to:", `https://tunify.duckdns.org/notifications`);
-      socket = io("https://tunify.duckdns.org", {
-        path:"/notifications/socket.io",
-        
-        auth: { token: freshToken },
-        transports: ["websocket"],
+      socket = io("https://tunify.duckdns.org/notifications", {
+        query: { token :freshToken },
         reconnectionAttempts: 10,
         reconnectionDelay: 400,
       });
+    
+
       socket.on("connect", () => console.log("socket connected ✅"));
       socket.on("connect_error", (e) => console.log("connect_error:", e.message));
 
       const handle = (raw: Record<string, unknown>) => {
         try {
           const notif = normaliseSocketPayload(raw);
+          console.log(raw)
           setNotifications((prev) => {
             if (prev.some((n) => n.id === notif.id)) return prev;
             const activeFilter = filterRef2.current;
@@ -150,7 +150,7 @@ export default function NotificationsPage() {
         "user_followed", "new_release", "new_message", "system", "subscription",
       ] as const;
 
-      eventNames.forEach((event) => socket!.on(event, handle));
+      eventNames.forEach((event) => socket?.on(event, handle));
     };
 
     connect();
