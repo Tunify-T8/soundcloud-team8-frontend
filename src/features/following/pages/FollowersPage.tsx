@@ -28,10 +28,8 @@ export default function FollowersPage() {
           setAvatarUrl(me.avatarUrl ?? null);
           setFollowers(data.followers ?? []);
         } else if (username) {
-          const [profile, data] = await Promise.all([
-            profileService.getPublicProfile(username),
-            followingService.getUserFollowers(username),
-          ]);
+          const profile = await profileService.getPublicProfile(username);
+          const data = await followingService.getUserFollowers(profile.id);
           if (!mounted) return;
           setTitleName(profile.displayName || profile.username);
           setAvatarUrl(profile.avatarUrl ?? null);

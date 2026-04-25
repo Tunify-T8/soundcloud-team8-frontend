@@ -22,6 +22,7 @@ import CheckoutModal from "@/features/premium/components/CheckoutModal";
 import { useMe } from "@/features/profile/context/useMe";
 
 export default function ProfileSideBar({
+  profileId,
   followers,
   following,
   tracks,
@@ -30,6 +31,7 @@ export default function ProfileSideBar({
   followingUsers,
   onUnfollowUser,
 }: {
+  profileId?: string; // the viewed profile's id or username
   followers?: number | string;
   following?: number;
   tracks?: number;
@@ -53,7 +55,7 @@ export default function ProfileSideBar({
   const [pendingUnfollowId, setPendingUnfollowId] = useState<string | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const { me } = useMe();
-  
+
   useEffect(() => {
     setLocalFollowingUsers(followingUsers ?? []);
   }, [followingUsers]);
@@ -71,13 +73,14 @@ export default function ProfileSideBar({
     socialAccounts?.soundcloud,
   );
 
-const userPath = me?.username ? `/${me.username}` : "/me";
+  // ✅ Use the viewed profile's id/username for links, fall back to me if not provided
+  const userPath = profileId ? `/${profileId}` : me?.username ? `/${me.username}` : "/me";
 
-const userInfo = [
-  { label: "Followers", path: `${userPath}/followers`, value: followers },
-  { label: "Following", path: `${userPath}/following`, value: following },
-  { label: "Tracks", path: `${userPath}/tracks`, value: tracks },
-];
+  const userInfo = [
+    { label: "Followers", path: `${userPath}/followers`, value: followers },
+    { label: "Following", path: `${userPath}/following`, value: following },
+    { label: "Tracks", path: `${userPath}/tracks`, value: tracks },
+  ];
 
   return (
     <div className="w-88 rounded-md px-5 py-4 shadow-sm">
@@ -209,13 +212,13 @@ const userInfo = [
         <div className="my-6">
           <div className="flex items-center justify-between">
             <Link
-              to={`/${me?.username}/following`}
+              to={`${userPath}/following`}
               className="text-[12px] font-bold text-white uppercase leading-none hover:text-zinc-500"
             >
               {followingCount} Following
             </Link>
             <Link
-              to={`/${me?.username}/following`}
+              to={`${userPath}/following`}
               className="text-[13px] text-zinc-500 hover:underline"
             >
               View all
@@ -369,8 +372,7 @@ const userInfo = [
           </a>
         </div>
       </div>
-       {checkoutOpen && <CheckoutModal plan = "artist-pro" onClose={() => setCheckoutOpen(false)} />}
-          
+      {checkoutOpen && <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />}
     </div>
   );
 }

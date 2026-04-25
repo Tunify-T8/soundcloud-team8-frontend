@@ -128,6 +128,7 @@ export default function ProfilePage() {
         />
         <div className="absolute right-[8.333333%] top-full mt-4">
           <ProfileSideBar
+            profileId={user.id}  
             followers={user.followersCount}
             following={user.followingCount}
             tracks={"tracksCount" in user ? (user as any).tracksCount : 0}
