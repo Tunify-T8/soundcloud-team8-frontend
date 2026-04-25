@@ -12,6 +12,7 @@ import ActionButtons           from '../components/ActionButtons';
 import CommentsSection         from '../components/CommentsSection';
 import { makeCommentAvatar, formatTimestamp } from '../components/CommentsSection';
 import { usePlayer }           from '@/features/playerUI/context/usePlayer';
+import { api }                 from '../../auth/services/api';
 
 interface WaveformComment {
   id: string;
@@ -62,12 +63,9 @@ const WAVEFORM_HEIGHTS = Array.from({ length: 140 }, (_, i) =>
   18 + Math.abs(Math.sin(i * 0.38) * 50 + Math.sin(i * 0.11) * 28)
 );
 
-
 const Waveform = ({ duration, currentTime, onSeek, comments }: WaveformProps) => {
   const ref      = useRef<HTMLDivElement>(null);
   const progress = duration > 0 ? currentTime / duration : 0;
-
-  
 
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!ref.current || duration === 0) return;
@@ -223,18 +221,19 @@ const ShareModal = ({ title, onClose }: ShareModalProps) => {
 const TrackPage = () => {
   const { trackId } = useParams<{ trackId: string }>();
 
-  const [track, setTrack]             = useState<Track | null>(null);
-  const [trackLoading, setLoading]    = useState(true);
-  const [error, setError]             = useState<string | null>(null);
-  const [showShare, setShowShare]     = useState(false);
-  const [fansTab, setFansTab]         = useState<'top' | 'first'>('top');
+  
+  const [track, setTrack]                     = useState<Track | null>(null);
+  const [trackLoading, setLoading]            = useState(true);
+  const [error, setError]                     = useState<string | null>(null);
+  const [showShare, setShowShare]             = useState(false);
+  const [fansTab, setFansTab]                 = useState<'top' | 'first'>('top');
+  const [isFollowingArtist, setIsFollowingArtist] = useState(false);
+  const [artistFollowers, setArtistFollowers] = useState(0);
+  const [followLoading, setFollowLoading]     = useState(false);
+
   const {
-    currentTrack,
-    isPlaying,
-    progress: playerProgress,
-    setCurrentTrack,
-    setIsPlaying,
-    requestSeek,
+    currentTrack, isPlaying, progress: playerProgress,
+    setCurrentTrack, setIsPlaying, requestSeek,
   } = usePlayer();
 
   const {
@@ -242,61 +241,88 @@ const TrackPage = () => {
     loading: engLoading, toggleLike, toggleRepost,
   } = useEngagement(trackId ?? '');
 
+  
   useEffect(() => {
     if (!trackId) return;
-    // setLoading(true);
-    // setError(null);
     engagementService.getTrackDetails(trackId)
       .then(setTrack)
       .catch(() => setError('Failed to load track'))
       .finally(() => setLoading(false));
   }, [trackId]);
 
+  const artistId = (track as any)?.artists?.[0]?.id ?? null;
+
+  useEffect(() => {
+    if (!artistId) return;
+    api.get(`/users/${artistId}`)
+      .then((res) => {
+        setIsFollowingArtist(res.data.isFollowing ?? false);
+        setArtistFollowers(res.data.followersCount ?? 0);
+      })
+      .catch(() => {});
+  }, [artistId]);
+
+  
   if (trackLoading) return <div className="p-8 text-white">Loading…</div>;
   if (error || !track) return <div className="p-8 text-red-400">{error ?? 'Track not found'}</div>;
 
-  const artistName =
-    track.artist ??
-    (track as any).artistName ??
-    (track as any).owner?.displayName ??
-    (track as any).owner?.username ??
-    'Unknown Artist';
-  const duration   = (track as any).duration ?? 184;
-  const artworkSrc = (track as any).artworkUrl ?? (track as any).thumbnailUrl ?? '';
-  const ownerInit  = artistName.slice(0, 2).toUpperCase();
+  
+  const artistName    = (track as any).artists?.[0]?.name ?? 'Unknown Artist';
+  const duration      = (track as any).durationSeconds ?? 184;
+  const artworkSrc    = (track as any).artworkUrl ?? '';
+  const ownerInit     = artistName.slice(0, 2).toUpperCase();
   const currentUserId = localStorage.getItem('userId') ?? '';
-  const isThisTrack = currentTrack?.id === track.id;
-  const currentTime = isThisTrack ? playerProgress * duration : 0;
+  const isThisTrack   = currentTrack?.id === track.id;
+  const currentTime   = isThisTrack ? playerProgress * duration : 0;
   const pageIsPlaying = isThisTrack && isPlaying;
 
+  
   const ensureCurrentTrack = () => {
     if (isThisTrack) return;
-
     setCurrentTrack({
       id: track.id,
       title: track.title,
       artist: artistName,
       thumbnailUrl: artworkSrc || undefined,
-      artworkUrl: artworkSrc || undefined,
+      artworkUrl:   artworkSrc || undefined,
       duration,
     });
   };
 
   const handlePlayPause = () => {
     ensureCurrentTrack();
-
-    if (isThisTrack) {
-      setIsPlaying(!isPlaying);
-    } else {
-      setIsPlaying(true);
-    }
+    if (isThisTrack) { setIsPlaying(!isPlaying); }
+    else             { setIsPlaying(true); }
   };
 
   const handleSeek = (t: number) => {
     if (!track.id || duration <= 0) return;
-
     ensureCurrentTrack();
     requestSeek(track.id, t / duration);
+  };
+
+  const handleFollowArtist = async () => {
+    if (!artistId) return;
+    setFollowLoading(true);
+    const wasFollowing = isFollowingArtist;
+    setIsFollowingArtist(!wasFollowing);
+    setArtistFollowers(prev => wasFollowing ? Math.max(0, prev - 1) : prev + 1);
+    try {
+      if (wasFollowing) {
+        await api.delete(`/users/${artistId}/follow`);
+      } else {
+        await api.post(`/users/${artistId}/follow`);
+      }
+    } catch (err: any) {
+    
+      setIsFollowingArtist(wasFollowing);
+      setArtistFollowers(prev => wasFollowing ? prev + 1 : Math.max(0, prev - 1));
+      if (err?.response?.status === 409) {
+        setIsFollowingArtist(true);
+      }
+    } finally {
+      setFollowLoading(false);
+    }
   };
 
   return (
@@ -327,7 +353,7 @@ const TrackPage = () => {
                 <h1 className="text-base font-bold leading-tight truncate">{track.title}</h1>
               </div>
               <span className="text-[11px] text-zinc-500 shrink-0">
-                {new Date((track as any).date ?? (track as any).createdAt ?? '')
+                {new Date((track as any).createdAt ?? '')
                   .toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
               </span>
             </div>
@@ -404,16 +430,23 @@ const TrackPage = () => {
               <p className="text-[11px] text-zinc-500 mt-1 flex items-center justify-center gap-2">
                 <span className="flex items-center gap-0.5">
                   <Users className="w-2.5 h-2.5" />
-                  2,160
+                  {artistFollowers.toLocaleString()}
                 </span>
                 <span className="text-zinc-700">·</span>
                 <span>28</span>
               </p>
             </div>
 
-            <button className="w-full py-1.5 rounded border border-zinc-600 text-xs text-white
-                               hover:border-white hover:bg-white/5 transition-colors font-medium">
-              Follow
+            <button
+              onClick={handleFollowArtist}
+              disabled={followLoading}
+              className={`w-full py-1.5 rounded border text-xs font-medium transition disabled:opacity-50 ${
+                isFollowingArtist
+                  ? 'border-orange-500 text-orange-400 hover:border-red-400 hover:text-red-400'
+                  : 'border-zinc-600 text-white hover:border-white hover:bg-white/5'
+              }`}
+            >
+              {followLoading ? '...' : isFollowingArtist ? 'Following' : 'Follow'}
             </button>
 
             <button className="flex items-center gap-1 text-[11px] text-zinc-500 hover:text-white transition mt-1">
