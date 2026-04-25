@@ -43,13 +43,15 @@ export default function LibraryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white pb-20">
+    <div data-testid="library-page" className="min-h-screen bg-black text-white pb-20">
       {/* Tab bar */}
-      <div className="border-b border-zinc-800 sticky top-[48px] bg-black z-40">
+      <div data-testid="library-tab-bar" className="border-b border-zinc-800 sticky top-[48px] bg-black z-40">
         <div className="flex gap-0 pl-40">
           {TABS.map((tab) => (
             <button
               key={tab}
+              data-testid={`library-tab-${tab.toLowerCase()}`}
+              data-active={activeTab === tab}
               onClick={() => navigate(TAB_TO_PATH[tab])}
               className="px-5 py-3 transition-colors relative whitespace-nowrap"
               style={{
@@ -61,7 +63,7 @@ export default function LibraryPage() {
             >
               {tab}
               {activeTab === tab && (
-                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white" />
+                <div data-testid={`library-tab-${tab.toLowerCase()}-indicator`} className="absolute bottom-0 left-0 right-0 h-[2px] bg-white" />
               )}
             </button>
           ))}
@@ -69,7 +71,7 @@ export default function LibraryPage() {
       </div>
 
       {/* Content */}
-      <div className="pl-40 pr-6 pt-6 max-w-6xl">
+      <div data-testid="library-tab-content" className="pl-40 pr-6 pt-6 max-w-6xl">
         {renderTab()}
       </div>
     </div>
