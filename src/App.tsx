@@ -173,14 +173,6 @@ const router = createBrowserRouter([
         ],
       },
       {
-        path: "/me/followers",
-        element: <FollowersPage />,
-      },
-      {
-        path: "/me/following",
-        element: <FollowingPage />,
-      },
-      {
         path: "/who-to-follow",
         element: <WhoToFollowPage />,
       },

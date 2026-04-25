@@ -1,6 +1,5 @@
 import CollectionGrid from "../components/CollectionGrid";
 import EmptyCollectionGrid from "../components/EmptyCollectionGrid";
-import FollowingSection from "../components/FollowingSection";
 import TrackRow from "../components/TrackRow";
 import { useRecentlyPlayed } from "@/features/playerUI/context/useRecentlyPlayed";
 import { LIKED_TRACKS, FOLLOWING } from "../tests/mockdata";
@@ -45,7 +44,6 @@ export default function OverviewTab() {
       <EmptyCollectionGrid title="Playlists" />
       <EmptyCollectionGrid title="Albums" />
       <EmptyCollectionGrid title="Liked Stations" />
-      <FollowingSection users={FOLLOWING} />
     </div>
   );
 }

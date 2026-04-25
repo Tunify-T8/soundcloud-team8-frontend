@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Navigate, useParams } from "react-router-dom";
 import { followingService } from "../followingService";
 import { profileService } from "../../profile/profileService";
 import { useMe } from "../../profile/context/useMe";
 import type { UserFollowing } from "../../../shared/types/User";
 import SocialInfoBar from "../components/SocialInfoBar";
 import { User } from "lucide-react";
+import UserGrid from "../components/UserGrid";
 
 export default function FollowingPage() {
   const { username } = useParams<{ username: string }>();
@@ -32,7 +33,13 @@ export default function FollowingPage() {
     async function load() {
       setLoading(true);
       try {
-        if (username) {
+        if (me && username === me.username) {
+          const data = await followingService.getUserFollowing(me.id);
+          if (!mounted) return;
+          setTitleName(me.displayName || me.username);
+          setAvatarUrl(me.avatarUrl ?? null);
+          setFollowing(data.following ?? []);
+        } else if (username) {
           const [profile, data] = await Promise.all([
             profileService.getPublicProfile(username),
             followingService.getUserFollowing(username),
@@ -41,35 +48,24 @@ export default function FollowingPage() {
           setTitleName(profile.displayName || profile.username);
           setAvatarUrl(profile.avatarUrl ?? null);
           setFollowing(data.following ?? []);
-        } else {
-          if (!me?.id) {
-            setTitleName("");
-            setAvatarUrl(null);
-            setFollowing([]);
-            return;
-          }
-          const data = await followingService.getMeFollowing();
-          if (!mounted) return;
-          setTitleName(me.displayName || me.username);
-          setAvatarUrl(me.avatarUrl ?? null);
-          setFollowing(data.following ?? []);
         }
-      } catch {
+      } catch (e) {
+        console.error("fetch failed:", e);
         if (!mounted) return;
         setAvatarUrl(null);
         setFollowing([]);
       } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+        if (mounted) setLoading(false);
       }
     }
 
     load();
-    return () => {
-      mounted = false;
-    };
-  }, [username, me?.id, me?.displayName, me?.username]);
+    return () => { mounted = false; };
+  }, [username, me?.id, me?.username, me?.displayName]);
+
+  if (username === "me" && me?.username) {
+    return <Navigate to={`/${me.username}/following`} replace />;
+  }
 
   const basePath = username ? `/${username}` : "/me";
 
@@ -80,7 +76,6 @@ export default function FollowingPage() {
         title={`${titleName || "User"} is following`}
         basePath={basePath}
       />
-
       {loading ? (
         <div className="mt-20 text-center text-zinc-400">Loading following...</div>
       ) : following.length === 0 ? (
@@ -89,31 +84,26 @@ export default function FollowingPage() {
         </p>
       ) : (
         <div className="mt-8 flex flex-wrap gap-6">
-          {following.map((user) => (
-            <div key={user.id} className="w-44">
-              <Link to={`/${user.username}`}>
-                <img
-                  src={user.avatarUrl ?? "https://i.pravatar.cc/220"}
-                  alt={user.username}
-                  className="h-44 w-44 rounded-full object-cover"
-                />
-                <p className="mt-3 text-xl font-semibold">{user.username}</p>
-              </Link>
+          <UserGrid
+            users={following.map((u) => ({
+              id: u.id,
+              username: u.username,
+              avatarUrl: u.avatarUrl,
+              followersCount: u.followersCount,
+            }))}
+            placeholders={5}
+            renderAction={(user) => (
               <button
                 type="button"
                 onClick={() => handleUnfollow(user.id)}
                 disabled={pendingUnfollowId === user.id}
-                className="mt-1 inline-flex items-center gap-1 text-lg text-zinc-400 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-white disabled:opacity-60"
               >
-                <User size={14} />
+                <User size={13} />
                 {pendingUnfollowId === user.id ? "unfollowing..." : "following"}
               </button>
-            </div>
-          ))}
-
-          {Array.from({ length: Math.max(0, 5 - following.length) }).map((_, index) => (
-            <div key={index} className="h-44 w-44 rounded-md bg-zinc-800/70" />
-          ))}
+            )}
+          />
         </div>
       )}
     </div>

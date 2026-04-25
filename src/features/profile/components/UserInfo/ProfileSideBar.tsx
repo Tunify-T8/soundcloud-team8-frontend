@@ -19,6 +19,7 @@ import type { FollowingUser } from "../../../../shared/types/User";
 import { followingService } from "../../../following/followingService";
 import avatarFallback from '@/assets/avatar.png';
 import CheckoutModal from "@/features/premium/components/CheckoutModal";
+import { useMe } from "@/features/profile/context/useMe";
 
 export default function ProfileSideBar({
   followers,
@@ -51,7 +52,8 @@ export default function ProfileSideBar({
   );
   const [pendingUnfollowId, setPendingUnfollowId] = useState<string | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-
+  const { me } = useMe();
+  
   useEffect(() => {
     setLocalFollowingUsers(followingUsers ?? []);
   }, [followingUsers]);
@@ -69,11 +71,13 @@ export default function ProfileSideBar({
     socialAccounts?.soundcloud,
   );
 
-  const userInfo = [
-    { label: "Followers", path: "followers", value: followers },
-    { label: "Following", path: "following", value: following },
-    { label: "Tracks", path: "tracks", value: tracks },
-  ];
+const userPath = me?.username ? `/${me.username}` : "/me";
+
+const userInfo = [
+  { label: "Followers", path: `${userPath}/followers`, value: followers },
+  { label: "Following", path: `${userPath}/following`, value: following },
+  { label: "Tracks", path: `${userPath}/tracks`, value: tracks },
+];
 
   return (
     <div className="w-88 rounded-md px-5 py-4 shadow-sm">
@@ -205,13 +209,13 @@ export default function ProfileSideBar({
         <div className="my-6">
           <div className="flex items-center justify-between">
             <Link
-              to="following"
+              to={`/${me?.username}/following`}
               className="text-[12px] font-bold text-white uppercase leading-none hover:text-zinc-500"
             >
               {followingCount} Following
             </Link>
             <Link
-              to="following"
+              to={`/${me?.username}/following`}
               className="text-[13px] text-zinc-500 hover:underline"
             >
               View all
