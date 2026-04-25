@@ -61,7 +61,7 @@ export default function HeaderImg({
 
   return (
     <div
-      className="relative header-container flex items-center w-full h-32 sm:h-44 md:h-56 lg:h-64
+      className="relative header-container flex items-center w-full h-28 sm:h-44 md:h-56 lg:h-64
                   bg-[linear-gradient(315deg,rgb(186,191,190)_0%,rgb(125,74,80)_100%)]"
     >
       {src && (
@@ -77,7 +77,7 @@ export default function HeaderImg({
         </div>
       )}
       {isMe && (
-        <div className="absolute top-8 right-7 z-10">
+        <div className="absolute right-2 top-2 z-10 sm:right-7 sm:top-8">
           {!src ? (
             <button
               type="button"
@@ -91,7 +91,7 @@ export default function HeaderImg({
               <button
                 type="button"
                 onClick={() => setShowActions((prev) => !prev)}
-                className={`w-36 bg-zinc-800 font-bold text-[14px] px-3 py-2 rounded-sm transition-colors cursor-pointer ${
+                className={`w-28 rounded-sm bg-zinc-800 px-2 py-1.5 text-[12px] font-bold transition-colors cursor-pointer sm:w-36 sm:px-3 sm:py-2 sm:text-[14px] ${
                   showActions
                     ? "text-orange-500"
                     : "text-white hover:text-zinc-500"
@@ -100,18 +100,18 @@ export default function HeaderImg({
                 Update image
               </button>
               {showActions && (
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 flex w-36 flex-col rounded-sm border border-zinc-700 bg-zinc-950 shadow-lg">
+                <div className="absolute top-full left-1/2 mt-2 flex w-28 -translate-x-1/2 flex-col rounded-sm border border-zinc-700 bg-zinc-950 shadow-lg sm:w-36">
                   <button
                     type="button"
                     onClick={handleOpenUpload}
-                    className="w-full text-left text-white font-bold text-[14px] px-3 py-2 hover:text-gray-300 transition-colors cursor-pointer"
+                    className="w-full cursor-pointer px-2 py-2 text-left text-[12px] font-bold text-white transition-colors hover:text-gray-300 sm:px-3 sm:text-[14px]"
                   >
                     Replace image
                   </button>
                   <button
                     type="button"
                     onClick={handleRemoveImage}
-                    className="w-full text-left text-white font-bold text-[14px] px-3 py-2 hover:text-gray-300 transition-colors cursor-pointer"
+                    className="w-full cursor-pointer px-2 py-2 text-left text-[12px] font-bold text-white transition-colors hover:text-gray-300 sm:px-3 sm:text-[14px]"
                   >
                     Delete image
                   </button>

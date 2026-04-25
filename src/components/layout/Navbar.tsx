@@ -1,5 +1,5 @@
 import { Bell, Mail, MoreHorizontal, ChevronDown, Heart, ListMusic, Radio, Users, UserPlus, Star, BarChart2, TrendingUp, Share2, 
-  User} from "lucide-react";
+  User, Menu, X} from "lucide-react";
 import SearchBar from "../ui/SearchBar";
 
 import { SiSoundcloud } from "react-icons/si";
@@ -57,6 +57,7 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -183,6 +184,7 @@ export default function Navbar() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    setMobileMenuOpen(false);
   }, [location.pathname]);
 
   const handleSignOut = async () => {
@@ -234,24 +236,25 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="w-full h-12 bg-black text-white border-b border-zinc-800 sticky top-0 z-50">
-        <div className="max-w-[1200px] mx-auto h-full flex items-center justify-between px-6">
-
-          <div className="flex items-center gap-6">
+      <nav className="w-full bg-black text-white border-b border-zinc-800 sticky top-0 z-50">
+        <div className="max-w-[1200px] mx-auto h-12 flex items-center justify-between px-3 md:px-6">
+          <div className="flex items-center gap-4 md:gap-6">
             <Link to="/" className="text-white">
               <SiSoundcloud size={35} />
             </Link>
-            <Link to="/" className="text-zinc-400 hover:text-white font-bold tracking-tight">Home</Link>
-            <Link to="/feed" className="text-zinc-400 hover:text-white font-bold tracking-tight">Feed</Link>
-            <Link to="/library" className="text-zinc-400 hover:text-white font-bold tracking-tight">Library</Link>
+            <div className="hidden md:flex items-center gap-6">
+              <Link to="/" className="text-zinc-400 hover:text-white font-bold tracking-tight">Home</Link>
+              <Link to="/feed" className="text-zinc-400 hover:text-white font-bold tracking-tight">Feed</Link>
+              <Link to="/library" className="text-zinc-400 hover:text-white font-bold tracking-tight">Library</Link>
+            </div>
           </div>
 
-          <div className="relative w-[420px]">
+          <div className="hidden md:block relative w-[320px] lg:w-[420px]">
             <SearchBar />
           </div>
 
-          <div className="flex items-center gap-5 text-sm">
-         <button
+          <div className="hidden md:flex items-center gap-5 text-sm">
+            <button
               onClick={() => setCheckoutOpen(true)}
               className="border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-1 rounded-sm transition-colors duration-150 text-xs"
             >
@@ -318,7 +321,6 @@ export default function Navbar() {
                       </Link>
                     )
                   )}
-                 
                 </div>
               )}
             </div>
@@ -431,7 +433,41 @@ export default function Navbar() {
               )}
             </div>
           </div>
+
+          <div className="md:hidden flex items-center gap-3">
+            <Link to="/messages" className="text-zinc-400 hover:text-white">
+              <Mail size={18} />
+            </Link>
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              className="text-zinc-300 hover:text-white"
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            >
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
         </div>
+
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-zinc-800 px-3 py-3 space-y-3 bg-black">
+            <SearchBar />
+            <div className="grid grid-cols-2 gap-2 text-sm font-bold tracking-tight">
+              <Link to="/" className="text-zinc-300 hover:text-white">Home</Link>
+              <Link to="/feed" className="text-zinc-300 hover:text-white">Feed</Link>
+              <Link to="/library" className="text-zinc-300 hover:text-white">Library</Link>
+              <Link to="/artists" className="text-zinc-300 hover:text-white">For Artists</Link>
+              <Link to="/upload" className="text-zinc-300 hover:text-white">Upload</Link>
+              <Link to="/me" className="text-zinc-300 hover:text-white">Profile</Link>
+            </div>
+            <button
+              onClick={() => setCheckoutOpen(true)}
+              className="w-full border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-2 rounded-sm transition-colors duration-150 text-xs"
+            >
+              Try Free
+            </button>
+          </div>
+        )}
       </nav>
       <Outlet />
       {checkoutOpen && <CheckoutModal plan = "artist-pro" onClose={() => setCheckoutOpen(false)} />}
