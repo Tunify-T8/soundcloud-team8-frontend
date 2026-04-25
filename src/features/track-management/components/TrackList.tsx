@@ -33,14 +33,15 @@ export default function TrackList({ tracks, onDelete, onUpdate }: TrackListProps
   };
 
   return (
-    <div className="space-y-0 overflow-visible">
+    <div data-testid="track-list" className="space-y-0 overflow-visible">
       <div className="space-y-0">
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-[hsl(0,0%,10%)]">
+        <div data-testid="track-list-header" className="flex items-center gap-3 px-4 py-3 border-b border-border bg-[hsl(0,0%,10%)]">
 
           {/* Checkbox */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
+              data-testid="track-list-select-all"
               onClick={handleSelectAll}
               className={`w-4 h-4 rounded flex items-center justify-center border flex-shrink-0 transition-colors
                 ${someSelected
@@ -58,14 +59,14 @@ export default function TrackList({ tracks, onDelete, onUpdate }: TrackListProps
 
           {/* Label */}
           {someSelected ? (
-            <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div data-testid="track-list-selection-bar" className="flex items-center gap-3 flex-1 min-w-0">
               <span className="text-white text-xs font-bold tracking-wide">
                 {selectedTracks.length} SELECTED
               </span>
-              <button className="text-zinc-400 hover:text-white transition-colors">
+              <button data-testid="track-list-bulk-edit" className="text-zinc-400 hover:text-white transition-colors">
                 <Pencil className="w-4 h-4" />
               </button>
-              <button className="text-zinc-400 hover:text-white transition-colors">
+              <button data-testid="track-list-bulk-add-playlist" className="text-zinc-400 hover:text-white transition-colors">
                 <PlusSquare className="w-4 h-4" />
               </button>
             </div>
@@ -98,7 +99,7 @@ export default function TrackList({ tracks, onDelete, onUpdate }: TrackListProps
           <div className="w-6 flex-shrink-0" />
         </div>
 
-        <div className="space-y-1 overflow-visible">
+        <div data-testid="track-list-rows" className="space-y-1 overflow-visible">
           <div className="space-y-1">
             {validTracks.map((track) => (
               <TrackCard
