@@ -213,6 +213,24 @@ function MenuItem({ icon, label, onClick, danger = false }: MenuItemProps) {
   );
 }
 
+// Dropdown animation keyframes injected once
+const DROPDOWN_STYLE_ID = "track-card-dropdown-anim";
+if (typeof document !== "undefined" && !document.getElementById(DROPDOWN_STYLE_ID)) {
+  const style = document.createElement("style");
+  style.id = DROPDOWN_STYLE_ID;
+  style.textContent = `
+    @keyframes menuPopDown {
+      from { opacity: 0; transform: scale(0.72) translateY(-8px); }
+      to   { opacity: 1; transform: scale(1)    translateY(0);    }
+    }
+    @keyframes menuPopUp {
+      from { opacity: 0; transform: scale(0.72) translateY(8px); }
+      to   { opacity: 1; transform: scale(1)    translateY(0);   }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 export default function TrackCard({
   track,
   isSelected = false,
@@ -326,7 +344,7 @@ export default function TrackCard({
         )}
       </div>
 
-      {/* Title + Artist — always visible, takes remaining flex space */}
+      {/* Title + Artist */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-white text-sm font-semibold truncate">{track.title}</span>
@@ -339,17 +357,17 @@ export default function TrackCard({
         <p className="text-zinc-400 text-xs mt-0.5 truncate">{track.artist}</p>
       </div>
 
-      {/* Duration — hidden on mobile */}
+      {/* Duration */}
       <div className="hidden sm:block w-16 text-center flex-shrink-0">
         <span className="text-zinc-300 text-sm tabular-nums">{formatDuration(track.duration)}</span>
       </div>
 
-      {/* Date — hidden below md */}
+      {/* Date */}
       <div className="hidden md:block w-28 text-center flex-shrink-0">
         <span className="text-zinc-300 text-sm">{formatDate(track.date)}</span>
       </div>
 
-      {/* Engagements — hidden below lg */}
+      {/* Engagements */}
       <div className="hidden lg:flex items-center gap-3 w-48 justify-center flex-shrink-0">
         <span className="flex items-center gap-1 text-zinc-500 text-xs">
           <Heart className="w-3.5 h-3.5" />{fmt(track.likes)}
@@ -365,12 +383,12 @@ export default function TrackCard({
         </span>
       </div>
 
-      {/* Plays — always visible */}
+      {/* Plays */}
       <div className="w-12 sm:w-16 text-right flex-shrink-0">
         <span className="text-white text-sm tabular-nums">{track.plays}</span>
       </div>
 
-      {/* Amplify button — hidden on mobile, shown sm+ */}
+      {/* Amplify button */}
       <button
         onClick={(e) => { e.stopPropagation(); setShowAmplifyModal(true); }}
         onMouseEnter={() => setAmplifyHovered(true)}
@@ -393,7 +411,6 @@ export default function TrackCard({
             e.stopPropagation();
             if (!menuOpen && menuButtonRef.current) {
               const rect = menuButtonRef.current.getBoundingClientRect();
-              // Approximate menu height: 10 items × 38px ≈ 380px
               const menuHeight = 380;
               const spaceBelow = window.innerHeight - rect.bottom;
               setDropdownUp(spaceBelow < menuHeight);
@@ -405,8 +422,14 @@ export default function TrackCard({
         </button>
 
         {menuOpen && (
-          <div className={`absolute right-0 z-50 bg-zinc-800 rounded-lg shadow-xl border border-zinc-700 overflow-hidden min-w-[180px] py-1
-            ${dropdownUp ? "bottom-full mb-1" : "top-full mt-1"}`}>
+          <div
+            style={{
+              transformOrigin: dropdownUp ? "bottom right" : "top right",
+              animation: `${dropdownUp ? "menuPopUp" : "menuPopDown"} 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards`,
+            }}
+            className={`absolute right-0 z-50 bg-zinc-800 rounded-lg shadow-xl border border-zinc-700 overflow-hidden min-w-[180px] py-1
+              ${dropdownUp ? "bottom-full mb-1" : "top-full mt-1"}`}
+          >
             <MenuItem icon={<Pencil className="w-4 h-4" />} label="Edit" onClick={() => { onEdit?.(track.id); setMenuOpen(false); }} />
             <MenuItem icon={<ListPlus className="w-4 h-4" />} label="Add to playlist" onClick={() => { onAddToPlaylist?.(track.id); setMenuOpen(false); }} />
             {/* Amplify in menu on mobile */}

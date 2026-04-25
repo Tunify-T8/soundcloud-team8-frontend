@@ -4,12 +4,15 @@ import {
   RouterProvider,
   Navigate,
 } from "react-router-dom";
+import LikesPage from "./features/engagement/pages/LikesPage"
+import RepostsPage from "./features/engagement/pages/RepostsPage"
+import TrackPage from "./features/engagement/pages/TrackPage";
 
 import UploadPage from "./features/upload/pages/UploadPage";
 import ArtistsPage from "./features/track-management/pages/ArtistsPage";
 import ProfilePage from "./features/profile/pages/ProfilePage";
 import PopularTracksPage from "./features/profile/pages/UserInfoBar/PopularTracksPage";
-import TracksPage from "./features/profile/pages/UserInfoBar/TracksPage";
+import ProfileTracksPage from "./features/profile/pages/UserInfoBar/ProfileTracksPage";
 import AlbumsPage from "./features/profile/pages/UserInfoBar/AlbumsPage";
 import PlaylistsPage from "./features/profile/pages/UserInfoBar/PlaylistsPage";
 import ProfileRepostsPage from "./features/profile/pages/UserInfoBar/RepostsPage";
@@ -38,6 +41,8 @@ import LibraryPage from "./features/library/pages/LibraryPage";
 import PlansPage from "./features/premium/pages/PlansPage";
 import AllTabPage from  "./features/profile/pages/UserInfoBar/AllTabPage";
 import InsightsOverviewPage from "./features/insights/components/InsightsOverviewPage";
+import { AdPopup } from "./features/premium/components/AdPopUp";
+
 
 const router = createBrowserRouter([
   {
@@ -75,6 +80,7 @@ const router = createBrowserRouter([
       <ProtectedRoute>
         <ProfileProvider>
           <NavBar />
+          <AdPopup />
         </ProfileProvider>
       </ProtectedRoute>
     ),
@@ -88,12 +94,24 @@ const router = createBrowserRouter([
         element: <MessagesPage />,
       },
       {
+        path: '/tracks/:trackId',
+        element: <TrackPage />,
+      },
+      {
+        path: '/tracks/:trackId/likes',
+        element: <LikesPage />
+      },
+      {
         path: "/feed",
         element: <FeedPage />,
       },
       {
         path: "/search",
         element: <SearchPage />,
+      },
+      {
+        path: '/tracks/:trackId/reposts',
+        element: <RepostsPage />,
       },
       {
         path: '/library',
@@ -129,7 +147,7 @@ const router = createBrowserRouter([
         children: [
           { path: "", element: <AllTabPage /> },
           { path: "popular-tracks", element: <PopularTracksPage /> },
-          { path: "tracks", element: <TracksPage /> },
+          { path: "tracks", element: <ProfileTracksPage /> },
           { path: "albums", element: <AlbumsPage /> },
           { path: "playlists", element: <PlaylistsPage /> },
           { path: "reposts", element: <ProfileRepostsPage /> },
@@ -143,7 +161,7 @@ const router = createBrowserRouter([
         element: <ProfilePage />,
         children: [
           { path: "popular-tracks", element: <PopularTracksPage /> },
-          { path: "tracks", element: <TracksPage /> },
+          { path: "tracks", element: <ProfileTracksPage /> },
           { path: "albums", element: <AlbumsPage /> },
           { path: "playlists", element: <PlaylistsPage /> },
           { path: "reposts", element: <ProfileRepostsPage /> },
