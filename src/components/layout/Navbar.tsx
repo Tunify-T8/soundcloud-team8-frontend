@@ -61,7 +61,6 @@ export default function Navbar() {
   const menuRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
