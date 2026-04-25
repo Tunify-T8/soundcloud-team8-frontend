@@ -15,7 +15,6 @@ import { usePlayer }           from '@/features/playerUI/context/usePlayer';
 import { api }                 from '../../auth/services/api';
 import { waveGenerators }      from '@/components/Waveforms';
 
-/* ------------------------------------------------------------------ types */
 
 interface WaveformComment {
   id: string;
@@ -57,17 +56,13 @@ const WAVEFORM_COMMENTS: WaveformComment[] = [
   { id: 'wc9', userId: 'u9', username: 'Ali',   avatarUrl: makeCommentAvatar('AL', 28), body: 'beautiful',      timestamp: 162 },
 ];
 
-/* ---------------------------------------------------------------- Waveform
-   Copy of SongCard waveform — props are identical to how SongCard uses them.
-   onSeek(ratio: 0-1) mirrors SongCard handleWaveformClick pct.
-*/
+/* ---------------------------------------------------------------- Waveform */
+
 interface WaveformProps {
   onSeek:         (ratio: number) => void;
   comments:       WaveformComment[];
   waveformSeed:   number;
-  /** string comparison ID — passed in from parent so Waveform never has to compare */
   isThisTrack:    boolean;
-  /** 0-1 ratio direct from usePlayer, same as SongCard's playerProgress */
   playerProgress: number;
   duration:       number;
 }
@@ -83,21 +78,16 @@ const Waveform = ({
     [generatorIndex, waveformSeed],
   );
 
-  // Exactly mirrors SongCard:
-  //   const displayProgress = isThisTrack ? playerProgress : progress;
-  // (progress=0 when not playing, playerProgress is the live 0-1 value)
   const displayProgress = isThisTrack ? playerProgress : 0;
 
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    // Exactly mirrors SongCard handleWaveformClick pct calculation
     const pct = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
-    onSeek(pct); // raw ratio, same as SongCard passes to requestSeek
+    onSeek(pct);
   };
 
   return (
     <div className="w-full">
-      {/* bars — identical style logic to SongCard */}
       <div
         className="flex items-end h-[100px] cursor-pointer w-full"
         style={{ gap: '1px' }}
@@ -106,7 +96,6 @@ const Waveform = ({
         onMouseLeave={() => setIsHovered(false)}
       >
         {bars.map((height, i) => {
-          // Exactly mirrors SongCard bar rendering
           const pos        = i / (bars.length - 1);
           const played     = pos <= displayProgress;
           const showPlayed = isThisTrack && played;
@@ -170,7 +159,7 @@ const Waveform = ({
   );
 };
 
-/* -------------------------------------------------------------- ShareModal */
+/* ShareModal */
 
 const ShareModal = ({ title, onClose }: { title: string; onClose: () => void }) => {
   const [copied, setCopied] = useState(false);
@@ -211,7 +200,7 @@ const ShareModal = ({ title, onClose }: { title: string; onClose: () => void }) 
   );
 };
 
-/* --------------------------------------------------------------- TrackPage */
+/* TrackPage */
 
 const TrackPage = () => {
   const { trackId } = useParams<{ trackId: string }>();
@@ -225,11 +214,10 @@ const TrackPage = () => {
   const [artistFollowers, setArtistFollowers]     = useState(0);
   const [followLoading, setFollowLoading]         = useState(false);
 
-  // Pull EVERYTHING from usePlayer — same destructure as SongCard
   const {
     currentTrack,
     isPlaying,
-    progress: playerProgress,   // 0-1 ratio, same name as SongCard uses
+    progress: playerProgress,
     setCurrentTrack,
     setIsPlaying,
     requestSeek,
@@ -270,25 +258,27 @@ const TrackPage = () => {
   const currentUserId = localStorage.getItem('userId') ?? '';
   const waveformSeed  = 3;
 
-  // CRITICAL: stringify both sides to avoid number/string type mismatch
-  // This is the #1 reason isThisTrack can silently be false
-  const isThisTrack   = String(currentTrack?.id) === String(track.id);
+  // FIX 1: Compare against trackId (URL string) not track.id (API may return number).
+  // Same pattern SongCard uses: currentTrack?.id === trackId (both strings).
+  const isThisTrack   = currentTrack != null && String(currentTrack.id) === String(trackId);
   const currentTime   = isThisTrack ? playerProgress * duration : 0;
   const pageIsPlaying = isThisTrack && isPlaying;
 
-  // Shared track descriptor — used in both handlers
+  // FIX 2: Use trackId (string from useParams) as the id, not track.id (API number).
+  // Also include audioUrl so the player actually has something to load.
   const trackObj = {
-    id:           track.id,
+    id:           trackId!,
     title:        track.title,
     artist:       artistName,
     thumbnailUrl: artworkSrc || undefined,
     artworkUrl:   artworkSrc || undefined,
+    audioUrl:     (track as any).audioUrl || (track as any).src || undefined,
     duration,
   };
 
-  // Mirrors SongCard handlePlayToggle line for line
+  // FIX 3: Guard on trackId (not track.id) — consistent with trackObj.id above.
   const handlePlayPause = () => {
-    if (!track.id) return;
+    if (!trackId) return;
     if (isThisTrack) {
       setIsPlaying(!isPlaying);
     } else {
@@ -297,15 +287,14 @@ const TrackPage = () => {
     }
   };
 
-  // Mirrors SongCard handleWaveformClick line for line
-  // ratio is 0-1, Waveform already computed it — we pass straight to requestSeek
+  // FIX 4: requestSeek must use the same id that was passed to setCurrentTrack (trackId).
   const handleSeek = (ratio: number) => {
-    if (!track.id) return;
+    if (!trackId) return;
     if (!isThisTrack) {
       setCurrentTrack(trackObj);
       setIsPlaying(true);
     }
-    requestSeek(track.id, ratio);
+    requestSeek(trackId, ratio);
   };
 
   const handleFollowArtist = async () => {
@@ -341,7 +330,7 @@ const TrackPage = () => {
           <div className="flex-1 flex flex-col px-6 pt-6 pb-4 min-w-0">
 
             <div className="flex items-start gap-4 mb-5">
-              {/* Play/Pause — black circle, white SVG (SongCard inverted) */}
+              {/* Play/Pause */}
               <button
                 onClick={handlePlayPause}
                 className="w-12 h-12 rounded-full bg-black flex items-center justify-center hover:scale-105 transition-transform shrink-0 shadow-lg"
@@ -370,7 +359,7 @@ const TrackPage = () => {
               </span>
             </div>
 
-            {/* Waveform — receives playerProgress directly, isThisTrack drives orange fill */}
+            {/* Waveform */}
             <Waveform
               onSeek={handleSeek}
               comments={WAVEFORM_COMMENTS}
