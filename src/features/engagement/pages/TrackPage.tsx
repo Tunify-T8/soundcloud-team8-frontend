@@ -25,7 +25,7 @@ interface WaveformComment {
   timestamp: number;
 }
 
-/* --------------------------------------------------------- static helpers */
+/* static helpers */
 
 const makeOwnerAvatar = (text: string, size = 80): string =>
   `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
@@ -258,14 +258,10 @@ const TrackPage = () => {
   const currentUserId = localStorage.getItem('userId') ?? '';
   const waveformSeed  = 3;
 
-  // FIX 1: Compare against trackId (URL string) not track.id (API may return number).
-  // Same pattern SongCard uses: currentTrack?.id === trackId (both strings).
   const isThisTrack   = currentTrack != null && String(currentTrack.id) === String(trackId);
   const currentTime   = isThisTrack ? playerProgress * duration : 0;
   const pageIsPlaying = isThisTrack && isPlaying;
 
-  // FIX 2: Use trackId (string from useParams) as the id, not track.id (API number).
-  // Also include audioUrl so the player actually has something to load.
   const trackObj = {
     id:           trackId!,
     title:        track.title,
@@ -276,7 +272,7 @@ const TrackPage = () => {
     duration,
   };
 
-  // FIX 3: Guard on trackId (not track.id) — consistent with trackObj.id above.
+  
   const handlePlayPause = () => {
     if (!trackId) return;
     if (isThisTrack) {
@@ -287,7 +283,6 @@ const TrackPage = () => {
     }
   };
 
-  // FIX 4: requestSeek must use the same id that was passed to setCurrentTrack (trackId).
   const handleSeek = (ratio: number) => {
     if (!trackId) return;
     if (!isThisTrack) {
@@ -443,7 +438,7 @@ const TrackPage = () => {
           </div>
         </div>
 
-        {/* ── LOWER SECTION ── */}
+        {/* LOWER SECTION  */}
         <div className="flex">
 
           {/* Artist sidebar */}
