@@ -119,6 +119,8 @@ export default function ProfilePage() {
           country={country}
           city={city}
           bio={user.bio ?? undefined}
+          role={user.role}
+          visibility={isMeProfile(user) ? user.visibility : undefined}
           socialAccounts={isMe ? socialAccounts : undefined}
           isMe={isMe}
           userId={user.id}
@@ -126,6 +128,7 @@ export default function ProfilePage() {
         />
         <div className="absolute right-[8.333333%] top-full mt-4">
           <ProfileSideBar
+            profileId={user.id}  
             followers={user.followersCount}
             following={user.followingCount}
             tracks={"tracksCount" in user ? (user as any).tracksCount : 0}
@@ -139,6 +142,7 @@ export default function ProfilePage() {
               isCertified: u.isCertified ?? false,
               followersCount: u.followersCount ?? 0,
             }))}
+            onUnfollowUser={refreshProfile}
           />
         </div>
       </div>

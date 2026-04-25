@@ -1,8 +1,5 @@
 // ============================================================
 // RESET PASSWORD PAGE — Tunify
-// Location: src/features/auth/pages/ResetPasswordPage.tsx
-// Reached via navigate('/reset-password', { state: { email } })
-// after ForgotPasswordPage success screen
 // ============================================================
 
 import React, { useState } from 'react';
@@ -10,14 +7,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import AuthNavbar from '../components/AuthNavbar';
 import { ChevronLeft, Loader2, Eye, EyeOff } from 'lucide-react';
 import { resetPassword } from '../services/index';
-const TunifyLogo: React.FC = () => (
-  <Link to="/" className="flex items-center gap-2 no-underline">
-    <svg viewBox="0 0 33 15" className="h-6 w-auto sm:h-7" fill="white" aria-hidden="true">
-      <path d="M0 11.5c0 .8.7 1.5 1.5 1.5s1.5-.7 1.5-1.5V6c0-.8-.7-1.5-1.5-1.5S0 5.2 0 6v5.5zm4.5 1.5c.8 0 1.5-.7 1.5-1.5V3.5C6 2.7 5.3 2 4.5 2S3 2.7 3 3.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V1.5C10.5.7 9.8 0 9 0S7.5.7 7.5 1.5V11.5C7.5 12.3 8.2 13 9 13zm4.5 0c.8 0 1.5-.7 1.5-1.5V3.5C15 2.7 14.3 2 13.5 2S12 2.7 12 3.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V2.5C19.5 1.7 18.8 1 18 1s-1.5.7-1.5 1.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V4.5C24 3.7 23.3 3 22.5 3S21 3.7 21 4.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V4.5C27 3.7 26.3 3 25.5 3S24 3.7 24 4.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V2.5C33 1.7 32.3 1 31.5 1S30 1.7 30 2.5V11.5c0 .8.7 1.5 1.5 1.5z" />
-    </svg>
-    <span className="text-white font-bold text-sm sm:text-base tracking-widest uppercase">SoundCloud</span>
-  </Link>
-);
+
 
 const isValidEmail = (val: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
 
@@ -92,7 +82,7 @@ const ResetPasswordPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] flex flex-col">
+    <div className="min-h-screen bg-[#0d0d0d] flex flex-col" data-testid="resetPasswordPage">
 
       <AuthNavbar />
 
@@ -109,6 +99,7 @@ const ResetPasswordPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => navigate('/forgot-password')}
+                      data-testid= "backBtn"
                       className="w-9 h-9 rounded-full bg-[#2a2a2a] hover:bg-[#3a3a3a] flex items-center justify-center transition-colors flex-shrink-0"
                     >
                       <ChevronLeft className="h-5 w-5 text-white" />
@@ -118,7 +109,7 @@ const ResetPasswordPage: React.FC = () => {
 
                   {/* Error */}
                   {error && (
-                    <div role="alert" className="mb-4 px-4 py-3 bg-[#2a1a1a] border border-red-500/40 rounded text-red-400 text-sm">
+                    <div role="alert" data-testid = "errorAlert" className="mb-4 px-4 py-3 bg-[#2a1a1a] border border-red-500/40 rounded text-red-400 text-sm">
                       {error}
                     </div>
                   )}
@@ -134,6 +125,7 @@ const ResetPasswordPage: React.FC = () => {
                         placeholder="your@email.com"
                         className="w-full bg-transparent text-white text-sm focus:outline-none placeholder-[#666]"
                         autoComplete="email"
+                        data-testid = "inputEmail"
                       />
                     </div>
                     <p className="text-[#777] text-xs mt-1">Enter the email address associated with your account.</p>
@@ -149,6 +141,7 @@ const ResetPasswordPage: React.FC = () => {
                         onChange={(e) => { setToken(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)); setError(null); }}
                         placeholder="e.g. 21D9E4"
                         maxLength={6}
+                        data-testid="inputToken"
                         className="w-full bg-transparent text-white text-sm font-mono tracking-widest focus:outline-none placeholder-[#666] uppercase"
                         autoComplete="off"
                       />
@@ -167,17 +160,19 @@ const ResetPasswordPage: React.FC = () => {
                         placeholder="Choose a password (min. 8 characters)"
                         className="w-full bg-transparent text-white text-sm focus:outline-none placeholder-[#666] pr-8"
                         autoComplete="new-password"
+                        data-testid="newPasswordInput"
                       />
                       <button
                         type="button"
                         onClick={() => setShowNewPassword((v) => !v)}
+                        data-testid ="newPasswordBtn"
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-[#777] hover:text-white"
                       >
                         {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
                     {newPassword.length > 0 && (
-                      <div className="mt-2 bg-[#1a1a1a] border border-[#333] rounded-sm px-4 py-3 flex flex-col gap-1.5">
+                      <div data-testid= "passwordRules" className="mt-2 bg-[#1a1a1a] border border-[#333] rounded-sm px-4 py-3 flex flex-col gap-1.5">
                         {[
                           { label: 'At least 8 characters', met: newPassword.length >= 8 },
                           { label: 'At least one uppercase letter', met: /[A-Z]/.test(newPassword) },
@@ -211,17 +206,19 @@ const ResetPasswordPage: React.FC = () => {
                         placeholder="Re-enter your new password"
                         className="w-full bg-transparent text-white text-sm focus:outline-none placeholder-[#666] pr-8"
                         autoComplete="new-password"
+                        data-testid= " newPAsswordInput"
                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword((v) => !v)}
+                        data-testid="confirmPasswordBtn"
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-[#777] hover:text-white"
                       >
                         {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
                     {confirmPassword.length > 0 && newPassword !== confirmPassword && (
-                      <p className="text-red-400 text-xs mt-1">Passwords do not match.</p>
+                      <p className="text-red-400 text-xs mt-1" data-testid="<passMismatchError">Passwords do not match.</p>
                     )}
                   </div>
 
@@ -230,6 +227,7 @@ const ResetPasswordPage: React.FC = () => {
                     type="button"
                     onClick={handleSave}
                     disabled={!isReady || isSubmitting}
+                    data-testid = "savePasswordBtn"
                     className={`w-full py-3 rounded-sm text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
                       isReady && !isSubmitting
                         ? 'bg-white hover:bg-gray-100 text-black cursor-pointer'
@@ -249,6 +247,7 @@ const ResetPasswordPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => navigate('/signin')}
+                    data-testid="goToSignInBtn"
                     className="w-full bg-white hover:bg-gray-100 text-black py-3 rounded-sm text-sm font-semibold transition-colors cursor-pointer"
                   >
                     Sign in

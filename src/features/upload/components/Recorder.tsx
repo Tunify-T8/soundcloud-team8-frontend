@@ -473,11 +473,12 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
   // ─── render ──────────────────────────────────────────────────────────────────
 
   return (
-    <main>
+    <main data-testid="recorder">
       <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded-xl overflow-hidden shadow-[0_0_0_1px_rgba(255,255,255,0.02),0_15px_40px_rgba(0,0,0,0.7)]">
 
         <button
           className="w-full flex items-center justify-between px-8 py-5 hover:bg-[#202020] transition-colors"
+          data-testid="recorder-mic-toggle"
           onClick={async () => {
             if (micOpen && permission === "granted") { setMicOpen(false); return }
             if (permission === "granted") { setMicOpen(!micOpen); return }
@@ -517,10 +518,10 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
         </button>
 
         {micOpen && (
-          <div className="border-t border-[#2a2a2a] bg-[#181818]">
+          <div className="border-t border-[#2a2a2a] bg-[#181818]" data-testid="recorder-panel">
 
             {(permission === "denied" || permission === "idle") && (
-              <div className="px-8 py-6 flex flex-col items-center text-center gap-3">
+              <div className="px-8 py-6 flex flex-col items-center text-center gap-3" data-testid="recorder-permission-denied">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 2L1 21h22L12 2z"/></svg>
                 <p className="text-[14px] font-semibold text-amber-400">No microphone found</p>
                 <p className="text-[13px] text-[#888]">Please allow microphone access in your web browser settings.</p>
@@ -532,7 +533,7 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
 
                 {(recordingState === "recording" || recordingState === "paused") && !finalized && (
                   <div className="px-8 pt-4 pb-1">
-                    <div className="relative w-full h-0.5 rounded-full bg-[#2a2a2a] overflow-hidden">
+                    <div className="relative w-full h-0.5 rounded-full bg-[#2a2a2a] overflow-hidden" data-testid="recorder-progress-bar">
                       <div className="absolute inset-y-0 left-0 bg-[#f50] rounded-full" style={{ width: `${progressPct}%` }} />
                     </div>
                     <p className="text-[11px] text-[#555] mt-1 text-right">{Math.max(0, MAX_SECONDS - Math.floor(seconds))}s left</p>
@@ -552,7 +553,8 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
                       <div className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white shadow-md pointer-events-none -translate-x-1/2" style={{ left: `${scrubPct}%` }} />
                       <input type="range" min={0} max={playbackDuration > 0 ? playbackDuration : 1} step={0.01}
                         value={playbackCurrent} onChange={handleScrub}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        data-testid="recorder-scrubber" />
                     </div>
                     <div className="flex justify-between text-[11px] text-[#555] font-mono tabular-nums">
                       <span>{fmt(playbackCurrent)}</span>
@@ -560,12 +562,12 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <button onClick={handleCheck} className="text-[#888] hover:text-white transition-colors" title="Back">
+                        <button onClick={handleCheck} className="text-[#888] hover:text-white transition-colors" title="Back" data-testid="recorder-back-btn">
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="15 18 9 12 15 6"/>
                           </svg>
                         </button>
-                        <button onClick={handlePlay} className="text-[#888] hover:text-white transition-colors" title={isPlaying ? "Pause" : "Play"}>
+                        <button onClick={handlePlay} className="text-[#888] hover:text-white transition-colors" title={isPlaying ? "Pause" : "Play"} data-testid="recorder-play-btn">
                           {isPlaying
                             ? <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
                             : <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg>
@@ -585,6 +587,7 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
                           }))
                         }}
                         className="px-6 py-2 rounded-full bg-[#2a2a2a] hover:bg-[#333] text-white text-[14px] font-semibold transition-colors"
+                        data-testid="recorder-upload-btn"
                       >Upload</button>
                     </div>
                   </div>
@@ -595,7 +598,7 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
                   <div className="flex items-center justify-between px-8 py-4">
                     <div className="flex items-center gap-4">
                       {(recordingState === "paused" || (recordingState === "stopped" && (latestBlobRef.current || audioBlob))) && (
-                        <button onClick={handleCheck} disabled={isSplicing} className="text-[#888] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors" title={isSplicing ? "Processing…" : "Finalize"}>
+                        <button onClick={handleCheck} disabled={isSplicing} className="text-[#888] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors" title={isSplicing ? "Processing…" : "Finalize"} data-testid="recorder-finalize-btn">
                           {isSplicing
                             ? <div className="w-[18px] h-[18px] border-2 border-white/20 border-t-white/70 rounded-full animate-spin" />
                             : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -603,21 +606,21 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
                         </button>
                       )}
                       {showUndoRedo && (
-                        <button onClick={handleUndo} disabled={!canUndo} className="text-[#888] hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors" title="Undo 3s">
+                        <button onClick={handleUndo} disabled={!canUndo} className="text-[#888] hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors" title="Undo 3s" data-testid="recorder-undo-btn">
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.91"/>
                           </svg>
                         </button>
                       )}
                       {showUndoRedo && (
-                        <button onClick={handleRedo} disabled={!canRedo} className="text-[#888] hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors" title="Redo 3s">
+                        <button onClick={handleRedo} disabled={!canRedo} className="text-[#888] hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors" title="Redo 3s" data-testid="recorder-redo-btn">
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.49-3.91"/>
                           </svg>
                         </button>
                       )}
                       {(recordingState !== "idle" || latestBlobRef.current || audioBlob) && (
-                        <button onClick={handleTrash} className="text-[#888] hover:text-red-400 transition-colors" title="Delete">
+                        <button onClick={handleTrash} className="text-[#888] hover:text-red-400 transition-colors" title="Delete" data-testid="recorder-trash-btn">
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="3 6 5 6 21 6"/>
                             <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
@@ -630,6 +633,7 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
 
                     <button
                       onClick={handleMainButton}
+                      data-testid="recorder-main-btn"
                       className={`flex items-center gap-2 px-5 py-2 rounded-full text-white text-[14px] font-semibold transition-colors ${
                         recordingState === "recording" ? "bg-[#f50] hover:bg-[#e04a00]" : "bg-[#2a2a2a] hover:bg-[#333]"
                       }`}
@@ -637,7 +641,7 @@ export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
                       {mainButtonLabel()}
                     </button>
 
-                    <div className="text-[14px] text-[#888] font-mono tabular-nums w-12 text-right">
+                    <div className="text-[14px] text-[#888] font-mono tabular-nums w-12 text-right" data-testid="recorder-timer">
                       {fmt(seconds)}
                     </div>
                   </div>

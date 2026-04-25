@@ -15,7 +15,10 @@ const mockSeek            = vi.fn();
 const mockSetVolume       = vi.fn();
 const mockToggleMute      = vi.fn();
 const mockSetIsPlaying    = vi.fn();
+const mockSetProgress     = vi.fn();
 const mockSetCurrentTrack = vi.fn();
+const mockRequestSeek     = vi.fn();
+const mockClearPendingSeek = vi.fn();
 const mockToggleShuffle   = vi.fn();
 const mockToggleRepeat    = vi.fn();
 const mockNext            = vi.fn();
@@ -80,8 +83,13 @@ const baseCurrentTrack = {
 const basePlayer: PlayerContextValue = {
   currentTrack:    baseCurrentTrack,
   isPlaying:       false,
+  progress:        0,
+  pendingSeek:     null,
   setCurrentTrack: mockSetCurrentTrack,
   setIsPlaying:    mockSetIsPlaying,
+  setProgress:     mockSetProgress,
+  requestSeek:     mockRequestSeek,
+  clearPendingSeek: mockClearPendingSeek,
 };
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
@@ -177,14 +185,14 @@ describe("PlayerBar", () => {
     expect(screen.getByText("3:00")).toBeInTheDocument();
   });
 
-  it("seeks to correct position when progress bar is clicked", () => {
+  it("requests seek to correct position when progress bar is clicked", () => {
     render(<PlayerBar />);
     const progressBar = document.querySelector(".group.cursor-pointer") as HTMLElement;
     Object.defineProperty(progressBar, "getBoundingClientRect", {
       value: () => ({ left: 0, width: 300, top: 0, bottom: 0, right: 300 }),
     });
     fireEvent.click(progressBar, { clientX: 150 });
-    expect(mockSeek).toHaveBeenCalledWith(90);
+    expect(mockRequestSeek).toHaveBeenCalledWith("track-1", 0.5);
   });
 
   it("shows volume slider on mouse enter", () => {

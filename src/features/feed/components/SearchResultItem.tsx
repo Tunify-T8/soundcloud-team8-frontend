@@ -8,8 +8,6 @@ import type {
   CollectionSearchResult,
 } from '../type';
 
-// ─── Helper ───────────────────────────────────────────────────────────────────
-
 function waveformSeedFromId(id: string): number {
   return id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
 }
@@ -26,12 +24,12 @@ function formatTimeAgo(dateStr: string): string {
   return `${years} year${years !== 1 ? 's' : ''} ago`;
 }
 
-// ─── Track result — maps TrackSearchResult → SongCard props ──────────────────
-
 function TrackResult({ track }: { track: TrackSearchResult }) {
   return (
-    // Wrapper gives the card the same large-cover layout as SoundCloud search
-    <div className="flex mb-8">
+    <div
+      data-testid={`search-result-track-${track.id}`}
+      className="flex mb-8"
+    >
       <div className="flex-1">
         <SongCard
           trackId={track.id}
@@ -52,11 +50,7 @@ function TrackResult({ track }: { track: TrackSearchResult }) {
   );
 }
 
-// ─── Album / Playlist result ──────────────────────────────────────────────────
-
 function CollectionResult({ collection }: { collection: CollectionSearchResult }) {
-  // Placeholder tracks — replace with real data from GET /collections/:id/tracks
-  // TODO: fetch actual tracks when the API call is integrated
   const placeholderTracks = Array.from({ length: 5 }, (_, i) => ({
     id: `${collection.id}-t${i}`,
     number: i + 1,
@@ -66,19 +60,19 @@ function CollectionResult({ collection }: { collection: CollectionSearchResult }
   }));
 
   return (
-    <AlbumCard
-      id={collection.id}
-      type={collection.type}
-      title={collection.title}
-      artist={collection.artist}
-      coverUrl={collection.coverUrl}
-      createdAt={collection.createdAt}
-      tracks={placeholderTracks}
-    />
+    <div data-testid={`search-result-collection-${collection.id}`}>
+      <AlbumCard
+        id={collection.id}
+        type={collection.type}
+        title={collection.title}
+        artist={collection.artist}
+        coverUrl={collection.coverUrl}
+        createdAt={collection.createdAt}
+        tracks={placeholderTracks}
+      />
+    </div>
   );
 }
-
-// ─── Dispatcher ───────────────────────────────────────────────────────────────
 
 export default function SearchResultItem({ result }: { result: SearchResult }) {
   if (result.type === 'track') {
@@ -86,7 +80,11 @@ export default function SearchResultItem({ result }: { result: SearchResult }) {
   }
 
   if (result.type === 'user') {
-    return <UserResultRow user={result as UserSearchResult} />;
+    return (
+      <div data-testid={`search-result-user-${result.id}`}>
+        <UserResultRow user={result as UserSearchResult} />
+      </div>
+    );
   }
 
   if (result.type === 'album' || result.type === 'playlist') {

@@ -4,6 +4,11 @@ import type { PlayerContextValue } from "./PlayerTypes";
 export const PlayerContext = createContext<PlayerContextValue>({
   currentTrack: null,
   isPlaying: false,
+  progress: 0,
+  pendingSeek: null,
   setCurrentTrack: () => {},
   setIsPlaying: () => {},
+  setProgress: () => {},
+  requestSeek: () => {},
+  clearPendingSeek: () => {},
 });
