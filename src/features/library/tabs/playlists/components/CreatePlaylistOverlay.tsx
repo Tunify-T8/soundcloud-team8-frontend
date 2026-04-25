@@ -148,7 +148,7 @@ export default function CreatePlaylistOverlay({
 
   return (
     <>
-      <div className="fixed inset-0 z-70 bg-white/40" onClick={onClose} />
+      <div className="fixed inset-0 z-70 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <button
         onClick={onClose}
         className="fixed right-6 top-6 z-72 flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800 text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white"
@@ -160,174 +160,72 @@ export default function CreatePlaylistOverlay({
       <div className="fixed inset-0 z-71 overflow-y-auto hide-scrollbar">
         <div className="flex min-h-full items-start justify-center px-4 py-24">
           <div
-            className="w-full max-w-2xl rounded-sm border border-zinc-700 bg-[#0b0b0b] p-4 text-white shadow-2xl"
+            className="w-full max-w-3xl rounded-lg border border-zinc-700 bg-gradient-to-br from-[#18181b] to-[#232326] p-8 text-white shadow-2xl flex flex-col md:flex-row gap-8"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center gap-6 text-[20px] font-bold">
-              {hasPlaylists && (
-                <button
-                  onClick={() => setActiveTab("add")}
-                  className={`pb-2 transition-colors ${activeTab === "add" ? "border-b border-white text-white" : "text-zinc-500"}`}
-                >
-                  Add to playlist
-                </button>
-              )}
-              <button
-                onClick={() => setActiveTab("create")}
-                className={`pb-2 transition-colors ${activeTab === "create" ? "border-b border-white text-white" : "text-zinc-500"}`}
-              >
-                Create a playlist
-              </button>
-            </div>
-
-            {activeTab === "add" ? (
-              <div className="mt-4">
+            {/* Main Form */}
+            <div className="flex-1 min-w-0">
+              <h2 className="text-2xl font-bold mb-4">Create a playlist</h2>
+              <label className="block text-zinc-300 mb-1 font-semibold">
+                Playlist title<span className="text-red-500">*</span>
+              </label>
+              <input
+                value={playlistTitle}
+                onChange={(e) => setPlaylistTitle(e.target.value)}
+                onBlur={() => setTitleTouched(true)}
+                className={`w-full rounded bg-zinc-800 border ${!isTitleValid && titleTouched ? "border-red-500" : "border-zinc-700"} px-3 py-2 text-white mb-2 focus:border-orange-400`}
+                placeholder="Give your playlist a name"
+                required
+              />
+              {/* Tag Input (UI only) */}
+              <div className="mb-4">
+                <div className="flex flex-wrap gap-2">
+                  <span className="bg-zinc-700 px-3 py-1 rounded-full text-xs">#World</span>
+                  <span className="bg-zinc-700 px-3 py-1 rounded-full text-xs">#Bhangra</span>
+                </div>
                 <input
-                  value={filterQuery}
-                  onChange={(e) => setFilterQuery(e.target.value)}
-                  placeholder="Filter playlists"
-                  className="w-full rounded-sm border border-zinc-700 bg-[#272727] px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-zinc-500"
+                  className="mt-2 w-full rounded bg-zinc-800 border border-zinc-700 px-3 py-2 text-white"
+                  placeholder="Add tags (e.g. #pop, #chill)"
+                  disabled
                 />
-
-                <div className="mt-4 space-y-2">
-                  {loadingPlaylists && (
-                    <p className="py-3 text-sm text-zinc-400">
-                      Loading playlists...
-                    </p>
-                  )}
-
-                  {!loadingPlaylists &&
-                    filteredPlaylists.map((playlist) => (
-                      <div
-                        key={playlist.id}
-                        className="flex items-center justify-between rounded-sm bg-[#0b0b0b] px-3 py-2"
-                      >
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-bold text-white">
-                            {playlist.title}
-                          </p>
-                          <p className="truncate text-xs text-zinc-400">
-                            {playlist.trackCount} tracks
-                          </p>
-                        </div>
-                        <button
-                          className="rounded-sm bg-zinc-800 px-3 py-1.5 text-xs font-bold text-white hover:bg-zinc-700 disabled:opacity-60"
-                          disabled={addingToPlaylistId === playlist.id}
-                          onClick={() => handleAddToPlaylist(playlist.id)}
-                        >
-                          {addingToPlaylistId === playlist.id
-                            ? "Adding..."
-                            : addToPlaylistSuccess === playlist.id
-                              ? "Added!"
-                              : addToPlaylistError === playlist.id
-                                ? "Failed"
-                                : "Add to Playlist"}
-                        </button>
-                      </div>
-                    ))}
-
-                  {!loadingPlaylists && filteredPlaylists.length === 0 && (
-                    <p className="py-3 text-sm text-zinc-400">
-                      No playlists found.
-                    </p>
-                  )}
-                </div>
+                <p className="text-xs text-zinc-400 mt-1">Add tags to help people find your playlist.</p>
               </div>
-            ) : (
-              <>
-                <div className="mt-4">
-                  <label className="text-[15px] font-semibold text-zinc-200">
-                    Playlist title<span className="text-red-500"> *</span>
-                  </label>
-                  <input
-                    value={playlistTitle}
-                    onChange={(e) => setPlaylistTitle(e.target.value)}
-                    onBlur={() => setTitleTouched(true)}
-                    className={`mt-1 w-full rounded-sm border ${!isTitleValid && titleTouched ? "border-red-500" : "border-zinc-600"} bg-[#272727] px-3 py-2 text-sm text-white outline-none focus:border-zinc-400`}
-                    required
-                    aria-invalid={!isTitleValid && titleTouched}
-                    aria-describedby="playlist-title-error"
-                  />
-                  {!isTitleValid && titleTouched && (
-                    <div
-                      id="playlist-title-error"
-                      className="mt-1 text-red-400 text-xs"
-                    >
-                      Playlist title is required.
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-4 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-4 text-[15px]">
-                    <span className="font-semibold text-zinc-200">
-                      Privacy:
-                    </span>
-                    <label className="flex cursor-pointer items-center gap-2">
-                      <input
-                        type="radio"
-                        checked={privacy === "public"}
-                        onChange={() => setPrivacy("public")}
-                        className="h-4 w-4 accent-white"
-                      />
-                      <span className="font-semibold">Public</span>
-                    </label>
-                    <label className="flex cursor-pointer items-center gap-2">
-                      <input
-                        type="radio"
-                        checked={privacy === "private"}
-                        onChange={() => setPrivacy("private")}
-                        className="h-4 w-4 accent-white"
-                      />
-                      <span className="font-semibold">Private</span>
-                    </label>
-                  </div>
-
-                  <button
-                    type="button"
-                    disabled={!canSave}
-                    className="rounded-sm bg-white px-2 py-1 text-[13px] font-bold text-black disabled:cursor-not-allowed disabled:opacity-60"
-                    onClick={handleCreatePlaylist}
-                  >
-                    {creating ? "Saving..." : "Save"}
-                  </button>
-                  {error && (
-                    <div className="mt-2 text-red-400 text-sm">{error}</div>
-                  )}
-                  {success && (
-                    <div className="mt-2 text-green-400 text-sm">{success}</div>
-                  )}
-                </div>
-
-                <div className="mt-6 flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="h-9 w-9 shrink-0 overflow-hidden rounded-sm bg-zinc-700">
-                      {track.coverUrl ? (
-                        <img
-                          src={track.coverUrl}
-                          alt={track.title}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : null}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-[12px] font-semibold text-zinc-300">
-                        {track.artist}
-                      </p>
-                      <p className="truncate text-[13px] font-bold">
-                        {track.title}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    className="text-zinc-500 transition-colors hover:text-zinc-300"
-                    aria-label="Remove track"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              </>
-            )}
+              {/* Privacy & Save */}
+              <div className="flex items-center gap-4 mb-4">
+                <label className="flex items-center gap-2">
+                  <input type="radio" checked={privacy === "public"} onChange={() => setPrivacy("public")} className="accent-orange-500" />
+                  <span>Public</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input type="radio" checked={privacy === "private"} onChange={() => setPrivacy("private")} className="accent-orange-500" />
+                  <span>Private</span>
+                </label>
+                <button
+                  type="button"
+                  disabled={!canSave}
+                  className="ml-auto rounded bg-orange-500 px-4 py-2 font-bold text-white hover:bg-orange-600 disabled:opacity-60"
+                  onClick={handleCreatePlaylist}
+                >
+                  {creating ? "Saving..." : "Save"}
+                </button>
+              </div>
+              {error && <div className="text-red-400 text-sm mb-2">{error}</div>}
+              {success && <div className="text-green-400 text-sm mb-2">{success}</div>}
+            </div>
+            {/* Cover Image Upload */}
+            <div className="w-56 flex flex-col items-center">
+              <div className="relative w-48 h-48 rounded bg-zinc-900 border-2 border-dashed border-zinc-700 flex items-center justify-center overflow-hidden mb-2">
+                {defaultCoverUrl ? (
+                  <img src={defaultCoverUrl} alt="Cover" className="object-cover w-full h-full" />
+                ) : (
+                  <span className="text-zinc-600">No Cover</span>
+                )}
+                <button className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-zinc-800 text-white px-3 py-1 rounded hover:bg-zinc-700 text-xs">
+                  Upload Image
+                </button>
+              </div>
+              <span className="text-xs text-zinc-400">Max size: 5MB</span>
+            </div>
           </div>
         </div>
       </div>

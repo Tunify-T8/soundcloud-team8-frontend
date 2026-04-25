@@ -35,6 +35,7 @@ import WhoToFollowPage from "./features/following/pages/WhoToFollowPage";
 import DiscoverPage from "./features/discover/pages/DiscoverPage";
 import SearchPage from "./features/feed/pages/SearchPage";
 import LibraryPage from "./features/library/pages/LibraryPage";
+import PlaylistPage from "./features/library/tabs/playlists/pages/PlaylistPage"; 
 
 const router = createBrowserRouter([
   {
@@ -107,6 +108,10 @@ const router = createBrowserRouter([
       {
         path: '/library',
         element: <LibraryPage />
+      },
+      {
+        path: "/collections/:id",
+        element: <PlaylistPage />
       },
       {
         path: "/me",

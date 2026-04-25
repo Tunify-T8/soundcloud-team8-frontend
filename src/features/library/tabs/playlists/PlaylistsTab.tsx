@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { playlistService } from "../../libraryService";
 import type { CollectionPreview } from "../../types";
 
@@ -13,7 +14,7 @@ type PlaylistGridItem = {
 
 function PlaylistCard({ item }: { item: PlaylistGridItem }) {
   return (
-    <div className="cursor-pointer group">
+    <Link to={`/collections/${item.id}`} className="block cursor-pointer group">
       <div className="w-full aspect-square rounded-sm overflow-hidden mb-2 relative bg-[#282828]">
         {item.coverUrl && (
           <img
@@ -33,7 +34,7 @@ function PlaylistCard({ item }: { item: PlaylistGridItem }) {
       </div>
       <p className="text-white text-xs font-bold truncate">{item.title}</p>
       <p className="text-zinc-400 text-xs truncate">{item.subtitle}</p>
-    </div>
+    </Link>
   );
 }
 
@@ -84,13 +85,14 @@ export default function PlaylistsTab() {
       }));
   }, [playlists, query]);
 
-  const totalSlots =
-    Math.ceil(Math.max(filteredItems.length, 1) / COLS) * COLS;
+  const totalSlots = Math.ceil(Math.max(filteredItems.length, 1) / COLS) * COLS;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-white font-bold text-sm">Hear your own playlists and the playlists you've liked:</h2>
+        <h2 className="text-white font-bold text-sm">
+          Hear your own playlists and the playlists you've liked:
+        </h2>
         <input
           placeholder="Filter"
           value={query}
@@ -108,22 +110,24 @@ export default function PlaylistsTab() {
           {error}
         </p>
       ) : filteredItems.length === 0 ? (
-          <p className="text-white font-bold text-lg text-center py-20">
-            You have not liked any playlists yet
-          </p>
-        ) : (
-          <div className="grid grid-cols-6 gap-4">
-        {Array.from({ length: totalSlots }).map((_, i) => {
-          const item = filteredItems[i];
-          return item ? (
-            <PlaylistCard key={item.id} item={item} />
-          ) : (
-            <div key={i} className="w-full aspect-square rounded-sm bg-[#282828]" />
-          );
-        })}
-      </div>
-        )}
-     
+        <p className="text-white font-bold text-lg text-center py-20">
+          You have not liked any playlists yet
+        </p>
+      ) : (
+        <div className="grid grid-cols-6 gap-4">
+          {Array.from({ length: totalSlots }).map((_, i) => {
+            const item = filteredItems[i];
+            return item ? (
+              <PlaylistCard key={item.id} item={item} />
+            ) : (
+              <div
+                key={i}
+                className="w-full aspect-square rounded-sm bg-[#282828]"
+              />
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
