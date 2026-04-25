@@ -42,14 +42,15 @@ const LikesPage = () => {
           <p className="text-zinc-500 text-center py-12">No likes yet</p>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-6">
-            {likes.map((user) => (
-              <UserCard
-                key={user.userId}
+            {likes.map((entry: any) => (   // or reposts.map
+  <           UserCard
+                key={entry.user.id}
+                userId={entry.user.id}
                 avatarUrl={
-                  user.avatarUrl ??
-                  makeCommentAvatar((user.displayName || user.username).slice(0, 2).toUpperCase())
+                  entry.user.avatarUrl ??
+                  makeCommentAvatar((entry.user.username || 'UN').slice(0, 2).toUpperCase())
                 }
-                username={user.displayName || user.username}
+                username={entry.user.username || 'Unknown'}
               />
             ))}
           </div>

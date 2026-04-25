@@ -42,16 +42,17 @@ const RepostsPage = () => {
           <p className="text-zinc-500 text-center py-12">No reposts yet</p>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-6">
-            {reposts.map((entry) => (
+            {reposts.map((entry: any) => (   // or reposts.map
               <UserCard
-                key={entry.repostId}
-                avatarUrl={
-                  entry.avatarUrl ??
-                  makeCommentAvatar((entry.displayName || entry.username).slice(0, 2).toUpperCase())
-                }
-                username={entry.displayName || entry.username}
-              />
-            ))}
+              key={entry.user.id}
+              userId={entry.user.id}
+              avatarUrl={
+              entry.user.avatarUrl ??
+              makeCommentAvatar((entry.user.username || 'UN').slice(0, 2).toUpperCase())
+            }
+          username={entry.user.username || 'Unknown'}
+            />
+          ))}
           </div>
         )}
       </div>
