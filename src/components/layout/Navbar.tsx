@@ -99,8 +99,8 @@ export default function Navbar() {
     const socket = io("https://tunify.duckdns.org/notifications", {
       query: { token },
       transports: ["websocket"],
-      reconnectionAttempts: 5,
-      reconnectionDelay: 3000,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 400,
     });
 
     socketRef.current = socket;

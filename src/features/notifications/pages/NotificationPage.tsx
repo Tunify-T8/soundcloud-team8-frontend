@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronDown, MoreHorizontal } from "lucide-react";
 import { Link } from "react-router-dom";
 import { io } from "socket.io-client";
+import { BASE_URL } from "@/config/env";
 import {
   getNotifications,
   markNotificationAsRead,
@@ -12,6 +13,8 @@ import type {
   NotificationFilterType,
 } from "@/features/notifications/types";
 import { getAccessToken } from "@/features/auth/utils/token.utils";
+import { api } from "@/features/auth/services/api";
+
 
 const FILTER_OPTIONS: { label: string; value: NotificationFilterType }[] = [
   { label: "All notifications", value: "all" },
@@ -58,9 +61,17 @@ export default function NotificationsPage() {
   const [followedBack, setFollowedBack] = useState<Set<string>>(new Set());
   const filterRef = useRef<HTMLDivElement>(null);
 
+  // Keep a stable ref to the current filter so the socket handler
+  // always sees the latest value without needing to reconnect.
+  const filterRef2 = useRef<NotificationFilterType>(filter);
+  useEffect(() => {
+    filterRef2.current = filter;
+  }, [filter]);
+
   const currentFilterLabel =
     FILTER_OPTIONS.find((o) => o.value === filter)?.label ?? "All notifications";
 
+  // ── Outside-click for filter dropdown ──────────────────────────────────────
   useEffect(() => {
     const handleOutside = (e: MouseEvent) => {
       if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
@@ -71,14 +82,12 @@ export default function NotificationsPage() {
     return () => document.removeEventListener("mousedown", handleOutside);
   }, []);
 
-  useEffect(() => {
-    fetchNotifications();
-  }, [filter]);
-
-  async function fetchNotifications() {
+  // ── Fetch — stable reference via useCallback so the effect dep is safe ────
+  const fetchNotifications = useCallback(async (currentFilter: NotificationFilterType) => {
+    if (!getAccessToken()) return;
     setLoading(true);
     try {
-      const params = filter === "all" ? {} : { type: filter };
+      const params = currentFilter === "all" ? {} : { type: currentFilter };
       const res = await getNotifications({ limit: 50, ...params });
       setNotifications(res.data);
     } catch {
@@ -86,56 +95,73 @@ export default function NotificationsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []); // no deps — filter is passed explicitly, not closed over
 
-  const filterRef2 = useRef<NotificationFilterType>(filter);
+  // Re-fetch whenever filter changes (also runs on mount with "all")
   useEffect(() => {
-    filterRef2.current = filter;
-  }, [filter]);
+    fetchNotifications(filter);
+  }, [filter, fetchNotifications]);
 
-  useEffect(() => {
-    const token = getAccessToken() ?? "";
-    if (!token) return;
+  // ── Socket — one stable connection, never reconnects on filter change ──────
+  const [token, setToken] = useState(() => getAccessToken() ?? "");
 
-    const socket = io("https://tunify.duckdns.org/notifications", {
-      query: { token },
+// Poll until token is available (handles delayed session restore)
+useEffect(() => {
+  if (token) return;
+  const interval = setInterval(() => {
+    const t = getAccessToken();
+    if (t) {
+      setToken(t);
+      clearInterval(interval);
+    }
+  }, 200);
+  return () => clearInterval(interval);
+}, [token]);
+
+// Socket — re-runs when token becomes available
+useEffect(() => {
+  let socket: ReturnType<typeof io> | null = null;
+
+  const connect = async () => {
+    try {
+      await api.get("/notifications/unread-count"); // forces token refresh
+    } catch { /* ignore */ }
+
+    const freshToken = getAccessToken() ?? "";
+    if (!freshToken) return;
+
+    socket = io("https://tunify.duckdns.org/notifications", {
+      query: { token: freshToken },
       transports: ["websocket"],
-      reconnectionAttempts: 5,
-      reconnectionDelay: 3000,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 400,
     });
 
-    const handleNewNotification = (raw: Record<string, unknown>) => {
+    const handle = (raw: Record<string, unknown>) => {
       try {
         const notif = normaliseSocketPayload(raw);
-        const activeFilter = filterRef2.current;
-        const matches = activeFilter === "all" || notif.type === activeFilter;
-        if (matches) {
-          setNotifications((prev) => [notif, ...prev]);
-        }
-      } catch {
-        // Malformed payload — ignore
-      }
+        setNotifications((prev) => {
+          if (prev.some((n) => n.id === notif.id)) return prev;
+          const activeFilter = filterRef2.current;
+          if (activeFilter !== "all" && notif.type !== activeFilter) return prev;
+          return [notif, ...prev];
+        });
+      } catch { /* ignore */ }
     };
 
     const eventNames = [
-      "notification",
-      "track_liked",
-      "track_commented",
-      "track_reposted",
-      "user_followed",
-      "new_release",
-      "new_message",
-      "system",
-      "subscription",
+      "notification", "track_liked", "track_commented", "track_reposted",
+      "user_followed", "new_release", "new_message", "system", "subscription",
     ] as const;
 
-    eventNames.forEach((event) => socket.on(event, handleNewNotification));
+    eventNames.forEach((event) => socket!.on(event, handle));
+  };
 
-    return () => {
-      socket.disconnect();
-    };
-  }, []);
+  connect();
 
+  return () => { socket?.disconnect(); };
+}, []); // empty — the api.get handles the refresh
+  // ── Actions ────────────────────────────────────────────────────────────────
   async function handleFollowBack(actorId: string, notifId: string) {
     try {
       await followUser(actorId);
@@ -152,7 +178,6 @@ export default function NotificationsPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
-      {/* Outer wrapper: full-width on mobile, capped at 1200px on desktop */}
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 pt-6 sm:pt-8 flex gap-8">
 
         {/* ── Main content ──────────────────────────────────────────────────── */}
@@ -168,11 +193,11 @@ export default function NotificationsPage() {
             <div className="relative inline-block" ref={filterRef}>
               <button
                 onClick={() => setFilterOpen((v) => !v)}
+                aria-label={currentFilterLabel}
                 className="flex items-center gap-2 bg-[#1a1a1a] border border-zinc-700 hover:border-zinc-500 rounded-sm px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold transition-colors"
               >
-                {/* On mobile, show a shortened label so the button doesn't overflow */}
-                <span className="hidden sm:inline">{currentFilterLabel}</span>
-                <span className="sm:hidden">
+                <span className="hidden sm:inline" aria-hidden="true">{currentFilterLabel}</span>
+                <span className="sm:hidden" aria-hidden="true">
                   {filter === "all" ? "All" : currentFilterLabel}
                 </span>
                 <ChevronDown
@@ -229,8 +254,11 @@ export default function NotificationsPage() {
           </div>
         </div>
 
-        {/* ── Sidebar: hidden below lg breakpoint ───────────────────────────── */}
-        <div className="hidden lg:block w-[260px] flex-shrink-0 pt-14">
+        {/* ── Sidebar ───────────────────────────────────────────────────────── */}
+        <aside
+          className="w-[260px] flex-shrink-0 pt-14 max-lg:hidden"
+          aria-label="followers sidebar"
+        >
           {recentFollowers.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -259,14 +287,8 @@ export default function NotificationsPage() {
 
               <div className="mt-8 pt-6 border-t border-zinc-800 flex flex-wrap gap-x-2 gap-y-1">
                 {[
-                  "Legal",
-                  "Privacy",
-                  "Cookie Policy",
-                  "Cookie Manager",
-                  "Imprint",
-                  "Artist Resources",
-                  "Newsroom",
-                  "Charts",
+                  "Legal", "Privacy", "Cookie Policy", "Cookie Manager",
+                  "Imprint", "Artist Resources", "Newsroom", "Charts",
                   "Transparency Reports",
                 ].map((item) => (
                   <Link
@@ -289,7 +311,7 @@ export default function NotificationsPage() {
               </div>
             </div>
           )}
-        </div>
+        </aside>
       </div>
     </div>
   );
@@ -310,7 +332,6 @@ function NotificationRow({
   return (
     <div className="flex items-center justify-between py-3 sm:py-4 border-b border-zinc-800/50 group">
       <div className="flex items-center gap-3 min-w-0">
-        {/* Avatar */}
         <Link
           to={`/users/${notif.actor?.id}`}
           className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-zinc-700 flex-shrink-0 overflow-hidden"
@@ -328,7 +349,6 @@ function NotificationRow({
           )}
         </Link>
 
-        {/* Text */}
         <div className="min-w-0">
           <p className="text-xs sm:text-sm text-white">
             <Link
@@ -345,7 +365,6 @@ function NotificationRow({
         </div>
       </div>
 
-      {/* Actions */}
       <div className="flex items-center gap-2 ml-3 sm:ml-4 flex-shrink-0">
         {notif.type === "user_followed" && (
           <button
@@ -360,8 +379,7 @@ function NotificationRow({
             {followedBack ? "Following" : "Follow back"}
           </button>
         )}
-        {/* More button: always visible on touch devices (no hover state) */}
-        <button className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity p-1 text-zinc-400 hover:text-white touch:opacity-100">
+        <button className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity p-1 text-zinc-400 hover:text-white">
           <MoreHorizontal size={16} />
         </button>
       </div>
