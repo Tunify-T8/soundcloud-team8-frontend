@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { Heart } from "lucide-react";
 import { playlistService } from "../../libraryService";
 import type { CollectionPreview } from "../../types";
 
@@ -10,6 +11,7 @@ type PlaylistGridItem = {
   title: string;
   subtitle: string;
   coverUrl: string | null;
+  isLiked: boolean;
 };
 
 function PlaylistCard({ item }: { item: PlaylistGridItem }) {
@@ -32,7 +34,12 @@ function PlaylistCard({ item }: { item: PlaylistGridItem }) {
           </div>
         </div>
       </div>
-      <p className="text-white text-xs font-bold truncate">{item.title}</p>
+      <p className="flex items-center gap-1 text-white text-xs font-bold truncate">
+        {item.isLiked && (
+          <Heart size={10} fill="currentColor" className="shrink-0 text-gray-400" />
+        )}
+        <span className="truncate">{item.title}</span>
+      </p>
       <p className="text-zinc-400 text-xs truncate">{item.subtitle}</p>
     </Link>
   );
@@ -82,6 +89,7 @@ export default function PlaylistsTab() {
         title: p.title,
         subtitle: `${p.trackCount} track${p.trackCount === 1 ? "" : "s"}`,
         coverUrl: p.coverUrl,
+        isLiked: p.isLiked,
       }));
   }, [playlists, query]);
 

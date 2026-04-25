@@ -6,6 +6,8 @@ import type {
   PaginatedResponse,
   CreateCollectionPayload,
   CreateCollectionResponse,
+  UpdateCollectionPayload,
+  UpdateCollectionResponse,
   AddTrackPayload,
   AddTrackResponse,
   RemoveTrackPayload,
@@ -139,6 +141,40 @@ export const playlistService = {
     } catch {
       return null;
     }
+  },
+
+  async updateCollection(
+    id: string,
+    payload: UpdateCollectionPayload,
+  ): Promise<UpdateCollectionResponse | null> {
+    try {
+      const formData = new FormData();
+
+      if (payload.title !== undefined) {
+        formData.append("title", payload.title);
+      }
+      if (payload.description !== undefined) {
+        formData.append("description", payload.description);
+      }
+      if (payload.privacy !== undefined) {
+        formData.append("privacy", payload.privacy);
+      }
+      if (payload.coverUrl) {
+        formData.append("coverUrl", payload.coverUrl);
+      }
+
+      const response = await api.put(`/collections/${id}`, formData);
+      return response.data as UpdateCollectionResponse;
+    } catch {
+      return null;
+    }
+  },
+
+  async updatePlaylist(
+    id: string,
+    payload: UpdateCollectionPayload,
+  ): Promise<UpdateCollectionResponse | null> {
+    return playlistService.updateCollection(id, payload);
   },
 
   // ─── Tracks ─────────────────────────────────────────────────
