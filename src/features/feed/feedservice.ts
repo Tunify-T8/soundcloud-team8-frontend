@@ -33,7 +33,6 @@ export const feedService = {
     }
   },
 
-  // ─── Likes ──────────────────────────────────────────────────────────────────
   async likeTrack(trackId: string): Promise<void> {
     await api.post(`/tracks/${trackId}/like`);
   },
@@ -42,7 +41,6 @@ export const feedService = {
     await api.delete(`/tracks/${trackId}/like`);
   },
 
-  // ─── Search ─────────────────────────────────────────────────────────────────
   async searchTracks(query: string): Promise<SearchResult[]> {
     if (!query.trim()) return [];
     try {
@@ -66,7 +64,6 @@ export const feedService = {
       return response.data.data ?? [];
     } catch { return []; }
   },
-  // Used by the dropdown and "Everything" filter — hits the general endpoint
   async search(query: string): Promise<SearchResult[]> {
     if (!query.trim()) return [];
     try {
@@ -75,7 +72,6 @@ export const feedService = {
     } catch { return []; }
   },
 
-  // ─── My Likes (sidebar section) ─────────────────────────────────────────────
   async getMyLikes(limit = 4): Promise<LikedTrack[]> {
     try {
       const response = await api.get("/users/me/likes", { params: { limit } });

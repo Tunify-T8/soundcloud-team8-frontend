@@ -74,8 +74,33 @@ const USERS = {
   },
 };
 
+const MOCK_ARTWORK_URLS = [
+  'https://picsum.photos/seed/album_art_square_1/1144/1144',
+  'https://picsum.photos/seed/album_art_square_2/1144/1144',
+  'https://picsum.photos/seed/album_art_square_3/1144/1144',
+];
+
+let nextArtworkIndex = 0;
+function getNextMockArtworkUrl() {
+  const url = MOCK_ARTWORK_URLS[nextArtworkIndex % MOCK_ARTWORK_URLS.length];
+  nextArtworkIndex += 1;
+  return url;
+}
+
 // Mutable tracks store (supports create/update/delete)
 let tracks = [
+  {
+    id: 'trk_000', title: 'Album Box Test Track', artist: 'tunify_dev',
+    genre: 'electronic', tags: ['test', 'album', 'artwork'],
+    status: 'finished', visibility: 'public', privacy: 'public',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+    description: 'Mock seed track to verify album artwork rendering in UI.',
+    waveformData: [10,14,20,28,26,23,18,20,24,22,18,15,18,23,27,29,24,19,15,12],
+    duration: 190, date: '2026-03-15T00:00:00.000Z', createdAt: '2026-03-15T00:00:00.000Z',
+    likes: 25, comments: 4, reposts: 2, downloads: 1, plays: 310,
+    isHD: true, isPrivate: false,
+    thumbnailUrl: MOCK_ARTWORK_URLS[0], userId: 'mock-user-001',
+  },
   {
     id: 'trk_001', title: 'Midnight Echoes', artist: 'tunify_dev',
     genre: 'ambient', tags: ['synthwave', 'night', 'ambient'],
@@ -212,6 +237,41 @@ let feedItems = [
         isReposted: true,
       },
     },
+  },
+];
+
+const TRENDING_ALBUM_ITEMS = [
+  {
+    id: 'alb_001',
+    name: 'Neon Reverie',
+    artist: 'tunify_dev',
+    coverUrl: 'https://picsum.photos/seed/trending-album-1/500/500',
+    type: 'album',
+    score: 98,
+  },
+  {
+    id: 'alb_002',
+    name: 'City After Dark',
+    artist: 'ava_mix',
+    coverUrl: 'https://picsum.photos/seed/trending-album-2/500/500',
+    type: 'album',
+    score: 94,
+  },
+  {
+    id: 'alb_003',
+    name: 'Desert Echoes',
+    artist: 'jordan_beats',
+    coverUrl: 'https://picsum.photos/seed/trending-album-3/500/500',
+    type: 'album',
+    score: 91,
+  },
+  {
+    id: 'alb_004',
+    name: 'Vinyl Dreams',
+    artist: 'tunify_dev',
+    coverUrl: 'https://picsum.photos/seed/trending-album-4/500/500',
+    type: 'album',
+    score: 88,
   },
 ];
 
@@ -663,7 +723,11 @@ app.patch('/tracks/:id', async (req, res) => {
   const track = tracks.find(t => t.id === req.params.id);
   if (!track) return res.status(404).json({ error: 'Track not found' });
   // Handle artwork upload (multipart) or JSON patch
-  if (req.body && typeof req.body === 'object') {
+  const contentType = req.headers['content-type'] || '';
+  if (contentType.includes('multipart/form-data')) {
+    track.thumbnailUrl = getNextMockArtworkUrl();
+  }
+  if (req.body && typeof req.body === 'object' && Object.keys(req.body).length > 0) {
     Object.assign(track, req.body);
   }
   res.json(track);
@@ -759,6 +823,39 @@ app.post('/conversations/:conversationId/read', async (req, res) => {
 
 // ─── Fallback ─────────────────────────────────────────────────────────────────
 // ─── Feed Route ───────────────────────────────────────────────────────────────
+app.get('/feed/trending', async (req, res) => {
+  await delay();
+
+  const type = (req.query.type || 'track').toString();
+  const period = (req.query.period || 'week').toString();
+
+  if (type === 'album') {
+    return res.json({
+      items: TRENDING_ALBUM_ITEMS,
+      type: 'album',
+      period,
+    });
+  }
+
+  const items = tracks
+    .filter(t => t.privacy !== 'private')
+    .slice(0, 8)
+    .map((t, index) => ({
+      id: t.id,
+      name: t.title,
+      artist: t.artist,
+      coverUrl: t.thumbnailUrl || 'https://picsum.photos/seed/trending-track-fallback/500/500',
+      type: type === 'playlist' ? 'playlist' : 'track',
+      score: Math.max(60, 100 - index * 5),
+    }));
+
+  res.json({
+    items,
+    type: type === 'playlist' ? 'playlist' : 'track',
+    period,
+  });
+});
+
 app.get('/feed', async (req, res) => {
   await delay();
 

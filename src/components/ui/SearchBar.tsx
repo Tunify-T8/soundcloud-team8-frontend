@@ -75,7 +75,7 @@ export default function SearchBar() {
       if (currentUser && result.username === currentUser.username) {
         navigate('/me');
       } else {
-        navigate(`/${result.username}`);
+        navigate(`/${result.id}`);
       }
     } else if (result.type === 'track') {
       navigate(`/${result.artist}`);
@@ -103,7 +103,7 @@ export default function SearchBar() {
           onKeyDown={handleKeyDown}
           onFocus={() => { if (results.length > 0) setIsOpen(true); }}
           placeholder="Search"
-          className="w-full bg-[#333] text-white text-sm placeholder-gray-400 rounded-full pl-8 pr-4 py-1.5 outline-none focus:bg-[#444] transition-colors"
+          className="w-full bg-[#333] text-white tracking-tight text-sm placeholder-gray-400 pl-8 pr-4 py-1.5 outline-none focus:bg-[#444] transition-colors"
         />
       </div>
 

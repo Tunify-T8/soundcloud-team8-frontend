@@ -1,27 +1,55 @@
 import { useState, useEffect } from "react";
-// import axios from "axios";
 import { FaUser, FaMusic, FaGooglePlay, FaApple } from "react-icons/fa";
 import { Heart, Play } from "lucide-react";
 import { SiSoundcloud } from "react-icons/si";
 import { Link } from "react-router-dom";
-import { HiOutlineSpeakerphone } from "react-icons/hi";
-import { FiRefreshCcw } from "react-icons/fi";
-import { TbWorld } from "react-icons/tb";
-import { MdOutlineAutoFixHigh } from "react-icons/md";
-import { IoAddCircle, IoChevronDown } from "react-icons/io5";
+import { IoChevronDown } from "react-icons/io5";
 import { feedService } from "../../features/feed/feedservice";
-import type { LikedTrack } from "../../features/feed/type";
+import type { LikedTrack } from "@/features/feed/type";
+import UpgradeModal from "@/features/premium/components/UpgradeModal";
 import { api } from '../../features/auth/services/api';
+import avatarFallback from "@/assets/avatar.png";
+import amplifyImg from "@/assets/amplifytool.png";
+import replaceImg from "@/assets/replace.png";
+import distributeImg from "@/assets/distribute.png";
+import masterImg from "@/assets/master.png";
+import monetizeImg from "@/assets/monetize.png";
+import spotlightImg from "@/assets/spotlightool.png";
+import topFansImg from "@/assets/top_fans.png";
+import commentsImg from "@/assets/comments.png";
 
-// ─── Local types ──────────────────────────────────────────────────────────────
-
-interface Artist {
-  id: number;
-  name: string;
-  avatar: string;
-  followers: string;
-  tracks: number;
+interface SuggestedArtist {
+  id: string;
+  username: string;
+  displayName: string | null;
+  isCertified: boolean;
+  avatarUrl: string | null;
+  followersCount: number;
+  tracksCount: number;
 }
+
+type ArtistTool = {
+  id: string;
+  label: string;
+  imageSrc?: string;
+  badge: "plus" | "star";
+  hoverTheme: "purple" | "gold";
+};
+
+const artistToolRows: ArtistTool[][] = [
+  [
+    { id: "amplify", label: "Amplify", imageSrc: amplifyImg, badge: "plus", hoverTheme: "purple" },
+    { id: "replace", label: "Replace", imageSrc: replaceImg, badge: "plus", hoverTheme: "purple" },
+    { id: "distribute", label: "Distribute", imageSrc: distributeImg, badge: "plus", hoverTheme: "purple" },
+    { id: "master", label: "Master", imageSrc: masterImg, badge: "plus", hoverTheme: "purple" },
+  ],
+  [
+    { id: "monetize", label: "Monetize", imageSrc: monetizeImg, badge: "plus", hoverTheme: "purple" },
+    { id: "spotlight", label: "Spotlight", imageSrc: spotlightImg, badge: "plus", hoverTheme: "purple" },
+    { id: "top-fans", label: "Top fans", imageSrc: topFansImg, badge: "star", hoverTheme: "gold" },
+    { id: "comments", label: "Comments", imageSrc: commentsImg, badge: "star", hoverTheme: "gold" },
+  ],
+];
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -29,23 +57,28 @@ export default function SideBar() {
   const [open, setOpen] = useState(true);
 
   // Artists state — typed so TypeScript knows the shape
-  const [suggestedUsers, setSuggestedUsers] = useState<Artist[]>([]);
+ const [suggestedUsers, setSuggestedUsers] = useState<SuggestedArtist[]>([]);
   const [loading, setLoading]               = useState(true);
   const [error, setError]                   = useState<string | null>(null);
 
   // Likes state
   const [likedTracks, setLikedTracks]   = useState<LikedTrack[]>([]);
   const [likesLoading, setLikesLoading] = useState(true);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+
+  const handleArtistToolClick = () => {
+    setUpgradeOpen(true);
+  };
 
   // ── Fetch artists ────────────────────────────────────────────────────────────
   const fetchArtists = async () => {
     setLoading(true);
     setError(null);
     try {
-      // const baseUrl =
-      //   window.location.hostname === "localhost" ? "http://localhost:3001" : "";
-        const res = await api.get('/artists');
-      setSuggestedUsers(res.data.artists || []);
+      const res = await api.get("/feed/suggested-artists", {
+        params: { page: 1, limit: 20 },
+      });
+      setSuggestedUsers(res.data.items || []);
     } catch {
       setError("Failed to load artists");
     } finally {
@@ -67,36 +100,50 @@ export default function SideBar() {
 
   return (
     <header className="flex flex-col justify-end mt-2">
-      <div className="ml-auto flex flex-col w-1xl mr-25">
+      <div className="ml-auto flex flex-col w-[310px] mr-6">
 
         {/* ── ARTIST TOOLS ──────────────────────────────────────────────────── */}
-        <div className="w-full">
+        <div className="w-full rounded-none bg-transparent px-0 py-4">
           <div
             onClick={() => setOpen(!open)}
-            className="flex items-center justify-between cursor-pointer text-xs text-zinc-400 font-semibold tracking-wide mb-3"
+            className="mb-6 flex cursor-pointer items-center justify-between border-b border-zinc-800 pb-5"
           >
-            <span>ARTIST TOOLS</span>
+            <span className="text-[18px] font-bold tracking-tight text-white">
+              ARTIST TOOLS
+            </span>
             <IoChevronDown
-              size={14}
-              className={`transition-transform ${open ? "rotate-180" : ""}`}
+              size={22}
+              className={`text-white transition-transform ${open ? "rotate-180" : ""}`}
             />
           </div>
 
-          <div className="grid grid-cols-4 gap-3 mb-3">
-            <Tool icon={<HiOutlineSpeakerphone size={20} />} label="Amplify" />
-            <Tool icon={<FiRefreshCcw size={20} />}          label="Replace" />
-            <Tool icon={<TbWorld size={20} />}               label="Distribute" />
-            <Tool icon={<MdOutlineAutoFixHigh size={20} />}  label="Master" />
+          <div className="mb-4 grid grid-cols-4 gap-3">
+            {artistToolRows[0].map((tool) => (
+              <Tool key={tool.id} tool={tool} onClick={handleArtistToolClick} />
+            ))}
           </div>
 
           {open && (
-            <div className="grid grid-cols-4 gap-3">
-              <Tool icon={<HiOutlineSpeakerphone size={20} />} label="Promote" />
-              <Tool icon={<FiRefreshCcw size={20} />}          label="Insights" />
-              <Tool icon={<TbWorld size={20} />}               label="Monetize" />
-              <Tool icon={<MdOutlineAutoFixHigh size={20} />}  label="Pro Tools" />
+            <div className="mb-4 grid grid-cols-4 gap-3">
+              {artistToolRows[1].map((tool) => (
+                <Tool key={tool.id} tool={tool} onClick={handleArtistToolClick} />
+              ))}
             </div>
           )}
+
+          <button
+            type="button"
+            className="flex w-full items-center rounded-[9px] bg-[#433873] px-3 py-3.5 text-left text-white transition-colors hover:bg-[#4b3f80]"
+          >
+            <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#735ef2] text-[22px] font-black leading-none">
+              +
+            </span>
+            <button onClick = {handleArtistToolClick} className = "px-1">
+            <span className="text-[13px] font-medium tracking-tight leading-snug">
+              Unlock Artist tools from EGP 29.99/month.
+            </span>
+            </button>
+          </button>
         </div>
 
         {/* ── ARTISTS YOU SHOULD FOLLOW ──────────────────────────────────────── */}
@@ -124,26 +171,26 @@ export default function SideBar() {
               suggestedUsers.map((artist) => (
                 <div key={artist.id} className="flex items-center justify-between">
                   <Link
-                    to={`/profile/${artist.name}`}
-                    className="flex items-center gap-3 hover:underline"
+                    to={`/${artist.id}`}
+                    className="flex items-center gap-3 "
                   >
                     <img
-                      src={artist.avatar}
-                      alt={artist.name}
-                      className="w-11 h-11 rounded-full object-cover bg-gradient-to-br from-gray-700 to-gray-900"
+                      src={artist.avatarUrl || avatarFallback}
+                      alt={artist.displayName || artist.username}
+                      className="w-11 h-11 rounded-full object-cover bg-linear-to-br from-gray-700 to-gray-900"
                     />
                     <div>
                       <div className="font-bold text-white text-[15px] leading-tight hover:text-zinc-500">
-                        {artist.name}
+                        {artist.displayName || artist.username}
                       </div>
                       <div className="flex items-center gap-3 text-xs text-gray-400 mt-0.5">
                         <span className="flex items-center gap-1 hover:text-zinc-600">
                           <FaUser size={12} />
-                          {artist.followers}
+                          {artist.followersCount}
                         </span>
                         <span className="flex items-center gap-1 hover:text-zinc-600">
                           <FaMusic size={12} />
-                          {artist.tracks}
+                          {artist.tracksCount}
                         </span>
                       </div>
                     </div>
@@ -262,29 +309,71 @@ export default function SideBar() {
             </a>
           </div>
         </div>
-
+      {upgradeOpen && <UpgradeModal onClose={() => setUpgradeOpen(false)} />}
       </div>
     </header>
   );
 }
 
-// ─── Tool component ───────────────────────────────────────────────────────────
-
 type ToolProps = {
-  icon: React.ReactNode;
-  label: string;
+  tool: ArtistTool;
+  onClick: (tool: ArtistTool) => void;
 };
 
-function Tool({ icon, label }: ToolProps) {
+function Tool({ tool, onClick }: ToolProps) {
+  const badgeClasses =
+    tool.badge === "star"
+      ? "bg-[#f5efd9] text-[#c5a64f]"
+      : "bg-[#2f255f] text-[#8d74ff]";
+
+  const hoverBarClasses =
+    tool.hoverTheme === "gold"
+      ? "bg-[#d4bf7b] text-[#171717]"
+      : "bg-[#735ef2] text-white";
+
+  const badgeSymbol = tool.badge === "star" ? "★" : "+";
+
   return (
-    <div className="relative flex flex-col items-center justify-center w-[70px] h-[70px] bg-zinc-950 border border-zinc-800 rounded-lg hover:bg-zinc-900 hover:border-zinc-700 cursor-pointer transition">
-      <IoAddCircle size={14} className="absolute top-1 right-1 text-purple-500" />
-      <div className="text-zinc-300">{icon}</div>
-      <span className="text-[11px] mt-1 text-zinc-400">{label}</span>
-    </div>
+    <button
+      type="button"
+      onClick={() => onClick(tool)}
+      className="group relative h-[86px] w-full overflow-hidden rounded-2xl border border-zinc-700/60 bg-[#1a1a1a] transition-colors hover:border-zinc-600"
+    >
+      {/* Badge */}
+      <span
+        className={`absolute right-2.5 top-2.5 flex h-6 w-6 items-center justify-center rounded-full text-[13px] font-black ${badgeClasses}`}
+      >
+        {badgeSymbol}
+      </span>
+
+      {/* Icon + Label */}
+      <div className="flex h-full flex-col items-center justify-center">
+        <div className="flex h-[40px] w-[45px] items-center justify-center">
+          {tool.imageSrc ? (
+            <img
+              src={tool.imageSrc}
+              alt={tool.label}
+              className="h-full w-full object-contain"
+            />
+          ) : (
+            <div className="h-full w-full rounded-2xl border border-dashed border-zinc-600/80 bg-zinc-900/40" />
+          )}
+        </div>
+
+        <span className="text-center text-[13px] font-semibold leading-tight tracking-tight text-white transition-opacity group-hover:opacity-0">
+          {tool.label}
+        </span>
+      </div>
+
+      {/* Upgrade bar — slides up on hover */}
+      <div className="absolute inset-x-0 bottom-0 translate-y-full transition-transform duration-200 group-hover:translate-y-0">
+        <div className={`flex h-11 items-center justify-center text-[13px] font-black ${hoverBarClasses}`}>
+          Upgrade
+        </div>
+      </div>
+    </button>
   );
 }
-// ─── LikedTrackRow component ──────────────────────────────────────────────────
 
 function LikedTrackRow({
   track,

@@ -31,14 +31,28 @@ function pushRecentlyPlayed(track: TrackMeta) {
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [currentTrack, setCurrentTrackState] = useState<TrackMeta | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [pendingSeek, setPendingSeek] = useState<{ trackId: string; progress: number } | null>(null);
 
   const setCurrentTrack = (track: TrackMeta) => {
     pushRecentlyPlayed(track);
     setCurrentTrackState(track);
+    setProgress(0);
+  };
+
+  const requestSeek = (trackId: string, progress: number) => {
+    setPendingSeek({
+      trackId,
+      progress: Math.min(1, Math.max(0, progress)),
+    });
+  };
+
+  const clearPendingSeek = () => {
+    setPendingSeek(null);
   };
 
   return (
-    <PlayerContext.Provider value={{ currentTrack, isPlaying, setCurrentTrack, setIsPlaying }}>
+    <PlayerContext.Provider value={{ currentTrack, isPlaying, progress, pendingSeek, setCurrentTrack, setIsPlaying, setProgress, requestSeek, clearPendingSeek }}>
       {children}
     </PlayerContext.Provider>
   );
