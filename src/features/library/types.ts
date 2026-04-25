@@ -1,4 +1,4 @@
-import { Genre } from '@/shared/types/Genre';
+import { Genre } from "@/shared/types/Genre";
 
 export interface TrackItem {
   id: string;
@@ -29,7 +29,6 @@ export interface FollowingUser {
   verified?: boolean;
 }
 
-
 // ==============================
 // ENUMS & BASIC TYPES
 // ==============================
@@ -47,6 +46,7 @@ export interface UserSummary {
   username: string;
   displayName: string | null;
   avatarUrl: string | null;
+  followerCount: number;
 }
 
 export interface TrackSummary {
@@ -72,6 +72,8 @@ export interface Collection {
   coverUrl: string | null;
   trackCount: number;
   likeCount: number;
+  repostsCount: number;
+  isLiked: boolean;
   owner: UserSummary;
   createdAt: string;
   updatedAt: string;
@@ -87,6 +89,8 @@ export interface CollectionPreview {
   coverUrl: string | null;
   trackCount: number;
   likeCount: number;
+  repostsCount: number;
+  isLiked: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -123,7 +127,7 @@ export interface CreateCollectionPayload {
   type: CollectionType;
   privacy: CollectionPrivacy;
   description?: string;
-  cover?: File;
+  coverUrl?: File | string;
 }
 
 // Update Collection (multipart/form-data)
@@ -131,7 +135,7 @@ export interface UpdateCollectionPayload {
   title?: string;
   description?: string;
   privacy?: CollectionPrivacy;
-  cover?: File;
+  coverUrl?: File | string;
 }
 
 // Add Track

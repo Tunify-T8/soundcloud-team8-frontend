@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import OverviewTab from "../tabs/OverviewTab";
 import LikesTab from "../tabs/LikesTab";
-import PlaylistsTab from "../tabs/PlaylistsTab";
+import PlaylistsTab from "../tabs/playlists/PlaylistsTab";
 import AlbumsTab from "../tabs/AlbumsTab";
 import StationsTab from "../tabs/StationsTab";
 import FollowingTab from "../tabs/FollowingTab";
