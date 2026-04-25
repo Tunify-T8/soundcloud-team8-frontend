@@ -53,6 +53,7 @@ function normaliseSocketPayload(raw: Record<string, unknown>): NotificationObjec
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
+import CheckoutModal from "../../features/premium/components/CheckoutModal";
 
 export default function Navbar() {
   const location = useLocation();
@@ -66,6 +67,7 @@ export default function Navbar() {
   const notifRef = useRef<HTMLDivElement>(null);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const socketRef = useRef<Socket | null>(null);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   // Notification state
   const [notifications, setNotifications] = useState<NotificationObject[]>([]);
@@ -188,7 +190,6 @@ export default function Navbar() {
     try {
       await logout();
     } catch {
-      // clear tokens regardless
     }
     navigate("/signin");
   };
@@ -199,12 +200,16 @@ export default function Navbar() {
     { to: "/playlists",     icon: <ListMusic size={17} />,   label: "Playlists" },
     { to: "/stations",      icon: <Radio size={17} />,       label: "Stations" },
     { to: "/me/following",  icon: <Users size={17} />,       label: "Following" },
+    { to: "/me/likes",         icon: <Heart size={17} />,       label: "Likes" },
+    { to: "/me/sets",     icon: <ListMusic size={17} />,   label: "Playlists" },
+    { to: "/me/stations",      icon: <Radio size={17} />,       label: "Stations" },
+    { to: "/me/following",     icon: <Users size={17} />,       label: "Following" },
     { to: "/who-to-follow", icon: <UserPlus size={17} />,    label: "Who to follow" },
-    { to: "/pro",           icon: <Star size={17} />,        label: "Try Artist Pro", orange: true },
+    { to: "#",           icon: <Star size={17} />,        label: "Try Artist Pro", orange: true, action: () => window.open("/plans", "_blank")},
     { to: "/benefits",      icon: <Star size={17} />,        label: "Benefits" },
-    { to: "/tracks",        icon: <BarChart2 size={17} />,   label: "Tracks" },
-    { to: "/insights",      icon: <TrendingUp size={17} />,  label: "Insights" },
-    { to: "/distribute",    icon: <Share2 size={17} />,      label: "Distribute" },
+    { to: "/artists",        icon: <BarChart2 size={17} />,   label: "Tracks" },
+    { to: "/me/insights/overview",      icon: <TrendingUp size={17} />,  label: "Insights" },
+    { to: "#",    icon: <Share2 size={17} />,      label: "Distribute", action: () => window.open("/plans", "_blank") },
   ];
 
   const menuItems: { group: { label: string; href?: string; action?: () => void }[] }[] = [
@@ -237,7 +242,6 @@ export default function Navbar() {
       <nav className="w-full h-12 bg-black text-white border-b border-zinc-800 sticky top-0 z-50">
         <div className="max-w-[1200px] mx-auto h-full flex items-center justify-between px-6">
 
-          {/* Left links */}
           <div className="flex items-center gap-6">
             <Link to="/" className="text-white">
               <SiSoundcloud size={35} />
@@ -247,17 +251,16 @@ export default function Navbar() {
             <Link to="/library" className="text-zinc-400 hover:text-white font-bold tracking-tight">Library</Link>
           </div>
 
-          {/* Search */}
           <div className="relative w-[420px]">
             <SearchBar />
           </div>
 
           <div className="flex items-center gap-5 text-sm">
-            <button
-              onClick={() => setUpgradeOpen(true)}
+         <button
+              onClick={() => setCheckoutOpen(true)}
               className="border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-1 rounded-sm transition-colors duration-150 text-xs"
             >
-              Upgrade now
+              Try Free
             </button>
             <Link to="/artists" className="text-zinc-400 hover:text-white font-bold tracking-tight">For Artists</Link>
             <Link to="/upload" className="text-zinc-400 hover:text-white font-bold tracking-tight ml-1">Upload</Link>
@@ -288,25 +291,39 @@ export default function Navbar() {
 
               {profileMenuOpen && (
                 <div className="absolute left-0 top-10 w-40 bg-[#111] border border-zinc-800 rounded-sm shadow-2xl z-50 overflow-hidden">
-                  {profileMenuItems.map((item) => (
-                    <Link
-                      key={item.to}
-                      to={item.to}
-                      onClick={() => setProfileMenuOpen(false)}
-                      className={`
-                        flex items-center gap-3 px-4 py-1.5
-                        font-bold text-sm tracking-tight
-                        transition-colors duration-150
-                        ${item.orange
-                          ? "text-orange-500 hover:text-orange-400"
-                          : "text-white hover:text-zinc-400"
-                        }
-                      `}
-                    >
-                      <span className={item.orange ? "text-orange-500" : "text-white"}>{item.icon}</span>
-                      {item.label}
-                    </Link>
-                  ))}
+                 {profileMenuItems.map((item) =>
+                    item.action ? (
+                      <button
+                        key={item.label}
+                        onClick={() => { item.action?.(); setProfileMenuOpen(false); }}
+                        className={`
+                          flex items-center gap-3 px-4 py-1.5 w-full text-left
+                          font-bold text-sm tracking-tight
+                          transition-colors duration-150
+                          ${item.orange ? "text-orange-500 hover:text-orange-400" : "text-white hover:text-zinc-400"}
+                        `}
+                      >
+                        <span className={item.orange ? "text-orange-500" : "text-white"}>{item.icon}</span>
+                        {item.label}
+                      </button>
+                    ) : (
+                      <Link
+                        key={item.to}
+                        to={item.to}
+                        onClick={() => setProfileMenuOpen(false)}
+                        className={`
+                          flex items-center gap-3 px-4 py-1.5
+                          font-bold text-sm tracking-tight
+                          transition-colors duration-150
+                          ${item.orange ? "text-orange-500 hover:text-orange-400" : "text-white hover:text-zinc-400"}
+                        `}
+                      >
+                        <span className={item.orange ? "text-orange-500" : "text-white"}>{item.icon}</span>
+                        {item.label}
+                      </Link>
+                    )
+                  )}
+                 
                 </div>
               )}
             </div>
@@ -422,7 +439,7 @@ export default function Navbar() {
         </div>
       </nav>
       <Outlet />
-      {upgradeOpen && <UpgradeModal onClose={() => setUpgradeOpen(false)} />}
+      {checkoutOpen && <CheckoutModal plan = "artist-pro" onClose={() => setCheckoutOpen(false)} />}
     </>
   );
 }

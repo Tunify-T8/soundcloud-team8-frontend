@@ -36,9 +36,9 @@ export default function TrackList({ tracks, onDelete, onUpdate }: TrackListProps
     <div className="space-y-0 overflow-visible">
       <div className="space-y-0">
         {/* Header */}
-        <div className="flex items-center gap-4 px-4 py-3 border-b border-border bg-[hsl(0,0%,10%)]">
-          
-          {/* Checkbox — styled white with black tick, shows count when selected */}
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-[hsl(0,0%,10%)]">
+
+          {/* Checkbox */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={handleSelectAll}
@@ -56,9 +56,9 @@ export default function TrackList({ tracks, onDelete, onUpdate }: TrackListProps
             </button>
           </div>
 
-          {/* Label — switches between TRACKS and "N SELECTED + actions" */}
+          {/* Label */}
           {someSelected ? (
-            <div className="flex items-center gap-3 flex-1">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
               <span className="text-white text-xs font-bold tracking-wide">
                 {selectedTracks.length} SELECTED
               </span>
@@ -70,30 +70,32 @@ export default function TrackList({ tracks, onDelete, onUpdate }: TrackListProps
               </button>
             </div>
           ) : (
-            <span className="text-foreground text-xs font-bold tracking-wide flex-1">TRACKS</span>
+            <span className="text-foreground text-xs font-bold tracking-wide flex-1 min-w-0">TRACKS</span>
           )}
 
-          {/* Duration Header */}
-          <div className="w-16 text-center">
+          {/* Duration — hidden on mobile */}
+          <div className="hidden sm:block w-16 text-center flex-shrink-0">
             <span className="text-foreground text-xs font-bold">DURATION</span>
           </div>
 
-          {/* Date Header */}
-          <div className="w-28 text-center">
+          {/* Date — hidden on mobile */}
+          <div className="hidden md:block w-28 text-center flex-shrink-0">
             <span className="text-foreground text-xs font-bold">DATE</span>
           </div>
 
-          {/* Engagements Header */}
-          <div className="flex items-center gap-4 w-52 justify-center">
+          {/* Engagements — hidden on mobile */}
+          <div className="hidden lg:flex items-center w-48 justify-center flex-shrink-0">
             <span className="text-foreground text-xs font-bold">ENGAGEMENTS</span>
           </div>
 
-          <div className="w-16 text-right">
+          {/* Plays */}
+          <div className="w-12 sm:w-16 text-right flex-shrink-0">
             <span className="text-foreground text-xs font-bold">PLAYS</span>
           </div>
 
-          <div className="w-[88px] flex-shrink-0"></div>
-          <div className="w-6 flex-shrink-0"></div>
+          {/* Spacers for Amplify + menu */}
+          <div className="hidden sm:block w-[88px] flex-shrink-0" />
+          <div className="w-6 flex-shrink-0" />
         </div>
 
         <div className="space-y-1 overflow-visible">

@@ -3,8 +3,8 @@ import EditInfo from "./EditInfo";
 import { FaUser, FaPen, FaEnvelope } from "react-icons/fa";
 import { MdPodcasts, MdMoreHoriz } from "react-icons/md";
 import { FiSlash, FiInfo } from "react-icons/fi";
-import { NavLink } from "react-router-dom";
-import { Upload } from "lucide-react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { Upload, BarChart2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { followingService } from "../../../following/followingService";
 import { notifySocialGraphUpdated } from "../../socialGraphEvents";
@@ -15,6 +15,8 @@ export default function UserInfoBar({
   country,
   city,
   bio,
+  role,
+  visibility,
   socialAccounts,
   isMe,
   onProfileUpdated,
@@ -25,12 +27,17 @@ export default function UserInfoBar({
   country?: string;
   city?: string;
   bio?: string;
+  role?: "ARTIST" | "LISTENER";
+  visibility?: "PUBLIC" | "PRIVATE";
   socialAccounts?: {
     facebook?: string;
     instagram?: string;
     twitter?: string;
     website?: string;
     youtube?: string;
+    spotify?: string;
+    tiktok?: string;
+    soundcloud?: string;
   };
   isMe?: boolean;
   onProfileUpdated?: () => void;
@@ -50,6 +57,8 @@ export default function UserInfoBar({
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [blockLoading, setBlockLoading] = useState(false);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (isMe || !userId) return;
@@ -101,6 +110,7 @@ export default function UserInfoBar({
   const toggleModal = () => {
     setModal(!modal);
   };
+
   return (
     <div className="item-center flex justify-center w-full">
       <div className="relative w-10/12 mt-5 flex items-center justify-between">
@@ -134,6 +144,27 @@ export default function UserInfoBar({
             >
               <FaUser />
               <span>{isFollowing ? "Following" : "Follow"}</span>
+            </button>
+          )}
+          {isMe && (
+            <button
+              type="button"
+              title="Your Insights"
+              onClick={() => navigate("/me/insights/overview")}
+              className="inline-flex items-center gap-2 rounded-sm bg-white px-3 py-1.5 text-sm font-bold text-black hover:text-zinc-500 cursor-pointer"
+            >
+              <BarChart2 size={14} />
+              <span>Your Insights</span>
+            </button>
+          )}
+          {isMe && (
+            <button
+              type="button"
+              title="Station"
+              className="inline-flex items-center gap-2 rounded-sm bg-zinc-800 px-3 py-1.5 text-sm font-bold text-white hover:text-zinc-500 cursor-pointer"
+            >
+              <MdPodcasts />
+              <span>Station</span>
             </button>
           )}
           <button
@@ -215,6 +246,8 @@ export default function UserInfoBar({
           country={country}
           city={city}
           bio={bio}
+          role={role}
+          visibility={visibility}
           socialAccounts={socialAccounts}
         />
       )}

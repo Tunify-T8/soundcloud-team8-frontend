@@ -1,4 +1,4 @@
-import type { DiscoverTrack } from "@/shared/types/Discover";
+import type { DiscoverTrack } from "@/features/discover/Discover";
 import { DiscoverTrackCarousel } from "./DiscoverTrackCarousel";
 
 type DiscoverSectionProps = {
