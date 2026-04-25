@@ -16,6 +16,7 @@ function Toggle({ enabled, onChange }: ToggleProps) {
     <div
       onClick={() => onChange(!enabled)}
       className={`relative cursor-pointer flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200 ${enabled ? "bg-[#169b45]" : "bg-[#333]"}`}
+      data-testid="toggle"
     >
       <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all duration-200 ${enabled ? "left-5" : "left-0.5"}`} />
     </div>
@@ -158,6 +159,7 @@ function GenreInput({ genreRef }: { genreRef: React.RefObject<HTMLInputElement |
             onFocus={() => setOpen(true)}
             placeholder="Add or search for genre"
             className="w-full bg-transparent text-white text-sm py-1 focus:outline-none placeholder-[#555] pr-8"
+            data-testid="genre-input"
             aria-label="genre"
           />
           {query && (
@@ -165,6 +167,7 @@ function GenreInput({ genreRef }: { genreRef: React.RefObject<HTMLInputElement |
               type="button"
               onClick={handleClear}
               className="absolute right-0 top-1/2 -translate-y-1/2 text-[#555] hover:text-white transition"
+              data-testid="genre-clear-btn"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="18" y1="6" x2="6" y2="18" />
@@ -179,7 +182,7 @@ function GenreInput({ genreRef }: { genreRef: React.RefObject<HTMLInputElement |
       </div>
 
       {open && (
-        <div className="absolute z-50 top-full left-0 right-0 bg-[#1a1a1a] border border-[#333] max-h-52 overflow-y-auto shadow-xl">
+        <div className="absolute z-50 top-full left-0 right-0 bg-[#1a1a1a] border border-[#333] max-h-52 overflow-y-auto shadow-xl" data-testid="genre-dropdown">
           {filtered.length > 0 ? (
             filtered.map((genre) => (
               <div
@@ -424,10 +427,10 @@ useEffect(() => {
   if (uploadDone) return <UploadSuccessScreen />;
 
   return (
-    <div className="min-h-screen bg-[#0e0e0e] text-white font-sans">
+    <div className="min-h-screen bg-[#0e0e0e] text-white font-sans" data-testid="track-info-page">
 
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-[#1a1a1a]">
+      <div className="flex items-center justify-between px-6 py-3 border-b border-[#1a1a1a]" data-testid="track-info-header">
         <a href="/" className="flex items-center gap-3 hover:opacity-80 transition">
           <SiSoundcloud size={32} color="white" />
           <span className="font-semibold text-base">Track info</span>
@@ -457,7 +460,7 @@ useEffect(() => {
                 </svg>
               </button>
               <span className="max-w-[200px] truncate">{fileName}</span>
-              <button className="text-white text-sm font-semibold hover:text-[#aaa] transition">Replace track</button>
+              <button className="text-white text-sm font-semibold hover:text-[#aaa] transition" data-testid="replace-track-btn">Replace track</button>
             </div>
           )}
 
@@ -487,6 +490,7 @@ useEffect(() => {
           <button
             onClick={() => onBack ? onBack() : dispatch(clearAudioSource())}
             className="text-[#aaa] hover:text-white transition"
+            data-testid="track-info-close-btn"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -508,10 +512,11 @@ useEffect(() => {
                 <audio controls src={source.url} className="w-full max-w-[380px] h-10" style={{ colorScheme: "dark" }} />
               </div>
             )}
-            <input ref={artworkInputRef} type="file" accept="image/*" className="hidden" onChange={handleArtworkSelect} />
+            <input ref={artworkInputRef} type="file" accept="image/*" className="hidden" onChange={handleArtworkSelect} data-testid="artwork-file-input" />
             <div
               onClick={() => artworkInputRef.current?.click()}
               className="w-full aspect-square border border-dashed border-[#444] hover:border-[#666] transition cursor-pointer max-w-[380px] overflow-hidden relative group"
+              data-testid="artwork-upload-area"
             >
               <img
                 src={albumTemplate}
@@ -565,6 +570,7 @@ useEffect(() => {
                 type="text"
                 ref={titleRef}
                 defaultValue={defaultTitle}
+                data-testid="track-title-input"
                 onChange={(e) => setTrackSlug(slugify(e.target.value))}
                 className="w-full bg-transparent text-white text-sm py-1 focus:outline-none"
               />
@@ -583,6 +589,7 @@ useEffect(() => {
                     value={trackSlug || slugify(defaultTitle)}
                     onChange={(e) => setTrackSlug(e.target.value)}
                     className="bg-transparent text-white focus:outline-none flex-1 min-w-0"
+                    data-testid="track-slug-input"
                   />
                 </div>
               ) : (
@@ -599,6 +606,7 @@ useEffect(() => {
               <input
                 type="text"
                 ref={artistsRef}
+                data-testid="artists-input"
                 defaultValue={userProfile?.username ?? ""}
                 key={userProfile?.username}
                 placeholder={userProfile ? "" : "Loading..."}
@@ -622,6 +630,7 @@ useEffect(() => {
               <input
                 ref={tagsRef}
                 placeholder="Add styles, moods, tempo."
+                data-testid="tags-input"
                 className="w-full bg-transparent text-[#555] text-sm py-1 focus:outline-none placeholder-[#555]"
               />
             </div>
@@ -632,6 +641,7 @@ useEffect(() => {
               <textarea
                 ref={descriptionRef}
                 rows={3}
+                data-testid="description-input"
                 placeholder="Tracks with descriptions tend to get more plays and engagements."
                 className="w-full bg-transparent text-[#555] text-sm py-1 resize-none focus:outline-none placeholder-[#555]"
               />
@@ -660,7 +670,7 @@ useEffect(() => {
 
         {/* Advanced Details */}
         <div className="border-t border-[#2a2a2a]">
-          <button onClick={() => setAdvancedOpen(!advancedOpen)} className="flex items-center justify-between w-full text-left py-5">
+          <button onClick={() => setAdvancedOpen(!advancedOpen)} className="flex items-center justify-between w-full text-left py-5" data-testid="advanced-details-toggle">
             <div>
               <p className="text-sm font-bold text-white">Advanced details</p>
               <p className="text-sm text-[#666] mt-0.5">Buy link, record label, release date, publisher...</p>
@@ -715,7 +725,7 @@ useEffect(() => {
 
         {/* Permissions */}
         <div className="border-t border-[#2a2a2a]">
-          <button onClick={() => setPermissionsOpen(!permissionsOpen)} className="flex items-center justify-between w-full text-left py-5">
+          <button onClick={() => setPermissionsOpen(!permissionsOpen)} className="flex items-center justify-between w-full text-left py-5" data-testid="permissions-toggle">
             <div className="flex items-center gap-4">
               <svg width="36" height="22" viewBox="0 0 36 22" fill="none">
                 <rect width="36" height="22" rx="11" fill="#333" />
@@ -781,7 +791,7 @@ useEffect(() => {
 
         {/* Audio Clip */}
         <div className="border-t border-[#2a2a2a]">
-          <button onClick={() => setAudioClipOpen(!audioClipOpen)} className="flex items-center justify-between w-full text-left py-5">
+          <button onClick={() => setAudioClipOpen(!audioClipOpen)} className="flex items-center justify-between w-full text-left py-5" data-testid="audio-clip-toggle">
             <div className="flex items-center gap-4">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="1.5">
                 <polygon points="11,5 6,9 2,9 2,15 6,15 11,19" fill="none" />
@@ -813,7 +823,7 @@ useEffect(() => {
 
         {/* Licensing */}
         <div className="border-t border-[#2a2a2a]">
-          <button onClick={() => setLicensingOpen(!licensingOpen)} className="flex items-center justify-between w-full text-left py-5">
+          <button onClick={() => setLicensingOpen(!licensingOpen)} className="flex items-center justify-between w-full text-left py-5" data-testid="licensing-toggle">
             <div className="flex items-center gap-4">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="1.5">
                 <circle cx="12" cy="12" r="10" />
@@ -850,7 +860,7 @@ useEffect(() => {
       </div>
 
       {/* Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 border-t border-[#1a1a1a] bg-[#0e0e0e] px-10 py-3 flex items-center">
+      <div className="fixed bottom-0 left-0 right-0 border-t border-[#1a1a1a] bg-[#0e0e0e] px-10 py-3 flex items-center" data-testid="track-info-bottom-bar">
         <p className="text-xs text-[#555] flex-1 text-center">
           By uploading, you confirm that your sounds comply with our{" "}
           <span className="underline cursor-pointer hover:text-[#888] transition">Terms of Use</span>{" "}
@@ -860,6 +870,7 @@ useEffect(() => {
           onClick={handleUpload}
           disabled={!fileReady || isSubmitting}
           className="bg-[#169b45] hover:bg-[#1db954] disabled:opacity-40 disabled:cursor-not-allowed text-white px-8 py-2.5 rounded-full font-semibold text-sm transition flex items-center gap-2"
+          data-testid="upload-submit-btn"
         >
           {(!fileReady || isSubmitting) && (
             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
