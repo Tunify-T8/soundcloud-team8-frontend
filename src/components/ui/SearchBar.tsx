@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { Search, Music, User, Disc, BadgeCheck } from 'lucide-react';
+import { Search, Music, Disc, BadgeCheck } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { feedService } from '@/features/feed/feedservice';
 import type { RootState } from '@/app/store';
@@ -11,6 +11,7 @@ import type {
   UserSearchResult,
   CollectionSearchResult,
 } from '../../features/feed/type';
+import avatarFallback from '@/assets/avatar.png';
 
 export default function SearchBar() {
   const [query, setQuery] = useState('');
@@ -58,14 +59,14 @@ export default function SearchBar() {
       setIsOpen(false);
     }
     if (e.key === 'Enter' && query.trim()) {
-    setIsOpen(false);
-    setQuery('');
-    if (currentUser && query.trim().toLowerCase() === currentUser.username.toLowerCase()) {
-      navigate('/me');
-    } else {
-      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+      setIsOpen(false);
+      setQuery('');
+      if (currentUser && query.trim().toLowerCase() === currentUser.username.toLowerCase()) {
+        navigate('/me');
+      } else {
+        navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+      }
     }
-  }
   };
 
   const handleSelect = (result: SearchResult) => {
@@ -92,7 +93,6 @@ export default function SearchBar() {
 
   return (
     <div ref={containerRef} className="relative w-full" data-testid="search-bar-container">
-      {/* ── Input ── */}
       <div className="relative flex items-center">
         <Search size={14} className="absolute left-3 text-gray-400 pointer-events-none" />
         <input
@@ -107,7 +107,6 @@ export default function SearchBar() {
         />
       </div>
 
-      {/* ── Dropdown ── */}
       {isOpen && (
         <div
           data-testid="search-dropdown"
@@ -125,7 +124,6 @@ export default function SearchBar() {
             </div>
           )}
 
-          {/* ── Tracks ── */}
           {tracks.length > 0 && (
             <section data-testid="search-tracks-section">
               <SectionHeader label="Tracks" />
@@ -152,7 +150,6 @@ export default function SearchBar() {
             </section>
           )}
 
-          {/* ── People ── */}
           {users.length > 0 && (
             <section data-testid="search-people-section" className="border-t border-[hsl(0,0%,13%)]">
               <SectionHeader label="People" />
@@ -162,8 +159,22 @@ export default function SearchBar() {
                   testId={`search-user-${user.id}`}
                   onClick={() => handleSelect(user)}
                 >
-                  <div className="w-9 h-9 rounded-full bg-[hsl(0,0%,22%)] flex items-center justify-center shrink-0">
-                    <User size={16} className="text-gray-400" />
+                  <div className="w-9 h-9 rounded-full bg-[hsl(0,0%,22%)] shrink-0 overflow-hidden flex items-center justify-center">
+                    {user.avatarUrl ? (
+                      <img
+                        src={user.avatarUrl}
+                        alt={user.displayName ?? user.username}
+                        data-testid={`search-user-avatar-${user.id}`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <img
+                        src={avatarFallback}
+                        alt={user.displayName ?? user.username}
+                        data-testid={`search-user-avatar-${user.id}`}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1">
@@ -183,7 +194,6 @@ export default function SearchBar() {
             </section>
           )}
 
-          {/* ── Albums & Playlists ── */}
           {collections.length > 0 && (
             <section data-testid="search-collections-section" className="border-t border-[hsl(0,0%,13%)]">
               <SectionHeader label="Albums & Playlists" />
