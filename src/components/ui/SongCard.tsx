@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Heart, Repeat2, Share2, Copy, MoreHorizontal, ListPlus, ListMusic, Radio } from "lucide-react";
+import {
+  Heart,
+  Repeat2,
+  Share2,
+  Copy,
+  MoreHorizontal,
+  ListPlus,
+  ListMusic,
+  Radio,
+} from "lucide-react";
 import { SiSoundcloud } from "react-icons/si";
 import { waveGenerators } from "../Waveforms";
 import { useLike } from "@/features/feed/hooks/useLike";
@@ -50,7 +59,8 @@ export default function SongCard({
   onAddToPlaylist,
   onStation,
 }: PlayerProps) {
-  const { currentTrack, isPlaying, setCurrentTrack, setIsPlaying } = usePlayer();
+  const { currentTrack, isPlaying, setCurrentTrack, setIsPlaying } =
+    usePlayer();
 
   const isThisTrack = currentTrack?.id === trackId;
   const playing = isThisTrack && isPlaying;
@@ -119,7 +129,11 @@ export default function SongCard({
       {/* Cover Art */}
       <div className="relative h-[133px] w-[133px] shrink-0 overflow-hidden rounded-sm bg-[#111]">
         {coverUrl ? (
-          <img src={coverUrl} alt={title} className="w-full h-full object-cover" />
+          <img
+            src={coverUrl}
+            alt={title}
+            className="w-full h-full object-cover"
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#2a2a2a] to-[#111]">
             <SiSoundcloud size={40} className="text-[hsl(0,0%,30%)]" />
@@ -129,7 +143,6 @@ export default function SongCard({
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col px-4 pt-0 pb-3 min-w-0">
-
         {/* Top row: play button + artist/title + time/genre */}
         <div className="flex items-start gap-3 mb-1">
           <button
@@ -151,12 +164,18 @@ export default function SongCard({
           </button>
 
           <div className="flex-1 min-w-0">
-            <div className="text-[11px] text-[hsl(0,0%,50%)] truncate mb-0.5">{artistName}</div>
-            <p className="text-[13px] text-white font-medium leading-snug line-clamp-2">{title}</p>
+            <div className="text-[11px] text-[hsl(0,0%,50%)] truncate mb-0.5">
+              {artistName}
+            </div>
+            <p className="text-[13px] text-white font-medium leading-snug line-clamp-2">
+              {title}
+            </p>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-[11px] text-[hsl(0,0%,40%)] whitespace-nowrap">{timeAgo}</span>
+            <span className="text-[11px] text-[hsl(0,0%,40%)] whitespace-nowrap">
+              {timeAgo}
+            </span>
             <span className="text-[10px] text-[hsl(0,0%,55%)] bg-[hsl(0,0%,12%)] border border-[hsl(0,0%,20%)] px-2 py-0.5 rounded-sm whitespace-nowrap">
               # {genre}
             </span>
@@ -200,7 +219,11 @@ export default function SongCard({
               className="flex h-7 w-9 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f]"
               aria-label={`Like (${likesCount})`}
             >
-              <Heart size={12} fill={isLiked ? "#fff" : "none"} style={{ color: "#fff" }} />
+              <Heart
+                size={12}
+                fill={isLiked ? "#fff" : "none"}
+                style={{ color: "#fff" }}
+              />
               <span className="sr-only">{likesCount}</span>
             </button>
             <button
@@ -210,10 +233,7 @@ export default function SongCard({
               aria-label={isRepostedInitial ? "Undo repost" : "Repost"}
               className="flex h-7 w-9 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <Repeat2
-                size={12}
-                style={{ color: "#fff" }}
-              />
+              <Repeat2 size={12} style={{ color: "#fff" }} />
               <span className="sr-only">{reposts}</span>
             </button>
             <button className="flex h-7 w-9 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f]">
@@ -240,7 +260,10 @@ export default function SongCard({
                     }}
                     className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-[13px] font-semibold text-white hover:text-zinc-500"
                   >
-                    <ListMusic size={14} className="text-zinc-300 hover:text-zinc-500" />
+                    <ListMusic
+                      size={14}
+                      className="text-zinc-300 hover:text-zinc-500"
+                    />
                     Add to Next up
                   </button>
                   <button
@@ -251,7 +274,10 @@ export default function SongCard({
                     }}
                     className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-[13px] font-semibold text-white hover:text-zinc-500"
                   >
-                    <ListPlus size={14} className="text-zinc-300 hover:text-zinc-500" />
+                    <ListPlus
+                      size={14}
+                      className="text-zinc-300 hover:text-zinc-500"
+                    />
                     Add to Playlist
                   </button>
                   <button
@@ -261,7 +287,10 @@ export default function SongCard({
                     }}
                     className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-[13px] font-semibold text-white hover:text-zinc-500"
                   >
-                    <Radio size={14} className="text-zinc-300 hover:text-zinc-500" />
+                    <Radio
+                      size={14}
+                      className="text-zinc-300 hover:text-zinc-500"
+                    />
                     Station
                   </button>
                 </div>
@@ -271,7 +300,14 @@ export default function SongCard({
 
           <div className="flex items-center gap-3 text-[11px] text-[hsl(0,0%,40%)]">
             <span className="flex items-center gap-1">
-              <svg width="10" height="10" viewBox="0 0 14 14" fill="currentColor"><polygon points="2,0 14,7 2,14" /></svg>
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 14 14"
+                fill="currentColor"
+              >
+                <polygon points="2,0 14,7 2,14" />
+              </svg>
               {plays}
             </span>
             <span className="flex items-center gap-1">
@@ -285,10 +321,13 @@ export default function SongCard({
         isOpen={showPlaylistOverlay}
         onClose={() => setShowPlaylistOverlay(false)}
         track={{
+          id: trackId,
           title,
           artist: artistName,
           coverUrl,
         }}
+        defaultCoverUrl={coverUrl}
+        autoAddTrackId={trackId}
       />
     </div>
   );

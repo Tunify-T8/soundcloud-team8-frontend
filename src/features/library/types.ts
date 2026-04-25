@@ -123,7 +123,7 @@ export interface CreateCollectionPayload {
   type: CollectionType;
   privacy: CollectionPrivacy;
   description?: string;
-  cover?: File;
+  coverUrl?: File;
 }
 
 // Update Collection (multipart/form-data)
@@ -131,7 +131,7 @@ export interface UpdateCollectionPayload {
   title?: string;
   description?: string;
   privacy?: CollectionPrivacy;
-  cover?: File;
+  coverUrl?: File;
 }
 
 // Add Track

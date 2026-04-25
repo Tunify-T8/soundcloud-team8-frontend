@@ -4,10 +4,12 @@ import type {
   CollectionType,
   CollectionTrack,
   PaginatedResponse,
+  CreateCollectionPayload,
+  CreateCollectionResponse,
   AddTrackPayload,
+  AddTrackResponse,
   RemoveTrackPayload,
   ReorderTracksPayload,
-  AddTrackResponse,
   RemoveTrackResponse,
   ReorderTracksResponse,
   LikeCollectionResponse,
@@ -83,11 +85,30 @@ function formatTimeAgo(isoDate: string): string {
 export const playlistService = {
   // ─── Playlist ───────────────────────────────────────────────
 
-  async getMyCollections(
-    page = 1,
-    limit = 20,
-    type?: CollectionType,
-  ) {
+  async createCollection(
+    payload: CreateCollectionPayload,
+  ): Promise<CreateCollectionResponse | null> {
+    try {
+      const formData = new FormData();
+      formData.append("title", payload.title);
+      formData.append("type", payload.type);
+      formData.append("privacy", payload.privacy);
+
+      if (payload.description?.trim()) {
+        formData.append("description", payload.description.trim());
+      }
+      if (payload.coverUrl) {
+        formData.append("coverUrl", payload.coverUrl);
+      }
+
+      const response = await api.post("/collections", formData);
+      return response.data as CreateCollectionResponse;
+    } catch {
+      return null;
+    }
+  },
+
+  async getMyCollections(page = 1, limit = 20, type?: CollectionType) {
     try {
       const response = await api.get("/collections/me", {
         params: {
