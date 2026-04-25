@@ -6,7 +6,7 @@ export interface Track {
   id: string;
   title: string;
   artist: string;
-  genre?: Genre;
+  genre: Genre;
   tags?: string[];
   status?: TrackStatus;
   visibility?: TrackVisibility;

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import type { CollectionItem } from "../types";
+import MediaCard from "./MediaCard";
 
 interface CollectionGridProps {
   items: CollectionItem[];
@@ -9,9 +10,9 @@ interface CollectionGridProps {
 
 export default function CollectionGrid({ items, title, showBrowse = false }: CollectionGridProps) {
   return (
-    <section className="mb-8">
+    <section className="mb-8" data-testid="collection-grid">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-white font-bold text-sm">{title}</h2>
+        {title && <h2 className="text-white font-bold text-sm" data-testid="collection-grid-title">{title}</h2>}
         {showBrowse && (
           <Link
             to="/home"
@@ -21,25 +22,15 @@ export default function CollectionGrid({ items, title, showBrowse = false }: Col
           </Link>
         )}
       </div>
-      <div className="flex gap-4 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+      <div className="grid grid-cols-6 gap-4">
         {items.map((item) => (
-          <div key={item.id} className="flex-shrink-0 w-[170px] cursor-pointer group">
-            <div className="w-[170px] h-[170px] rounded-sm overflow-hidden mb-2 relative bg-[#282828]">
-              {item.coverUrl ? (
-                <img
-                  src={item.coverUrl}
-                  alt={item.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-              ) : (
-                <div className="w-full h-full bg-[#282828]" />
-              )}
-              {/* Haze only — no play button for recently played */}
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            </div>
-            <p className="text-white text-xs font-semibold truncate">{item.title}</p>
-            <p className="text-zinc-500 text-xs truncate mt-0.5">{item.subtitle}</p>
-          </div>
+          <MediaCard
+            key={item.id}
+            id={item.id}
+            title={item.title}
+            subtitle={item.subtitle ?? ""}
+            coverUrl={item.coverUrl}
+          />
         ))}
       </div>
     </section>
