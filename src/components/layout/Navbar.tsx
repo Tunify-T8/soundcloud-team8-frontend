@@ -9,7 +9,6 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { useMe } from "../../features/profile/context/useMe";
 import { logout } from "../../features/auth/services/index";
-import UpgradeModal from "./UpgradeModal";
 import { io, Socket } from "socket.io-client";
 import {
   getNotifications,
@@ -20,9 +19,8 @@ import {
 } from "@/features/notifications/service/service"; 
 import type {NotificationObject} from "@/features/notifications/types"
 import { getAccessToken } from "@/features/auth/utils/token.utils";
+import CheckoutModal from "../../features/premium/components/CheckoutModal";
 
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -51,9 +49,6 @@ function normaliseSocketPayload(raw: Record<string, unknown>): NotificationObjec
     createdAt: raw.createdAt as string,
   };
 }
-
-// ─── Component ────────────────────────────────────────────────────────────────
-import CheckoutModal from "../../features/premium/components/CheckoutModal";
 
 export default function Navbar() {
   const location = useLocation();

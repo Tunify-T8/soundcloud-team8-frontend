@@ -6,7 +6,7 @@ import { FiSlash, FiInfo } from "react-icons/fi";
 import { NavLink, useNavigate } from "react-router-dom";
 import { Upload, BarChart2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { followingService } from "../../../following/followingService";
+import { profileService } from "../../profileService";
 import { notifySocialGraphUpdated } from "../../socialGraphEvents";
 
 export default function UserInfoBar({
@@ -50,6 +50,14 @@ export default function UserInfoBar({
     { label: "Albums", path: "albums" },
     { label: "Playlists", path: "playlists" },
     { label: "Reposts", path: "reposts" },
+    ...(isMe
+      ? [
+          { label: "Followers", path: "followers" },
+          { label: "Following", path: "following" },
+          { label: "Suggested", path: "suggested-users" },
+          { label: "Blocked", path: "blocked-users" },
+        ]
+      : []),
   ];
 
   const [modal, setModal] = useState(false);
@@ -63,7 +71,7 @@ export default function UserInfoBar({
   useEffect(() => {
     if (isMe || !userId) return;
 
-    followingService
+    profileService
       .getFollowStatus(userId)
       .then((status) => {
         setIsFollowing(status.isFollowing);
@@ -79,10 +87,10 @@ export default function UserInfoBar({
     setFollowLoading(true);
     try {
       if (isFollowing) {
-        await followingService.unfollowUser(userId);
+        await profileService.unfollowUser(userId);
         setIsFollowing(false);
       } else {
-        await followingService.followUser(userId);
+        await profileService.followUser(userId);
         setIsFollowing(true);
       }
 
@@ -98,7 +106,7 @@ export default function UserInfoBar({
 
     setBlockLoading(true);
     try {
-      await followingService.blockUser(userId);
+      await profileService.blockUser(userId);
       notifySocialGraphUpdated();
       onProfileUpdated?.();
       setShowMoreActions(false);
