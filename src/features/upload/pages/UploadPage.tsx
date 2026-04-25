@@ -57,10 +57,10 @@ export default function SoundCloudUpload() {
   }
 
   return (
-    <div className="min-h-screen bg-[#111111] text-white flex flex-col font-sans">
+    <div className="min-h-screen bg-[#111111] text-white flex flex-col font-sans" data-testid="upload-page">
 
       {/* HEADER */}
-      <header className="flex items-center justify-between px-8 py-4 border-b border-[#222]">
+      <header className="flex items-center justify-between px-8 py-4 border-b border-[#222]" data-testid="upload-header">
         <div className="flex items-center gap-3 hover:opacity-80 transition">
           <a href="/">
           <SiSoundcloud size={36} color="white" />
@@ -69,7 +69,7 @@ export default function SoundCloudUpload() {
        </div>
         
         <a href="/artists">
-        <button className="text-[#888] hover:text-white transition">
+        <button className="text-[#888] hover:text-white transition" data-testid="upload-close-btn">
           <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18"/>
             <line x1="6" y1="6" x2="18" y2="18"/>
@@ -82,7 +82,7 @@ export default function SoundCloudUpload() {
       <main className="flex-1 flex justify-center px-6 py-10">
         <div className="w-full max-w-[1100px]">
 
-          <div className="bg-[hsl(0,0%,11%)] border-b border-[hsl(0,0%,18%)] flex items-center justify-between px-8 py-3 shrink-0">
+          <div className="bg-[hsl(0,0%,11%)] border-b border-[hsl(0,0%,18%)] flex items-center justify-between px-8 py-3 shrink-0" data-testid="upload-quota-bar">
                <div className="flex items-center gap-3">
                  <Upload className="w-4 h-4 text-[hsl(0,0%,60%)]" />
                  <span className="text-white text-sm font-medium tracking-tighter">0% of uploads used</span>
@@ -93,7 +93,7 @@ export default function SoundCloudUpload() {
                </div>
                <button 
                onClick={() => setCheckoutOpen(true)}
-               className="bg-black text-white text-sm font-bold tracking-tighter px-5 py-2 rounded-full hover:bg-[hsl(0,0%,20%)] transition-colors">
+               className="bg-black text-white text-sm font-bold tracking-tighter px-5 py-2 rounded-full hover:bg-[hsl(0,0%,20%)] transition-colors" data-testid="get-unlimited-btn">
                  Get unlimited uploads
                </button>
          
@@ -114,6 +114,7 @@ export default function SoundCloudUpload() {
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
+            data-testid="upload-dropzone"
             className={`
               border border-dashed rounded-lg w-full
               flex flex-col items-center justify-center
@@ -126,6 +127,7 @@ export default function SoundCloudUpload() {
               ref={fileInputRef}
               type="file"
               className="hidden"
+              data-testid="upload-file-input"
               accept="audio/*"
               multiple
               onChange={handleFileSelect}
@@ -143,6 +145,7 @@ export default function SoundCloudUpload() {
             <button
               onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
               className="mt-4 bg-white text-black rounded-full px-6 py-2 text-[13px] font-semibold hover:bg-[#eee]"
+              data-testid="choose-files-btn"
             >
               Choose files
             </button>
@@ -151,7 +154,7 @@ export default function SoundCloudUpload() {
           <Recorder micOpen={micOpen} setMicOpen={setMicOpen} />
 
           {/* FOOTER */}
-          <footer className="border-t border-[#1e1e1e] py-6 flex justify-center flex-wrap gap-2 text-[12px] text-[#666]">
+          <footer className="border-t border-[#1e1e1e] py-6 flex justify-center flex-wrap gap-2 text-[12px] text-[#666]" data-testid="upload-footer">
             {["Legal","Privacy","Cookie Policy","Cookie Manager","Imprint","About us","Copyright","Feedback"].map((item, i) => (
               <span key={i} className="flex items-center">
                 <a className="hover:text-[#aaa] px-1 cursor-pointer">{item}</a>
