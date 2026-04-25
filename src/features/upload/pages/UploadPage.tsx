@@ -2,11 +2,12 @@ import { useState, useRef, useCallback } from "react";
 import Recorder from "../components/Recorder";
 import TrackInfoPage from "../components/TrackInfo";
 import { useDispatch } from "react-redux";
-import { useAppSelector } from "../../../app/hooks"; // Add this import
+import { useAppSelector } from "../../../app/hooks"; 
 import { setAudioSource } from "../../../store/AudioSourceSlice";
 import { SiSoundcloud } from "react-icons/si";
 import CheckoutModal from "@/features/premium/components/CheckoutModal";
 import { Upload } from "lucide-react";
+import ArtistModal from "@/features/premium/components/ArtistModal";
 
 
 export default function SoundCloudUpload() {
@@ -14,6 +15,7 @@ export default function SoundCloudUpload() {
   const [micOpen, setMicOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [showArtistModal, setShowArtistModal] = useState(false);
 
   const dispatch = useDispatch();
   const readyToNavigate = useAppSelector((s) => s.audioSource.readyToNavigate);
@@ -83,13 +85,15 @@ export default function SoundCloudUpload() {
         <div className="w-full max-w-[1100px]">
 
           <div className="bg-[hsl(0,0%,11%)] border-b border-[hsl(0,0%,18%)] flex items-center justify-between px-8 py-3 shrink-0" data-testid="upload-quota-bar">
-               <div className="flex items-center gap-3">
+               <div className="flex items-center gap-3"
+                onClick={() => setShowArtistModal(true)}
+               >
                  <Upload className="w-4 h-4 text-[hsl(0,0%,60%)]" />
                  <span className="text-white text-sm font-medium tracking-tighter">0% of uploads used</span>
                  <div className="w-44 h-1.5 bg-[hsl(0,0%,23%)] rounded-full overflow-hidden">
                    <div className="h-full bg-[hsl(0,0%,50%)] rounded-full" style={{ width: "0%" }} />
                  </div>
-                 <span className="text-[hsl(0,100%,99%)] text-sm font-semibold">0 of 180 minutes</span>
+                 <span className="text-[hsl(0,100%,99%)] text-sm font-semibold">0 of 10 minutes</span>
                </div>
                <button 
                onClick={() => setCheckoutOpen(true)}
@@ -165,6 +169,7 @@ export default function SoundCloudUpload() {
         </div>
       </main>
        {checkoutOpen && <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />}
+      {showArtistModal && <ArtistModal onClose={() => setShowArtistModal(false)} />}
     </div>
   );
 }
