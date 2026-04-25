@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import OverviewTab from "../tabs/OverviewTab";
 import LikesTab from "../tabs/LikesTab";
 import PlaylistsTab from "../tabs/PlaylistsTab";
@@ -10,8 +10,25 @@ import HistoryTab from "../tabs/HistoryTab";
 const TABS = ["Overview", "Likes", "Playlists", "Albums", "Stations", "Following", "History"] as const;
 type Tab = typeof TABS[number];
 
+const TAB_TO_PATH: Record<Tab, string> = {
+  Overview:  "/library",
+  Likes:     "/me/likes",
+  Playlists: "/me/sets",
+  Albums:    "/me/albums",
+  Stations:  "/me/stations",
+  Following: "/me/following",
+  History:   "/me/history",
+};
+
+const PATH_TO_TAB: Record<string, Tab> = Object.fromEntries(
+  Object.entries(TAB_TO_PATH).map(([tab, path]) => [path, tab as Tab])
+);
+
 export default function LibraryPage() {
-  const [activeTab, setActiveTab] = useState<Tab>("Overview");
+  const navigate  = useNavigate();
+  const { pathname } = useLocation();
+
+  const activeTab: Tab = PATH_TO_TAB[pathname] ?? "Overview";
 
   const renderTab = () => {
     switch (activeTab) {
@@ -33,7 +50,7 @@ export default function LibraryPage() {
           {TABS.map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => navigate(TAB_TO_PATH[tab])}
               className="px-5 py-3 transition-colors relative whitespace-nowrap"
               style={{
                 color:         activeTab === tab ? "white" : "#71717a",
