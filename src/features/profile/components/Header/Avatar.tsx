@@ -88,32 +88,32 @@ export default function Avatar({
 
       {isMe && (
         <div
-          className={`absolute bottom-10 left-1/2 -translate-x-1/2 z-20 transition-opacity ${
+          className={`absolute bottom-0 left-1/2 z-20 mt-1 -translate-x-1/2 translate-y-full transition-opacity sm:bottom-10 sm:mt-0 sm:translate-y-0 ${
             showActions ? "opacity-100" : "opacity-0 group-hover:opacity-100"
           }`}
         >
           <button
             type="button"
             onClick={src ? () => setShowActions((prev) => !prev) : handleOpenUpload}
-            className={`w-32 bg-zinc-800 font-bold text-[14px] px-2 py-0.75 rounded-sm transition-colors cursor-pointer ${
+            className={`w-24 rounded-sm bg-zinc-800 px-2 py-1 text-[11px] font-bold transition-colors cursor-pointer sm:w-32 sm:text-[14px] ${
               showActions ? "text-orange-500" : "text-white hover:text-zinc-500"
             }`}
           >
             {isUploading ? "Uploading..." : src ? "Update image" : "Upload image"}
           </button>
           {src && showActions && (
-            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 flex w-32 flex-col rounded-sm border border-zinc-700 bg-zinc-950 shadow-lg">
+            <div className="absolute top-full left-1/2 mt-2 flex w-24 -translate-x-1/2 flex-col rounded-sm border border-zinc-700 bg-zinc-950 shadow-lg sm:w-32">
               <button
                 type="button"
                 onClick={handleOpenUpload}
-                className="w-full text-left text-white font-bold text-[14px] px-3 py-2 hover:text-gray-300 transition-colors cursor-pointer"
+                className="w-full cursor-pointer px-2 py-2 text-left text-[11px] font-bold text-white transition-colors hover:text-gray-300 sm:px-3 sm:text-[14px]"
               >
                 Replace image
               </button>
               <button
                 type="button"
                 onClick={handleRemoveImage}
-                className="w-full text-left text-white font-bold text-[14px] px-3 py-2 hover:text-gray-300 transition-colors cursor-pointer"
+                className="w-full cursor-pointer px-2 py-2 text-left text-[11px] font-bold text-white transition-colors hover:text-gray-300 sm:px-3 sm:text-[14px]"
               >
                 Delete image
               </button>

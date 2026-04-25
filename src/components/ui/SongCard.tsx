@@ -61,9 +61,6 @@ export default function SongCard({
   onStation,
 }: PlayerProps) {
   const { currentTrack, isPlaying, progress: playerProgress, setCurrentTrack, setIsPlaying, requestSeek } = usePlayer();
-  const { currentTrack, isPlaying, setCurrentTrack, setIsPlaying } =
-    usePlayer();
-
   const isThisTrack = currentTrack?.id === trackId;
   const playing = isThisTrack && isPlaying;
 
@@ -169,20 +166,6 @@ export default function SongCard({
           )}
         </div>
       )}
-      <div className="relative h-[133px] w-[133px] shrink-0 overflow-hidden rounded-sm bg-[#111]">
-        {coverUrl ? (
-          <img
-            src={coverUrl}
-            alt={title}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#2a2a2a] to-[#111]">
-            <SiSoundcloud size={40} className="text-[hsl(0,0%,30%)]" />
-          </div>
-        )}
-      </div>
-
       {/* Main Content */}
       <div className="flex-1 flex flex-col px-4 pt-0 pb-3 min-w-0">
         {/* Top row: play button + artist/title + time/genre */}
@@ -237,11 +220,9 @@ export default function SongCard({
             const played = pos <= displayProgress;
             const showPlayedProgress = isThisTrack && played;
             const inactiveColor = isWaveHovered ? "#f5f5f5" : "#d6d6d6";
-            const played = pos < displayProgress;
             return (
               <div
                 key={i}
-                className="flex-1 rounded-[1px]"
                 className="flex-1 rounded-[1px]"
                 style={{
                   minWidth: 0,
