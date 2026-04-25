@@ -11,7 +11,7 @@ import type { Track } from '../types/Track';
 export const engagementService = {
 
   getTrackDetails: async (trackId: string): Promise<Track> =>
-    (await api.get<Track>(`/tracks/${trackId}`)).data,
+    (await api.get<any>(`/tracks/${trackId}`)).data.track,
 
   getEngagement: async (trackId: string): Promise<GetEngagementResponse> =>
     (await api.get<GetEngagementResponse>(`/tracks/${trackId}/engagement`)).data,
