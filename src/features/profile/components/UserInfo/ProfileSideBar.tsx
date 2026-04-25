@@ -18,6 +18,7 @@ import { Ticket } from "lucide-react";
 import type { FollowingUser } from "../../../../shared/types/User";
 import { followingService } from "../../../following/followingService";
 import avatarFallback from '@/assets/avatar.png';
+import CheckoutModal from "@/features/premium/components/CheckoutModal";
 
 export default function ProfileSideBar({
   followers,
@@ -49,6 +50,7 @@ export default function ProfileSideBar({
     followingUsers ?? [],
   );
   const [pendingUnfollowId, setPendingUnfollowId] = useState<string | null>(null);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   useEffect(() => {
     setLocalFollowingUsers(followingUsers ?? []);
@@ -190,12 +192,14 @@ export default function ProfileSideBar({
           With an Artist Pro account, you can create ticketed live events on
           SoundCloud, and list existing events.
         </p>
-        <Link
-          to="/pro"
-          className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-zinc-200 px-4 py-2 text-[14px] font-bold text-black hover:bg-white"
+        <button
+          className="mt-5 flex w-full items-center justify-center rounded-full bg-white px-6 py-3 text-[14px] font-bold text-zinc-900 transition-colors hover:bg-zinc-100"
+          onClick={() => {
+            setCheckoutOpen(true);
+          }}
         >
           Upgrade to Artist Pro
-        </Link>
+        </button>
       </div>
       {visibleFollowingUsers.length > 0 && (
         <div className="my-6">
@@ -361,6 +365,8 @@ export default function ProfileSideBar({
           </a>
         </div>
       </div>
+       {checkoutOpen && <CheckoutModal plan = "artist-pro" onClose={() => setCheckoutOpen(false)} />}
+          
     </div>
   );
 }

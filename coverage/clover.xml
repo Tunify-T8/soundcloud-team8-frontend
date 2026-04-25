@@ -1,0 +1,620 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<coverage generated="1774376150812" clover="3.2.0">
+  <project timestamp="1774376150812" name="All files">
+    <metrics statements="551" coveredstatements="445" conditionals="356" coveredconditionals="262" methods="135" coveredmethods="98" elements="1042" coveredelements="805" complexity="0" loc="551" ncloc="551" packages="8" files="13" classes="13"/>
+    <package name="src">
+      <metrics statements="0" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+      <file name="setUpTests.ts" path="C:\Users\Asma\Desktop\software\Project\soundcloud-team8-frontend\src\setUpTests.ts">
+        <metrics statements="0" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+      </file>
+    </package>
+    <package name="src.features.auth.components">
+      <metrics statements="2" coveredstatements="2" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+      <file name="AuthNavbar.tsx" path="C:\Users\Asma\Desktop\software\Project\soundcloud-team8-frontend\src\features\auth\components\AuthNavbar.tsx">
+        <metrics statements="2" coveredstatements="2" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+        <line num="5" count="4" type="stmt"/>
+        <line num="6" count="887" type="stmt"/>
+      </file>
+    </package>
+    <package name="src.features.auth.data">
+      <metrics statements="7" coveredstatements="7" conditionals="0" coveredconditionals="0" methods="5" coveredmethods="5"/>
+      <file name="mockUsers.ts" path="C:\Users\Asma\Desktop\software\Project\soundcloud-team8-frontend\src\features\auth\data\mockUsers.ts">
+        <metrics statements="7" coveredstatements="7" conditionals="0" coveredconditionals="0" methods="5" coveredmethods="5"/>
+        <line num="10" count="1" type="stmt"/>
+        <line num="53" count="1" type="stmt"/>
+        <line num="54" count="62" type="stmt"/>
+        <line num="56" count="1" type="stmt"/>
+        <line num="57" count="11" type="stmt"/>
+        <line num="59" count="1" type="stmt"/>
+        <line num="60" count="28" type="stmt"/>
+      </file>
+    </package>
+    <package name="src.features.auth.hooks">
+      <metrics statements="10" coveredstatements="8" conditionals="14" coveredconditionals="10" methods="1" coveredmethods="1"/>
+      <file name="useAuth.ts" path="C:\Users\Asma\Desktop\software\Project\soundcloud-team8-frontend\src\features\auth\hooks\useAuth.ts">
+        <metrics statements="10" coveredstatements="8" conditionals="14" coveredconditionals="10" methods="1" coveredmethods="1"/>
+        <line num="1" count="2" type="stmt"/>
+        <line num="29" count="2" type="stmt"/>
+        <line num="30" count="3" type="cond" truecount="1" falsecount="1"/>
+        <line num="38" count="3" type="stmt"/>
+        <line num="39" count="3" type="stmt"/>
+        <line num="40" count="3" type="cond" truecount="2" falsecount="2"/>
+        <line num="41" count="0" type="stmt"/>
+        <line num="43" count="3" type="cond" truecount="1" falsecount="1"/>
+        <line num="44" count="3" type="stmt"/>
+        <line num="47" count="0" type="stmt"/>
+      </file>
+    </package>
+    <package name="src.features.auth.pages">
+      <metrics statements="369" coveredstatements="321" conditionals="287" coveredconditionals="230" methods="87" coveredmethods="71"/>
+      <file name="ForgotPasswordPage.tsx" path="C:\Users\Asma\Desktop\software\Project\soundcloud-team8-frontend\src\features\auth\pages\ForgotPasswordPage.tsx">
+        <metrics statements="36" coveredstatements="34" conditionals="20" coveredconditionals="20" methods="10" coveredmethods="9"/>
+        <line num="12" count="1" type="stmt"/>
+        <line num="14" count="1" type="stmt"/>
+        <line num="15" count="0" type="stmt"/>
+        <line num="23" count="1" type="stmt"/>
+        <line num="24" count="11" type="stmt"/>
+        <line num="26" count="1" type="stmt"/>
+        <line num="27" count="202" type="stmt"/>
+        <line num="28" count="202" type="stmt"/>
+        <line num="29" count="202" type="cond" truecount="2" falsecount="0"/>
+        <line num="31" count="202" type="stmt"/>
+        <line num="32" count="202" type="stmt"/>
+        <line num="33" count="202" type="stmt"/>
+        <line num="34" count="202" type="stmt"/>
+        <line num="36" count="202" type="stmt"/>
+        <line num="37" count="13" type="cond" truecount="2" falsecount="0"/>
+        <line num="38" count="2" type="stmt"/>
+        <line num="39" count="2" type="stmt"/>
+        <line num="41" count="11" type="cond" truecount="2" falsecount="0"/>
+        <line num="42" count="3" type="stmt"/>
+        <line num="43" count="3" type="stmt"/>
+        <line num="46" count="8" type="stmt"/>
+        <line num="47" count="8" type="stmt"/>
+        <line num="48" count="8" type="stmt"/>
+        <line num="49" count="8" type="stmt"/>
+        <line num="50" count="8" type="stmt"/>
+        <line num="54" count="0" type="stmt"/>
+        <line num="56" count="8" type="stmt"/>
+        <line num="60" count="202" type="stmt"/>
+        <line num="61" count="157" type="stmt"/>
+        <line num="62" count="157" type="cond" truecount="2" falsecount="0"/>
+        <line num="65" count="202" type="stmt"/>
+        <line num="82" count="1" type="stmt"/>
+        <line num="96" count="157" type="stmt"/>
+        <line num="97" count="158" type="cond" truecount="2" falsecount="0"/>
+        <line num="136" count="1" type="stmt"/>
+        <line num="155" count="1" type="stmt"/>
+      </file>
+      <file name="ResetPasswordPage.tsx" path="C:\Users\Asma\Desktop\software\Project\soundcloud-team8-frontend\src\features\auth\pages\ResetPasswordPage.tsx">
+        <metrics statements="57" coveredstatements="45" conditionals="61" coveredconditionals="53" methods="15" coveredmethods="10"/>
+        <line num="13" count="1" type="stmt"/>
+        <line num="14" count="0" type="stmt"/>
+        <line num="22" count="365" type="stmt"/>
+        <line num="24" count="1" type="stmt"/>
+        <line num="25" count="358" type="stmt"/>
+        <line num="26" count="358" type="stmt"/>
+        <line num="27" count="358" type="cond" truecount="1" falsecount="1"/>
+        <line num="29" count="358" type="stmt"/>
+        <line num="30" count="358" type="stmt"/>
+        <line num="31" count="358" type="stmt"/>
+        <line num="32" count="358" type="stmt"/>
+        <line num="33" count="358" type="stmt"/>
+        <line num="34" count="358" type="stmt"/>
+        <line num="35" count="358" type="stmt"/>
+        <line num="36" count="358" type="stmt"/>
+        <line num="37" count="358" type="stmt"/>
+        <line num="40" count="358" type="cond" truecount="5" falsecount="0"/>
+        <line num="47" count="358" type="cond" truecount="4" falsecount="0"/>
+        <line num="52" count="358" type="stmt"/>
+        <line num="53" count="7" type="stmt"/>
+        <line num="54" count="7" type="cond" truecount="1" falsecount="1"/>
+        <line num="55" count="0" type="stmt"/>
+        <line num="56" count="0" type="stmt"/>
+        <line num="58" count="7" type="cond" truecount="1" falsecount="1"/>
+        <line num="59" count="0" type="stmt"/>
+        <line num="60" count="0" type="stmt"/>
+        <line num="62" count="7" type="cond" truecount="1" falsecount="1"/>
+        <line num="63" count="0" type="stmt"/>
+        <line num="64" count="0" type="stmt"/>
+        <line num="66" count="7" type="cond" truecount="1" falsecount="1"/>
+        <line num="67" count="0" type="stmt"/>
+        <line num="68" count="0" type="stmt"/>
+        <line num="70" count="7" type="stmt"/>
+        <line num="71" count="7" type="stmt"/>
+        <line num="72" count="7" type="stmt"/>
+        <line num="73" count="2" type="stmt"/>
+        <line num="75" count="5" type="stmt"/>
+        <line num="76" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="77" count="1" type="stmt"/>
+        <line num="78" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="79" count="3" type="cond" truecount="5" falsecount="0"/>
+        <line num="80" count="1" type="stmt"/>
+        <line num="81" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="82" count="1" type="stmt"/>
+        <line num="84" count="1" type="stmt"/>
+        <line num="87" count="1" type="stmt"/>
+        <line num="90" count="7" type="stmt"/>
+        <line num="94" count="358" type="stmt"/>
+        <line num="111" count="1" type="stmt"/>
+        <line num="133" count="0" type="stmt"/>
+        <line num="149" count="66" type="stmt"/>
+        <line num="166" count="117" type="stmt"/>
+        <line num="173" count="2" type="stmt"/>
+        <line num="188" count="1310" type="stmt"/>
+        <line num="210" count="131" type="stmt"/>
+        <line num="217" count="0" type="stmt"/>
+        <line num="251" count="0" type="stmt"/>
+      </file>
+      <file name="SignInPage.tsx" path="C:\Users\Asma\Desktop\software\Project\soundcloud-team8-frontend\src\features\auth\pages\SignInPage.tsx">
+        <metrics statements="136" coveredstatements="109" conditionals="96" coveredconditionals="67" methods="27" coveredmethods="19"/>
+        <line num="17" count="1" type="stmt"/>
+        <line num="18" count="63" type="stmt"/>
+        <line num="26" count="1" type="stmt"/>
+        <line num="27" count="63" type="stmt"/>
+        <line num="32" count="1" type="stmt"/>
+        <line num="33" count="63" type="stmt"/>
+        <line num="49" count="1" type="stmt"/>
+        <line num="52" count="126" type="stmt"/>
+        <line num="55" count="3" type="stmt"/>
+        <line num="63" count="1" type="stmt"/>
+        <line num="64" count="0" type="stmt"/>
+        <line num="73" count="12" type="stmt"/>
+        <line num="75" count="1" type="stmt"/>
+        <line num="76" count="296" type="stmt"/>
+        <line num="77" count="296" type="stmt"/>
+        <line num="78" count="296" type="stmt"/>
+        <line num="79" count="296" type="cond" truecount="2" falsecount="0"/>
+        <line num="80" count="296" type="cond" truecount="2" falsecount="0"/>
+        <line num="81" count="296" type="cond" truecount="2" falsecount="0"/>
+        <line num="83" count="296" type="stmt"/>
+        <line num="84" count="296" type="stmt"/>
+        <line num="85" count="296" type="stmt"/>
+        <line num="86" count="296" type="stmt"/>
+        <line num="87" count="296" type="stmt"/>
+        <line num="88" count="296" type="stmt"/>
+        <line num="89" count="296" type="stmt"/>
+        <line num="90" count="296" type="stmt"/>
+        <line num="91" count="296" type="stmt"/>
+        <line num="92" count="296" type="stmt"/>
+        <line num="93" count="296" type="stmt"/>
+        <line num="94" count="296" type="stmt"/>
+        <line num="96" count="296" type="stmt"/>
+        <line num="98" count="296" type="stmt"/>
+        <line num="102" count="296" type="stmt"/>
+        <line num="103" count="26" type="cond" truecount="2" falsecount="2"/>
+        <line num="104" count="0" type="stmt"/>
+        <line num="105" count="0" type="stmt"/>
+        <line num="106" count="0" type="stmt"/>
+        <line num="108" count="26" type="stmt"/>
+        <line num="109" count="26" type="stmt"/>
+        <line num="110" count="26" type="stmt"/>
+        <line num="111" count="26" type="stmt"/>
+        <line num="112" count="26" type="stmt"/>
+        <line num="113" count="26" type="stmt"/>
+        <line num="114" count="26" type="stmt"/>
+        <line num="119" count="296" type="stmt"/>
+        <line num="121" count="2" type="stmt"/>
+        <line num="122" count="2" type="stmt"/>
+        <line num="123" count="2" type="stmt"/>
+        <line num="124" count="2" type="stmt"/>
+        <line num="125" count="2" type="cond" truecount="1" falsecount="1"/>
+        <line num="126" count="0" type="stmt"/>
+        <line num="127" count="0" type="stmt"/>
+        <line num="128" count="0" type="stmt"/>
+        <line num="129" count="0" type="stmt"/>
+        <line num="131" count="2" type="stmt"/>
+        <line num="132" count="2" type="cond" truecount="1" falsecount="1"/>
+        <line num="133" count="2" type="stmt"/>
+        <line num="142" count="2" type="stmt"/>
+        <line num="144" count="0" type="stmt"/>
+        <line num="146" count="2" type="stmt"/>
+        <line num="150" count="0" type="stmt"/>
+        <line num="151" count="0" type="stmt"/>
+        <line num="156" count="296" type="stmt"/>
+        <line num="157" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="158" count="0" type="stmt"/>
+        <line num="159" count="0" type="stmt"/>
+        <line num="160" count="0" type="stmt"/>
+        <line num="161" count="0" type="stmt"/>
+        <line num="162" count="0" type="stmt"/>
+        <line num="163" count="0" type="stmt"/>
+        <line num="165" count="0" type="stmt"/>
+        <line num="167" count="0" type="stmt"/>
+        <line num="171" count="296" type="cond" truecount="1" falsecount="1"/>
+        <line num="173" count="296" type="stmt"/>
+        <line num="174" count="3" type="stmt"/>
+        <line num="175" count="3" type="stmt"/>
+        <line num="176" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="177" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="180" count="296" type="stmt"/>
+        <line num="181" count="12" type="stmt"/>
+        <line num="182" count="12" type="cond" truecount="2" falsecount="0"/>
+        <line num="183" count="1" type="stmt"/>
+        <line num="184" count="1" type="stmt"/>
+        <line num="186" count="11" type="stmt"/>
+        <line num="187" count="11" type="stmt"/>
+        <line num="188" count="11" type="stmt"/>
+        <line num="189" count="11" type="stmt"/>
+        <line num="190" count="10" type="cond" truecount="2" falsecount="0"/>
+        <line num="191" count="1" type="stmt"/>
+        <line num="192" count="1" type="stmt"/>
+        <line num="194" count="9" type="stmt"/>
+        <line num="195" count="9" type="stmt"/>
+        <line num="197" count="1" type="stmt"/>
+        <line num="199" count="11" type="stmt"/>
+        <line num="203" count="296" type="stmt"/>
+        <line num="204" count="5" type="stmt"/>
+        <line num="205" count="5" type="stmt"/>
+        <line num="206" count="5" type="stmt"/>
+        <line num="207" count="5" type="stmt"/>
+        <line num="208" count="3" type="cond" truecount="4" falsecount="0"/>
+        <line num="209" count="1" type="stmt"/>
+        <line num="210" count="1" type="stmt"/>
+        <line num="212" count="2" type="cond" truecount="1" falsecount="1"/>
+        <line num="213" count="0" type="stmt"/>
+        <line num="214" count="0" type="stmt"/>
+        <line num="216" count="2" type="cond" truecount="1" falsecount="1"/>
+        <line num="217" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="218" count="2" type="stmt"/>
+        <line num="227" count="2" type="stmt"/>
+        <line num="229" count="2" type="stmt"/>
+        <line num="230" count="2" type="cond" truecount="3" falsecount="0"/>
+        <line num="233" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="234" count="1" type="stmt"/>
+        <line num="236" count="1" type="stmt"/>
+        <line num="239" count="5" type="stmt"/>
+        <line num="243" count="296" type="stmt"/>
+        <line num="244" count="3" type="stmt"/>
+        <line num="245" count="3" type="stmt"/>
+        <line num="246" count="3" type="stmt"/>
+        <line num="247" count="3" type="stmt"/>
+        <line num="248" count="2" type="stmt"/>
+        <line num="249" count="2" type="stmt"/>
+        <line num="251" count="0" type="stmt"/>
+        <line num="253" count="2" type="stmt"/>
+        <line num="257" count="296" type="cond" truecount="3" falsecount="0"/>
+        <line num="259" count="296" type="stmt"/>
+        <line num="260" count="233" type="stmt"/>
+        <line num="269" count="296" type="stmt"/>
+        <line num="298" count="2" type="stmt"/>
+        <line num="315" count="0" type="stmt"/>
+        <line num="333" count="0" type="stmt"/>
+        <line num="351" count="0" type="stmt"/>
+        <line num="382" count="189" type="stmt"/>
+        <line num="383" count="189" type="cond" truecount="1" falsecount="1"/>
+        <line num="438" count="0" type="stmt"/>
+      </file>
+      <file name="SignUpPage.tsx" path="C:\Users\Asma\Desktop\software\Project\soundcloud-team8-frontend\src\features\auth\pages\SignUpPage.tsx">
+        <metrics statements="78" coveredstatements="72" conditionals="77" coveredconditionals="61" methods="23" coveredmethods="22"/>
+        <line num="14" count="1" type="stmt"/>
+        <line num="15" count="0" type="stmt"/>
+        <line num="23" count="1" type="stmt"/>
+        <line num="27" count="31" type="stmt"/>
+        <line num="28" count="1" type="stmt"/>
+        <line num="29" count="100" type="stmt"/>
+        <line num="33" count="1" type="stmt"/>
+        <line num="34" count="242" type="stmt"/>
+        <line num="35" count="242" type="stmt"/>
+        <line num="36" count="242" type="cond" truecount="1" falsecount="1"/>
+        <line num="38" count="242" type="stmt"/>
+        <line num="39" count="242" type="stmt"/>
+        <line num="40" count="242" type="stmt"/>
+        <line num="41" count="242" type="stmt"/>
+        <line num="42" count="242" type="stmt"/>
+        <line num="44" count="242" type="cond" truecount="1" falsecount="1"/>
+        <line num="45" count="242" type="stmt"/>
+        <line num="46" count="242" type="stmt"/>
+        <line num="47" count="242" type="stmt"/>
+        <line num="48" count="242" type="stmt"/>
+        <line num="49" count="242" type="stmt"/>
+        <line num="50" count="242" type="stmt"/>
+        <line num="53" count="242" type="cond" truecount="5" falsecount="0"/>
+        <line num="60" count="242" type="cond" truecount="6" falsecount="0"/>
+        <line num="68" count="242" type="stmt"/>
+        <line num="73" count="242" type="stmt"/>
+        <line num="74" count="24" type="stmt"/>
+        <line num="78" count="242" type="stmt"/>
+        <line num="79" count="11" type="stmt"/>
+        <line num="80" count="11" type="cond" truecount="2" falsecount="0"/>
+        <line num="81" count="2" type="stmt"/>
+        <line num="82" count="9" type="cond" truecount="1" falsecount="1"/>
+        <line num="83" count="0" type="stmt"/>
+        <line num="84" count="9" type="cond" truecount="3" falsecount="1"/>
+        <line num="85" count="9" type="stmt"/>
+        <line num="87" count="0" type="stmt"/>
+        <line num="91" count="242" type="stmt"/>
+        <line num="92" count="12" type="cond" truecount="1" falsecount="1"/>
+        <line num="93" count="12" type="stmt"/>
+        <line num="94" count="12" type="stmt"/>
+        <line num="95" count="12" type="stmt"/>
+        <line num="96" count="12" type="cond" truecount="1" falsecount="1"/>
+        <line num="97" count="12" type="cond" truecount="1" falsecount="1"/>
+        <line num="98" count="12" type="stmt"/>
+        <line num="99" count="12" type="cond" truecount="1" falsecount="1"/>
+        <line num="100" count="0" type="stmt"/>
+        <line num="101" count="0" type="stmt"/>
+        <line num="104" count="12" type="stmt"/>
+        <line num="106" count="0" type="stmt"/>
+        <line num="108" count="12" type="stmt"/>
+        <line num="112" count="242" type="stmt"/>
+        <line num="113" count="3" type="cond" truecount="1" falsecount="1"/>
+        <line num="114" count="3" type="stmt"/>
+        <line num="115" count="3" type="stmt"/>
+        <line num="116" count="3" type="stmt"/>
+        <line num="117" count="3" type="stmt"/>
+        <line num="118" count="3" type="stmt"/>
+        <line num="119" count="3" type="stmt"/>
+        <line num="122" count="3" type="cond" truecount="1" falsecount="1"/>
+        <line num="124" count="3" type="stmt"/>
+        <line num="132" count="2" type="stmt"/>
+        <line num="134" count="1" type="stmt"/>
+        <line num="136" count="3" type="stmt"/>
+        <line num="140" count="242" type="stmt"/>
+        <line num="142" count="242" type="stmt"/>
+        <line num="158" count="1" type="stmt"/>
+        <line num="195" count="135" type="stmt"/>
+        <line num="202" count="1" type="stmt"/>
+        <line num="218" count="740" type="stmt"/>
+        <line num="256" count="1" type="stmt"/>
+        <line num="279" count="11" type="stmt"/>
+        <line num="295" count="4" type="stmt"/>
+        <line num="298" count="540" type="stmt"/>
+        <line num="304" count="4" type="stmt"/>
+        <line num="307" count="1395" type="stmt"/>
+        <line num="313" count="4" type="stmt"/>
+        <line num="316" count="4500" type="stmt"/>
+        <line num="330" count="4" type="stmt"/>
+      </file>
+      <file name="VerifyEmailPage.tsx" path="C:\Users\Asma\Desktop\software\Project\soundcloud-team8-frontend\src\features\auth\pages\VerifyEmailPage.tsx">
+        <metrics statements="62" coveredstatements="61" conditionals="33" coveredconditionals="29" methods="12" coveredmethods="11"/>
+        <line num="14" count="1" type="stmt"/>
+        <line num="15" count="0" type="stmt"/>
+        <line num="23" count="1" type="stmt"/>
+        <line num="24" count="85" type="stmt"/>
+        <line num="25" count="85" type="stmt"/>
+        <line num="26" count="85" type="cond" truecount="1" falsecount="1"/>
+        <line num="28" count="85" type="stmt"/>
+        <line num="29" count="85" type="stmt"/>
+        <line num="30" count="85" type="stmt"/>
+        <line num="31" count="85" type="stmt"/>
+        <line num="32" count="85" type="stmt"/>
+        <line num="34" count="85" type="stmt"/>
+        <line num="36" count="85" type="stmt"/>
+        <line num="37" count="85" type="stmt"/>
+        <line num="39" count="85" type="stmt"/>
+        <line num="40" count="41" type="stmt"/>
+        <line num="41" count="41" type="stmt"/>
+        <line num="42" count="41" type="stmt"/>
+        <line num="43" count="41" type="stmt"/>
+        <line num="44" count="41" type="stmt"/>
+        <line num="45" count="41" type="cond" truecount="4" falsecount="0"/>
+        <line num="46" count="34" type="stmt"/>
+        <line num="50" count="85" type="stmt"/>
+        <line num="51" count="1" type="cond" truecount="4" falsecount="1"/>
+        <line num="52" count="1" type="stmt"/>
+        <line num="56" count="85" type="stmt"/>
+        <line num="57" count="1" type="stmt"/>
+        <line num="58" count="1" type="stmt"/>
+        <line num="59" count="1" type="stmt"/>
+        <line num="60" count="1" type="stmt"/>
+        <line num="61" count="6" type="stmt"/>
+        <line num="63" count="1" type="stmt"/>
+        <line num="64" count="1" type="stmt"/>
+        <line num="65" count="1" type="stmt"/>
+        <line num="68" count="85" type="stmt"/>
+        <line num="69" count="4" type="cond" truecount="3" falsecount="1"/>
+        <line num="70" count="4" type="stmt"/>
+        <line num="71" count="4" type="stmt"/>
+        <line num="72" count="4" type="stmt"/>
+        <line num="73" count="4" type="stmt"/>
+        <line num="74" count="3" type="stmt"/>
+        <line num="75" count="3" type="stmt"/>
+        <line num="77" count="1" type="stmt"/>
+        <line num="79" count="4" type="stmt"/>
+        <line num="83" count="85" type="stmt"/>
+        <line num="84" count="4" type="cond" truecount="1" falsecount="1"/>
+        <line num="85" count="4" type="stmt"/>
+        <line num="86" count="4" type="stmt"/>
+        <line num="87" count="4" type="stmt"/>
+        <line num="88" count="4" type="stmt"/>
+        <line num="89" count="4" type="stmt"/>
+        <line num="90" count="3" type="stmt"/>
+        <line num="91" count="3" type="stmt"/>
+        <line num="92" count="3" type="stmt"/>
+        <line num="94" count="1" type="stmt"/>
+        <line num="96" count="4" type="stmt"/>
+        <line num="100" count="85" type="stmt"/>
+        <line num="116" count="1" type="stmt"/>
+        <line num="150" count="510" type="stmt"/>
+        <line num="152" count="1020" type="stmt"/>
+        <line num="157" count="41" type="stmt"/>
+        <line num="158" count="1" type="stmt"/>
+      </file>
+    </package>
+    <package name="src.features.auth.schemas">
+      <metrics statements="9" coveredstatements="9" conditionals="0" coveredconditionals="0" methods="4" coveredmethods="4"/>
+      <file name="auth.schemas.ts" path="C:\Users\Asma\Desktop\software\Project\soundcloud-team8-frontend\src\features\auth\schemas\auth.schemas.ts">
+        <metrics statements="9" coveredstatements="9" conditionals="0" coveredconditionals="0" methods="4" coveredmethods="4"/>
+        <line num="4" count="3" type="stmt"/>
+        <line num="13" count="3" type="stmt"/>
+        <line num="24" count="3" type="stmt"/>
+        <line num="38" count="3" type="stmt"/>
+        <line num="42" count="3" type="stmt"/>
+        <line num="46" count="1" type="stmt"/>
+        <line num="54" count="3" type="stmt"/>
+        <line num="64" count="3" type="stmt"/>
+        <line num="68" count="2" type="stmt"/>
+      </file>
+    </package>
+    <package name="src.features.auth.services">
+      <metrics statements="132" coveredstatements="80" conditionals="49" coveredconditionals="21" methods="31" coveredmethods="12"/>
+      <file name="api.ts" path="C:\Users\Asma\Desktop\software\Project\soundcloud-team8-frontend\src\features\auth\services\api.ts">
+        <metrics statements="46" coveredstatements="25" conditionals="19" coveredconditionals="9" methods="8" coveredmethods="3"/>
+        <line num="6" count="1" type="stmt"/>
+        <line num="13" count="1" type="stmt"/>
+        <line num="15" count="3" type="stmt"/>
+        <line num="17" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="18" count="1" type="stmt"/>
+        <line num="21" count="3" type="stmt"/>
+        <line num="24" count="0" type="stmt"/>
+        <line num="30" count="1" type="stmt"/>
+        <line num="34" count="1" type="stmt"/>
+        <line num="36" count="1" type="cond" truecount="0" falsecount="1"/>
+        <line num="37" count="0" type="stmt"/>
+        <line num="38" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="39" count="0" type="stmt"/>
+        <line num="40" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="41" count="0" type="stmt"/>
+        <line num="44" count="0" type="stmt"/>
+        <line num="47" count="1" type="stmt"/>
+        <line num="48" count="1" type="stmt"/>
+        <line num="51" count="2" type="stmt"/>
+        <line num="54" count="2" type="cond" truecount="4" falsecount="0"/>
+        <line num="55" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="56" count="0" type="stmt"/>
+        <line num="57" count="0" type="stmt"/>
+        <line num="60" count="0" type="stmt"/>
+        <line num="61" count="0" type="stmt"/>
+        <line num="63" count="0" type="stmt"/>
+        <line num="66" count="1" type="stmt"/>
+        <line num="67" count="1" type="stmt"/>
+        <line num="69" count="1" type="stmt"/>
+        <line num="70" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="71" count="1" type="stmt"/>
+        <line num="72" count="1" type="stmt"/>
+        <line num="73" count="1" type="stmt"/>
+        <line num="76" count="0" type="stmt"/>
+        <line num="77" count="0" type="stmt"/>
+        <line num="81" count="0" type="stmt"/>
+        <line num="82" count="0" type="cond" truecount="1" falsecount="3"/>
+        <line num="83" count="1" type="stmt"/>
+        <line num="85" count="1" type="stmt"/>
+        <line num="87" count="1" type="stmt"/>
+        <line num="89" count="0" type="stmt"/>
+        <line num="90" count="0" type="stmt"/>
+        <line num="91" count="0" type="stmt"/>
+        <line num="92" count="0" type="stmt"/>
+        <line num="94" count="0" type="stmt"/>
+        <line num="97" count="1" type="stmt"/>
+      </file>
+      <file name="index.ts" path="C:\Users\Asma\Desktop\software\Project\soundcloud-team8-frontend\src\features\auth\services\index.ts">
+        <metrics statements="86" coveredstatements="55" conditionals="30" coveredconditionals="12" methods="23" coveredmethods="9"/>
+        <line num="10" count="1" type="stmt"/>
+        <line num="12" count="1" type="cond" truecount="0" falsecount="1"/>
+        <line num="15" count="1" type="stmt"/>
+        <line num="29" count="1" type="stmt"/>
+        <line num="30" count="0" type="stmt"/>
+        <line num="31" count="0" type="stmt"/>
+        <line num="32" count="0" type="stmt"/>
+        <line num="37" count="1" type="stmt"/>
+        <line num="38" count="0" type="stmt"/>
+        <line num="39" count="0" type="stmt"/>
+        <line num="40" count="0" type="stmt"/>
+        <line num="41" count="0" type="stmt"/>
+        <line num="47" count="1" type="stmt"/>
+        <line num="48" count="2" type="stmt"/>
+        <line num="49" count="2" type="stmt"/>
+        <line num="52" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="56" count="1" type="stmt"/>
+        <line num="57" count="0" type="stmt"/>
+        <line num="58" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="59" count="0" type="stmt"/>
+        <line num="61" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="62" count="0" type="stmt"/>
+        <line num="64" count="0" type="stmt"/>
+        <line num="67" count="1" type="stmt"/>
+        <line num="68" count="2" type="stmt"/>
+        <line num="69" count="1" type="stmt"/>
+        <line num="72" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="77" count="1" type="stmt"/>
+        <line num="78" count="0" type="stmt"/>
+        <line num="79" count="0" type="stmt"/>
+        <line num="82" count="1" type="stmt"/>
+        <line num="83" count="1" type="stmt"/>
+        <line num="84" count="1" type="stmt"/>
+        <line num="87" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="91" count="1" type="stmt"/>
+        <line num="92" count="0" type="stmt"/>
+        <line num="93" count="0" type="stmt"/>
+        <line num="96" count="1" type="stmt"/>
+        <line num="97" count="1" type="stmt"/>
+        <line num="98" count="1" type="stmt"/>
+        <line num="101" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="104" count="1" type="stmt"/>
+        <line num="105" count="0" type="stmt"/>
+        <line num="106" count="0" type="stmt"/>
+        <line num="109" count="1" type="stmt"/>
+        <line num="110" count="1" type="stmt"/>
+        <line num="111" count="1" type="stmt"/>
+        <line num="114" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="117" count="1" type="stmt"/>
+        <line num="118" count="0" type="stmt"/>
+        <line num="119" count="0" type="stmt"/>
+        <line num="122" count="1" type="stmt"/>
+        <line num="123" count="1" type="stmt"/>
+        <line num="124" count="1" type="stmt"/>
+        <line num="127" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="130" count="1" type="stmt"/>
+        <line num="131" count="0" type="stmt"/>
+        <line num="132" count="0" type="stmt"/>
+        <line num="135" count="1" type="stmt"/>
+        <line num="136" count="0" type="stmt"/>
+        <line num="137" count="0" type="stmt"/>
+        <line num="140" count="1" type="stmt"/>
+        <line num="141" count="1" type="stmt"/>
+        <line num="144" count="1" type="stmt"/>
+        <line num="145" count="0" type="stmt"/>
+        <line num="146" count="0" type="stmt"/>
+        <line num="149" count="1" type="stmt"/>
+        <line num="150" count="2" type="stmt"/>
+        <line num="151" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="152" count="1" type="stmt"/>
+        <line num="154" count="2" type="stmt"/>
+        <line num="157" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="160" count="1" type="stmt"/>
+        <line num="161" count="0" type="stmt"/>
+        <line num="162" count="0" type="stmt"/>
+        <line num="165" count="1" type="stmt"/>
+        <line num="166" count="1" type="stmt"/>
+        <line num="167" count="1" type="stmt"/>
+        <line num="170" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="174" count="1" type="stmt"/>
+        <line num="175" count="0" type="stmt"/>
+        <line num="176" count="0" type="stmt"/>
+        <line num="179" count="1" type="stmt"/>
+        <line num="186" count="2" type="stmt"/>
+        <line num="193" count="2" type="stmt"/>
+        <line num="196" count="1" type="cond" truecount="1" falsecount="1"/>
+      </file>
+    </package>
+    <package name="src.features.auth.utils">
+      <metrics statements="22" coveredstatements="18" conditionals="6" coveredconditionals="1" methods="6" coveredmethods="4"/>
+      <file name="token.utils.ts" path="C:\Users\Asma\Desktop\software\Project\soundcloud-team8-frontend\src\features\auth\utils\token.utils.ts">
+        <metrics statements="22" coveredstatements="18" conditionals="6" coveredconditionals="1" methods="6" coveredmethods="4"/>
+        <line num="2" count="1" type="stmt"/>
+        <line num="3" count="1" type="stmt"/>
+        <line num="8" count="1" type="stmt"/>
+        <line num="13" count="20" type="stmt"/>
+        <line num="14" count="20" type="stmt"/>
+        <line num="16" count="20" type="cond" truecount="1" falsecount="1"/>
+        <line num="17" count="20" type="stmt"/>
+        <line num="18" count="20" type="stmt"/>
+        <line num="21" count="1" type="stmt"/>
+        <line num="22" count="7" type="stmt"/>
+        <line num="24" count="1" type="stmt"/>
+        <line num="25" count="7" type="stmt"/>
+        <line num="28" count="1" type="stmt"/>
+        <line num="29" count="8" type="stmt"/>
+        <line num="30" count="8" type="stmt"/>
+        <line num="31" count="8" type="stmt"/>
+        <line num="35" count="1" type="stmt"/>
+        <line num="36" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="39" count="1" type="stmt"/>
+        <line num="40" count="0" type="stmt"/>
+        <line num="41" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="42" count="0" type="stmt"/>
+      </file>
+    </package>
+  </project>
+</coverage>
