@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
-import { playlistService } from "../libraryService";
-import MediaCard from "../components/MediaCard";
-import type { CollectionPreview, CollectionPrivacy } from "../types";
+import { playlistService } from "../../libraryService";
+import MediaCard from "../../components/MediaCard";
+import type { CollectionPreview, CollectionPrivacy } from "../../types";
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
 
