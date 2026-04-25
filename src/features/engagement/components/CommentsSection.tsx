@@ -198,7 +198,7 @@ const CommentsSection = ({
           onKeyDown={(e) => e.key === 'Enter' && handlePost()}
           placeholder="Write a comment"
           disabled={posting}
-          className="flex-1 bg-zinc-800 px-3 py-2 text-white rounded outline-none focus:ring-1 focus:ring-orange-500"
+          className="flex-1 bg-zinc-800 px-3 py-2 text-white rounded outline-none focus:ring-1 focus:ring-orange-500 tracking-tight"
         />
         <button
           onClick={handlePost}
