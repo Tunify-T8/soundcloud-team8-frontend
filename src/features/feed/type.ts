@@ -1,6 +1,5 @@
 import { Genre } from "@/shared/types/Genre";
 
-// Feed item action type
 export interface FeedAction {
   id: string;
   username: string;
@@ -9,7 +8,6 @@ export interface FeedAction {
   date: string;
 }
 
-// Feed item type
 export interface FeedItem {
   trackId: string;
   artistId: string;
@@ -30,14 +28,12 @@ export interface FeedItem {
   isReposted: boolean;
 }
 
-// Feed response type
 export interface FeedResponse {
   items: FeedItem[];
   page: number;
   limit: number;
   hasMore: boolean;
 }
-// ─── Search ───────────────────────────────────────────────────────────────────
 
 export interface TrackSearchResult {
   id: string;
@@ -59,6 +55,7 @@ export interface UserSearchResult {
   type: "user";
   username: string;
   displayName: string | null;
+  avatarUrl: string | null;
   bio: string | null;
   location: string | null;
   isCertified: boolean;
@@ -88,8 +85,6 @@ export type FilterType =
   | "people"
   | "albums"
   | "playlists";
-
-// ─── Likes ────────────────────────────────────────────────────────────────────
 
 export interface LikedTrack {
   id: string;
