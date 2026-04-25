@@ -167,7 +167,10 @@ export default function EditInfo({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto hide-scrollbar bg-white/40">
+    <div
+      className="fixed inset-0 z-50 overflow-y-auto hide-scrollbar bg-white/40"
+      onClick={(e) => e.target === e.currentTarget && onClick()}
+    >
       <button
         onClick={onClick}
         className="fixed right-6 top-6 z-[72] flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800 text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white"

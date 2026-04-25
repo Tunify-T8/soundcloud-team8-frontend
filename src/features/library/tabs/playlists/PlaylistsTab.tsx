@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
 import { playlistService } from "../../libraryService";
-import MediaCard from "../../components/MediaCard";
 import type { CollectionPreview, CollectionPrivacy } from "../../types";
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
@@ -21,7 +19,7 @@ type PlaylistGridItem = {
   isLiked: boolean;
 };
 
-function PlaylistCard({ item }: { item: PlaylistGridItem }) {
+function PlaylistCard({ item, forceLiked = false }: { item: PlaylistGridItem; forceLiked?: boolean }) {
   return (
     <Link to={`/collections/${item.id}`} className="block cursor-pointer group">
       <div className="w-full aspect-square rounded-sm overflow-hidden mb-2 relative bg-[#282828]">
@@ -42,7 +40,7 @@ function PlaylistCard({ item }: { item: PlaylistGridItem }) {
         </div>
       </div>
       <p className="flex items-center gap-1 text-white text-xs font-bold truncate">
-        {item.isLiked && (
+        {(item.isLiked || forceLiked) && (
           <Heart size={10} fill="currentColor" className="shrink-0 text-gray-400" />
         )}
         <span className="truncate">{item.title}</span>
@@ -83,7 +81,6 @@ function PlaylistCard({ item }: { item: PlaylistGridItem }) {
 // }
 
 export default function PlaylistsTab() {
-    const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [filterOption, setFilterOption] = useState<FilterOption>("All");
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -110,8 +107,10 @@ export default function PlaylistsTab() {
     const q = query.trim().toLowerCase();
     return playlists
       .filter((p) => {
-        if (filterOption === "Created" && p.privacy !== "public") return false;
-        if (filterOption === "Liked" && p.privacy !== "private") return false;
+        if (filterOption === "Created" && p.isLiked) return false;
+        if (filterOption === "Liked" && !p.isLiked) return false;
+        if (q && !p.title.toLowerCase().includes(q)) return false;
+        return true;
       })
       .map((p) => ({
         id: p.id,
@@ -123,7 +122,6 @@ export default function PlaylistsTab() {
       }));
   }, [playlists, query, filterOption]);
 
-  const totalSlots = Math.ceil(Math.max(filteredItems.length, 1) / COLS) * COLS;
   const totalSlots = Math.ceil(Math.max(filteredItems.length, 1) / COLS) * COLS;
 
   return (
@@ -166,15 +164,6 @@ export default function PlaylistsTab() {
             )}
           </div>
         </div>
-        <h2 className="text-white font-bold text-sm">
-          Hear your own playlists and the playlists you've liked:
-        </h2>
-        <input
-          placeholder="Filter"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="bg-[#282828] border border-zinc-700 rounded-sm px-3 py-1 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 w-64"
-        />
       </div>
 
       {loading ? (
@@ -187,41 +176,16 @@ export default function PlaylistsTab() {
         <p data-testid="playlists-error" className="text-red-400 text-sm text-center py-20">{error}</p>
       ) : filteredItems.length === 0 ? (
         <p data-testid="playlists-empty" className="text-white font-bold text-2xl text-center py-20">
-          You have no playlists yet
+          {filterOption === "Liked" ? "You have not liked any playlists yet" : "You have no playlists yet"}
         </p>
       ) : (
         <div className="grid grid-cols-6 gap-4" data-testid="playlists-grid">
           {Array.from({ length: totalSlots }).map((_, i) => {
             const item = filteredItems[i];
             return item ? (
-              <MediaCard
-                key={item.id}
-                id={item.id}
-                title={item.title}
-                subtitle={item.subtitle}
-                coverUrl={item.coverUrl}
-                onClick={() => navigate(`/me/sets/${item.id}`)}
-              />
+              <PlaylistCard key={item.id} item={item} forceLiked={filterOption === "Liked"} />
             ) : (
               <div key={i} data-testid={`playlist-slot-${i}`} className="w-full aspect-square rounded-sm bg-[#282828]" />
-            );
-          })}
-        </div>
-      )}
-        <p className="text-white font-bold text-lg text-center py-20">
-          You have not liked any playlists yet
-        </p>
-      ) : (
-        <div className="grid grid-cols-6 gap-4">
-          {Array.from({ length: totalSlots }).map((_, i) => {
-            const item = filteredItems[i];
-            return item ? (
-              <PlaylistCard key={item.id} item={item} />
-            ) : (
-              <div
-                key={i}
-                className="w-full aspect-square rounded-sm bg-[#282828]"
-              />
             );
           })}
         </div>

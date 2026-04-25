@@ -165,7 +165,10 @@ const EditPlaylistOverlay: React.FC<EditPlaylistOverlayProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[120] overflow-y-auto hide-scrollbar bg-white/40">
+    <div
+      className="fixed inset-0 z-[120] overflow-y-auto hide-scrollbar bg-white/40"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
       <button
         onClick={onClose}
         className="fixed right-6 top-6 z-[122] flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800 text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white"
