@@ -112,36 +112,39 @@ export default function ProfilePage() {
         isMe={isMe}
         onProfileUpdated={refreshProfile}
       />
-      <UserInfoBar
-        displayName={user.displayName ?? undefined}
-        avatarUrl={user.avatarUrl || ""}
-        country={country}
-        city={city}
-        bio={user.bio ?? undefined}
-        role={user.role}
-        visibility={isMeProfile(user) ? user.visibility : undefined}
-        socialAccounts={isMe ? socialAccounts : undefined}
-        isMe={isMe}
-        userId={user.id}
-        onProfileUpdated={refreshProfile}
-      />
-      <div className="mx-auto mt-4 w-10/12 lg:flex lg:justify-end">
-        <ProfileSideBar
-          followers={user.followersCount}
-          following={user.followingCount}
-          tracks={"tracksCount" in user ? (user as any).tracksCount : 0}
+      <div className="relative">
+        <UserInfoBar
+          displayName={user.displayName ?? undefined}
+          avatarUrl={user.avatarUrl || ""}
+          country={country}
+          city={city}
           bio={user.bio ?? undefined}
+          role={user.role}
+          visibility={isMeProfile(user) ? user.visibility : undefined}
           socialAccounts={isMe ? socialAccounts : undefined}
-          followingUsers={openedFollowing.map((u) => ({
-            id: u.id,
-            username: u.username,
-            displayName: u.displayName ?? undefined,
-            avatarUrl: u.avatarUrl ?? "",
-            isCertified: u.isCertified ?? false,
-            followersCount: u.followersCount ?? 0,
-          }))}
-          onUnfollowUser={refreshProfile}
+          isMe={isMe}
+          userId={user.id}
+          onProfileUpdated={refreshProfile}
         />
+        <div className="absolute right-[8.333333%] top-full mt-4">
+          <ProfileSideBar
+            profileId={user.id}
+            followers={user.followersCount}
+            following={user.followingCount}
+            tracks={"tracksCount" in user ? (user as any).tracksCount : 0}
+            bio={user.bio ?? undefined}
+            socialAccounts={isMe ? socialAccounts : undefined}
+            followingUsers={openedFollowing.map((u) => ({
+              id: u.id,
+              username: u.username,
+              displayName: u.displayName ?? undefined,
+              avatarUrl: u.avatarUrl ?? "",
+              isCertified: u.isCertified ?? false,
+              followersCount: u.followersCount ?? 0,
+            }))}
+            onUnfollowUser={refreshProfile}
+          />
+        </div>
       </div>
       <Outlet />
     </div>

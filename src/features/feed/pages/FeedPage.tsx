@@ -10,7 +10,6 @@ import { profileService } from "@/features/profile/profileService";
 import { useMe } from "@/features/profile/context/useMe";
 import { SOCIAL_GRAPH_UPDATED_EVENT } from "@/features/profile/socialGraphEvents";
 import { FaUser } from "react-icons/fa";
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatTimeAgo(dateStr: string): string {
   const diffMs = Date.now() - new Date(dateStr).getTime();
@@ -57,10 +56,7 @@ const dedupeFeedByTrackId = (items: FeedItem[]): FeedItem[] => {
 
     byTrackId.set(item.trackId, {
       ...newer,
-      numberOfReposts: Math.max(
-        existing.numberOfReposts,
-        item.numberOfReposts,
-      ),
+      numberOfReposts: Math.max(existing.numberOfReposts, item.numberOfReposts),
       isReposted: existing.isReposted || item.isReposted,
       action:
         newer.action.action === "repost" || older.action.action !== "repost"
@@ -71,9 +67,6 @@ const dedupeFeedByTrackId = (items: FeedItem[]): FeedItem[] => {
 
   return Array.from(byTrackId.values());
 };
-
-
-// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function FeedPage() {
   const { me } = useMe();
@@ -90,15 +83,9 @@ export default function FeedPage() {
   const lastRequestedPageRef = useRef(1);
 
   const [hoveredTrackId, setHoveredTrackId] = useState<string | null>(null);
-  const [hoverCardByUserId, setHoverCardByUserId] = useState<
-    Record<string, HoverCardState>
-  >({});
-  const [followPendingByUserId, setFollowPendingByUserId] = useState<
-    Record<string, boolean>
-  >({});
-  const [hiddenRepostTrackIds, setHiddenRepostTrackIds] = useState<Set<string>>(
-    () => new Set(),
-  );
+  const [hoverCardByUserId, setHoverCardByUserId] = useState<Record<string, HoverCardState>>({});
+  const [followPendingByUserId, setFollowPendingByUserId] = useState<Record<string, boolean>>({});
+  const [hiddenRepostTrackIds, setHiddenRepostTrackIds] = useState<Set<string>>(() => new Set());
   const requestedUserIdsRef = useRef<Set<string>>(new Set());
 
   const refreshFeed = useCallback(async () => {
@@ -326,7 +313,10 @@ export default function FeedPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0b0b0b] flex items-center justify-center text-white">
+      <div
+        data-testid="feed-loading"
+        className="min-h-screen bg-[#0b0b0b] flex items-center justify-center text-white"
+      >
         Loading feed...
       </div>
     );
@@ -334,13 +324,15 @@ export default function FeedPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0b0b0b] flex items-center justify-center text-red-500">
+      <div
+        data-testid="feed-error"
+        className="min-h-screen bg-[#0b0b0b] flex items-center justify-center text-red-500"
+      >
         {error}
       </div>
     );
   }
 
-  // Repost filter — your teammate's logic + your state variable name
   const visibleItems = showReposts
     ? feedItems
     : feedItems.filter((item) => item.action.action !== "repost");
@@ -349,10 +341,9 @@ export default function FeedPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#0b0b0b] text-white">
+    <div data-testid="feed-page" className="min-h-screen bg-[#0b0b0b] text-white">
       <div className="mx-auto flex w-full max-w-340 gap-10 px-8 py-8">
         <div className="flex-1 flex flex-col py-10 overflow-y-auto overflow-x-visible ml-6">
-          {/* Header row */}
           <div className="flex items-center justify-between w-full max-w-220 mb-10">
             <p className="text-[22px] font-bold text-white text-left">
               Hear the latest posts from the people you're following:
@@ -360,6 +351,7 @@ export default function FeedPage() {
             <div className="flex items-center gap-2 select-none">
               <span className="text-zinc-400 text-base">Reposts</span>
               <button
+                data-testid="show-reposts-toggle"
                 className={`relative w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none border-2 ${
                   showReposts
                     ? "bg-orange-500 border-orange-500"
@@ -381,10 +373,9 @@ export default function FeedPage() {
             </div>
           </div>
 
-          {/* Track list */}
-          <div className="w-full max-w-220 flex flex-col">
+          <div data-testid="feed-list" className="w-full max-w-220 flex flex-col">
             {displayItems.length === 0 && (
-              <p className="text-gray-500 text-sm mt-10">
+              <p data-testid="feed-empty" className="text-gray-500 text-sm mt-10">
                 Nothing to show here yet.
               </p>
             )}
@@ -392,9 +383,9 @@ export default function FeedPage() {
             {displayItems.map((item) => (
               <div
                 key={item.trackId}
+                data-testid={`feed-item-${item.trackId}`}
                 className="w-full flex flex-col items-stretch mb-5"
               >
-                {/* Avatar + meta row */}
                 <div className="flex items-center gap-3 pb-1">
                   <div
                     className="relative flex items-center gap-3"
@@ -410,24 +401,30 @@ export default function FeedPage() {
                   >
                     <Link
                       to={`/${encodeURIComponent(item.action.id)}`}
+                      data-testid={`feed-avatar-link-${item.trackId}`}
                       aria-label={`Open ${item.action.username} profile`}
                     >
                       <img
                         src={item.action.avatarUrl || avatarFallback}
                         alt={item.action.username || item.action.username}
+                        data-testid={`feed-avatar-${item.trackId}`}
                         className="w-8 h-8 rounded-full object-cover cursor-pointer"
                       />
                     </Link>
 
                     <Link
                       to={`/${encodeURIComponent(item.action.id)}`}
+                      data-testid={`feed-username-link-${item.trackId}`}
                       className="font-semibold text-white text-base hover:text-zinc-300"
                     >
                       {item.action.username || item.action.username}
                     </Link>
 
                     {hoveredTrackId === item.trackId && (
-                      <div className="absolute left-0 top-10 z-30 w-40 rounded-sm border border-zinc-700 bg-[#07090f] p-2 shadow-2xl">
+                      <div
+                        data-testid={`feed-hover-card-${item.trackId}`}
+                        className="absolute left-0 top-10 z-30 w-40 rounded-sm border border-zinc-700 bg-[#07090f] p-2 shadow-2xl"
+                      >
                         <div className="absolute left-4 top-0 h-3 w-3 -translate-y-1/2 rotate-45 border-l border-t border-zinc-700 bg-[#07090f]" />
 
                         <Link
@@ -441,6 +438,7 @@ export default function FeedPage() {
                               avatarFallback
                             }
                             alt={item.action.username}
+                            data-testid={`feed-hover-card-avatar-${item.trackId}`}
                             className="h-16 w-16 rounded-full object-cover"
                           />
                           <p className="mt-1.5 text-base font-bold text-white">
@@ -453,23 +451,20 @@ export default function FeedPage() {
                           <FaUser className="text-xs" />
                           <span className="text-xs font-bold">
                             {(
-                              hoverCardByUserId[item.action.id]
-                                ?.followersCount ?? 0
+                              hoverCardByUserId[item.action.id]?.followersCount ?? 0
                             ).toLocaleString()}
                           </span>
                         </p>
 
                         <p className="mt-1 text-center text-xs font-medium leading-snug text-zinc-400 wrap-break-word">
-                          {hoverCardByUserId[item.action.id]?.location ||
-                            "Unknown location"}
+                          {hoverCardByUserId[item.action.id]?.location || "Unknown location"}
                         </p>
 
                         {me?.id !== item.action.id && (
                           <button
                             type="button"
-                            onClick={() =>
-                              void handleFollowToggle(item.action.id)
-                            }
+                            data-testid={`feed-hover-follow-btn-${item.trackId}`}
+                            onClick={() => void handleFollowToggle(item.action.id)}
                             disabled={
                               followPendingByUserId[item.action.id] ||
                               hoverCardByUserId[item.action.id]?.isLoading
@@ -486,7 +481,10 @@ export default function FeedPage() {
                       </div>
                     )}
                   </div>
-                  <span className="text-xs text-gray-400 flex items-center gap-1">
+                  <span
+                    data-testid={`feed-action-label-${item.trackId}`}
+                    className="text-xs text-gray-400 flex items-center gap-1"
+                  >
                     {item.action.action === "repost" && (
                       <Repeat2 className="inline w-4 h-4 text-grey-400 mr-1" />
                     )}
@@ -495,7 +493,6 @@ export default function FeedPage() {
                   </span>
                 </div>
 
-                {/* Track card — your improvements: trackId, isLikedInitial, waveformSeed */}
                 <div className="flex gap-4 items-start py-2">
                   <div className="flex-1 bg-[#181818] rounded-lg">
                     <SongCard
@@ -519,17 +516,22 @@ export default function FeedPage() {
               </div>
             ))}
 
-            {/* Infinite scroll sentinel */}
             {feedItems.length > 0 && (
-              <div ref={loadMoreSentinelRef} className="h-1 w-full" />
+              <div
+                ref={loadMoreSentinelRef}
+                data-testid="load-more-sentinel"
+                className="h-1 w-full"
+              />
             )}
 
             {loadingMore && (
-              <p className="mt-6 text-sm text-zinc-400">Loading more...</p>
+              <p data-testid="feed-loading-more" className="mt-6 text-sm text-zinc-400">
+                Loading more...
+              </p>
             )}
 
             {!loadingMore && !hasMore && feedItems.length > 0 && (
-              <p className="mt-6 text-sm text-zinc-500">
+              <p data-testid="feed-caught-up" className="mt-6 text-sm text-zinc-500">
                 You're all caught up.
               </p>
             )}

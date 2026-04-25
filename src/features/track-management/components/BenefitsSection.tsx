@@ -28,13 +28,13 @@ export function BenefitsSection() {
   ];
 
   return (
-    <div className="mx-0 sm:mx-6 my-8 bg-[hsl(0,0%,9%)] border border-[hsl(0,0%,17%)] rounded-xl px-4 sm:px-6 py-5 sm:py-6">
+    <div data-testid="benefits-section" className="mx-0 sm:mx-6 my-8 bg-[hsl(0,0%,9%)] border border-[hsl(0,0%,17%)] rounded-xl px-4 sm:px-6 py-5 sm:py-6">
       {/* Header */}
       <div className="flex items-start sm:items-center justify-between mb-2 gap-3">
         <h2 className="text-white text-base sm:text-lg font-bold tracking-tight leading-snug">
           Artist Pro Membership Benefits
         </h2>
-        <button className="text-white text-sm font-semibold border border-[hsl(0,0%,40%)] rounded-full px-4 sm:px-5 py-1.5 hover:bg-[hsl(0,0%,16%)] transition-colors whitespace-nowrap flex-shrink-0">
+        <button data-testid="benefits-see-all-btn" className="text-white text-sm font-semibold border border-[hsl(0,0%,40%)] rounded-full px-4 sm:px-5 py-1.5 hover:bg-[hsl(0,0%,16%)] transition-colors whitespace-nowrap flex-shrink-0">
           See all
         </button>
       </div>
@@ -43,9 +43,9 @@ export function BenefitsSection() {
       </p>
 
       {/* Cards grid — 2 cols on mobile, 4 on sm+ */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+      <div data-testid="benefits-cards-grid" className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         {benefits.map(({ img, title, save }) => (
-          <div key={title} className="flex flex-col gap-2 sm:gap-3 cursor-pointer group">
+          <div data-testid={`benefit-card-${title.slice(0, 20).replace(/\s+/g, "-").toLowerCase()}`} key={title} className="flex flex-col gap-2 sm:gap-3 cursor-pointer group">
             <div className="w-full aspect-[4/3] rounded-lg overflow-hidden bg-[hsl(0,0%,15%)]">
               <img
                 src={img}
@@ -55,7 +55,7 @@ export function BenefitsSection() {
             </div>
             <p className="text-white text-xs sm:text-sm font-semibold leading-snug">{title}</p>
             <div>
-              <span className="bg-green-600 text-white text-xs font-bold px-2.5 sm:px-3 py-1 rounded-full">
+              <span data-testid="benefit-save-badge" className="bg-green-600 text-white text-xs font-bold px-2.5 sm:px-3 py-1 rounded-full">
                 Save {save}
               </span>
             </div>

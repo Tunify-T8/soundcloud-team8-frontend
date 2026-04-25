@@ -41,9 +41,9 @@ const LikesPage = () => {
         ) : likes.length === 0 ? (
           <p className="text-zinc-500 text-center py-12">No likes yet</p>
         ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-6">
-            {likes.map((entry: any) => (   // or reposts.map
-  <           UserCard
+          <div className="mt-8 flex flex-wrap gap-6">
+            {likes.map((entry: any) => (
+              <UserCard
                 key={entry.user.id}
                 userId={entry.user.id}
                 avatarUrl={

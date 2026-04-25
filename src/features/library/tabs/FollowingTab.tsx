@@ -1,43 +1,62 @@
-import { useState, useMemo } from "react";
-import FollowingSection from "../components/FollowingSection";
-import { FOLLOWING } from "../tests/mockdata";
-import type { FollowingUser } from "../types";
+import { useEffect, useState } from "react";
+import { followingService } from "../../following/followingService";
+import type { UserFollowing } from "../../../shared/types/User";
+import UserCard from "../../following/components/UserCard";
+import { Link, useParams } from "react-router-dom";
+import { useMe } from "../../profile/context/useMe";
 
 export default function FollowingTab() {
-  const [query, setQuery] = useState("");
-  const [source] = useState<FollowingUser[]>(() => [...FOLLOWING]);
+  const [following, setFollowing] = useState<UserFollowing[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredUsers = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return source;
-    return source.filter((u) => u.name.toLowerCase().includes(q));
-  }, [source, query]);
+  
+const { username } = useParams<{ username: string }>();
+const { me } = useMe();
+
+  useEffect(() => {
+    followingService
+      .getMeFollowing()
+      .then((data) => setFollowing(data.following ?? []))
+      .catch(() => setFollowing([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return <p className="text-zinc-400 text-center py-20">Loading...</p>;
+  }
+
+    // If someone navigates to /me/following, redirect to their actual username
+  if (username === "me" && me?.username) {
+    return <Link to={`/${me.username}/following`} replace />;
+  }
+
+
+  if (following.length === 0) {
+    return (
+      <p className="text-white font-bold text-lg text-center py-20">
+        You haven't followed anyone yet
+      </p>
+    );
+  }
 
   return (
-    <div data-testid="following-tab">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-white font-bold text-sm">Hear what the people you follow have posted:</h2>
-        {source.length > 0 && (
-          <input
-            data-testid="following-filter-input"
-            placeholder="Filter"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="bg-[#282828] border border-zinc-700 rounded-sm px-3 py-1 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 w-64"
+    <div>
+      <p className="text-white font-bold text-sm mb-4">
+        Hear what the people you follow have posted:
+      </p>
+      <div className="flex overflow-x-auto gap-6 pb-2" style={{ scrollbarWidth: "none" }}>
+        {following.map((user) => (
+          <UserCard
+            key={user.id}
+            id={user.id}
+            username={user.username}
+            displayName={user.displayName ?? undefined}
+            avatarUrl={user.avatarUrl}
+            followersCount={user.followersCount}
+            verified={user.isCertified}
           />
-        )}
+        ))}
       </div>
-      {source.length === 0 ? (
-        <p data-testid="following-empty" className="text-white font-bold text-2xl text-center py-20">
-          You haven't followed anyone yet
-        </p>
-      ) : filteredUsers.length === 0 ? (
-        <p data-testid="following-no-results" className="text-white font-bold text-2xl text-center py-20">
-          No results match your filter
-        </p>
-      ) : (
-        <FollowingSection users={filteredUsers} />
-      )}
     </div>
   );
 }

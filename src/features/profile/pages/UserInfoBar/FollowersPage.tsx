@@ -1,66 +1,83 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { profileService } from "../../profileService";
-import { useMe } from "../../context/useMe";
-import type { UserFollower } from "@/shared/types/User";
+import { Navigate, useParams } from "react-router-dom";
+import { followingService } from "../followingService";
+import { profileService } from "../../profile/profileService";
+import { useMe } from "../../profile/context/useMe";
+import type { UserFollower } from "../../../shared/types/User";
+import SocialInfoBar from "../components/SocialInfoBar";
+import UserGrid from "../components/UserGrid";
 
 export default function FollowersPage() {
   const { username } = useParams<{ username: string }>();
   const { me } = useMe();
   const [followers, setFollowers] = useState<UserFollower[]>([]);
   const [loading, setLoading] = useState(true);
+  const [titleName, setTitleName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    const id = username ?? me?.id;
-    if (!id) {
-      if (followers.length !== 0) setFollowers([]);
-      if (loading) setLoading(false);
-      return;
+    let mounted = true;
+
+    async function load() {
+      setLoading(true);
+      try {
+        if (me && username === me.username) {
+          const data = await followingService.getUserFollowers(me.id);
+          if (!mounted) return;
+          setTitleName(me.displayName || me.username);
+          setAvatarUrl(me.avatarUrl ?? null);
+          setFollowers(data.followers ?? []);
+        } else if (username) {
+          const profile = await profileService.getPublicProfile(username);
+          const data = await followingService.getUserFollowers(profile.id);
+          if (!mounted) return;
+          setTitleName(profile.displayName || profile.username);
+          setAvatarUrl(profile.avatarUrl ?? null);
+          setFollowers(data.followers ?? []);
+        }
+      } catch (e) {
+        console.error("fetch failed:", e);
+        if (!mounted) return;
+        setAvatarUrl(null);
+        setFollowers([]);
+      } finally {
+        if (mounted) setLoading(false);
+      }
     }
 
-    setLoading(true);
-    profileService
-      .getUserFollowers(id)
-      .then((data) => {
-        setFollowers(data.followers ?? []);
-      })
-      .catch(() => {
-        setFollowers([]);
-      })
-      .finally(() => setLoading(false));
-  }, [username, me?.id]);
+    load();
+    return () => { mounted = false; };
+  }, [username, me?.id, me?.username, me?.displayName]);
 
-  if (loading) {
-    return (
-      <div className="w-10/12 mx-auto mt-8 text-zinc-400">
-        Loading followers...
-      </div>
-    );
+  if (username === "me" && me?.username) {
+    return <Navigate to={`/${me.username}/followers`} replace />;
   }
 
+  const basePath = username ? `/${username}` : "/me";
+
   return (
-    <div className="w-10/12 mx-auto mt-8 text-white">
-      <h2 className="text-xl font-bold mb-4">Followers</h2>
-      {followers.length === 0 ? (
-        <p className="text-zinc-400">No followers found.</p>
+    <div data-testid="followers-page" className="mx-auto mt-10 w-9/12 text-white">
+      <SocialInfoBar
+        avatarUrl={avatarUrl}
+        title={`Followers of ${titleName || "user"}`}
+        basePath={basePath}
+      />
+      {loading ? (
+        <div data-testid="followers-loading" className="mt-20 text-center text-zinc-400">Loading followers...</div>
+      ) : followers.length === 0 ? (
+        <p data-testid="followers-empty" className="mt-20 text-center text-3xl font-semibold text-white">
+          No one is following yet.
+        </p>
       ) : (
-        <div className="space-y-3">
-          {followers.map((user) => (
-            <Link
-              key={user.id}
-              to={`/${user.id}`}
-              className="flex items-center justify-between rounded border border-zinc-800 bg-zinc-900/50 px-4 py-3 hover:border-zinc-700"
-            >
-              <div className="flex items-center gap-3">
-                <img
-                  src={user.avatarUrl ?? "https://i.pravatar.cc/100"}
-                  alt={user.username}
-                  className="h-10 w-10 rounded-full object-cover"
-                />
-                <span className="font-semibold">{user.username}</span>
-              </div>
-            </Link>
-          ))}
+        <div data-testid="followers-list" className="mt-8 flex flex-wrap gap-6">
+          <UserGrid
+            users={followers.map((u) => ({
+              id: u.id,
+              username: u.username,
+              avatarUrl: u.avatarUrl,
+            }))}
+            placeholders={5}
+          />
         </div>
       )}
     </div>

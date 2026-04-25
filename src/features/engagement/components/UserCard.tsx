@@ -53,37 +53,38 @@ const UserCard = ({ userId, avatarUrl, username }: Props) => {
 };
 
   return (
-    <div className="flex flex-col items-center gap-2 text-center">
+  <div className="flex flex-col items-center w-44 group">
+    <div className="w-44 h-44 rounded-full overflow-hidden relative bg-zinc-800 cursor-pointer"
+      onClick={() => navigate(`/${userId}`)}>
       <img
         src={avatarUrl}
         alt={username}
-        onClick={() => navigate(`/${userId}`)}
-        className="w-20 h-20 rounded-full object-cover cursor-pointer
-                   hover:ring-2 hover:ring-orange-400 transition-all duration-150"
+        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
       />
-      <p
-        onClick={() => navigate(`/${userId}`)}
-        className="text-xs text-zinc-300 font-medium truncate w-full
-                   cursor-pointer hover:text-white transition"
-      >
-        {username}
-      </p>
-      <p className="text-xs text-zinc-500">
-        {followersCount.toLocaleString()} followers
-      </p>
-      <button
-        onClick={handleFollow}
-        disabled={loading}
-        className={`text-xs border rounded px-3 py-0.5 transition disabled:opacity-50 ${
-          isFollowing
-            ? 'border-orange-500 text-orange-400 hover:border-red-400 hover:text-red-400'
-            : 'border-zinc-500 text-white hover:border-white'
-        }`}
-      >
-        {loading ? '...' : isFollowing ? 'Following' : 'Follow'}
-      </button>
+      <div className="absolute inset-0 rounded-full bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
     </div>
-  );
+    <p
+      onClick={() => navigate(`/${userId}`)}
+      className="mt-3 text-white font-semibold text-sm truncate w-full text-center cursor-pointer hover:text-zinc-300 transition"
+    >
+      {username}
+    </p>
+    <p className="text-zinc-400 text-xs mt-0.5">
+      {followersCount.toLocaleString()} followers
+    </p>
+    <button
+      onClick={handleFollow}
+      disabled={loading}
+      className={`mt-2 text-xs border rounded px-3 py-0.5 transition disabled:opacity-50 ${
+        isFollowing
+          ? 'border-orange-500 text-orange-400 hover:border-red-400 hover:text-red-400'
+          : 'border-zinc-500 text-white hover:border-white'
+      }`}
+    >
+      {loading ? '...' : isFollowing ? 'Following' : 'Follow'}
+    </button>
+  </div>
+);
 };
 
 export default UserCard;

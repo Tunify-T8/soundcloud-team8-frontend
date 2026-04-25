@@ -65,7 +65,7 @@ export default function LibraryPage() {
             >
               {tab}
               {activeTab === tab && (
-                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white" />
+                <div data-testid={`library-tab-${tab.toLowerCase()}-indicator`} className="absolute bottom-0 left-0 right-0 h-[2px] bg-white" />
               )}
             </button>
           ))}

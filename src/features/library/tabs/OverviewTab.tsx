@@ -102,6 +102,9 @@ export default function OverviewTab() {
         )}
       </section>
 
+      <EmptyCollectionGrid title="Playlists" />
+      <EmptyCollectionGrid title="Albums" />
+      <EmptyCollectionGrid title="Liked Stations" />
       <EmptyCollectionGrid title="Liked Stations" emptyMessage="You haven't liked any stations yet" />
       <FollowingSection users={FOLLOWING} />
     </div>

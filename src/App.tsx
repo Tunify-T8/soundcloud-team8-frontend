@@ -37,6 +37,7 @@ import WhoToFollowPage from "./features/following/pages/WhoToFollowPage";
 import DiscoverPage from "./features/discover/pages/DiscoverPage";
 import SearchPage from "./features/feed/pages/SearchPage";
 import LibraryPage from "./features/library/pages/LibraryPage";
+import NotificationsPage from "./features/notifications/pages/NotificationPage";
 
 import PlansPage from "./features/premium/pages/PlansPage";
 import AllTabPage from  "./features/profile/pages/UserInfoBar/AllTabPage";
@@ -89,6 +90,10 @@ const router = createBrowserRouter([
       {
         path: "/discover",
         element: <DiscoverPage />,
+      },
+      {
+        path: "/notifications" , 
+        element: <NotificationsPage />
       },
       {
         path: "/messages",
@@ -171,14 +176,6 @@ const router = createBrowserRouter([
           { path: "playlists", element: <PlaylistsPage /> },
           { path: "reposts", element: <ProfileRepostsPage /> },
         ],
-      },
-      {
-        path: "/me/followers",
-        element: <FollowersPage />,
-      },
-      {
-        path: "/me/following",
-        element: <FollowingPage />,
       },
       {
         path: "/who-to-follow",
