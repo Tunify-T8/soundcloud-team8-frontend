@@ -1,5 +1,5 @@
 import { Play } from "lucide-react";
-import type { CollectionTrack } from "../../../../types";
+import type { CollectionTrack } from "../../../types";
 
 function formatCompactNumber(value?: number) {
   if (value === undefined || value === null || Number.isNaN(value)) return null;
@@ -23,7 +23,9 @@ const TrackList: React.FC<{ tracks: CollectionTrack[] }> = ({ tracks }) => {
             <p className="truncate text-[13px] font-semibold leading-none text-zinc-100">
               <span className="text-zinc-500 font-bold">{i + 1}</span>
               <span className="text-zinc-500 font-bold">. </span>
-              <span className="text-zinc-500 font-bold">{ct.track.user.displayName || ct.track.user.username}</span>
+              <span className="text-zinc-500 font-bold">
+                {ct.track.user.displayName || ct.track.user.username}
+              </span>
               <span className="text-zinc-300"> . </span>
               <span>{ct.track.title}</span>
             </p>
@@ -33,8 +35,10 @@ const TrackList: React.FC<{ tracks: CollectionTrack[] }> = ({ tracks }) => {
             <Play size={10} fill="currentColor" />
             <span className="text-[12px] font-medium leading-none">
               {formatCompactNumber(
-                (ct.track as { playCount?: number; playsCount?: number }).playCount ??
-                  (ct.track as { playCount?: number; playsCount?: number }).playsCount,
+                (ct.track as { playCount?: number; playsCount?: number })
+                  .playCount ??
+                  (ct.track as { playCount?: number; playsCount?: number })
+                    .playsCount,
               ) || "0"}
             </span>
           </div>

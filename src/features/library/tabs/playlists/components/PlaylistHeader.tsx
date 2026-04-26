@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
-import { playlistService } from "../../../../libraryService";
-import type { Collection, CollectionTrack } from "../../../../types";
+import { playlistService } from "../../../libraryService";
+import type { Collection, CollectionTrack } from "../../../types";
 
 interface Props {
   playlist: Collection;
@@ -47,7 +47,12 @@ function formatCreatedAtAgo(createdAt: string) {
   return `${years} year${years === 1 ? "" : "s"} ago`;
 }
 
-const PlaylistHeader: React.FC<Props> = ({ playlist, tracks = [], onUpdate, isMe }) => {
+const PlaylistHeader: React.FC<Props> = ({
+  playlist,
+  tracks = [],
+  onUpdate,
+  isMe,
+}) => {
   const fileRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -72,7 +77,7 @@ const PlaylistHeader: React.FC<Props> = ({ playlist, tracks = [], onUpdate, isMe
 
       const cloudRes = await fetch(
         "https://api.cloudinary.com/v1_1/dcctvg2ay/image/upload",
-        { method: "POST", body: formData }
+        { method: "POST", body: formData },
       );
 
       const cloudData = await cloudRes.json();
@@ -83,7 +88,6 @@ const PlaylistHeader: React.FC<Props> = ({ playlist, tracks = [], onUpdate, isMe
       });
 
       onUpdate?.(); // 👈 same as profile
-
     } catch (err) {
       console.error("Upload failed", err);
     } finally {

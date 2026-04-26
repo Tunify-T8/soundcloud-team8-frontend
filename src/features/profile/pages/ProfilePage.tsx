@@ -115,6 +115,7 @@ export default function ProfilePage() {
       <div className="relative">
         <UserInfoBar
           displayName={user.displayName ?? undefined}
+          username={user.username}
           avatarUrl={user.avatarUrl || ""}
           country={country}
           city={city}
