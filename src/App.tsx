@@ -23,6 +23,7 @@ import ForgotPasswordPage from "./features/auth/pages/ForgotPasswordPage";
 import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage";
 import MessagesPage from "./features/conversation/pages/MessagesPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
+import AdminRoute from "./routes/AdminRoute";
 import VerifyEmailPage from "./features/auth/pages/VerifyEmailPage";
 import { ProfileProvider } from "./features/profile/context/ProfileContext";
 import useRestoreSession from "./hooks/useRestoreSession";
@@ -43,8 +44,11 @@ import PlansPage from "./features/premium/pages/PlansPage";
 import AllTabPage from  "./features/profile/pages/UserInfoBar/AllTabPage";
 import InsightsOverviewPage from "./features/insights/components/InsightsOverviewPage";
 import { AdPopup } from "./features/premium/components/AdPopUp";
+import AdminDashboardPage from "./features/admin/pages/AdminDashboardPage";
+import AdminReportsPage from "./features/admin/pages/AdminReportsPage";
+import AdminContentPage from "./features/admin/pages/AdminContentPage";
+import AdminUsersPage from "./features/admin/pages/AdminUsersPage";
 
-import PlaylistPage from "./features/library/tabs/playlists/pages/PlaylistPage"; 
 
 const router = createBrowserRouter([
   {
@@ -148,8 +152,36 @@ const router = createBrowserRouter([
         element: <LibraryPage />
       },
       {
-        path: "/collections/:id",
-        element: <PlaylistPage />
+        path: "/admin",
+        element: (
+          <AdminRoute>
+            <AdminDashboardPage />
+          </AdminRoute>
+        ),
+      },
+      {
+        path: "/admin/reports",
+        element: (
+          <AdminRoute>
+            <AdminReportsPage />
+          </AdminRoute>
+        ),
+      },
+      {
+        path: "/admin/content",
+        element: (
+          <AdminRoute>
+            <AdminContentPage />
+          </AdminRoute>
+        ),
+      },
+      {
+        path: "/admin/users",
+        element: (
+          <AdminRoute>
+            <AdminUsersPage />
+          </AdminRoute>
+        ),
       },
       {
         path: "/me",
