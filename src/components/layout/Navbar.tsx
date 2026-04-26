@@ -494,7 +494,7 @@ function DropdownNotifRow({
       }`}
     >
       <Link
-        to={`/users/${notif.actor?.id}`}
+        to={`/${notif.actor?.id}`}
         onClick={onClose}
         className="w-12 h-12 rounded-full bg-zinc-600 flex-shrink-0 overflow-hidden"
       >
@@ -514,7 +514,7 @@ function DropdownNotifRow({
       <div className="flex-1 min-w-0">
         <p className="text-sm text-white leading-snug">
           <Link
-            to={`/users/${notif.actor?.id}`}
+            to={`/${notif.actor?.id}`}
             onClick={onClose}
             className="font-bold hover:underline"
           >
