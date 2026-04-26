@@ -236,22 +236,30 @@ const TrackPage = () => {
       .finally(() => setLoading(false));
   }, [trackId]);
 
-  const artistId = (track as any)?.artists?.[0]?.id ?? null;
+  const trackUser = (track as any)?.user ?? null;
+  const artistId = trackUser?.userId ?? (track as any)?.artists?.[0]?.id ?? null;
 
   useEffect(() => {
+    if (trackUser) {
+      setIsFollowingArtist(Boolean(trackUser.isFollowing));
+      setArtistFollowers(trackUser.followersCount ?? 0);
+      return;
+    }
+
     if (!artistId) return;
+
     api.get(`/users/${artistId}`)
       .then(res => {
         setIsFollowingArtist(res.data.isFollowing ?? false);
         setArtistFollowers(res.data.followersCount ?? 0);
       })
       .catch(() => {});
-  }, [artistId]);
+  }, [artistId, trackUser]);
 
   if (trackLoading) return <div className="p-8 text-white">Loading...</div>;
   if (error || !track) return <div className="p-8 text-red-400">{error ?? 'Track not found'}</div>;
 
-  const artistName    = (track as any).artists?.[0]?.name ?? 'Unknown Artist';
+  const artistName    = trackUser?.displayName ?? trackUser?.username ?? (track as any).artists?.[0]?.name ?? 'Unknown Artist';
   const duration      = (track as any).durationSeconds ?? 184;
   const artworkSrc    = (track as any).artworkUrl ?? '';
   const ownerInit     = artistName.slice(0, 2).toUpperCase();
