@@ -264,6 +264,7 @@ const TrackPage = () => {
   const duration      = (track as any).durationSeconds ?? 184;
   const artworkSrc    = (track as any).artworkUrl ?? '';
   const ownerInit     = artistName.slice(0, 2).toUpperCase();
+  const artistAvatar  = trackUser?.avatarUrl ?? makeOwnerAvatar(ownerInit, 88);
   const artistRouteId = artistId;
   const tracksCount   = trackUser?.tracksUploadedCount ?? 28;
   const currentUserId = localStorage.getItem('userId') ?? '';
@@ -463,7 +464,7 @@ const TrackPage = () => {
           {/* Artist sidebar */}
           <aside className="w-44 shrink-0 px-5 py-6 border-r border-[hsl(0,0%,13%)] flex flex-col items-center gap-3">
             <div className="w-[88px] h-[88px] rounded-full overflow-hidden ring-2 ring-zinc-700">
-              <img src={makeOwnerAvatar(ownerInit, 88)} alt={artistName} className="w-full h-full object-cover" />
+              <img src={artistAvatar} alt={artistName} className="w-full h-full object-cover" />
             </div>
             <div className="text-center">
               <p className="text-sm font-semibold text-white leading-tight">{artistName}</p>
