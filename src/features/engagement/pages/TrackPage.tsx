@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   Play, Pause, Heart, Repeat2,
   Users, Flag, Info,
@@ -230,6 +231,10 @@ const TrackPage = () => {
   const [isFollowingArtist, setIsFollowingArtist] = useState(false);
   const [artistFollowers, setArtistFollowers] = useState(0);
   const [followLoading, setFollowLoading]     = useState(false);
+  const [artistAvatarUrl, setArtistAvatarUrl] = useState<string>('');
+  const [artistUsername, setArtistUsername]   = useState<string>('');
+  const [artistTracksCount, setArtistTracksCount] = useState(0);
+  const navigate = useNavigate();
 
   const {
     currentTrack, isPlaying, progress: playerProgress,
@@ -243,24 +248,35 @@ const TrackPage = () => {
 
   
   useEffect(() => {
-    if (!trackId) return;
-    engagementService.getTrackDetails(trackId)
-      .then(setTrack)
-      .catch(() => setError('Failed to load track'))
-      .finally(() => setLoading(false));
-  }, [trackId]);
+  if (!trackId) return;
+  engagementService.getTrackDetails(trackId)
+    .then((data) => {
+      console.log('TRACK KEYS:', Object.keys(data));
+      console.log('uploader:', (data as any).uploader);
+      console.log('owner:', (data as any).owner);
+      console.log('userId:', (data as any).userId);
+      console.log('createdBy:', (data as any).createdBy);
+      console.log('artists:', (data as any).artists);
+      setTrack(data);
+    })
+    .catch(() => setError('Failed to load track'))
+    .finally(() => setLoading(false));
+}, [trackId]);
 
   const artistId = (track as any)?.artists?.[0]?.id ?? null;
 
   useEffect(() => {
-    if (!artistId) return;
-    api.get(`/users/${artistId}`)
-      .then((res) => {
-        setIsFollowingArtist(res.data.isFollowing ?? false);
-        setArtistFollowers(res.data.followersCount ?? 0);
-      })
-      .catch(() => {});
-  }, [artistId]);
+  if (!artistId) return;
+  api.get(`/users/${artistId}`)
+    .then((res) => {
+      setIsFollowingArtist(res.data.isFollowing ?? false);
+      setArtistFollowers(res.data.followersCount ?? 0);
+      setArtistAvatarUrl(res.data.avatarUrl ?? '');
+      setArtistUsername(res.data.username ?? '');
+      setArtistTracksCount(res.data.tracksCount ?? 0);
+    })
+    .catch(() => {});
+}, [artistId]);
 
   
   if (trackLoading) return <div className="p-8 text-white">Loading…</div>;
@@ -271,7 +287,7 @@ const TrackPage = () => {
   const duration      = (track as any).durationSeconds ?? 184;
   const artworkSrc    = (track as any).artworkUrl ?? '';
   const ownerInit     = artistName.slice(0, 2).toUpperCase();
-  const currentUserId = localStorage.getItem('userId') ?? '';
+  const currentUserId = localStorage.getItem('sc_access_token') ?? '';
   const isThisTrack   = currentTrack?.id === track.id;
   const currentTime   = isThisTrack ? playerProgress * duration : 0;
   const pageIsPlaying = isThisTrack && isPlaying;
@@ -418,23 +434,30 @@ const TrackPage = () => {
 
           <aside className="w-44 shrink-0 px-5 py-6 border-r border-zinc-800 flex flex-col items-center gap-3">
             <div className="w-[88px] h-[88px] rounded-full overflow-hidden ring-2 ring-zinc-700">
-              <img
-                src={makeOwnerAvatar(ownerInit, 88)}
-                alt={artistName}
-                className="w-full h-full object-cover"
-              />
+              {artistAvatarUrl
+                ? <img src={artistAvatarUrl} alt={artistName} className="w-full h-full object-cover" />
+                : <img src={makeOwnerAvatar(ownerInit, 88)} alt={artistName} className="w-full h-full object-cover" />
+}
             </div>
 
             <div className="text-center">
               <p className="text-sm font-semibold text-white leading-tight">{artistName}</p>
               <p className="text-[11px] text-zinc-500 mt-1 flex items-center justify-center gap-2">
-                <span className="flex items-center gap-0.5">
-                  <Users className="w-2.5 h-2.5" />
-                  {artistFollowers.toLocaleString()}
-                </span>
-                <span className="text-zinc-700">·</span>
-                <span>28</span>
-              </p>
+  <button
+    onClick={() => artistId && navigate(`/${artistId}/followers`)}
+    className="flex items-center gap-0.5 hover:text-white transition cursor-pointer"
+  >
+    <Users className="w-2.5 h-2.5" />
+    {artistFollowers.toLocaleString()}
+  </button>
+  <span className="text-zinc-700">·</span>
+  <button
+    onClick={() => artistId && navigate(`/${artistId}/tracks`)}
+    className="hover:text-white transition cursor-pointer"
+  >
+    {artistTracksCount.toLocaleString()}
+  </button>
+  </p>
             </div>
 
             <button
