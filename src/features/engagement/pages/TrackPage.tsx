@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Heart, Repeat2,
-  Users, Flag, Info,
+  Users, Flag, Info, Music2,
   Share2, Copy, MoreHorizontal,
 } from 'lucide-react';
 
@@ -264,6 +264,8 @@ const TrackPage = () => {
   const duration      = (track as any).durationSeconds ?? 184;
   const artworkSrc    = (track as any).artworkUrl ?? '';
   const ownerInit     = artistName.slice(0, 2).toUpperCase();
+  const artistRouteId = artistId;
+  const tracksCount   = trackUser?.tracksUploadedCount ?? 28;
   const currentUserId = localStorage.getItem('userId') ?? '';
   const waveformSeed  = 3;
 
@@ -466,12 +468,29 @@ const TrackPage = () => {
             <div className="text-center">
               <p className="text-sm font-semibold text-white leading-tight">{artistName}</p>
               <p className="text-[11px] text-zinc-500 mt-1 flex items-center justify-center gap-2">
-                <span className="flex items-center gap-0.5">
-                  <Users className="w-2.5 h-2.5" />
-                  {artistFollowers.toLocaleString()}
-                </span>
+                {artistRouteId ? (
+                  <Link to={`/${artistRouteId}/followers`} className="flex items-center gap-0.5 hover:text-white transition">
+                    <Users className="w-2.5 h-2.5" />
+                    {artistFollowers.toLocaleString()}
+                  </Link>
+                ) : (
+                  <span className="flex items-center gap-0.5">
+                    <Users className="w-2.5 h-2.5" />
+                    {artistFollowers.toLocaleString()}
+                  </span>
+                )}
                 <span className="text-zinc-700">·</span>
-                <span>28</span>
+                {artistRouteId ? (
+                  <Link to={`/${artistRouteId}/tracks`} className="flex items-center gap-0.5 hover:text-white transition">
+                    <Music2 className="w-2.5 h-2.5" />
+                    {tracksCount.toLocaleString()}
+                  </Link>
+                ) : (
+                  <span className="flex items-center gap-0.5">
+                    <Music2 className="w-2.5 h-2.5" />
+                    {tracksCount.toLocaleString()}
+                  </span>
+                )}
               </p>
             </div>
             <button
