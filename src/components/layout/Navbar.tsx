@@ -18,7 +18,7 @@ import {
   
 } from "@/features/notifications/service/service"; 
 import type {NotificationObject} from "@/features/notifications/types"
-import { getAccessToken } from "@/features/auth/utils/token.utils";
+import { getAccessToken, getStoredUser } from "@/features/auth/utils/token.utils";
 import CheckoutModal from "../../features/premium/components/CheckoutModal";
 
 
@@ -58,9 +58,11 @@ export default function Navbar() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
+  const adminMenuRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
@@ -69,6 +71,16 @@ export default function Navbar() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifLoading, setNotifLoading] = useState(false);
   const [followedBack, setFollowedBack] = useState<Set<string>>(new Set());
+
+  const storedUser = getStoredUser();
+  const isAdmin = storedUser?.role?.toLowerCase() === "admin";
+
+  const adminPageLinks = [
+    { to: "/admin", label: "Dashboard" },
+    { to: "/admin/reports", label: "Reports" },
+    { to: "/admin/content", label: "Content" },
+    { to: "/admin/users", label: "Users" },
+  ];
 
   // ── REST: initial unread count ────────────────────────────────────────────
   const fetchUnreadCount = useCallback(async () => {
@@ -176,6 +188,9 @@ export default function Navbar() {
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
         setNotifOpen(false);
       }
+      if (adminMenuRef.current && !adminMenuRef.current.contains(e.target as Node)) {
+        setAdminMenuOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -184,6 +199,7 @@ export default function Navbar() {
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     setMobileMenuOpen(false);
+    setAdminMenuOpen(false);
   }, [location.pathname]);
 
   const handleSignOut = async () => {
@@ -253,12 +269,39 @@ export default function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center gap-5 text-sm">
-            <button
-              onClick={() => setCheckoutOpen(true)}
-              className="border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-1 rounded-sm transition-colors duration-150 text-xs"
-            >
-              Try Free
-            </button>
+            {isAdmin ? (
+              <div className="relative" ref={adminMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setAdminMenuOpen((v) => !v)}
+                  className="border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-1 rounded-sm transition-colors duration-150 text-xs flex items-center gap-1"
+                >
+                  Admin Pages
+                  <ChevronDown size={14} className={`${adminMenuOpen ? "rotate-180" : ""} transition-transform duration-150`} />
+                </button>
+                {adminMenuOpen && (
+                  <div className="absolute right-0 top-9 w-44 bg-[#111] border border-zinc-800 rounded-sm shadow-2xl z-50 overflow-hidden">
+                    {adminPageLinks.map((item) => (
+                      <Link
+                        key={item.to}
+                        to={item.to}
+                        onClick={() => setAdminMenuOpen(false)}
+                        className="block px-4 py-2 font-bold text-sm text-white hover:text-zinc-400 transition-colors duration-150"
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={() => setCheckoutOpen(true)}
+                className="border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-1 rounded-sm transition-colors duration-150 text-xs"
+              >
+                Try Free
+              </button>
+            )}
             <Link to="/artists" className="text-zinc-400 hover:text-white font-bold tracking-tight">For Artists</Link>
             <Link to="/upload" className="text-zinc-400 hover:text-white font-bold tracking-tight ml-1">Upload</Link>
 
@@ -459,12 +502,42 @@ export default function Navbar() {
               <Link to="/upload" className="text-zinc-300 hover:text-white">Upload</Link>
               <Link to="/me" className="text-zinc-300 hover:text-white">Profile</Link>
             </div>
-            <button
-              onClick={() => setCheckoutOpen(true)}
-              className="w-full border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-2 rounded-sm transition-colors duration-150 text-xs"
-            >
-              Try Free
-            </button>
+            {isAdmin ? (
+              <div className="space-y-1">
+                <button
+                  type="button"
+                  onClick={() => setAdminMenuOpen((v) => !v)}
+                  className="w-full border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-2 rounded-sm transition-colors duration-150 text-xs flex items-center justify-center gap-1"
+                >
+                  Admin Pages
+                  <ChevronDown size={14} className={`${adminMenuOpen ? "rotate-180" : ""} transition-transform duration-150`} />
+                </button>
+                {adminMenuOpen && (
+                  <div className="border border-zinc-800 rounded-sm overflow-hidden">
+                    {adminPageLinks.map((item) => (
+                      <Link
+                        key={item.to}
+                        to={item.to}
+                        onClick={() => {
+                          setAdminMenuOpen(false);
+                          setMobileMenuOpen(false);
+                        }}
+                        className="block px-3 py-2 text-sm font-bold text-zinc-300 hover:text-white border-b last:border-b-0 border-zinc-800"
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={() => setCheckoutOpen(true)}
+                className="w-full border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-2 rounded-sm transition-colors duration-150 text-xs"
+              >
+                Try Free
+              </button>
+            )}
           </div>
         )}
       </nav>
