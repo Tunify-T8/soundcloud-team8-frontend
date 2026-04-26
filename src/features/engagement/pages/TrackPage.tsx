@@ -14,6 +14,7 @@ import { makeCommentAvatar, formatTimestamp } from '../components/CommentsSectio
 import { usePlayer }           from '@/features/playerUI/context/usePlayer';
 import { api }                 from '../../auth/services/api';
 import { waveGenerators }      from '@/components/Waveforms';
+import { followingService }    from '../../following/followingService';
 
 
 interface WaveformComment {
@@ -237,7 +238,7 @@ const TrackPage = () => {
   }, [trackId]);
 
   const trackUser = (track as any)?.user ?? null;
-  const artistId = trackUser?.userId ?? (track as any)?.artists?.[0]?.id ?? null;
+  const artistId = trackUser?.userId ?? (track as any)?.artistId ?? null;
 
   useEffect(() => {
     if (trackUser) {
@@ -312,8 +313,11 @@ const TrackPage = () => {
     setIsFollowingArtist(!wasFollowing);
     setArtistFollowers(prev => wasFollowing ? Math.max(0, prev - 1) : prev + 1);
     try {
-      if (wasFollowing) { await api.delete(`/users/${artistId}/follow`); }
-      else              { await api.post(`/users/${artistId}/follow`); }
+      if (wasFollowing) {
+        await followingService.unfollowUser(artistId);
+      } else {
+        await followingService.followUser(artistId);
+      }
     } catch (err: any) {
       setIsFollowingArtist(wasFollowing);
       setArtistFollowers(prev => wasFollowing ? prev + 1 : Math.max(0, prev - 1));
