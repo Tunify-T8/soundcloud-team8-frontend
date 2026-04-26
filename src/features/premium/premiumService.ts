@@ -109,13 +109,13 @@ async function getMySubscription(): Promise<Subscription> {
 }
 
 /**
- * POST /subscription/subscribe
+ * POST /subscriptions/subscribe
  * Throws a SubscribeErrorResponse on non-2xx so callers can read `.message`.
  */
 async function subscribe(
   payload: SubscribePayload
 ): Promise<SubscribeSuccessResponse> {
-  return api.post("/subscription/subscribe", payload);
+  return api.post("/subscriptions/subscribe", payload);
 }
 
 export const subscriptionService = { getMySubscription, getPlans, subscribe };
