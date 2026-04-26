@@ -339,7 +339,7 @@ function NotificationRow({
     >
       <div className="flex items-center gap-3 min-w-0">
         <Link
-          to={`/users/${notif.actor?.id}`}
+          to={`/${notif.actor?.id}`}
           className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-zinc-700 flex-shrink-0 overflow-hidden"
           data-testid={`notification-actor-avatar-${notif.id}`}
         >
@@ -359,7 +359,7 @@ function NotificationRow({
         <div className="min-w-0">
           <p className="text-xs sm:text-sm text-white">
             <Link
-              to={`/users/${notif.actor?.id}`}
+              to={`/${notif.actor?.id}`}
               className="font-bold hover:underline"
               data-testid={`notification-actor-username-${notif.id}`}
             >
@@ -422,7 +422,7 @@ function SidebarFollower({
       data-testid={`sidebar-follower-${notif.id}`}
     >
       <Link
-        to={`/users/${notif.actor?.id}`}
+        to={`/${notif.actor?.id}`}
         className="w-9 h-9 rounded-full bg-zinc-700 flex-shrink-0 overflow-hidden"
         data-testid={`sidebar-follower-avatar-${notif.id}`}
       >
@@ -440,7 +440,7 @@ function SidebarFollower({
       </Link>
       <div className="flex-1 min-w-0">
         <Link
-          to={`/users/${notif.actor?.id}`}
+          to={`/${notif.actor?.id}`}
           className="text-sm font-bold text-white hover:underline block truncate"
           data-testid={`sidebar-follower-username-${notif.id}`}
         >
