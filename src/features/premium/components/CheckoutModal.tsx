@@ -1,5 +1,5 @@
 // @/features/premium/components/CheckoutModal.tsx
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState, useContext, useMemo } from "react";
 import { X, Loader2 } from "lucide-react";
 import soundcloudImg from "@/assets/silhouette.png";
 import lockImg from "@/assets/lock.png";
@@ -10,31 +10,18 @@ import {
   subscriptionService,
   detectCardBrand,
 } from "@/features/premium/premiumService";
-import type { SubscribeErrorResponse } from "@/features/premium/premiumService";
+import type { Plan, SubscribeErrorResponse } from "@/features/premium/premiumService";
 
 interface CheckoutModalProps {
   plan: "artist" | "artist-pro";
+  /** Plans array passed down from UpgradeModal (already fetched). Optional — fetched internally if omitted. */
+  plans?: Plan[];
   onClose: () => void;
 }
 
-const PLAN_CONFIG = {
-  artist: {
-    title: "Get Artist",
-    name: "Artist",
-    yearlyTotal: "EGP 359.88",
-    yearlyMonthly: "EGP 29.99/month",
-    monthlyPrice: "EGP 59.99/month",
-    renewAmount: "EGP 359.88",
-  },
-  "artist-pro": {
-    title: "Get Artist Pro",
-    name: "Artist Pro",
-    yearlyTotal: "EGP 899.88",
-    yearlyMonthly: "EGP 74.99/month",
-    monthlyPrice: "EGP 149.99/month",
-    renewAmount: "EGP 899.88",
-  },
-};
+function fmt(amount: number, currency: string) {
+  return `${currency} ${amount.toFixed(2)}`;
+}
 
 function luhn(value: string): boolean {
   const digits = value.replace(/\D/g, "");
@@ -63,10 +50,40 @@ interface CardErrors {
   cvv?: string;
 }
 
-export default function CheckoutModal({ plan, onClose }: CheckoutModalProps) {
+export default function CheckoutModal({ plan, plans: plansProp = [], onClose }: CheckoutModalProps) {
   const [billing, setBilling] = useState<"yearly" | "monthly">("yearly");
   const [payment, setPayment] = useState<"card" | "paypal" | "apple" | null>(null);
-  const config = PLAN_CONFIG[plan];
+
+  const [fetchedPlans, setFetchedPlans] = useState<Plan[]>([]);
+
+  // Fetch plans internally if not passed from parent (standalone usage)
+  useEffect(() => {
+    if (plansProp.length === 0) {
+      subscriptionService.getPlans().then(setFetchedPlans);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const plans = plansProp.length > 0 ? plansProp : fetchedPlans;
+  const planData = plans.find((p) => p.name === plan);
+  const currency = planData?.currency ?? "EGP";
+
+  // Derived pricing from API data
+  const config = useMemo(() => {
+    const monthly = planData?.monthly_price ?? (plan === "artist" ? 65 : 164.99);
+    const yearly = planData?.yearly_price ?? (plan === "artist" ? 479.99 : 1149.99);
+    const yearlyPerMonth = yearly / 12;
+
+    return {
+      title: plan === "artist" ? "Get Artist" : "Get Artist Pro",
+      name: plan === "artist" ? "Artist" : "Artist Pro",
+      isArtistPro: plan === "artist-pro",
+      yearlyTotal: fmt(yearly, currency),
+      yearlyMonthly: fmt(yearlyPerMonth, currency) + "/month",
+      monthlyPrice: fmt(monthly, currency) + "/month",
+      renewAmount: (billing: "yearly" | "monthly") =>
+        billing === "yearly" ? fmt(yearly, currency) : fmt(monthly, currency),
+    };
+  }, [planData, plan, currency]);
 
   const [firstName, setFirstName] = useState("");
   const [surname, setSurname] = useState("");
@@ -81,7 +98,6 @@ export default function CheckoutModal({ plan, onClose }: CheckoutModalProps) {
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // ✅ ProfileContext only exposes `refresh` — no setSubscription, no token needed
   const { refresh } = useContext(ProfileContext);
 
   useEffect(() => {
@@ -139,6 +155,22 @@ export default function CheckoutModal({ plan, onClose }: CheckoutModalProps) {
     setErrors(validate());
   }
 
+  /**
+   * Whether the payment button should be enabled (not dimmed).
+   * - No payment selected → dimmed
+   * - Card selected → all required card fields must be valid
+   * - PayPal / Apple → ready immediately once selected
+   */
+  const isReady = useMemo(() => {
+    if (!payment) return false;
+    if (payment === "card") {
+      const errs = validate();
+      return Object.keys(errs).length === 0;
+    }
+    return true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [payment, firstName, surname, cardNumber, expMonth, expYear, cvv]);
+
   async function handleSubmit() {
     setPaymentError(null);
 
@@ -171,9 +203,7 @@ export default function CheckoutModal({ plan, onClose }: CheckoutModalProps) {
         trialDays: 7,
       });
 
-      // ✅ Re-fetch subscription via the existing ProfileContext mechanism
       refresh();
-
       setShowSuccess(true);
     } catch (err: unknown) {
       const apiErr = err as Partial<SubscribeErrorResponse>;
@@ -200,6 +230,20 @@ export default function CheckoutModal({ plan, onClose }: CheckoutModalProps) {
         onClose={() => { setShowSuccess(false); onClose(); }}
       />
     );
+  }
+
+  // ── Button rendering helpers ─────────────────────────────────────────────────
+
+  const dimmedClass = "bg-zinc-400 cursor-not-allowed text-white opacity-70";
+  const appleReadyClass = "bg-black hover:bg-zinc-800 text-white";
+  const paypalReadyClass = "bg-[#0070ba] hover:bg-[#005ea6] text-white";
+  const defaultReadyClass = "bg-zinc-900 hover:bg-zinc-700 text-white";
+
+  function getButtonClass() {
+    if (!isReady) return dimmedClass;
+    if (payment === "apple") return appleReadyClass;
+    if (payment === "paypal") return paypalReadyClass;
+    return defaultReadyClass;
   }
 
   return (
@@ -400,48 +444,53 @@ export default function CheckoutModal({ plan, onClose }: CheckoutModalProps) {
                   <span className="text-[13px] text-zinc-700 font-semibold">{billingLabel}</span>
                 </div>
                 <p className="text-xs text-zinc-500 leading-relaxed pt-3 mt-3 border-zinc-200">
-                  Subscription will automatically renew at {config.renewAmount} every{" "}
+                  Subscription will automatically renew at {config.renewAmount(billing)} every{" "}
                   {billing === "yearly" ? "year" : "month"}, starting {renewDateStr}, unless you cancel before the day of your next renewal in your subscription settings.
                 </p>
-                <p className="text-[11px] text-zinc-400">All prices in EGP</p>
+                <p className="text-[11px] text-zinc-400">All prices in {currency}</p>
               </div>
 
-              {/* ✅ Payment failure banner */}
               {paymentError && (
                 <PaymentFailedBanner
-                  message={paymentError}
                   onDismiss={() => setPaymentError(null)}
                   onRetry={() => { setPaymentError(null); setPayment("card"); }}
                 />
               )}
 
-              {payment === "apple" ? (
-                <button onClick={handleSubmit} disabled={isSubmitting}
-                  className="w-full py-3.5 bg-black hover:bg-zinc-800 text-white text-sm font-semibold rounded-lg transition-colors mb-3 flex items-center justify-center gap-1 tracking-tight disabled:opacity-60">
-                  {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : (
-                    <>Continue with <span className="flex items-center gap-0.5">
-                      <svg width="16" height="16" viewBox="1 1 14 14" fill="white"><path d="M11.05 7.38c-.02-1.96 1.6-2.9 1.67-2.95-.91-1.33-2.33-1.51-2.84-1.53-1.21-.12-2.36.71-2.97.71-.61 0-1.56-.69-2.56-.67-1.32.02-2.54.77-3.22 1.95-1.37 2.38-.35 5.9.98 7.83.65.94 1.42 2 2.44 1.96.98-.04 1.35-.63 2.54-.63 1.18 0 1.52.63 2.56.61 1.05-.02 1.72-.96 2.36-1.91.75-1.09 1.05-2.15 1.07-2.2-.02-.01-2.04-.79-2.03-3.17zM9.07 1.9C9.58 1.28 9.93.42 9.83-.5c-.76.03-1.68.51-2.22 1.12-.49.55-.91 1.43-.8 2.27.85.07 1.72-.43 2.26-1z"/></svg>
-                      Pay</span>
-                    </>
-                  )}
-                </button>
-              ) : payment === "paypal" ? (
-                <button onClick={handleSubmit} disabled={isSubmitting}
-                  className="w-full py-3.5 bg-[#0070ba] hover:bg-[#005ea6] text-white text-sm font-bold rounded-lg transition-colors mb-3 flex items-center justify-center gap-2 disabled:opacity-60">
-                  {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : (
-                    <><span className="font-black italic text-base"><span className="text-white">Pay</span><span className="text-[#70d0f6]">Pal</span></span> Continue with PayPal</>
-                  )}
-                </button>
-              ) : (
-                <button onClick={handleSubmit} disabled={isSubmitting}
-                  className="w-full py-3.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-lg transition-colors mb-3 flex items-center justify-center gap-2 disabled:opacity-60">
-                  {isSubmitting ? <><Loader2 size={16} className="animate-spin" /> Processing…</> : "Buy subscription"}
-                </button>
-              )}
+              {/* ── Primary CTA button ──────────────────────────────────── */}
+              <button
+                onClick={handleSubmit}
+                disabled={!isReady || isSubmitting}
+                className={`w-full py-3.5 text-sm font-bold rounded-lg transition-colors mb-3 flex items-center justify-center gap-2 ${getButtonClass()}`}
+              >
+                {isSubmitting ? (
+                  <><Loader2 size={16} className="animate-spin" /> Processing…</>
+                ) : payment === "apple" ? (
+                  <>Continue with{" "}
+                    <span className="flex items-center gap-0.5">
+                      <svg width="16" height="16" viewBox="1 1 14 14" fill="white">
+                        <path d="M11.05 7.38c-.02-1.96 1.6-2.9 1.67-2.95-.91-1.33-2.33-1.51-2.84-1.53-1.21-.12-2.36.71-2.97.71-.61 0-1.56-.69-2.56-.67-1.32.02-2.54.77-3.22 1.95-1.37 2.38-.35 5.9.98 7.83.65.94 1.42 2 2.44 1.96.98-.04 1.35-.63 2.54-.63 1.18 0 1.52.63 2.56.61 1.05-.02 1.72-.96 2.36-1.91.75-1.09 1.05-2.15 1.07-2.2-.02-.01-2.04-.79-2.03-3.17zM9.07 1.9C9.58 1.28 9.93.42 9.83-.5c-.76.03-1.68.51-2.22 1.12-.49.55-.91 1.43-.8 2.27.85.07 1.72-.43 2.26-1z"/>
+                      </svg>
+                      Pay
+                    </span>
+                  </>
+                ) : payment === "paypal" ? (
+                  <>
+                    <span className="font-black italic text-base">
+                      <span className="text-white">Pay</span><span className="text-[#70d0f6]">Pal</span>
+                    </span>
+                    Continue with PayPal
+                  </>
+                ) : config.isArtistPro ? (
+                  "Start free trial"
+                ) : (
+                  "Buy subscription"
+                )}
+              </button>
 
               <p className="text-[11px] text-zinc-400 leading-relaxed">
                 By submitting your payment information and clicking{" "}
-                {payment === "apple" ? "Continue with Apple Pay" : payment === "paypal" ? "Continue with PayPal" : "Buy subscription"}{" "}
+                {payment === "apple" ? "Continue with Apple Pay" : payment === "paypal" ? "Continue with PayPal" : config.isArtistPro ? "Start free trial" : "Buy subscription"}{" "}
                 you agree to the{" "}
                 <a href="#" className="underline text-zinc-600">Terms of Use for Artist Subscriptions</a>{" "}
                 and <a href="#" className="underline text-zinc-600">Privacy Policy</a>.

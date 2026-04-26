@@ -7,7 +7,6 @@ interface PaymentFailedBannerProps {
 }
 
 export default function PaymentFailedBanner({
-  message,
   onDismiss,
   onRetry,
 }: PaymentFailedBannerProps) {
@@ -17,8 +16,7 @@ export default function PaymentFailedBanner({
       <div className="flex-1">
         <p className="text-sm font-bold text-red-700">Your Payment Has Failed</p>
         <p className="text-[13px] text-red-500 mt-0.5">
-          {message ||
-            "Please update your payment method or enter a valid card."}
+          { "Please update your payment method or enter a valid card."}
         </p>
         {onRetry && (
           <button

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import CheckoutModal from "@/features/premium/components/CheckoutModal";
-import hourglassImg from "@/assets/broken-clock.png"; 
+import hourglassImg from "@/assets/broken_clock.png"; 
 
 type UploadQuota = {
   tier: string;

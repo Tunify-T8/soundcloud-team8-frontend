@@ -1,4 +1,3 @@
-// @/features/premium/premiumService.ts
 import { api } from "@/features/auth/services/api";
 import type {
   Subscription,
@@ -9,6 +8,28 @@ import type {
 
 // ─── Re-export types so callers can import from one place ─────────────────────
 export type { Subscription, SubscriptionData, SubscriptionStatus, SubscriptionTier };
+
+// ─── Plan types from GET /subscriptions/plans ────────────────────────────────
+
+export interface PlanFeatures {
+  maxUploads: number | "unlimited";
+  adFree: boolean;
+  offlineListening: boolean;
+  playbackAccess: boolean;
+  playlistLimit: number | "unlimited";
+}
+
+export interface Plan {
+  name: string; // "artist" | "artist-pro" | "free"
+  monthly_price: number;
+  yearly_price: number;
+  currency: string;
+  features: PlanFeatures;
+}
+
+export interface PlansResponse {
+  plans: Plan[];
+}
 
 // ─── New types for the subscribe endpoint ─────────────────────────────────────
 
@@ -43,7 +64,6 @@ function parseTier(plan: string): SubscriptionTier {
 
 /**
  * Detects card brand from the leading digits of the card number.
- * Used to populate the `brand` field in the subscribe payload.
  */
 export function detectCardBrand(cardNumber: string): string {
   const raw = cardNumber.replace(/\s/g, "");
@@ -54,6 +74,18 @@ export function detectCardBrand(cardNumber: string): string {
   return "unknown";
 }
 
+/**
+ * GET /subscriptions/plans
+ * Returns all available subscription plans with pricing.
+ */
+async function getPlans(): Promise<Plan[]> {
+  try {
+    const data: PlansResponse = await api.get("/subscriptions/plans");
+    return data.plans ?? [];
+  } catch {
+    return [];
+  }
+}
 
 /**
  * GET /subscriptions/me
@@ -86,4 +118,4 @@ async function subscribe(
   return api.post("/subscription/subscribe", payload);
 }
 
-export const subscriptionService = { getMySubscription, subscribe };
+export const subscriptionService = { getMySubscription, getPlans, subscribe };
