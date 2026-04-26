@@ -44,6 +44,7 @@ import AllTabPage from  "./features/profile/pages/UserInfoBar/AllTabPage";
 import InsightsOverviewPage from "./features/insights/components/InsightsOverviewPage";
 import { AdPopup } from "./features/premium/components/AdPopUp";
 
+import PlaylistPage from "./features/library/tabs/playlists/pages/PlaylistPage"; 
 
 const router = createBrowserRouter([
   {
@@ -145,6 +146,10 @@ const router = createBrowserRouter([
       {
         path: '/me/history',
         element: <LibraryPage />
+      },
+      {
+        path: "/collections/:id",
+        element: <PlaylistPage />
       },
       {
         path: "/me",

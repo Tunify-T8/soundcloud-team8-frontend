@@ -13,15 +13,15 @@ export default function UserDetails({
   isCertified?: boolean;
 }) {
   return (
-    <div className="ml-6">
+    <div className="max-w-[55vw] sm:max-w-none">
       <div>
         {displayName && (
-          <span className="inline-flex items-center bg-black text-white font-bold text-2xl md:text-3xl lg:text-3xl px-2">
+          <span className="inline-flex items-center bg-black px-2 text-sm font-bold text-white sm:text-xl md:text-3xl lg:text-3xl">
             {displayName}
             {isCertified && (
               <MdVerified
                 className="inline-block text-blue-500 ml-2"
-                size={20}
+                size={16}
               />
             )}
           </span>
@@ -29,19 +29,19 @@ export default function UserDetails({
       </div>
       <div>
         {username && (
-          <span className="bg-black font-bold text-gray-400 text-base md:text-[16px] px-2 py-1">
+          <span className="bg-black px-2 py-1 text-xs font-bold text-gray-400 sm:text-sm md:text-[16px]">
             {username}
           </span>
         )}
       </div>
       <div className="mt-3">
         {country && (
-          <span className="bg-black font-bold text-gray-400 text-base md:text-[16px] pl-2 py-1">
+          <span className="bg-black py-1 pl-2 text-xs font-bold text-gray-400 sm:text-sm md:text-[16px]">
             {country},
           </span>
         )}
         {city && (
-          <span className="bg-black font-bold text-gray-400 text-base md:text-[16px] pr-2 pl-1 py-1">
+          <span className="bg-black py-1 pl-1 pr-2 text-xs font-bold text-gray-400 sm:text-sm md:text-[16px]">
             {city}
           </span>
         )}
