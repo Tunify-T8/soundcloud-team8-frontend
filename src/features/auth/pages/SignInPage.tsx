@@ -92,6 +92,8 @@ const SignInPage: React.FC = () => {
   const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
   const from = (location.state as { from?: Location })?.from?.pathname ?? '/';
+  const getPostLoginRoute = (role?: string) =>
+    role?.toLowerCase() === 'admin' ? '/admin' : from;
   const prefillEmailState = (location.state as { email?: string; prefillStep?: string })?.email ?? '';
   const prefillStep = (location.state as { prefillStep?: string })?.prefillStep ?? '';
 
@@ -167,6 +169,8 @@ useEffect(() => {
           };
           storeUser(userPayload);
           dispatch(setUser(userPayload));
+          navigate(getPostLoginRoute(userPayload.role));
+          return;
         }
         navigate(from);
       } catch (error) {
@@ -260,6 +264,8 @@ useEffect(() => {
         };
         storeUser(userPayload);
         dispatch(setUser(userPayload));
+        navigate(getPostLoginRoute(userPayload.role));
+        return;
       }
 
       navigate(from);

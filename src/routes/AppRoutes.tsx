@@ -1,6 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import SignInPage from '../features/auth/pages/SignInPage';
 import LibraryPage from "../features/library/pages/LibraryPage";
+import AdminRoute from './AdminRoute';
+import AdminDashboardPage from '../features/admin/pages/AdminDashboardPage';
+import AdminReportsPage from '../features/admin/pages/AdminReportsPage';
+import AdminContentPage from '../features/admin/pages/AdminContentPage';
+import AdminUsersPage from '../features/admin/pages/AdminUsersPage';
 const AppRoutes = () => {
   return (
     <BrowserRouter>
@@ -13,6 +18,38 @@ const AppRoutes = () => {
         <Route path="/me/stations"  element={<LibraryPage />} />
         <Route path="/me/following" element={<LibraryPage />} />
         <Route path="/me/history"   element={<LibraryPage />} />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminDashboardPage />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/reports"
+          element={
+            <AdminRoute>
+              <AdminReportsPage />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/content"
+          element={
+            <AdminRoute>
+              <AdminContentPage />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <AdminRoute>
+              <AdminUsersPage />
+            </AdminRoute>
+          }
+        />
         <Route path="/" element={<Navigate to="/signin" replace />} />
         <Route path="*" element={<Navigate to="/signin" replace />} />
       </Routes>
