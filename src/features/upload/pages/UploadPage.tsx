@@ -9,6 +9,8 @@ import ArtistModal from "@/features/premium/components/ArtistModal";
 import UploadLimitScreen from "../components/UploadLimitScreen";
 import { api } from "@/features/auth/services/api";
 import uploadImg from "@/assets/upload.png";
+import { SiSoundcloud } from "react-icons/si";
+import { Link } from "react-router-dom";
 
 type UploadQuota = {
   tier: string;
@@ -115,9 +117,19 @@ export default function SoundCloudUpload() {
       className="min-h-screen bg-[#111111] text-white flex flex-col font-sans"
       data-testid="upload-page"
     >
+     <header className="flex items-center py-3 px-4">
+      <Link to="/discover" className="flex items-center">
+      <SiSoundcloud className="w-8 h-8 text-white mr-2" />
+      </Link>
+      <h3 className="text-lg font-semibold text-white">
+        Upload
+      </h3>
+    </header>
+
       {/* QUOTA BAR — always visible at top */}
       <div
-        className="bg-[hsl(0,0%,11%)] border-b border-[hsl(0,0%,18%)] flex items-center justify-between px-8 py-3 shrink-0"
+        className="bg-[hsl(0,0%,11%)] border border-[hsl(0,0%,18%)] 
+             flex items-center justify-center gap-6 px-6 py-3 rounded-lg"
         data-testid="upload-quota-bar"
       >
         <div
@@ -151,8 +163,8 @@ export default function SoundCloudUpload() {
             </>
           ) : (
             <>
-              <span className="text-white text-sm font-medium tracking-tighter">
-                {percentUsed}% of uploads used
+              <span className="flex items-center gap-3">
+                {percentUsed}% of uploads used                                     
               </span>
               <div className="w-44 h-1.5 bg-[hsl(0,0%,23%)] rounded-full overflow-hidden">
                 <div
@@ -172,7 +184,7 @@ export default function SoundCloudUpload() {
 
         <button
           onClick={() => setCheckoutOpen(true)}
-          className="bg-black text-white text-sm font-bold tracking-tighter px-5 py-2 rounded-full hover:bg-[hsl(0,0%,20%)] transition-colors border border-[#333]"
+          className="bg-black text-white text-sm font-bold tracking-tighter px-5 py-2 rounded-full hover:bg-[#222] transition-colors border border-[#333]"
           data-testid="get-unlimited-btn"
         >
           Get unlimited uploads
