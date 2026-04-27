@@ -52,13 +52,51 @@ export default function ProfileSideBar({
   const [localFollowingUsers, setLocalFollowingUsers] = useState<FollowingUser[]>(
     followingUsers ?? [],
   );
-  const [pendingUnfollowId, setPendingUnfollowId] = useState<string | null>(null);
+  const [followStates, setFollowStates] = useState<Record<string, boolean>>({});
+  const [pendingFollowId, setPendingFollowId] = useState<string | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const { me } = useMe();
 
   useEffect(() => {
     setLocalFollowingUsers(followingUsers ?? []);
   }, [followingUsers]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadFollowStates() {
+      const users = followingUsers ?? [];
+
+      if (!me?.id || users.length === 0) {
+        if (mounted) setFollowStates({});
+        return;
+      }
+
+      const statusEntries = await Promise.all(
+        users.map(async (user) => {
+          if (user.id === me.id) {
+            return [user.id, false] as const;
+          }
+
+          try {
+            const status = await followingService.getFollowStatus(user.id);
+            return [user.id, status.isFollowing] as const;
+          } catch {
+            return [user.id, false] as const;
+          }
+        }),
+      );
+
+      if (mounted) {
+        setFollowStates(Object.fromEntries(statusEntries));
+      }
+    }
+
+    void loadFollowStates();
+    return () => {
+      mounted = false;
+    };
+  }, [followingUsers, me?.id]);
 
   const visibleFollowingUsers = localFollowingUsers.slice(0, 3);
   const followingCount = localFollowingUsers.length;
@@ -230,6 +268,7 @@ export default function ProfileSideBar({
                 followingUser.displayName ?? followingUser.username;
               const followingFollowersCount =
                 followingUser.followersCount ?? "0";
+              const followingRouteId = followingUser.username || followingUser.id;
 
               return (
                 <div
@@ -237,11 +276,13 @@ export default function ProfileSideBar({
                   className="flex items-center justify-between gap-2"
                 >
                   <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-                    <img
-                      src={followingUser.avatarUrl || avatarFallback}
-                      alt={followingUser.username}
-                      className="h-12 w-12 rounded-full object-cover"
-                    />
+                    <Link to={`/${followingUser.id}`} className="shrink-0">
+                      <img
+                        src={followingUser.avatarUrl || avatarFallback}
+                        alt={followingUser.username}
+                        className="h-12 w-12 rounded-full object-cover"
+                      />
+                    </Link>
                     <div className="flex min-w-0 flex-col">
                       <Link
                         to={`/${followingUser.id}`}
@@ -250,7 +291,7 @@ export default function ProfileSideBar({
                         {followingDisplayName}
                       </Link>
                       <Link
-                        to={`/${followingUser.id}/followers`}
+                        to={`/${followingRouteId}/followers`}
                         className="mt-2 inline-flex items-center gap-1 text-[13px] text-zinc-400 hover:text-zinc-600"
                       >
                         <FaUser size={12} />
@@ -261,25 +302,29 @@ export default function ProfileSideBar({
                   <button
                     type="button"
                     onClick={async () => {
-                      setPendingUnfollowId(followingUser.id);
+                      const userId = followingUser.id;
+                      const wasFollowing = followStates[userId] ?? false;
+                      setPendingFollowId(userId);
+                      setFollowStates((prev) => ({ ...prev, [userId]: !wasFollowing }));
                       try {
-                        await followingService.unfollowUser(followingUser.id);
-                        setLocalFollowingUsers((prev) =>
-                          prev.filter((user) => user.id !== followingUser.id),
-                        );
-                        onUnfollowUser?.();
+                        if (wasFollowing) {
+                          await followingService.unfollowUser(userId);
+                          onUnfollowUser?.();
+                        } else {
+                          await followingService.followUser(userId);
+                        }
+                      } catch {
+                        setFollowStates((prev) => ({ ...prev, [userId]: wasFollowing }));
                       } finally {
-                        setPendingUnfollowId((current) =>
-                          current === followingUser.id ? null : current,
+                        setPendingFollowId((current) =>
+                          current === userId ? null : current,
                         );
                       }
                     }}
-                    disabled={pendingUnfollowId === followingUser.id}
-                      className="shrink-0 rounded-md bg-zinc-800 px-3 py-2 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 sm:text-[14px]"
-                    >
-                    {pendingUnfollowId === followingUser.id
-                      ? "Unfollowing..."
-                      : "Following"}
+                    disabled={pendingFollowId === followingUser.id}
+                    className="shrink-0 rounded-md bg-zinc-800 px-3 py-2 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 sm:text-[14px]"
+                  >
+                    {followStates[followingUser.id] ?? true ? "Following" : "Follow"}
                   </button>
                 </div>
               );
