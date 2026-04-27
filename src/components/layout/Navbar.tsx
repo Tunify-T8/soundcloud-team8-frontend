@@ -23,7 +23,7 @@ import CheckoutModal from "../../features/premium/components/CheckoutModal";
 
 
 function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
+  const diff = Math.max( 0 ,Date.now() - new Date(dateStr).getTime());
   const seconds = Math.floor(diff / 1000);
   if (seconds < 60) return `${seconds}s ago`;
   const minutes = Math.floor(seconds / 60);
@@ -78,12 +78,7 @@ export default function Navbar() {
     } catch { /* ignore */ }
   }, []);
 
-  useEffect(() => {
-    fetchUnreadCount();
-    // Fallback polling every 60 s in case the socket is disconnected
-    const interval = setInterval(fetchUnreadCount, 60_000);
-    return () => clearInterval(interval);
-  }, [fetchUnreadCount]);
+  
 
   // ── Socket.IO ─────────────────────────────────────────────────────────────
   useEffect(() => {
