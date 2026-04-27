@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { playlistService } from "../../../libraryService";
 import type { Collection, CollectionTrack } from "../../../types";
+import trackFallback from "@/assets/track.jpg";
 
 interface EditPlaylistOverlayProps {
   isOpen: boolean;
@@ -105,7 +106,7 @@ const EditPlaylistOverlay: React.FC<EditPlaylistOverlayProps> = ({
     !isUploadingCover &&
     (!coverChanged || !!uploadedCoverUrl);
 
-  const imageSrc = previewUrl ?? playlist.coverUrl ?? "/default-cover.png";
+  const imageSrc = previewUrl ?? playlist.coverUrl ?? trackFallback;
 
   const handleSave = async () => {
     if (!canSave) return;
@@ -384,7 +385,7 @@ const EditPlaylistOverlay: React.FC<EditPlaylistOverlayProps> = ({
                   >
                     <div className="flex min-w-0 items-center gap-3">
                       <img
-                        src={ct.track.coverUrl || "/default-cover.png"}
+                        src={ct.track.coverUrl || trackFallback}
                         alt={ct.track.title}
                         className="h-9 w-9 shrink-0 object-cover"
                       />

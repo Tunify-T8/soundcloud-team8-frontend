@@ -1,5 +1,6 @@
 import { Play } from "lucide-react";
 import type { CollectionTrack } from "../../../types";
+import trackFallback from "@/assets/track.jpg";
 
 function formatCompactNumber(value?: number) {
   if (value === undefined || value === null || Number.isNaN(value)) return null;
@@ -16,7 +17,7 @@ const TrackList: React.FC<{ tracks: CollectionTrack[] }> = ({ tracks }) => {
         >
           <div className="flex min-w-0 items-center gap-3">
             <img
-              src={ct.track.coverUrl || "/default-cover.png"}
+              src={ct.track.coverUrl || trackFallback}
               alt={ct.track.title}
               className="h-7 w-7 shrink-0 object-cover"
             />

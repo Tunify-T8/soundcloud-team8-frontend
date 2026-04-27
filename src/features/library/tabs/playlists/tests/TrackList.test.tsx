@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import TrackList from "../components/TrackList";
 import type { CollectionTrack } from "../../../types";
+import trackFallback from "@/assets/track.jpg";
 
 function makeTrack(
   overrides: Partial<CollectionTrack> = {},
@@ -92,7 +93,7 @@ describe("Playlist TrackList", () => {
     render(<TrackList tracks={tracks} />);
 
     const img = screen.getByRole("img", { name: "No Cover" });
-    expect(img).toHaveAttribute("src", "/default-cover.png");
+    expect(img).toHaveAttribute("src", trackFallback);
   });
 
   it("shows compact play counts from playCount and playsCount", () => {

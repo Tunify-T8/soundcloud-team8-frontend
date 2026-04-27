@@ -8,6 +8,7 @@ import { useMe } from "../context/useMe";
 import type {
   MeUserProfile,
   PublicUserProfile,
+  UserFollower,
   UserFollowing,
 } from "../../../shared/types/User";
 
@@ -22,6 +23,7 @@ export default function ProfilePage() {
   const { me, socialAccounts, following, refresh: refreshMe } = useMe();
   const isMe = !username;
   const [publicUser, setPublicUser] = useState<PublicUserProfile | null>(null);
+  const [openedFollowers, setOpenedFollowers] = useState<UserFollower[]>([]);
   const [openedFollowing, setOpenedFollowing] = useState<UserFollowing[]>([]);
   const [loading, setLoading] = useState(!!username);
   const [error, setError] = useState<string | null>(null);
@@ -77,30 +79,79 @@ export default function ProfilePage() {
     };
   }, [isMe, publicUser?.id, following]);
 
+  useEffect(() => {
+    let isMounted = true;
+    const targetUserId = isMe ? me?.id : publicUser?.id;
+
+    if (!targetUserId) {
+      setOpenedFollowers([]);
+      return;
+    }
+
+    profileService
+      .getUserFollowers(targetUserId)
+      .then((res) => {
+        if (!isMounted) return;
+        setOpenedFollowers(res.followers ?? []);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setOpenedFollowers([]);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isMe, me?.id, publicUser?.id]);
+
   if (!username && !me) {
-    return <div className="min-h-screen text-white">Loading...</div>;
+    return <div className="min-h-screen bg-[#0b0b0b] text-white">Loading...</div>;
   }
 
   if (loading) {
-    return <div className="min-h-screen text-white">Loading...</div>;
+    return <div className="min-h-screen bg-[#0b0b0b] text-white">Loading...</div>;
   }
 
   const user = username ? publicUser : me;
 
   if (error || !user) {
     return (
-      <div className="min-h-screen text-white">
+      <div className="min-h-screen bg-[#0b0b0b] text-white">
         {error || "User not found."}
       </div>
     );
   }
-  const location = user.location ?? "";
-  const locationParts = location.split(",");
+  const userLocation = user.location ?? "";
+  const locationParts = userLocation.split(",");
   const city = locationParts[0]?.trim() ?? undefined;
   const country = locationParts[1]?.trim() ?? undefined;
+  const sidebarProps = {
+    profileId: user.id,
+    followers: user.followersCount,
+    following: user.followingCount,
+    tracks: "tracksCount" in user ? (user as any).tracksCount : 0,
+    bio: user.bio ?? undefined,
+    socialAccounts: isMe ? socialAccounts : undefined,
+    followerUsers: openedFollowers.map((u) => ({
+      id: u.id,
+      username: u.username,
+      displayName: u.username,
+      avatarUrl: u.avatarUrl ?? "",
+      isCertified: false,
+    })),
+    followingUsers: openedFollowing.map((u) => ({
+      id: u.id,
+      username: u.username,
+      displayName: u.displayName ?? undefined,
+      avatarUrl: u.avatarUrl ?? "",
+      isCertified: u.isCertified ?? false,
+      followersCount: u.followersCount ?? 0,
+    })),
+    onUnfollowUser: refreshProfile,
+  };
 
   return (
-    <div className="min-h-screen text-white">
+    <div className="min-h-screen bg-[#0b0b0b] text-white">
       <Header
         displayName={user.displayName ?? undefined}
         username={user.username}
@@ -112,7 +163,7 @@ export default function ProfilePage() {
         isMe={isMe}
         onProfileUpdated={refreshProfile}
       />
-      <div className="relative">
+      <div className="relative bg-[#0b0b0b]">
         <UserInfoBar
           displayName={user.displayName ?? undefined}
           username={user.username}
@@ -127,27 +178,16 @@ export default function ProfilePage() {
           userId={user.id}
           onProfileUpdated={refreshProfile}
         />
-        <div className="absolute right-[8.333333%] top-full mt-4">
-          <ProfileSideBar
-            profileId={user.id}
-            followers={user.followersCount}
-            following={user.followingCount}
-            tracks={"tracksCount" in user ? (user as any).tracksCount : 0}
-            bio={user.bio ?? undefined}
-            socialAccounts={isMe ? socialAccounts : undefined}
-            followingUsers={openedFollowing.map((u) => ({
-              id: u.id,
-              username: u.username,
-              displayName: u.displayName ?? undefined,
-              avatarUrl: u.avatarUrl ?? "",
-              isCertified: u.isCertified ?? false,
-              followersCount: u.followersCount ?? 0,
-            }))}
-            onUnfollowUser={refreshProfile}
-          />
+        <div className="absolute right-[8.333333%] top-full mt-4 hidden lg:block">
+          <ProfileSideBar {...sidebarProps} />
         </div>
       </div>
-      <Outlet />
+      <div className="bg-[#0b0b0b] min-h-screen">
+        <Outlet />
+        <div className="mx-auto mt-4 w-10/12 lg:hidden">
+          <ProfileSideBar {...sidebarProps} />
+        </div>
+      </div>
     </div>
   );
 }

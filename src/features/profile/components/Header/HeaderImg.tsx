@@ -61,8 +61,7 @@ export default function HeaderImg({
 
   return (
     <div
-      className="relative header-container flex items-center w-full h-28 sm:h-44 md:h-56 lg:h-64
-                  bg-[linear-gradient(315deg,rgb(186,191,190)_0%,rgb(125,74,80)_100%)]"
+      className="relative header-container flex items-center w-full h-28 sm:h-44 md:h-56 lg:h-64 bg-[#0b0b0b]"
     >
       {src && (
         <img

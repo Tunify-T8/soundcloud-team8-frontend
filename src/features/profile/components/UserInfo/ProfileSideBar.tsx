@@ -28,6 +28,7 @@ export default function ProfileSideBar({
   tracks,
   bio,
   socialAccounts,
+  followerUsers,
   followingUsers,
   onUnfollowUser,
 }: {
@@ -46,9 +47,13 @@ export default function ProfileSideBar({
     tiktok?: string;
     soundcloud?: string;
   };
+  followerUsers?: FollowingUser[];
   followingUsers?: FollowingUser[];
   onUnfollowUser?: () => void;
 }) {
+  const [localFollowerUsers, setLocalFollowerUsers] = useState<FollowingUser[]>(
+    followerUsers ?? [],
+  );
   const [localFollowingUsers, setLocalFollowingUsers] = useState<FollowingUser[]>(
     followingUsers ?? [],
   );
@@ -57,11 +62,17 @@ export default function ProfileSideBar({
   const { me } = useMe();
 
   useEffect(() => {
+    setLocalFollowerUsers(followerUsers ?? []);
+  }, [followerUsers]);
+
+  useEffect(() => {
     setLocalFollowingUsers(followingUsers ?? []);
   }, [followingUsers]);
 
-  const visibleFollowingUsers = localFollowingUsers.slice(0, 3);
+  const visibleFollowerUsers = localFollowerUsers.slice(0, 6);
+  const visibleFollowingUsers = localFollowingUsers.slice(0, 6);
   const followingCount = localFollowingUsers.length;
+  const followersCountLabel = Number(followers ?? 0);
   const hasSocialAccounts = Boolean(
     socialAccounts?.facebook ||
     socialAccounts?.instagram ||
@@ -208,6 +219,42 @@ export default function ProfileSideBar({
           Upgrade to Artist Pro
         </button>
       </div>
+      {visibleFollowerUsers.length > 0 && (
+        <div className="mt-6">
+          <div className="flex items-center justify-between">
+            <Link
+              to={`${userPath}/followers`}
+              className="text-[12px] font-extrabold uppercase leading-none tracking-wide text-white hover:text-zinc-300"
+            >
+              {followersCountLabel} FOLLOWERS
+            </Link>
+            <Link
+              to={`${userPath}/followers`}
+              className="text-[13px] text-zinc-500 hover:text-zinc-300"
+            >
+              View all
+            </Link>
+          </div>
+          <div className="mt-4 flex items-center">
+            {visibleFollowerUsers.map((followingUser, index) => (
+              <Link
+                key={followingUser.id}
+                to={`/${followingUser.id}`}
+                className={`relative block h-14 w-14 overflow-hidden rounded-full border border-zinc-900 bg-zinc-800 ${
+                  index > 0 ? "-ml-3" : ""
+                }`}
+                title={followingUser.displayName ?? followingUser.username}
+              >
+                <img
+                  src={followingUser.avatarUrl || avatarFallback}
+                  alt={followingUser.username}
+                  className="h-full w-full object-cover"
+                />
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
       {visibleFollowingUsers.length > 0 && (
         <div className="mt-6">
           <div className="flex items-center justify-between">
@@ -275,8 +322,8 @@ export default function ProfileSideBar({
                       }
                     }}
                     disabled={pendingUnfollowId === followingUser.id}
-                      className="shrink-0 rounded-md bg-zinc-800 px-3 py-2 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 sm:text-[14px]"
-                    >
+                    className="shrink-0 rounded-md bg-zinc-800 px-3 py-2 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 sm:text-[14px]"
+                  >
                     {pendingUnfollowId === followingUser.id
                       ? "Unfollowing..."
                       : "Following"}

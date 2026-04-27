@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { playlistService } from "../../../libraryService";
 import type { Collection, CollectionTrack } from "../../../types";
+import trackFallback from "@/assets/track.jpg";
 
 interface Props {
   playlist: Collection;
@@ -102,7 +103,7 @@ const PlaylistHeader: React.FC<Props> = ({
       </div>
       <div className="absolute right-7 top-7 h-[288px] w-[288px] overflow-hidden rounded-lg bg-zinc-900 shadow-lg">
         <img
-          src={previewUrl ?? playlist.coverUrl ?? "/default-cover.png"}
+          src={previewUrl ?? playlist.coverUrl ?? trackFallback}
           className="h-full w-full object-cover"
           alt={playlist.title}
         />
