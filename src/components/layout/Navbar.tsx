@@ -15,7 +15,7 @@ import {
   getUnreadCount,
   markAllAsRead,
   followUser,
-  
+  unfollowUser,
 } from "@/features/notifications/service/service"; 
 import type {NotificationObject} from "@/features/notifications/types"
 import { getAccessToken } from "@/features/auth/utils/token.utils";
@@ -157,11 +157,36 @@ export default function Navbar() {
     }
   };
 
-  const handleFollowBack = async (actorId: string) => {
+  const handleFollowBack = async (actorId: string, isFollowed?: boolean) => {
+    if (!actorId) return;
+
+    // Step 1: Optimistic update - update UI immediately
+    setNotifications((prev) =>
+      prev.map((notif) =>
+        notif.actor?.id === actorId
+          ? { ...notif, isFollowed: !isFollowed }
+          : notif
+      )
+    );
+
     try {
-      await followUser(actorId);
+      // Step 2: Sync with backend
+      if (isFollowed) {
+        await unfollowUser(actorId);
+      } else {
+        await followUser(actorId);
+      }
       setFollowedBack((prev) => new Set([...prev, actorId]));
-    } catch { /* ignore */ }
+    } catch {
+      // Step 3: If API call fails, revert the changes
+      setNotifications((prev) =>
+        prev.map((notif) =>
+          notif.actor?.id === actorId
+            ? { ...notif, isFollowed }
+            : notif
+        )
+      );
+    }
   };
 
   // ── Outside-click handler ─────────────────────────────────────────────────
@@ -369,7 +394,7 @@ export default function Navbar() {
                           key={notif.id}
                           notif={notif}
                           followedBack={followedBack.has(notif.actor?.id)}
-                          onFollowBack={() => handleFollowBack(notif.actor?.id)}
+                          onFollowBack={() => handleFollowBack(notif.actor?.id, notif.isFollowed)}
                           onClose={() => setNotifOpen(false)}
                         />
                       ))
@@ -533,14 +558,13 @@ function DropdownNotifRow({
       {notif.type === "user_followed" && (
         <button
           onClick={(e) => { e.stopPropagation(); onFollowBack(); }}
-          disabled={followedBack}
           className={`px-4 py-2 text-sm font-bold rounded-lg flex-shrink-0 transition-colors ${
-            followedBack
+            notif.isFollowed
               ? "bg-zinc-700 text-zinc-400 cursor-default"
               : "bg-white text-black hover:bg-zinc-200"
           }`}
         >
-          {followedBack ? "Following" : "Follow back"}
+          {notif.isFollowed ? "Following" : "Follow back"}
         </button>
       )}
     </div>
