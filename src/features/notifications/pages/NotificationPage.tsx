@@ -480,11 +480,11 @@ function NotificationRow({
           <button
             onClick={onFollowBack}
             data-testid={`follow-back-btn-${notif.id}`}
-            className={`px-2 sm:px-3 py-1.5 text-xs font-bold border rounded-sm transition-colors ${
-              isFollowed
-                ? "border-zinc-600 text-zinc-400 hover:border-red-500 hover:text-red-400"
-                : "border-zinc-400 text-white hover:border-white"
-            }`}
+            className={`px-4 py-2 text-sm font-bold rounded-lg flex-shrink-0 transition-colors ${
+            notif.isFollowed
+              ? "bg-zinc-700 text-zinc-400 cursor-default"
+              : "bg-white text-black hover:bg-zinc-200"
+          }`}
           >
             {isFollowed ? "Following" : "Follow back"}
           </button>
@@ -545,11 +545,11 @@ function SidebarFollower({
       <button
         onClick={onFollowBack}
         data-testid={`sidebar-follow-back-btn-${notif.id}`}
-        className={`px-3 py-1.5 text-xs font-bold border rounded-sm transition-colors flex-shrink-0 ${
-          isFollowed
-            ? "border-zinc-600 text-zinc-400 hover:border-red-500 hover:text-red-400"
-            : "border-zinc-400 text-white hover:border-white"
-        }`}
+        className={`px-4 py-2 text-sm font-bold rounded-lg flex-shrink-0 transition-colors ${
+            notif.isFollowed
+              ? "bg-zinc-700 text-zinc-400 cursor-default"
+              : "bg-white text-black hover:bg-zinc-200"
+          }`}
       >
         {isFollowed ? "Following" : "Follow back"}
       </button>
