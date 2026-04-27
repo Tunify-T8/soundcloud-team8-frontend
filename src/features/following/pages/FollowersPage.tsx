@@ -60,18 +60,12 @@ export default function FollowersPage() {
           setTitleName(me.displayName || me.username);
           setAvatarUrl(me.avatarUrl ?? null);
           setFollowers(data.followers ?? []);
-
-          const statusEntries = await Promise.all(
-            (data.followers ?? []).map(async (follower) => {
-              try {
-                const status = await followingService.getFollowStatus(follower.id);
-                return [follower.id, status.isFollowing] as const;
-              } catch {
-                return [follower.id, false] as const;
-              }
-            }),
+          const statuses = Object.fromEntries(
+            (data.followers ?? []).map((follower) => [
+              follower.id,
+              Boolean(follower.isFollowing),
+            ]),
           );
-          const statuses = Object.fromEntries(statusEntries);
           if (mounted) setFollowStates(statuses);
         } else if (username) {
           const profile = await profileService.getPublicProfile(username);
@@ -80,18 +74,12 @@ export default function FollowersPage() {
           setTitleName(profile.displayName || profile.username);
           setAvatarUrl(profile.avatarUrl ?? null);
           setFollowers(data.followers ?? []);
-
-          const statusEntries = await Promise.all(
-            (data.followers ?? []).map(async (follower) => {
-              try {
-                const status = await followingService.getFollowStatus(follower.id);
-                return [follower.id, status.isFollowing] as const;
-              } catch {
-                return [follower.id, false] as const;
-              }
-            }),
+          const statuses = Object.fromEntries(
+            (data.followers ?? []).map((follower) => [
+              follower.id,
+              Boolean(follower.isFollowing),
+            ]),
           );
-          const statuses = Object.fromEntries(statusEntries);
           if (mounted) setFollowStates(statuses);
         }
       } catch (e) {
