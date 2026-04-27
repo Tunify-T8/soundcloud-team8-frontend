@@ -41,6 +41,9 @@ import LibraryPage from "./features/library/pages/LibraryPage";
 import NotificationsPage from "./features/notifications/pages/NotificationPage";
 import InsightsOverviewPage from "./features/insights/components/InsightsOverviewPage";
 
+import PlansPage from "./features/premium/pages/PlansPage";
+import AllTabPage from  "./features/profile/pages/UserInfoBar/AllTabPage";
+import { AdPopup } from "./features/premium/components/AdPopUp";
 
 const router = createBrowserRouter([
   {
@@ -78,6 +81,7 @@ const router = createBrowserRouter([
       <ProtectedRoute>
         <ProfileProvider>
           <NavBar />
+          <AdPopup />
         </ProfileProvider>
       </ProtectedRoute>
     ),
@@ -150,6 +154,7 @@ const router = createBrowserRouter([
         path: "/me",
         element: <ProfilePage />,
         children: [
+          { path: "", element: <AllTabPage /> },
           { path: "popular-tracks", element: <PopularTracksPage /> },
           { path: "tracks", element: <ProfileTracksPage /> },
           { path: "albums", element: <AlbumsPage /> },
@@ -201,6 +206,15 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+
+   {
+        path: "/plans",
+        element: (
+          <ProfileProvider>
+            <PlansPage />
+          </ProfileProvider>
+        )
+   }
 ]);
 
 function App() {
