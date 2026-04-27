@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ChevronDown, MoreHorizontal, Rows } from "lucide-react";
+import { ChevronDown, MoreHorizontal } from "lucide-react";
 import { Link } from "react-router-dom";
 import { io } from "socket.io-client";
-import { BASE_URL } from "@/config/env";
 import {
   getNotifications,
   markNotificationAsRead,
   followUser,
+  unfollowUser,
 } from "@/features/notifications/service/service";
 import type {
   NotificationObject,
@@ -14,7 +14,6 @@ import type {
 } from "@/features/notifications/types";
 import { getAccessToken } from "@/features/auth/utils/token.utils";
 import { api } from "@/features/auth/services/api";
-
 
 const FILTER_OPTIONS: { label: string; value: NotificationFilterType }[] = [
   { label: "All notifications", value: "all" },
@@ -29,7 +28,7 @@ const FILTER_OPTIONS: { label: string; value: NotificationFilterType }[] = [
 ];
 
 function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
+  const diff = Math.max(0 ,Date.now() - new Date(dateStr).getTime());
   const seconds = Math.floor(diff / 1000);
   if (seconds < 60) return `${seconds} seconds ago`;
   const minutes = Math.floor(seconds / 60);
@@ -40,7 +39,9 @@ function timeAgo(dateStr: string): string {
   return `${days} day${days !== 1 ? "s" : ""} ago`;
 }
 
-function normaliseSocketPayload(raw: Record<string, unknown>): NotificationObject {
+function normaliseSocketPayload(
+  raw: Record<string, unknown>
+): NotificationObject {
   return {
     id: raw.id as string,
     type: raw.type as NotificationObject["type"],
@@ -50,6 +51,7 @@ function normaliseSocketPayload(raw: Record<string, unknown>): NotificationObjec
     isRead: false,
     readAt: null,
     createdAt: raw.createdAt as string,
+    isFollowed: (raw.isFollowed as boolean) ?? false,
   };
 }
 
@@ -58,9 +60,9 @@ export default function NotificationsPage() {
   const [filter, setFilter] = useState<NotificationFilterType>("all");
   const [filterOpen, setFilterOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [followedBack, setFollowedBack] = useState<Set<string>>(new Set());
   const filterRef = useRef<HTMLDivElement>(null);
 
+  // Keep a ref to the current filter so the socket handler always reads the latest value
   const filterRef2 = useRef<NotificationFilterType>(filter);
   useEffect(() => {
     filterRef2.current = filter;
@@ -69,9 +71,13 @@ export default function NotificationsPage() {
   const currentFilterLabel =
     FILTER_OPTIONS.find((o) => o.value === filter)?.label ?? "All notifications";
 
+  // Close filter dropdown when clicking outside
   useEffect(() => {
     const handleOutside = (e: MouseEvent) => {
-      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+      if (
+        filterRef.current &&
+        !filterRef.current.contains(e.target as Node)
+      ) {
         setFilterOpen(false);
       }
     };
@@ -79,26 +85,30 @@ export default function NotificationsPage() {
     return () => document.removeEventListener("mousedown", handleOutside);
   }, []);
 
-  const fetchNotifications = useCallback(async (currentFilter: NotificationFilterType) => {
-    if (!getAccessToken()) return;
-    setLoading(true);
-    try {
-      const params = currentFilter === "all" ? {} : { type: currentFilter };
-      const res = await getNotifications({ limit: 50, ...params });
-      setNotifications(res.data);
-    } catch {
-      // handle error
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // Fetch notifications from REST API
+  const fetchNotifications = useCallback(
+    async (currentFilter: NotificationFilterType) => {
+      if (!getAccessToken()) return;
+      setLoading(true);
+      try {
+        const params = currentFilter === "all" ? {} : { type: currentFilter };
+        const res = await getNotifications({ limit: 50, ...params });
+        setNotifications(res.data);
+      } catch {
+        // handle error silently
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     fetchNotifications(filter);
   }, [filter, fetchNotifications]);
 
+  // Poll for token if not yet available (e.g. auth delay)
   const [token, setToken] = useState(() => getAccessToken() ?? "");
-
   useEffect(() => {
     if (token) return;
     const interval = setInterval(() => {
@@ -111,60 +121,105 @@ export default function NotificationsPage() {
     return () => clearInterval(interval);
   }, [token]);
 
+  // Real-time socket connection
   useEffect(() => {
     let socket: ReturnType<typeof io> | null = null;
 
     const connect = async () => {
       try {
         await api.get("/notifications/unread-count");
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
 
       const freshToken = getAccessToken() ?? "";
       if (!freshToken) return;
-      console.log("connecting to:", `https://tunify.duckdns.org/notifications`);
+
       socket = io("https://tunify.duckdns.org/notifications", {
-        query: { token :freshToken },
+        query: { token: freshToken },
         reconnectionAttempts: 10,
         reconnectionDelay: 400,
       });
-    
 
       socket.on("connect", () => console.log("socket connected ✅"));
-      socket.on("connect_error", (e) => console.log("connect_error:", e.message));
+      socket.on("connect_error", (e) =>
+        console.log("connect_error:", e.message)
+      );
 
       const handle = (raw: Record<string, unknown>) => {
         try {
           const notif = normaliseSocketPayload(raw);
-          console.log(raw)
           setNotifications((prev) => {
             if (prev.some((n) => n.id === notif.id)) return prev;
             const activeFilter = filterRef2.current;
-            if (activeFilter !== "all" && notif.type !== activeFilter) return prev;
+            if (activeFilter !== "all" && notif.type !== activeFilter)
+              return prev;
             return [notif, ...prev];
           });
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       };
 
       const eventNames = [
-        "notification", "track_liked", "track_commented", "track_reposted",
-        "user_followed", "new_release", "new_message", "system", "subscription",
+        "notification",
+        "track_liked",
+        "track_commented",
+        "track_reposted",
+        "user_followed",
+        "new_release",
+        "new_message",
+        "system",
+        "subscription",
       ] as const;
 
       eventNames.forEach((event) => socket?.on(event, handle));
     };
 
     connect();
-
-    return () => { socket?.disconnect(); };
+    return () => {
+      socket?.disconnect();
+    };
   }, []);
 
-  async function handleFollowBack(actorId: string, notifId: string) {
+  /**
+   * Optimistic follow/unfollow:
+   * 1. Immediately flip `isFollowed` on every notification from this actor.
+   * 2. Call the API in the background.
+   * 3. On failure, revert to the original value.
+   */
+  async function handleFollowBack(
+    actorId: string | undefined,
+    notifId: string,
+    currentIsFollowed: boolean
+  ) {
+    if (!actorId) return;
+
+    // ── Optimistic update ──────────────────────────────────────────────────
+    setNotifications((prev) =>
+      prev.map((n) =>
+        n.actor?.id === actorId
+          ? { ...n, isFollowed: !currentIsFollowed }
+          : n
+      )
+    );
+
     try {
-      await followUser(actorId);
+      if (currentIsFollowed) {
+        await unfollowUser(actorId);
+      } else {
+        await followUser(actorId);
+      }
       await markNotificationAsRead(notifId);
-      setFollowedBack((prev) => new Set([...prev, actorId]));
     } catch {
-      // handle
+      // ── Revert on error ────────────────────────────────────────────────
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.actor?.id === actorId
+            ? { ...n, isFollowed: currentIsFollowed }
+            : n
+        )
+      );
     }
   }
 
@@ -173,27 +228,37 @@ export default function NotificationsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white" data-testid="notifications-page">
+    <div
+      className="min-h-screen bg-[#0a0a0a] text-white"
+      data-testid="notifications-page"
+    >
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 pt-6 sm:pt-8 flex gap-8">
-
-        {/* ── Main content ──────────────────────────────────────────────────── */}
+        {/* ── Main content ─────────────────────────────────────────────── */}
         <div className="flex-1 min-w-0" data-testid="notifications-main">
-
           {/* Header row */}
-          <div className="flex items-center justify-between mb-6" data-testid="notifications-header">
+          <div
+            className="flex items-center justify-between mb-6"
+            data-testid="notifications-header"
+          >
             <h1 className="text-xl sm:text-2xl font-black tracking-tight">
               Notifications
             </h1>
 
             {/* Filter dropdown */}
-            <div className="relative inline-block" ref={filterRef} data-testid="filter-dropdown-container">
+            <div
+              className="relative inline-block"
+              ref={filterRef}
+              data-testid="filter-dropdown-container"
+            >
               <button
                 onClick={() => setFilterOpen((v) => !v)}
                 aria-label={currentFilterLabel}
                 data-testid="filter-dropdown-trigger"
                 className="flex items-center gap-2 bg-[#1a1a1a] border border-zinc-700 hover:border-zinc-500 rounded-sm px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold transition-colors"
               >
-                <span className="hidden sm:inline" aria-hidden="true">{currentFilterLabel}</span>
+                <span className="hidden sm:inline" aria-hidden="true">
+                  {currentFilterLabel}
+                </span>
                 <span className="sm:hidden" aria-hidden="true">
                   {filter === "all" ? "All" : currentFilterLabel}
                 </span>
@@ -235,9 +300,17 @@ export default function NotificationsPage() {
           {/* Notification list */}
           <div className="space-y-0" data-testid="notifications-list">
             {loading ? (
-              <div className="text-zinc-500 text-sm py-8" data-testid="notifications-loading">Loading...</div>
+              <div
+                className="text-zinc-500 text-sm py-8"
+                data-testid="notifications-loading"
+              >
+                Loading...
+              </div>
             ) : notifications.length === 0 ? (
-              <div className="text-zinc-500 text-sm py-8" data-testid="notifications-empty">
+              <div
+                className="text-zinc-500 text-sm py-8"
+                data-testid="notifications-empty"
+              >
                 No notifications yet.
               </div>
             ) : (
@@ -245,9 +318,12 @@ export default function NotificationsPage() {
                 <NotificationRow
                   key={notif.id}
                   notif={notif}
-                  followedBack={followedBack.has(notif.actor?.id)}
                   onFollowBack={() =>
-                    handleFollowBack(notif.actor?.id, notif.id)
+                    handleFollowBack(
+                      notif.actor?.id,
+                      notif.id,
+                      notif.isFollowed ?? false
+                    )
                   }
                 />
               ))
@@ -255,7 +331,7 @@ export default function NotificationsPage() {
           </div>
         </div>
 
-        {/* ── Sidebar ───────────────────────────────────────────────────────── */}
+        {/* ── Sidebar ──────────────────────────────────────────────────── */}
         <aside
           className="w-[260px] flex-shrink-0 pt-14 max-lg:hidden"
           aria-label="followers sidebar"
@@ -275,23 +351,36 @@ export default function NotificationsPage() {
                   View all
                 </Link>
               </div>
+
               <div className="space-y-3" data-testid="sidebar-followers-list">
                 {recentFollowers.slice(0, 3).map((notif) => (
                   <SidebarFollower
                     key={notif.id}
                     notif={notif}
-                    followedBack={followedBack.has(notif.actor?.id)}
                     onFollowBack={() =>
-                      handleFollowBack(notif.actor?.id, notif.id)
+                      handleFollowBack(
+                        notif.actor?.id,
+                        notif.id,
+                        notif.isFollowed ?? false
+                      )
                     }
                   />
                 ))}
               </div>
 
-              <div className="mt-8 pt-6 border-t border-zinc-800 flex flex-wrap gap-x-2 gap-y-1" data-testid="sidebar-footer-links">
+              <div
+                className="mt-8 pt-6 border-t border-zinc-800 flex flex-wrap gap-x-2 gap-y-1"
+                data-testid="sidebar-footer-links"
+              >
                 {[
-                  "Legal", "Privacy", "Cookie Policy", "Cookie Manager",
-                  "Imprint", "Artist Resources", "Newsroom", "Charts",
+                  "Legal",
+                  "Privacy",
+                  "Cookie Policy",
+                  "Cookie Manager",
+                  "Imprint",
+                  "Artist Resources",
+                  "Newsroom",
+                  "Charts",
                   "Transparency Reports",
                 ].map((item) => (
                   <Link
@@ -303,6 +392,7 @@ export default function NotificationsPage() {
                   </Link>
                 ))}
               </div>
+
               <div className="mt-3" data-testid="sidebar-language">
                 <span className="text-[11px] text-zinc-500">Language: </span>
                 <Link
@@ -320,17 +410,21 @@ export default function NotificationsPage() {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Sub-components
+// ─────────────────────────────────────────────────────────────────────────────
+
 function NotificationRow({
   notif,
-  followedBack,
   onFollowBack,
 }: {
   notif: NotificationObject;
-  followedBack: boolean;
   onFollowBack: () => void;
 }) {
   const messageText =
     notif.type === "user_followed" ? "started following you" : notif.message;
+
+  const isFollowed = notif.isFollowed ?? false;
 
   return (
     <div
@@ -385,15 +479,14 @@ function NotificationRow({
         {notif.type === "user_followed" && (
           <button
             onClick={onFollowBack}
-            disabled={followedBack}
             data-testid={`follow-back-btn-${notif.id}`}
-            className={`px-2 sm:px-3 py-1.5 text-xs font-bold border rounded-sm transition-colors ${
-              followedBack
-                ? "border-zinc-600 text-zinc-500 cursor-default"
-                : "border-zinc-400 text-white hover:border-white"
-            }`}
+            className={`px-4 py-2 text-sm font-bold rounded-lg flex-shrink-0 transition-colors ${
+            notif.isFollowed
+              ? "bg-zinc-700 text-zinc-400 cursor-default"
+              : "bg-white text-black hover:bg-zinc-200"
+          }`}
           >
-            {followedBack ? "Following" : "Follow back"}
+            {isFollowed ? "Following" : "Follow back"}
           </button>
         )}
         <button
@@ -409,13 +502,13 @@ function NotificationRow({
 
 function SidebarFollower({
   notif,
-  followedBack,
   onFollowBack,
 }: {
   notif: NotificationObject;
-  followedBack: boolean;
   onFollowBack: () => void;
 }) {
+  const isFollowed = notif.isFollowed ?? false;
+
   return (
     <div
       className="flex items-center gap-3"
@@ -438,6 +531,7 @@ function SidebarFollower({
           </div>
         )}
       </Link>
+
       <div className="flex-1 min-w-0">
         <Link
           to={`/${notif.actor?.id}`}
@@ -447,17 +541,17 @@ function SidebarFollower({
           {notif.actor?.username}
         </Link>
       </div>
+
       <button
         onClick={onFollowBack}
-        disabled={followedBack}
         data-testid={`sidebar-follow-back-btn-${notif.id}`}
-        className={`px-3 py-1.5 text-xs font-bold border rounded-sm transition-colors flex-shrink-0 ${
-          followedBack
-            ? "border-zinc-600 text-zinc-500 cursor-default"
-            : "border-zinc-400 text-white hover:border-white"
-        }`}
+        className={`px-4 py-2 text-sm font-bold rounded-lg flex-shrink-0 transition-colors ${
+            notif.isFollowed
+              ? "bg-zinc-700 text-zinc-400 cursor-default"
+              : "bg-white text-black hover:bg-zinc-200"
+          }`}
       >
-        {followedBack ? "Following" : "Follow back"}
+        {isFollowed ? "Following" : "Follow back"}
       </button>
     </div>
   );
