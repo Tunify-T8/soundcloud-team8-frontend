@@ -265,7 +265,7 @@ const TrackPage = () => {
   const artworkSrc    = (track as any).artworkUrl ?? '';
   const ownerInit     = artistName.slice(0, 2).toUpperCase();
   const artistAvatar  = trackUser?.avatarUrl ?? makeOwnerAvatar(ownerInit, 88);
-  const artistRouteId = artistId;
+  const artistRouteId = trackUser?.username ?? artistId;
   const tracksCount   = trackUser?.tracksUploadedCount ?? 28;
   const currentUserId = localStorage.getItem('userId') ?? '';
   const waveformSeed  = 3;
@@ -503,7 +503,7 @@ const TrackPage = () => {
                   : 'border-zinc-600 text-white hover:border-white hover:bg-white/5'
               }`}
             >
-              {followLoading ? '...' : isFollowingArtist ? 'Following' : 'Follow'}
+              {isFollowingArtist ? 'Following' : 'Follow'}
             </button>
             <button className="flex items-center gap-1 text-[11px] text-zinc-500 hover:text-white transition mt-1">
               <Flag className="w-3 h-3" />

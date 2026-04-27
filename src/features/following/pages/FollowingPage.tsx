@@ -32,6 +32,9 @@ export default function FollowingPage() {
 
     async function load() {
       setLoading(true);
+      setFollowing([]);
+      setAvatarUrl(null);
+      setTitleName(me && username === me.username ? me.displayName || me.username : "");
       try {
         if (me && username === me.username) {
           const data = await followingService.getUserFollowing(me.id);
@@ -71,7 +74,7 @@ export default function FollowingPage() {
     <div data-testid="following-page" className="mx-auto mt-10 w-9/12 text-white">
       <SocialInfoBar
         avatarUrl={avatarUrl}
-        title={`${titleName || "User"} is following`}
+        title={titleName ? `${titleName} is following` : "Following"}
         basePath={basePath}
       />
       {loading ? (
@@ -89,19 +92,22 @@ export default function FollowingPage() {
               avatarUrl: u.avatarUrl,
               followersCount: u.followersCount,
             }))}
-            placeholders={5}
-            renderAction={(user) => (
-              <button
-                data-testid={`unfollow-btn-${user.id}`}
-                type="button"
-                onClick={() => handleUnfollow(user.id)}
-                disabled={pendingUnfollowId === user.id}
-                className="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-white disabled:opacity-60"
-              >
-                <User size={13} />
-                {pendingUnfollowId === user.id ? "unfollowing..." : "following"}
-              </button>
-            )}
+            renderAction={(user) =>
+              me?.id === user.id ? (
+                <span className="text-sm text-zinc-400">You</span>
+              ) : (
+                <button
+                  data-testid={`unfollow-btn-${user.id}`}
+                  type="button"
+                  onClick={() => handleUnfollow(user.id)}
+                  disabled={pendingUnfollowId === user.id}
+                  className="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-white disabled:opacity-60"
+                >
+                  <User size={13} />
+                  {pendingUnfollowId === user.id ? "unfollowing..." : "following"}
+                </button>
+              )
+            }
           />
         </div>
       )}

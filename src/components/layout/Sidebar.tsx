@@ -100,6 +100,7 @@ export default function SideBar() {
   const handleSuggestedArtistFollowToggle = async (artistId: string) => {
     setPendingFollowId(artistId);
     const wasFollowing = followStates[artistId] ?? false;
+    setFollowStates((prev) => ({ ...prev, [artistId]: !wasFollowing }));
 
     try {
       if (wasFollowing) {
@@ -108,9 +109,9 @@ export default function SideBar() {
         await followingService.followUser(artistId);
       }
 
-      setFollowStates((prev) => ({ ...prev, [artistId]: !wasFollowing }));
       notifySocialGraphUpdated();
     } catch (err) {
+      setFollowStates((prev) => ({ ...prev, [artistId]: wasFollowing }));
       console.error("Failed to toggle suggested artist follow state", err);
     } finally {
       setPendingFollowId((current) => (current === artistId ? null : current));
@@ -210,7 +211,7 @@ export default function SideBar() {
                   data-testid={`suggested-artist-${artist.id}`}
                   className="flex items-center justify-between"
                 >
-                  <Link to={`/${artist.id}`} className="flex items-center gap-3">
+                  <Link to={`/${artist.username || artist.id}`} className="flex items-center gap-3">
                     <img
                       src={artist.avatarUrl || avatarFallback}
                       alt={artist.displayName || artist.username}
@@ -244,11 +245,7 @@ export default function SideBar() {
                         : "bg-white text-black hover:bg-gray-100"
                     }`}
                   >
-                    {pendingFollowId === artist.id
-                      ? "..."
-                      : followStates[artist.id]
-                        ? "Following"
-                        : "Follow"}
+                    {followStates[artist.id] ? "Following" : "Follow"}
                   </button>
                 </div>
               ))

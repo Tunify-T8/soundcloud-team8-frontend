@@ -20,9 +20,12 @@ export default function FollowersPage() {
 
   async function handleFollow(userId: string) {
     setPendingFollowId(userId);
+    setFollowStates((prev) => ({ ...prev, [userId]: true }));
     try {
       await followingService.followUser(userId);
-      setFollowStates((prev) => ({ ...prev, [userId]: true }));
+    } catch (error) {
+      setFollowStates((prev) => ({ ...prev, [userId]: false }));
+      throw error;
     } finally {
       setPendingFollowId(null);
     }
@@ -30,9 +33,12 @@ export default function FollowersPage() {
 
   async function handleUnfollow(userId: string) {
     setPendingFollowId(userId);
+    setFollowStates((prev) => ({ ...prev, [userId]: false }));
     try {
       await followingService.unfollowUser(userId);
-      setFollowStates((prev) => ({ ...prev, [userId]: false }));
+    } catch (error) {
+      setFollowStates((prev) => ({ ...prev, [userId]: true }));
+      throw error;
     } finally {
       setPendingFollowId(null);
     }
@@ -43,6 +49,10 @@ export default function FollowersPage() {
 
     async function load() {
       setLoading(true);
+      setFollowers([]);
+      setFollowStates({});
+      setAvatarUrl(null);
+      setTitleName(me && username === me.username ? me.displayName || me.username : "");
       try {
         if (me && username === me.username) {
           const data = await followingService.getUserFollowers(me.id);
@@ -50,17 +60,18 @@ export default function FollowersPage() {
           setTitleName(me.displayName || me.username);
           setAvatarUrl(me.avatarUrl ?? null);
           setFollowers(data.followers ?? []);
-          
-          // Load follow status for each follower
-          const statuses: Record<string, boolean> = {};
-          for (const follower of data.followers ?? []) {
-            try {
-              const status = await followingService.getFollowStatus(follower.id);
-              statuses[follower.id] = status.isFollowing;
-            } catch {
-              statuses[follower.id] = false;
-            }
-          }
+
+          const statusEntries = await Promise.all(
+            (data.followers ?? []).map(async (follower) => {
+              try {
+                const status = await followingService.getFollowStatus(follower.id);
+                return [follower.id, status.isFollowing] as const;
+              } catch {
+                return [follower.id, false] as const;
+              }
+            }),
+          );
+          const statuses = Object.fromEntries(statusEntries);
           if (mounted) setFollowStates(statuses);
         } else if (username) {
           const profile = await profileService.getPublicProfile(username);
@@ -69,17 +80,18 @@ export default function FollowersPage() {
           setTitleName(profile.displayName || profile.username);
           setAvatarUrl(profile.avatarUrl ?? null);
           setFollowers(data.followers ?? []);
-          
-          // Load follow status for each follower
-          const statuses: Record<string, boolean> = {};
-          for (const follower of data.followers ?? []) {
-            try {
-              const status = await followingService.getFollowStatus(follower.id);
-              statuses[follower.id] = status.isFollowing;
-            } catch {
-              statuses[follower.id] = false;
-            }
-          }
+
+          const statusEntries = await Promise.all(
+            (data.followers ?? []).map(async (follower) => {
+              try {
+                const status = await followingService.getFollowStatus(follower.id);
+                return [follower.id, status.isFollowing] as const;
+              } catch {
+                return [follower.id, false] as const;
+              }
+            }),
+          );
+          const statuses = Object.fromEntries(statusEntries);
           if (mounted) setFollowStates(statuses);
         }
       } catch (e) {
@@ -106,7 +118,7 @@ export default function FollowersPage() {
     <div data-testid="followers-page" className="mx-auto mt-10 w-9/12 text-white">
       <SocialInfoBar
         avatarUrl={avatarUrl}
-        title={`Followers of ${titleName || "user"}`}
+        title={titleName ? `Followers of ${titleName}` : "Followers"}
         basePath={basePath}
       />
       {loading ? (
@@ -123,8 +135,11 @@ export default function FollowersPage() {
               username: u.username,
               avatarUrl: u.avatarUrl,
             }))}
-            placeholders={5}
             renderAction={(user) => {
+              if (me?.id === user.id) {
+                return <span className="text-sm text-zinc-400">You</span>;
+              }
+
               const isFollowing = followStates[user.id] ?? false;
               return (
                 <button
@@ -143,8 +158,8 @@ export default function FollowersPage() {
                   <UserPlus size={13} />
                   {pendingFollowId === user.id
                     ? isFollowing
-                      ? "unfollowing..."
-                      : "following..."
+                      ? "following"
+                      : "follow"
                     : isFollowing
                       ? "following"
                       : "follow"}

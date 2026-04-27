@@ -230,6 +230,7 @@ export default function ProfileSideBar({
                 followingUser.displayName ?? followingUser.username;
               const followingFollowersCount =
                 followingUser.followersCount ?? "0";
+              const followingRouteId = followingUser.username || followingUser.id;
 
               return (
                 <div
@@ -244,13 +245,13 @@ export default function ProfileSideBar({
                     />
                     <div className="flex flex-col">
                       <Link
-                        to={`/${followingUser.id}`}
+                        to={`/${followingRouteId}`}
                         className="text-[14px] font-bold leading-none text-white uppercase hover:text-zinc-500"
                       >
                         {followingDisplayName}
                       </Link>
                       <Link
-                        to={`/${followingUser.id}/followers`}
+                        to={`/${followingRouteId}/followers`}
                         className="mt-2 inline-flex items-center gap-1 text-[13px] text-zinc-400 hover:text-zinc-600"
                       >
                         <FaUser size={12} />
