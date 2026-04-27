@@ -89,7 +89,7 @@ export default function DiscoverPage() {
     // },
     {
       title: "Albums for you",
-      tracks: discoverTracks,
+      tracks: albumTracks,
     },
     {
       title: "Made for you",

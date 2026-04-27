@@ -5,7 +5,7 @@ import LibraryPage from "../pages/LibraryPage";
 // ── Mock all tab components ──────────────────────────────────────────────────
 vi.mock("../tabs/OverviewTab",   () => ({ default: () => <div data-testid="tab-overview">Overview Content</div> }));
 vi.mock("../tabs/LikesTab",      () => ({ default: () => <div data-testid="tab-likes">Likes Content</div> }));
-vi.mock("../tabs/PlaylistsTab",  () => ({ default: () => <div data-testid="tab-playlists">Playlists Content</div> }));
+vi.mock("../tabs/playlists/PlaylistsTab",  () => ({ default: () => <div data-testid="tab-playlists">Playlists Content</div> }));
 vi.mock("../tabs/AlbumsTab",     () => ({ default: () => <div data-testid="tab-albums">Albums Content</div> }));
 vi.mock("../tabs/StationsTab",   () => ({ default: () => <div data-testid="tab-stations">Stations Content</div> }));
 vi.mock("../tabs/FollowingTab",  () => ({ default: () => <div data-testid="tab-following">Following Content</div> }));

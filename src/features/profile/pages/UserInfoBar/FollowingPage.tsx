@@ -1,72 +1,108 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { profileService } from "../../profileService";
-import { useMe } from "../../context/useMe";
-import type { UserFollowing } from "@/shared/types/User";
+import { Navigate, useParams } from "react-router-dom";
+import { followingService } from "../followingService";
+import { profileService } from "../../profile/profileService";
+import { useMe } from "../../profile/context/useMe";
+import type { UserFollowing } from "../../../shared/types/User";
+import SocialInfoBar from "../components/SocialInfoBar";
+import { User } from "lucide-react";
+import UserGrid from "../components/UserGrid";
 
 export default function FollowingPage() {
   const { username } = useParams<{ username: string }>();
   const { me } = useMe();
   const [following, setFollowing] = useState<UserFollowing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pendingUnfollowId, setPendingUnfollowId] = useState<string | null>(null);
+  const [titleName, setTitleName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
-  useEffect(() => {
-    const isMeRoute = !username;
-    if (isMeRoute && !me?.id) {
-      if (following.length !== 0) setFollowing([]);
-      if (loading) setLoading(false);
-      return;
+  async function handleUnfollow(userId: string) {
+    setPendingUnfollowId(userId);
+    try {
+      await followingService.unfollowUser(userId);
+      setFollowing((prev) => prev.filter((user) => user.id !== userId));
+    } finally {
+      setPendingUnfollowId((current) => (current === userId ? null : current));
     }
-
-    setLoading(true);
-    const request = isMeRoute
-      ? profileService.getMeFollowing()
-      : profileService.getUserFollowing(username);
-
-    request
-      .then((data) => {
-        setFollowing(data.following ?? []);
-      })
-      .catch(() => {
-        setFollowing([]);
-      })
-      .finally(() => setLoading(false));
-  }, [username, me?.id]);
-
-  if (loading) {
-    return (
-      <div className="w-10/12 mx-auto mt-8 text-zinc-400">
-        Loading following...
-      </div>
-    );
   }
 
+  useEffect(() => {
+    let mounted = true;
+
+    async function load() {
+      setLoading(true);
+      try {
+        if (me && username === me.username) {
+          const data = await followingService.getUserFollowing(me.id);
+          if (!mounted) return;
+          setTitleName(me.displayName || me.username);
+          setAvatarUrl(me.avatarUrl ?? null);
+          setFollowing(data.following ?? []);
+        } else if (username) {
+          const profile = await profileService.getPublicProfile(username);
+          const data = await followingService.getUserFollowing(profile.id);
+          if (!mounted) return;
+          setTitleName(profile.displayName || profile.username);
+          setAvatarUrl(profile.avatarUrl ?? null);
+          setFollowing(data.following ?? []);
+        }
+      } catch (e) {
+        console.error("fetch failed:", e);
+        if (!mounted) return;
+        setAvatarUrl(null);
+        setFollowing([]);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    load();
+    return () => { mounted = false; };
+  }, [username, me?.id, me?.username, me?.displayName]);
+
+  if (username === "me" && me?.username) {
+    return <Navigate to={`/${me.username}/following`} replace />;
+  }
+
+  const basePath = username ? `/${username}` : "/me";
+
   return (
-    <div className="w-10/12 mx-auto mt-8 text-white">
-      <h2 className="text-xl font-bold mb-4">Following</h2>
-      {following.length === 0 ? (
-        <p className="text-zinc-400">Not following anyone yet.</p>
+    <div data-testid="following-page" className="mx-auto mt-10 w-9/12 text-white">
+      <SocialInfoBar
+        avatarUrl={avatarUrl}
+        title={`${titleName || "User"} is following`}
+        basePath={basePath}
+      />
+      {loading ? (
+        <div data-testid="following-loading" className="mt-20 text-center text-zinc-400">Loading following...</div>
+      ) : following.length === 0 ? (
+        <p data-testid="following-empty" className="mt-20 text-center text-xl font-semibold text-white">
+          Not following anyone yet.
+        </p>
       ) : (
-        <div className="space-y-3">
-          {following.map((user) => (
-            <Link
-              key={user.id}
-              to={`/${user.id}`}
-              className="flex items-center justify-between rounded border border-zinc-800 bg-zinc-900/50 px-4 py-3 hover:border-zinc-700"
-            >
-              <div className="flex items-center gap-3">
-                <img
-                  src={user.avatarUrl ?? "https://i.pravatar.cc/100"}
-                  alt={user.username}
-                  className="h-10 w-10 rounded-full object-cover"
-                />
-                <span className="font-semibold">{user.username}</span>
-              </div>
-              <span className="rounded bg-zinc-800 px-3 py-1 text-xs font-semibold text-zinc-200">
-                Following
-              </span>
-            </Link>
-          ))}
+        <div data-testid="following-list" className="mt-8 flex flex-wrap gap-6">
+          <UserGrid
+            users={following.map((u) => ({
+              id: u.id,
+              username: u.username,
+              avatarUrl: u.avatarUrl,
+              followersCount: u.followersCount,
+            }))}
+            placeholders={5}
+            renderAction={(user) => (
+              <button
+                data-testid={`unfollow-btn-${user.id}`}
+                type="button"
+                onClick={() => handleUnfollow(user.id)}
+                disabled={pendingUnfollowId === user.id}
+                className="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-white disabled:opacity-60"
+              >
+                <User size={13} />
+                {pendingUnfollowId === user.id ? "unfollowing..." : "following"}
+              </button>
+            )}
+          />
         </div>
       )}
     </div>

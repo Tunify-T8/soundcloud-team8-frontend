@@ -20,7 +20,6 @@ const formatTime = (s: number) => {
 };
 
 export default function PlayerBar() {
-  // ── Pull active track from global context ──────────────────────────────
   const {
     currentTrack,
     isPlaying: contextIsPlaying,
@@ -36,7 +35,6 @@ export default function PlayerBar() {
   const trackArtist  = currentTrack?.artist  ?? "";
   const thumbnailUrl = currentTrack?.thumbnailUrl;
 
-  // ── Playback engine ────────────────────────────────────────────────────
   const {
     status,
     currentTime,
@@ -55,14 +53,10 @@ export default function PlayerBar() {
   const isPlaying = status === "playing";
   const uiIsPlaying = contextIsPlaying || isPlaying;
 
-  // ── Sync context isPlaying → actual audio ─────────────────────────────
-  // When SongCard sets isPlaying=true in context, trigger real playback here
   useEffect(() => {
     if (!trackId) return;
     if (contextIsPlaying) {
-      if (status === "paused") {
-        play();
-      }
+      if (status === "paused") play();
     } else if (status === "playing") {
       pause();
     }
@@ -70,15 +64,11 @@ export default function PlayerBar() {
 
   useEffect(() => {
     if (!trackId) return;
-    if (contextIsPlaying && status === "ready") {
-      play();
-    }
+    if (contextIsPlaying && status === "ready") play();
   }, [contextIsPlaying, status, trackId, play]);
 
-  // ── Sync actual audio state → context (e.g. natural pause/end) ────────
   useEffect(() => {
     const prevStatus = prevStatusRef.current;
-
     if (
       (status === "paused" || status === "idle" || status === "blocked" || status === "error") &&
       prevStatus === "playing" &&
@@ -86,7 +76,6 @@ export default function PlayerBar() {
     ) {
       setIsPlaying(false);
     }
-
     prevStatusRef.current = status;
   }, [status, contextIsPlaying, setIsPlaying]);
 
@@ -98,7 +87,6 @@ export default function PlayerBar() {
   useEffect(() => {
     if (!pendingSeek || pendingSeek.trackId !== trackId || duration <= 0) return;
     if (status !== "ready" && status !== "playing" && status !== "paused") return;
-
     seek(pendingSeek.progress * duration);
     clearPendingSeek();
   }, [pendingSeek, trackId, duration, status, seek, clearPendingSeek]);
@@ -115,19 +103,13 @@ export default function PlayerBar() {
   const { next, prev, shuffle, repeat, toggleShuffle, toggleRepeat, loadQueue } = useQueue();
 
   useEffect(() => {
-    loadQueue({
-      contextType: "playlist",
-      contextId:   "playlist-1",
-      shuffle:     false,
-      repeat:      "none",
-    });
+    loadQueue({ contextType: "playlist", contextId: "playlist-1", shuffle: false, repeat: "none" });
   }, []);
 
   useEffect(() => {
     isPlayingRef.current = uiIsPlaying;
   }, [uiIsPlaying]);
 
-  // Space bar shortcut
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
@@ -166,24 +148,23 @@ export default function PlayerBar() {
     }, 300);
   };
 
-  const progressPct  = Math.min(100, Math.max(0, duration > 0 ? (currentTime / duration) * 100 : 0));
-  const bufferedPct  = Math.min(100, Math.max(0, buffered * 100));
+  const progressPct = Math.min(100, Math.max(0, duration > 0 ? (currentTime / duration) * 100 : 0));
+  const bufferedPct = Math.min(100, Math.max(0, buffered * 100));
 
-  const handlePlayPause = () => {
-    setIsPlaying(!uiIsPlaying);
-  };
+  const handlePlayPause = () => setIsPlaying(!uiIsPlaying);
 
   return (
     <>
-      <audio ref={audioRef} style={{ display: "none" }} />
+      <audio ref={audioRef} data-testid="player-audio-element" style={{ display: "none" }} />
 
       <NextUpPanel isOpen={showNextUp} onClose={() => setShowNextUp(false)} />
 
-      <div className="fixed bottom-0 left-0 right-0 h-12 bg-[#222] border-t border-zinc-700 z-50 flex items-center justify-center px-6 gap-5">
+      <div data-testid="player-bar" className="fixed bottom-0 left-0 right-0 h-12 bg-[#222] border-t border-zinc-700 z-50 flex items-center justify-center px-6 gap-5">
 
-        {/* ── Playback controls ── */}
-        <div className="flex items-center gap-4 shrink-0">
+        {/* Playback controls */}
+        <div data-testid="player-controls" className="flex items-center gap-4 shrink-0">
           <svg
+            data-testid="player-prev-button"
             width="16" height="16" viewBox="0 0 16 16" fill="white"
             className="cursor-pointer hover:opacity-70"
             onClick={prev}
@@ -193,23 +174,26 @@ export default function PlayerBar() {
           </svg>
 
           <button
+            data-testid="player-play-pause-button"
+            data-playing={uiIsPlaying}
             onClick={handlePlayPause}
             className="w-9 h-9 rounded-full bg-white flex items-center justify-center hover:scale-105 transition-transform"
             aria-label={uiIsPlaying ? "Pause" : "Play"}
           >
             {uiIsPlaying ? (
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="black">
+              <svg data-testid="player-pause-icon" width="14" height="14" viewBox="0 0 14 14" fill="black">
                 <rect x="1" y="1" width="4" height="12" />
                 <rect x="9" y="1" width="4" height="12" />
               </svg>
             ) : (
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="black">
+              <svg data-testid="player-play-icon" width="14" height="14" viewBox="0 0 14 14" fill="black">
                 <polygon points="2,0 16,7 2,14" />
               </svg>
             )}
           </button>
 
           <svg
+            data-testid="player-next-button"
             width="16" height="16" viewBox="0 0 16 16" fill="white"
             className="cursor-pointer hover:opacity-70"
             onClick={next}
@@ -219,12 +203,16 @@ export default function PlayerBar() {
           </svg>
 
           <Shuffle
+            data-testid="player-shuffle-button"
+            data-active={shuffle}
             size={15}
             className="cursor-pointer transition-colors"
             style={{ color: shuffle ? "#FF5500" : "#71717a" }}
             onClick={toggleShuffle}
           />
           <Repeat2
+            data-testid="player-repeat-button"
+            data-repeat-mode={repeat}
             size={15}
             className="cursor-pointer transition-colors"
             style={{ color: repeat !== "none" ? "#FF5500" : "#71717a" }}
@@ -232,13 +220,14 @@ export default function PlayerBar() {
           />
         </div>
 
-        {/* ── Progress bar + times ── */}
-        <div className="flex items-center gap-2 shrink-0" style={{ width: "378px" }}>
-          <span className="text-xs font-bold text-white shrink-0 tracking-tight">
+        {/* Progress bar + times */}
+        <div data-testid="player-progress-section" className="flex items-center gap-2 shrink-0" style={{ width: "378px" }}>
+          <span data-testid="player-current-time" className="text-xs font-bold text-white shrink-0 tracking-tight">
             {formatTime(currentTime)}
           </span>
 
           <div
+            data-testid="player-progress-bar"
             className="relative flex-1 h-[3px] bg-zinc-600 rounded-full cursor-pointer group"
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
@@ -246,27 +235,30 @@ export default function PlayerBar() {
               requestSeek(trackId, pct);
             }}
           >
-            <div className="absolute left-0 top-0 h-full bg-zinc-500 rounded-full" style={{ width: `${bufferedPct}%` }} />
-            <div className="absolute left-0 top-0 h-full bg-orange-500 rounded-full" style={{ width: `${progressPct}%` }} />
+            <div data-testid="player-buffered-bar" className="absolute left-0 top-0 h-full bg-zinc-500 rounded-full" style={{ width: `${bufferedPct}%` }} />
+            <div data-testid="player-played-bar" className="absolute left-0 top-0 h-full bg-orange-500 rounded-full" style={{ width: `${progressPct}%` }} />
             <div
+              data-testid="player-progress-thumb"
               className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
               style={{ left: `clamp(0px, calc(${progressPct}% - 5px), calc(100% - 10px))` }}
             />
           </div>
 
-          <span className="text-xs font-bold text-white shrink-0 tracking-tight">
+          <span data-testid="player-duration" className="text-xs font-bold text-white shrink-0 tracking-tight">
             {formatTime(duration)}
           </span>
         </div>
 
-        {/* ── Volume ── */}
+        {/* Volume */}
         <div
+          data-testid="player-volume-control"
           className="relative shrink-0"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
           {showVolume && (
             <div
+              data-testid="player-volume-slider-popup"
               className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-[#2a2a2a] rounded-lg px-3 pt-3 pb-2 flex flex-col items-center shadow-xl"
               style={{ height: "110px" }}
               onMouseEnter={handleMouseEnter}
@@ -275,12 +267,14 @@ export default function PlayerBar() {
               onMouseUp={() => setIsDragging(false)}
             >
               <div
+                data-testid="player-volume-slider-track"
                 className="relative bg-zinc-600 rounded-full cursor-pointer flex-1"
                 style={{ width: "3px" }}
                 onMouseDown={(e) => { setIsDragging(true); handleVolumeChange(e); }}
               >
-                <div className="absolute bottom-0 left-0 w-full bg-white rounded-full" style={{ height: `${volume * 100}%` }} />
+                <div data-testid="player-volume-fill" className="absolute bottom-0 left-0 w-full bg-white rounded-full" style={{ height: `${volume * 100}%` }} />
                 <div
+                  data-testid="player-volume-thumb"
                   className="absolute left-1/2 -translate-x-1/2 w-3 h-3 bg-black border border-white rounded-full shadow"
                   style={{ bottom: `calc(${volume * 100}% - 6px)` }}
                 />
@@ -289,6 +283,8 @@ export default function PlayerBar() {
           )}
 
           <button
+            data-testid="player-mute-button"
+            data-muted={isMuted}
             onClick={toggleMute}
             className="text-white hover:text-zinc-300 cursor-pointer"
             aria-label={isMuted ? "Unmute" : "Mute"}
@@ -297,23 +293,36 @@ export default function PlayerBar() {
           </button>
         </div>
 
-        {/* ── Track info ── */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Track info */}
+        <div data-testid="player-track-info" className="flex items-center gap-2 shrink-0">
           {thumbnailUrl && (
-            <img src={thumbnailUrl} alt="cover" className="w-8 h-8 object-cover" />
+            <img data-testid="player-track-thumbnail" src={thumbnailUrl} alt="cover" className="w-8 h-8 object-cover" />
           )}
           <div className="flex flex-col leading-tight">
-            <span className="text-xs text-zinc-400 leading-none font-bold tracking-tight">{trackArtist}</span>
-            <span className="text-xs font-bold text-white leading-none mt-0.5">{trackTitle}</span>
+            <span data-testid="player-track-artist" className="text-xs text-zinc-400 leading-none font-bold tracking-tight">{trackArtist}</span>
+            <span data-testid="player-track-title" className="text-xs font-bold text-white leading-none mt-0.5">{trackTitle}</span>
           </div>
         </div>
 
-        {/* ── Right-side actions ── */}
-        <div className="flex items-center gap-4 shrink-0">
-          <Heart size={15} fill="#FF5500" className="cursor-pointer hover:opacity-80" style={{ color: "#FF5500" }} />
-          <UserPlus2 size={15} className="cursor-pointer hover:opacity-80" style={{ color: "#FF5500" }} />
+        {/* Right-side actions */}
+        <div data-testid="player-actions" className="flex items-center gap-4 shrink-0">
+          <Heart
+            data-testid="player-like-button"
+            size={15}
+            fill="#FF5500"
+            className="cursor-pointer hover:opacity-80"
+            style={{ color: "#FF5500" }}
+          />
+          <UserPlus2
+            data-testid="player-follow-button"
+            size={15}
+            className="cursor-pointer hover:opacity-80"
+            style={{ color: "#FF5500" }}
+          />
 
           <button
+            data-testid="player-next-up-button"
+            data-open={showNextUp}
             onClick={() => setShowNextUp((v) => !v)}
             onMouseEnter={() => setHoverQueue(true)}
             onMouseLeave={() => setHoverQueue(false)}

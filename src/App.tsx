@@ -37,6 +37,7 @@ import WhoToFollowPage from "./features/following/pages/WhoToFollowPage";
 import DiscoverPage from "./features/discover/pages/DiscoverPage";
 import SearchPage from "./features/feed/pages/SearchPage";
 import LibraryPage from "./features/library/pages/LibraryPage";
+import NotificationsPage from "./features/notifications/pages/NotificationPage";
 
 const router = createBrowserRouter([
   {
@@ -83,6 +84,10 @@ const router = createBrowserRouter([
         element: <DiscoverPage />,
       },
       {
+        path: "/notifications" ,
+        element: <NotificationsPage />
+      },
+      {
         path: "/messages",
         element: <MessagesPage />,
       },
@@ -111,6 +116,34 @@ const router = createBrowserRouter([
         element: <LibraryPage />
       },
       {
+        path: '/me/likes',
+        element: <LibraryPage />
+      },
+      {
+        path: '/me/albums',
+        element: <LibraryPage />
+      },
+      {
+        path: '/me/sets',
+        element: <LibraryPage />
+      },
+      {
+        path: '/me/stations',
+        element: <LibraryPage />
+      },
+       {
+        path: '/me/following',
+        element: <LibraryPage />
+      },
+      {
+        path: '/me/history',
+        element: <LibraryPage />
+      },
+      // {
+      //   path: "/collections/:id",
+      //   element: <PlaylistPage />
+      // },
+      {
         path: "/me",
         element: <ProfilePage />,
         children: [
@@ -132,14 +165,6 @@ const router = createBrowserRouter([
           { path: "playlists", element: <PlaylistsPage /> },
           { path: "reposts", element: <ProfileRepostsPage /> },
         ],
-      },
-      {
-        path: "/me/followers",
-        element: <FollowersPage />,
-      },
-      {
-        path: "/me/following",
-        element: <FollowingPage />,
       },
       {
         path: "/who-to-follow",

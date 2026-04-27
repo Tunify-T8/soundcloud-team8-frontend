@@ -146,6 +146,7 @@ export default function EditTrackDrawer({ track, onClose, onUpdate }: EditTrackD
           onChange={handleArtworkSelect}
         />
         <div
+          data-testid="edit-drawer-artwork-upload"
           onClick={() => artworkInputRef.current?.click()}
           className="w-full aspect-square border border-dashed border-[#444] flex flex-col items-center justify-center text-[#888] hover:border-[#666] transition cursor-pointer max-w-[220px] mx-auto overflow-hidden relative group rounded"
         >
@@ -176,6 +177,7 @@ export default function EditTrackDrawer({ track, onClose, onUpdate }: EditTrackD
           <InfoIcon />
         </div>
         <input
+          data-testid="edit-drawer-title-input"
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -208,6 +210,7 @@ export default function EditTrackDrawer({ track, onClose, onUpdate }: EditTrackD
         <label className="text-sm font-bold text-white block mb-1">Genre</label>
         <div className="flex items-center">
           <input
+            data-testid="edit-drawer-genre-input"
             value={genre}
             onChange={(e) => setGenre(e.target.value as typeof genre)}
             placeholder="Add or search for genre"
@@ -223,6 +226,7 @@ export default function EditTrackDrawer({ track, onClose, onUpdate }: EditTrackD
           <InfoIcon />
         </div>
         <input
+          data-testid="edit-drawer-tags-input"
           value={tags}
           onChange={(e) => setTags(e.target.value)}
           placeholder="Add styles, moods, tempo."
@@ -233,6 +237,7 @@ export default function EditTrackDrawer({ track, onClose, onUpdate }: EditTrackD
       <div className="border-b border-[#2a2a2a] pb-3 mb-4">
         <label className="text-sm font-bold text-white block mb-1">Description</label>
         <textarea
+          data-testid="edit-drawer-description-input"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
@@ -450,28 +455,28 @@ export default function EditTrackDrawer({ track, onClose, onUpdate }: EditTrackD
     <>
       <div className="fixed inset-0 bg-black/60 z-40" onClick={onClose} />
 
-      <div className="fixed right-0 top-0 bottom-0 w-[540px] bg-[#0e0e0e] z-50 flex flex-col shadow-2xl border-l border-[#1a1a1a]">
+      <div data-testid="edit-track-drawer" className="fixed right-0 top-0 bottom-0 w-[540px] bg-[#0e0e0e] z-50 flex flex-col shadow-2xl border-l border-[#1a1a1a]">
 
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#1a1a1a] flex-shrink-0">
           <div className="flex items-center gap-3">
-            <button onClick={onClose} className="text-[#aaa] hover:text-white transition">
+            <button data-testid="edit-drawer-close-btn" onClick={onClose} className="text-[#aaa] hover:text-white transition">
               <X className="w-4 h-4" />
             </button>
             <span className="text-white font-bold text-base">Edit Track</span>
           </div>
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-2 text-sm text-white bg-[#1a1a1a] hover:bg-[#252525] border border-[#333] px-3 py-1.5 rounded-full transition">
+            <button data-testid="edit-drawer-download-btn" className="flex items-center gap-2 text-sm text-white bg-[#1a1a1a] hover:bg-[#252525] border border-[#333] px-3 py-1.5 rounded-full transition">
               <Download className="w-3.5 h-3.5" />
               Download file
             </button>
-            <button className="flex items-center gap-2 text-sm text-[#666] bg-[#1a1a1a] border border-[#333] px-3 py-1.5 rounded-full cursor-not-allowed opacity-60">
+            <button data-testid="edit-drawer-replace-btn" className="flex items-center gap-2 text-sm text-[#666] bg-[#1a1a1a] border border-[#333] px-3 py-1.5 rounded-full cursor-not-allowed opacity-60">
               <RefreshCw className="w-3.5 h-3.5" />
               Replace file
             </button>
           </div>
         </div>
 
-        <div className="flex border-b border-[#1a1a1a] px-6 flex-shrink-0">
+        <div data-testid="edit-drawer-tabs" className="flex border-b border-[#1a1a1a] px-6 flex-shrink-0">
           {(
             [
               { key: "details", label: "Track details" },
@@ -481,6 +486,7 @@ export default function EditTrackDrawer({ track, onClose, onUpdate }: EditTrackD
           ).map(({ key, label }) => (
             <button
               key={key}
+              data-testid={`edit-drawer-tab-${key}`}
               onClick={() => setActiveTab(key)}
               className={`text-sm py-3 mr-6 border-b-2 transition-colors ${
                 activeTab === key
@@ -493,7 +499,7 @@ export default function EditTrackDrawer({ track, onClose, onUpdate }: EditTrackD
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div data-testid="edit-drawer-content" className="flex-1 overflow-y-auto">
           {activeTab === "details" && TrackDetailsTab}
           {activeTab === "advanced" && AdvancedSettingsTab}
           {activeTab === "storefront" && ArtistStorefrontTab}
@@ -501,6 +507,7 @@ export default function EditTrackDrawer({ track, onClose, onUpdate }: EditTrackD
 
         <div className="border-t border-[#1a1a1a] px-6 py-4 flex justify-end flex-shrink-0 bg-[#0e0e0e]">
           <button
+            data-testid="edit-drawer-save-btn"
             onClick={handleSave}
             className="bg-[#333] hover:bg-[#444] text-white text-sm font-semibold px-6 py-2.5 rounded-full transition"
           >
