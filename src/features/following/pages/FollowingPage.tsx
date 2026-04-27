@@ -108,7 +108,7 @@ export default function FollowingPage() {
   return (
     <div
       data-testid="following-page"
-      className="mt-10 mr-[8.333333%] ml-[8.333333%] text-white lg:mr-[calc(8.333333%+24rem)]"
+      className="mt-10 mr-10 ml-[14rem] text-white lg:mr-[19rem] lg:ml-[14rem]"
     >
       <SocialInfoBar
         avatarUrl={avatarUrl}
