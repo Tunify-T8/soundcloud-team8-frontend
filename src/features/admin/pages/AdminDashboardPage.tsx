@@ -32,6 +32,7 @@ const AdminDashboardPage = () => {
   const [reportStats, setReportStats] = useState<ReportStats | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsResponse | null>(null);
   const [topListKey, setTopListKey] = useState<TopListKey>('mostPlayedTracks');
+  const [showSummary, setShowSummary] = useState(false);
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,6 +80,13 @@ const AdminDashboardPage = () => {
     const summaryAny = (summary ?? {}) as unknown as Record<string, unknown>;
     const analyticsAny = (analytics ?? {}) as unknown as Record<string, unknown>;
 
+    const artistCount =
+      pickNumber(summaryAny, ['artistUsers', 'artistCount', 'artistsCount', 'totalArtists']) ??
+      pickNumber(analyticsAny, ['artistUsers', 'artistCount', 'artistsCount', 'totalArtists']);
+    const listenerCount =
+      pickNumber(summaryAny, ['listenerUsers', 'listenerCount', 'listenersCount', 'totalListeners']) ??
+      pickNumber(analyticsAny, ['listenerUsers', 'listenerCount', 'listenersCount', 'totalListeners']);
+
     const playThroughRate =
       pickNumber(summaryAny, ['playThroughRate', 'playthroughRate', 'play_through_rate']) ??
       pickNumber(analyticsAny, ['playThroughRate', 'playthroughRate', 'play_through_rate']);
@@ -112,6 +120,12 @@ const AdminDashboardPage = () => {
 
     return {
       activeUsers: summary?.activeUsers ?? null,
+      artistCount,
+      listenerCount,
+      artistListenerRatio:
+        artistCount !== null && listenerCount !== null && listenerCount > 0
+          ? artistCount / listenerCount
+          : null,
       playThroughRate,
       storageUsage,
       generatedAt: summary?.generatedAt ?? null,
@@ -133,6 +147,30 @@ const AdminDashboardPage = () => {
     if (value === null) return 'N/A';
     return `${value.toFixed(1)}%`;
   };
+
+  const renderRatio = (value: number | null) => {
+    if (value === null) return 'N/A';
+    return `${value.toFixed(2)} : 1`;
+  };
+
+  const summaryItems = useMemo(
+    () => [
+      { label: 'Total users', value: summary?.totalUsers },
+      { label: 'New users today', value: summary?.newUsersToday },
+      { label: 'New users this week', value: summary?.newUsersThisWeek },
+      { label: 'Active users', value: summary?.activeUsers },
+      { label: 'Suspended users', value: summary?.suspendedUsers },
+      { label: 'Banned users', value: summary?.bannedUsers },
+      { label: 'Total tracks', value: summary?.totalTracks },
+      { label: 'New tracks today', value: summary?.newTracksToday },
+      { label: 'New tracks this week', value: summary?.newTracksThisWeek },
+      { label: 'Total plays', value: summary?.totalPlays },
+      { label: 'Plays today', value: summary?.playsToday },
+      { label: 'Total reports', value: summary?.totalReports },
+      { label: 'Pending reports', value: summary?.pendingReports },
+    ],
+    [summary],
+  );
 
   const topListOptions: TopListOption[] = [
     { key: 'mostPlayedTracks', label: 'Most Played Tracks' },
@@ -162,6 +200,45 @@ const AdminDashboardPage = () => {
           Refresh
         </button>
       </div>
+
+      <div className="mb-5 flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setShowSummary((value) => !value)}
+          className="rounded-sm border border-orange-500 bg-orange-500/10 px-3 py-1.5 text-xs font-bold text-orange-200 hover:bg-orange-500/20 transition-colors"
+        >
+          {showSummary ? 'Hide Summary' : 'Show Summary'}
+        </button>
+      </div>
+
+      {showSummary && (
+        <section className="mb-5 rounded-md border border-zinc-800 bg-zinc-900/70 p-5">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-lg font-black tracking-tight">Summary</h2>
+              <p className="text-xs text-zinc-500 mt-1">Overview data from the summary API</p>
+            </div>
+            {generatedAtLabel && <span className="text-xs text-zinc-500">Updated: {generatedAtLabel}</span>}
+          </div>
+
+          {isLoading ? (
+            <p className="text-zinc-400 text-sm">Loading summary...</p>
+          ) : summary ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {summaryItems.map((item) => (
+                <div key={item.label} className="rounded-md border border-zinc-800 bg-zinc-950/60 p-4">
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">{item.label}</p>
+                  <p className="mt-2 text-xl font-black tracking-tight">
+                    {typeof item.value === 'number' ? item.value.toLocaleString() : 'N/A'}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-zinc-500 text-sm">No summary data available.</p>
+          )}
+        </section>
+      )}
 
       <div className="mb-5 rounded-sm border border-zinc-800 bg-zinc-900/60 p-4 flex items-center justify-between">
         <div>
@@ -214,6 +291,23 @@ const AdminDashboardPage = () => {
             {isLoading ? '...' : renderPercent(metrics.storageUsage)}
           </p>
           <p className="mt-2 text-xs text-zinc-500">Current platform storage utilization</p>
+        </section>
+      </div>
+
+      <div className="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5">
+        <section className="rounded-md border border-zinc-800 bg-zinc-900/70 p-5">
+          <p className="text-zinc-400 text-sm font-semibold">Artist to Listener Ratio</p>
+          <p className="mt-2 text-3xl font-black tracking-tight">
+            {isLoading ? '...' : renderRatio(metrics.artistListenerRatio)}
+          </p>
+        </section>
+
+        <section className="rounded-md border border-zinc-800 bg-zinc-900/70 p-5">
+          <p className="text-zinc-400 text-sm font-semibold">Audience Mix</p>
+          <p className="mt-2 text-3xl font-black tracking-tight">
+            {isLoading ? '...' : metrics.artistCount !== null && metrics.listenerCount !== null ? `${Math.round((metrics.artistCount / Math.max(metrics.artistCount + metrics.listenerCount, 1)) * 100)}%` : 'N/A'}
+          </p>
+          <p className="mt-2 text-xs text-zinc-500">Artist share of creator-account population</p>
         </section>
       </div>
 
