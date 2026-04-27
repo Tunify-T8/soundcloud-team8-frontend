@@ -103,7 +103,10 @@ export default function FollowersPage() {
   const basePath = username ? `/${username}` : "/me";
 
   return (
-    <div data-testid="followers-page" className="mx-auto mt-10 w-9/12 text-white">
+    <div
+      data-testid="followers-page"
+      className="mt-10 mr-[8.333333%] ml-[8.333333%] text-white lg:mr-[calc(8.333333%+24rem)]"
+    >
       <SocialInfoBar
         avatarUrl={avatarUrl}
         title={titleName ? `Followers of ${titleName}` : "Followers"}
