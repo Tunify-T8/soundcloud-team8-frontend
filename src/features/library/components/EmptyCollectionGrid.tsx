@@ -2,24 +2,33 @@ import { Link } from "react-router-dom";
 
 interface EmptyCollectionGridProps {
   title: string;
+  emptyMessage?: string;
   count?: number;
 }
 
-export default function EmptyCollectionGrid({ title, count = 6 }: EmptyCollectionGridProps) {
+export default function EmptyCollectionGrid({ title, emptyMessage, count = 6 }: EmptyCollectionGridProps) {
   return (
-    <section className="mb-8">
+    <section className="mb-8" data-testid={`empty-grid-${title.toLowerCase()}`}>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-white font-bold text-sm">{title}</h2>
-        <Link
-          to="/discover"
-          className="text-zinc-500 text-xs transition-colors duration-150 hover:text-white cursor-pointer"
-        >
-          Browse trending playlists
-        </Link>
+        <h2 className="text-white font-bold text-sm" data-testid="empty-grid-title">{title}</h2>
+        <p className="text-zinc-500 text-xs">
+          {emptyMessage && <span>{emptyMessage} — </span>}
+          <Link
+            to="/discover"
+            data-testid="browse-trending-link"
+            className="font-bold text-zinc-400 hover:text-white transition-colors"
+          >
+            Browse trending playlists
+          </Link>
+        </p>
       </div>
-      <div className="flex gap-4">
+      <div className="grid grid-cols-6 gap-4">
         {Array.from({ length: count }).map((_, i) => (
-          <div key={i} className="flex-shrink-0 w-[170px] h-[170px] rounded-sm bg-[#282828]" />
+          <div
+            key={i}
+            data-testid={`empty-slot-${i}`}
+            className="w-full aspect-square rounded-sm bg-[#282828]"
+          />
         ))}
       </div>
     </section>

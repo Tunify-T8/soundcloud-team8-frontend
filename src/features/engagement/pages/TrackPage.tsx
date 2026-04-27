@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Heart, Repeat2,
@@ -8,6 +8,7 @@ import {
 
 import { engagementService }   from '../services/engagementService';
 import { useEngagement }       from '../hooks/useEngagement';
+import type { ApiComment }     from '../types';
 import type { Track }          from '../types/Track';
 import CommentsSection         from '../components/CommentsSection';
 import { makeCommentAvatar, formatTimestamp } from '../components/CommentsSection';
@@ -45,17 +46,6 @@ const MOCK_FANS = [
   { rank: 5, username: 'Mohamed Ashraf', plays: 111, avatarUrl: makeCommentAvatar('MA') },
 ];
 
-const WAVEFORM_COMMENTS: WaveformComment[] = [
-  { id: 'wc1', userId: 'u1', username: 'Sasa',  avatarUrl: makeCommentAvatar('SN', 28), body: 'walo nisiany',  timestamp: 18  },
-  { id: 'wc2', userId: 'u2', username: 'Jad',   avatarUrl: makeCommentAvatar('JS', 28), body: 'hits different', timestamp: 32  },
-  { id: 'wc3', userId: 'u3', username: 'Nour',  avatarUrl: makeCommentAvatar('NO', 28), body: 'love this',      timestamp: 55  },
-  { id: 'wc4', userId: 'u4', username: 'Omar',  avatarUrl: makeCommentAvatar('OM', 28), body: 'great',          timestamp: 72  },
-  { id: 'wc5', userId: 'u5', username: 'Hagar', avatarUrl: makeCommentAvatar('HS', 28), body: 'wow',            timestamp: 88  },
-  { id: 'wc6', userId: 'u6', username: 'Lena',  avatarUrl: makeCommentAvatar('LE', 28), body: 'repeat',         timestamp: 110 },
-  { id: 'wc7', userId: 'u7', username: 'Mai',   avatarUrl: makeCommentAvatar('MA', 28), body: 'amazing',        timestamp: 130 },
-  { id: 'wc8', userId: 'u8', username: 'Fatma', avatarUrl: makeCommentAvatar('FA', 28), body: 'ana hali',       timestamp: 148 },
-  { id: 'wc9', userId: 'u9', username: 'Ali',   avatarUrl: makeCommentAvatar('AL', 28), body: 'beautiful',      timestamp: 162 },
-];
 
 /* ---------------------------------------------------------------- Waveform */
 
@@ -67,6 +57,16 @@ interface WaveformProps {
   playerProgress: number;
   duration:       number;
 }
+
+const mapTrackCommentsToWaveform = (comments: ApiComment[]): WaveformComment[] =>
+  comments.map((c) => ({
+    id:        c.commentId,
+    userId:    c.user?.userId ?? '',
+    username:  c.user?.username ?? 'Unknown',
+    avatarUrl: c.user?.avatarUrl ?? makeCommentAvatar((c.user?.username ?? 'UN').slice(0, 2).toUpperCase(), 28),
+    body:      c.text,
+    timestamp: typeof c.timestamp === 'number' ? c.timestamp : 0,
+  }));
 
 const Waveform = ({
   onSeek, comments, waveformSeed, isThisTrack, playerProgress, duration,
@@ -205,7 +205,7 @@ const ShareModal = ({ title, onClose }: { title: string; onClose: () => void }) 
 
 const TrackPage = () => {
   const { trackId } = useParams<{ trackId: string }>();
-
+  const [waveformComments, setWaveformComments] = useState<WaveformComment[]>([]);
   const [track, setTrack]                         = useState<Track | null>(null);
   const [trackLoading, setLoading]                = useState(true);
   const [error, setError]                         = useState<string | null>(null);
@@ -257,6 +257,19 @@ const TrackPage = () => {
       .catch(() => {});
   }, [artistId, trackUser]);
 
+
+  useEffect(() => {
+    if (!trackId) return;
+    engagementService.getTrackComments(trackId)
+      .then((data) => {
+        setWaveformComments(mapTrackCommentsToWaveform(data.comments));
+      })
+      .catch(() => {});
+  }, [trackId]);
+
+  const handleCommentsUpdate = useCallback((comments: ApiComment[]) => {
+    setWaveformComments(mapTrackCommentsToWaveform(comments));
+  }, []);
   if (trackLoading) return <div className="p-8 text-white">Loading...</div>;
   if (error || !track) return <div className="p-8 text-red-400">{error ?? 'Track not found'}</div>;
 
@@ -267,7 +280,14 @@ const TrackPage = () => {
   const artistAvatar  = trackUser?.avatarUrl ?? makeOwnerAvatar(ownerInit, 88);
   const artistRouteId = trackUser?.username ?? artistId;
   const tracksCount   = trackUser?.tracksUploadedCount ?? 28;
-  const currentUserId = localStorage.getItem('userId') ?? '';
+  //const currentUserId = localStorage.getItem('userId') ?? '';
+
+  const currentUserId = (() => {
+  try {
+    const token = localStorage.getItem('sc_access_token') ?? '';
+    return token ? JSON.parse(atob(token.split('.')[1]))?.sub ?? '' : '';
+  } catch { return ''; }
+})();
   const waveformSeed  = 3;
 
   // FIX 1: Compare against trackId (URL string) not track.id (API may return number).
@@ -377,7 +397,7 @@ const TrackPage = () => {
             {/* Waveform */}
             <Waveform
               onSeek={handleSeek}
-              comments={WAVEFORM_COMMENTS}
+              comments={waveformComments}
               waveformSeed={waveformSeed}
               isThisTrack={isThisTrack}
               playerProgress={playerProgress}
@@ -518,6 +538,7 @@ const TrackPage = () => {
               commentCount={counts.comments}
               currentTime={currentTime}
               currentUserId={currentUserId}
+              onCommentsChange={handleCommentsUpdate}
             />
           </div>
 

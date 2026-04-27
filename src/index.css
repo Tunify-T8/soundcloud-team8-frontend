@@ -1,7 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
 @import "tailwindcss";
 
-body {
+body{
   background:#111;
 }
 
@@ -17,4 +16,14 @@ body {
 
 .shake {
   animation: shake 0.5s ease-in-out;
+}
+
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
 }

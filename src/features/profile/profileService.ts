@@ -1,5 +1,4 @@
 import { api } from "../auth/services/api";
-import { followingService } from "../following/followingService";
 import type {
   MeUserProfile,
   PublicUserProfile,
@@ -12,6 +11,7 @@ import type {
   FollowStatus,
   BlockedUsersResponse,
   SuggestedUsersResponse,
+  MutualFriendsResponse,
 } from "../../shared/types/User";
 
 type SocialAccountsMap = {
@@ -51,6 +51,30 @@ function normalizeSocialLinksResponse(payload: unknown): SocialAccountsMap {
   });
 
   return map;
+}
+
+type FallbackRequest = {
+  method: "post" | "delete";
+  url: string;
+};
+
+async function requestWithFallback(requests: FallbackRequest[]): Promise<void> {
+  let lastError: unknown;
+
+  for (const req of requests) {
+    try {
+      await api.request({ method: req.method, url: req.url });
+      return;
+    } catch (error: any) {
+      lastError = error;
+      const status = error?.response?.status;
+      if (status !== 404 && status !== 405) {
+        throw error;
+      }
+    }
+  }
+
+  throw lastError;
 }
 
 export const profileService = {
@@ -110,56 +134,100 @@ export const profileService = {
     return data;
   },
 
-  // Backward-compatible wrappers. Source of truth is in followingService.
   async getMeFollowing(page = 1, limit = 20): Promise<UserFollowingResponse> {
-    return followingService.getMeFollowing(page, limit);
+    const { data } = await api.get<UserFollowingResponse>(
+      `/users/me/following?page=${page}&limit=${limit}`,
+    );
+    return data;
   },
 
   async getUserFollowing(
-    userIdOrUsername: string,
+    userId: string,
     page = 1,
     limit = 20,
   ): Promise<UserFollowingResponse> {
-    return followingService.getUserFollowing(userIdOrUsername, page, limit);
+    const { data } = await api.get<UserFollowingResponse>(
+      `/users/${encodeURIComponent(userId)}/following?page=${page}&limit=${limit}`,
+    );
+    return data;
   },
 
   async getUserFollowers(
-    userIdOrUsername: string,
+    userId: string,
     page = 1,
     limit = 20,
   ): Promise<UserFollowersResponse> {
-    return followingService.getUserFollowers(userIdOrUsername, page, limit);
+    const { data } = await api.get<UserFollowersResponse>(
+      `/users/${encodeURIComponent(userId)}/followers?page=${page}&limit=${limit}`,
+    );
+    return data;
+  },
+
+  async getMutualFriends(
+    userId: string,
+    page = 1,
+    limit = 20,
+  ): Promise<MutualFriendsResponse> {
+    const { data } = await api.get<MutualFriendsResponse>(
+      `/users/${encodeURIComponent(userId)}/mutual-friends?page=${page}&limit=${limit}`,
+    );
+    return data;
   },
 
   async getFollowStatus(userId: string): Promise<FollowStatus> {
-    return followingService.getFollowStatus(userId);
+    const { data } = await api.get<FollowStatus>(
+      `/users/${encodeURIComponent(userId)}/follow-status`,
+    );
+    return data;
   },
 
   async followUser(userId: string): Promise<void> {
-    return followingService.followUser(userId);
+    const encodedId = encodeURIComponent(userId);
+    await requestWithFallback([
+      { method: "post", url: `/users/${encodedId}/follow` },
+      { method: "post", url: `/users/${encodedId}/followers` },
+    ]);
   },
 
   async unfollowUser(userId: string): Promise<void> {
-    return followingService.unfollowUser(userId);
+    const encodedId = encodeURIComponent(userId);
+    await requestWithFallback([
+      { method: "delete", url: `/users/${encodedId}/follow` },
+      { method: "delete", url: `/users/${encodedId}/followers` },
+    ]);
   },
 
   async getBlockedUsers(page = 1, limit = 20): Promise<BlockedUsersResponse> {
-    return followingService.getBlockedUsers(page, limit);
+    const { data } = await api.get<BlockedUsersResponse>(
+      `/users/me/blocked-users?page=${page}&limit=${limit}`,
+    );
+    return data;
   },
 
   async blockUser(userId: string): Promise<void> {
-    return followingService.blockUser(userId);
+    const encodedId = encodeURIComponent(userId);
+    await requestWithFallback([
+      { method: "post", url: `/users/${encodedId}/block` },
+      { method: "post", url: `/users/${encodedId}/blocked` },
+    ]);
   },
 
   async unblockUser(userId: string): Promise<void> {
-    return followingService.unblockUser(userId);
+    const encodedId = encodeURIComponent(userId);
+    await requestWithFallback([
+      { method: "delete", url: `/users/${encodedId}/block` },
+      { method: "delete", url: `/users/${encodedId}/blocked` },
+    ]);
   },
 
   async getSuggestedUsers(
     page = 1,
     limit = 10,
   ): Promise<SuggestedUsersResponse> {
-    return followingService.getSuggestedUsers(page, limit);
+    const { data } = await api.get<SuggestedUsersResponse>(
+      `/users/me/suggested?page=${page}&limit=${limit}`,
+    );
+    return data;
   },
 
   async removeMeSocialLink(platform: string): Promise<void> {

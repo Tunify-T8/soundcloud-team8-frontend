@@ -83,24 +83,24 @@ export default function ProfileSideBar({
   ];
 
   return (
-    <div className="w-88 rounded-md px-5 py-4 shadow-sm">
-      <div className="grid grid-cols-3 gap-6">
+    <div className="w-full max-w-none rounded-md px-0 py-3 shadow-sm lg:w-88 lg:px-5">
+      <div className="grid grid-cols-3 gap-4 sm:gap-6">
         {userInfo.map((item) => (
           <Link
             key={item.label}
             to={item.path}
             className="flex flex-col items-start"
           >
-            <span className="text-sm font-semibold text-zinc-400">
+            <span className="text-xs font-semibold text-zinc-400 sm:text-sm">
               {item.label}
             </span>
-            <span className="text-3xl mt-2 font-bold leading-none text-white hover:text-zinc-500">
+            <span className="mt-2 text-2xl font-bold leading-none text-white hover:text-zinc-500 sm:text-3xl">
               {item.value ?? 0}
             </span>
           </Link>
         ))}
       </div>
-      <div className=" mt-5">
+      <div className="mt-4">
         <span className="text-[13px] text-white font-medium">{bio}</span>
       </div>
       <div>
@@ -181,7 +181,7 @@ export default function ProfileSideBar({
           </div>
         )}
       </div>
-      <div className="my-8">
+      <div className="mt-6">
         <div className="flex items-center gap-2 border-b border-zinc-300 pb-2">
           <Ticket size={16} className="text-zinc-300" />
           <span className="text-[12px] font-bold uppercase text-white">
@@ -195,12 +195,12 @@ export default function ProfileSideBar({
             </div>
           </div>
         </div>
-        <p className="mt-4 text-[12px]  text-white">
+        <p className="mt-3 text-[11px] leading-5 text-white sm:text-[12px]">
           With an Artist Pro account, you can create ticketed live events on
           SoundCloud, and list existing events.
         </p>
         <button
-          className="mt-5 flex w-full items-center justify-center rounded-full bg-white px-6 py-3 text-[14px] font-bold text-zinc-900 transition-colors hover:bg-zinc-100"
+          className="mt-4 flex w-full items-center justify-center rounded-full bg-white px-6 py-2.5 text-[13px] font-bold text-zinc-900 transition-colors hover:bg-zinc-100 sm:py-3 sm:text-[14px]"
           onClick={() => {
             setCheckoutOpen(true);
           }}
@@ -209,7 +209,7 @@ export default function ProfileSideBar({
         </button>
       </div>
       {visibleFollowingUsers.length > 0 && (
-        <div className="my-6">
+        <div className="mt-6">
           <div className="flex items-center justify-between">
             <Link
               to={`${userPath}/following`}
@@ -224,7 +224,7 @@ export default function ProfileSideBar({
               View all
             </Link>
           </div>
-          <div className="mt-5 flex flex-col gap-4">
+          <div className="mt-4 flex flex-col gap-3">
             {visibleFollowingUsers.map((followingUser) => {
               const followingDisplayName =
                 followingUser.displayName ?? followingUser.username;
@@ -235,18 +235,21 @@ export default function ProfileSideBar({
               return (
                 <div
                   key={followingUser.id}
-                  className="flex items-center justify-between"
+                  className="flex items-center justify-between gap-2"
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex min-w-0 items-center gap-3 sm:gap-4">
                     <img
                       src={followingUser.avatarUrl || avatarFallback}
                       alt={followingUser.username}
                       className="h-12 w-12 rounded-full object-cover"
                     />
-                    <div className="flex flex-col">
+                    <div className="flex min-w-0 flex-col">
                       <Link
-                        to={`/${followingRouteId}`}
-                        className="text-[14px] font-bold leading-none text-white uppercase hover:text-zinc-500"
+                            // to={`/${followingRouteId}`}
+                        // className="text-[14px] font-bold leading-none text-white uppercase hover:text-zinc-500"
+
+                        to={`/${followingUser.id}`}
+                        className="truncate text-[14px] font-bold leading-none text-white uppercase hover:text-zinc-500"
                       >
                         {followingDisplayName}
                       </Link>
@@ -276,8 +279,8 @@ export default function ProfileSideBar({
                       }
                     }}
                     disabled={pendingUnfollowId === followingUser.id}
-                    className="rounded-md bg-zinc-800 px-3 py-2 text-[14px] font-bold text-white hover:text-zinc-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
-                  >
+                      className="shrink-0 rounded-md bg-zinc-800 px-3 py-2 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 sm:text-[14px]"
+                    >
                     {pendingUnfollowId === followingUser.id
                       ? "Unfollowing..."
                       : "Following"}
@@ -292,12 +295,12 @@ export default function ProfileSideBar({
         <span className="text-xs font-bold tracking-wide text-white">
           GO MOBILE
         </span>
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 grid grid-cols-2 gap-2">
           <a
             href="https://apps.apple.com/us/app/soundcloud-the-music-you-love/id336353151"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex h-11 w-37 items-center gap-2 rounded-md border border-zinc-500 bg-black px-3 text-white hover:border-zinc-300 transition"
+            className="flex h-11 w-full items-center gap-2 rounded-md border border-zinc-500 bg-black px-2 text-white transition hover:border-zinc-300 sm:px-3"
           >
             <FaApple size={24} />
             <div className="flex flex-col leading-tight text-left">
@@ -314,7 +317,7 @@ export default function ProfileSideBar({
             href="https://play.google.com/store/apps/details?id=com.soundcloud.android&hl=us"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex h-11 w-38 items-center gap-2 rounded-md border border-zinc-500 bg-black px-3 text-white hover:border-zinc-300 transition"
+            className="flex h-11 w-full items-center gap-2 rounded-md border border-zinc-500 bg-black px-2 text-white transition hover:border-zinc-300 sm:px-3"
           >
             <FaGooglePlay size={24} />
             <div className="flex flex-col leading-tight text-left">

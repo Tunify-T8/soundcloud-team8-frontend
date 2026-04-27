@@ -1,5 +1,5 @@
 import { Bell, Mail, MoreHorizontal, ChevronDown, Heart, ListMusic, Radio, Users, UserPlus, Star, BarChart2, TrendingUp, Share2, 
-  User} from "lucide-react";
+  User, Menu, X} from "lucide-react";
 import SearchBar from "../ui/SearchBar";
 
 import { SiSoundcloud } from "react-icons/si";
@@ -9,23 +9,21 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { useMe } from "../../features/profile/context/useMe";
 import { logout } from "../../features/auth/services/index";
-import UpgradeModal from "./UpgradeModal";
 import { io, Socket } from "socket.io-client";
 import {
   getNotifications,
   getUnreadCount,
   markAllAsRead,
   followUser,
-  
+  unfollowUser,
 } from "@/features/notifications/service/service"; 
 import type {NotificationObject} from "@/features/notifications/types"
 import { getAccessToken } from "@/features/auth/utils/token.utils";
+import CheckoutModal from "@/features/premium/components/CheckoutModal";
 
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
+  const diff = Math.max( 0 ,Date.now() - new Date(dateStr).getTime());
   const seconds = Math.floor(diff / 1000);
   if (seconds < 60) return `${seconds}s ago`;
   const minutes = Math.floor(seconds / 60);
@@ -52,9 +50,6 @@ function normaliseSocketPayload(raw: Record<string, unknown>): NotificationObjec
   };
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-import CheckoutModal from "../../features/premium/components/CheckoutModal";
-
 export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -62,10 +57,10 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
@@ -83,12 +78,7 @@ export default function Navbar() {
     } catch { /* ignore */ }
   }, []);
 
-  useEffect(() => {
-    fetchUnreadCount();
-    // Fallback polling every 60 s in case the socket is disconnected
-    const interval = setInterval(fetchUnreadCount, 60_000);
-    return () => clearInterval(interval);
-  }, [fetchUnreadCount]);
+  
 
   // ── Socket.IO ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -102,7 +92,6 @@ export default function Navbar() {
 
     const socket = io("https://tunify.duckdns.org/notifications", {
       query: { token },
-      transports: ["websocket"],
       reconnectionAttempts: 10,
       reconnectionDelay: 400,
     });
@@ -114,6 +103,7 @@ export default function Navbar() {
     // Any notification event the server emits
     const handleNewNotification = (raw: Record<string, unknown>) => {
       try {
+        console.log(raw);
         const notif = normaliseSocketPayload(raw);
         // Prepend to the dropdown list (keep max 20)
         setNotifications((prev) => [notif, ...prev].slice(0, 20));
@@ -162,11 +152,36 @@ export default function Navbar() {
     }
   };
 
-  const handleFollowBack = async (actorId: string) => {
+  const handleFollowBack = async (actorId: string, isFollowed?: boolean) => {
+    if (!actorId) return;
+
+    // Step 1: Optimistic update - update UI immediately
+    setNotifications((prev) =>
+      prev.map((notif) =>
+        notif.actor?.id === actorId
+          ? { ...notif, isFollowed: !isFollowed }
+          : notif
+      )
+    );
+
     try {
-      await followUser(actorId);
+      // Step 2: Sync with backend
+      if (isFollowed) {
+        await unfollowUser(actorId);
+      } else {
+        await followUser(actorId);
+      }
       setFollowedBack((prev) => new Set([...prev, actorId]));
-    } catch { /* ignore */ }
+    } catch {
+      // Step 3: If API call fails, revert the changes
+      setNotifications((prev) =>
+        prev.map((notif) =>
+          notif.actor?.id === actorId
+            ? { ...notif, isFollowed }
+            : notif
+        )
+      );
+    }
   };
 
   // ── Outside-click handler ─────────────────────────────────────────────────
@@ -188,6 +203,7 @@ export default function Navbar() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    setMobileMenuOpen(false);
   }, [location.pathname]);
 
   const handleSignOut = async () => {
@@ -239,24 +255,25 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="w-full h-12 bg-black text-white border-b border-zinc-800 sticky top-0 z-50">
-        <div className="max-w-[1200px] mx-auto h-full flex items-center justify-between px-6">
-
-          <div className="flex items-center gap-6">
+      <nav className="w-full bg-black text-white border-b border-zinc-800 sticky top-0 z-50">
+        <div className="max-w-[1200px] mx-auto h-12 flex items-center justify-between px-3 md:px-6">
+          <div className="flex items-center gap-4 md:gap-6">
             <Link to="/" className="text-white">
               <SiSoundcloud size={35} />
             </Link>
-            <Link to="/" className="text-zinc-400 hover:text-white font-bold tracking-tight">Home</Link>
-            <Link to="/feed" className="text-zinc-400 hover:text-white font-bold tracking-tight">Feed</Link>
-            <Link to="/library" className="text-zinc-400 hover:text-white font-bold tracking-tight">Library</Link>
+            <div className="hidden md:flex items-center gap-6">
+              <Link to="/" className="text-zinc-400 hover:text-white font-bold tracking-tight">Home</Link>
+              <Link to="/feed" className="text-zinc-400 hover:text-white font-bold tracking-tight">Feed</Link>
+              <Link to="/library" className="text-zinc-400 hover:text-white font-bold tracking-tight">Library</Link>
+            </div>
           </div>
 
-          <div className="relative w-[420px]">
+          <div className="hidden md:block relative w-[320px] lg:w-[420px]">
             <SearchBar />
           </div>
 
-          <div className="flex items-center gap-5 text-sm">
-         <button
+          <div className="hidden md:flex items-center gap-5 text-sm">
+            <button
               onClick={() => setCheckoutOpen(true)}
               className="border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-1 rounded-sm transition-colors duration-150 text-xs"
             >
@@ -323,7 +340,6 @@ export default function Navbar() {
                       </Link>
                     )
                   )}
-                 
                 </div>
               )}
             </div>
@@ -373,7 +389,7 @@ export default function Navbar() {
                           key={notif.id}
                           notif={notif}
                           followedBack={followedBack.has(notif.actor?.id)}
-                          onFollowBack={() => handleFollowBack(notif.actor?.id)}
+                          onFollowBack={() => handleFollowBack(notif.actor?.id, notif.isFollowed)}
                           onClose={() => setNotifOpen(false)}
                         />
                       ))
@@ -436,7 +452,41 @@ export default function Navbar() {
               )}
             </div>
           </div>
+
+          <div className="md:hidden flex items-center gap-3">
+            <Link to="/messages" className="text-zinc-400 hover:text-white">
+              <Mail size={18} />
+            </Link>
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              className="text-zinc-300 hover:text-white"
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            >
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
         </div>
+
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-zinc-800 px-3 py-3 space-y-3 bg-black">
+            <SearchBar />
+            <div className="grid grid-cols-2 gap-2 text-sm font-bold tracking-tight">
+              <Link to="/" className="text-zinc-300 hover:text-white">Home</Link>
+              <Link to="/feed" className="text-zinc-300 hover:text-white">Feed</Link>
+              <Link to="/library" className="text-zinc-300 hover:text-white">Library</Link>
+              <Link to="/artists" className="text-zinc-300 hover:text-white">For Artists</Link>
+              <Link to="/upload" className="text-zinc-300 hover:text-white">Upload</Link>
+              <Link to="/me" className="text-zinc-300 hover:text-white">Profile</Link>
+            </div>
+            <button
+              onClick={() => setCheckoutOpen(true)}
+              className="w-full border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-2 rounded-sm transition-colors duration-150 text-xs"
+            >
+              Try Free
+            </button>
+          </div>
+        )}
       </nav>
       <Outlet />
       {checkoutOpen && <CheckoutModal plan = "artist-pro" onClose={() => setCheckoutOpen(false)} />}
@@ -464,7 +514,7 @@ function DropdownNotifRow({
       }`}
     >
       <Link
-        to={`/users/${notif.actor?.id}`}
+        to={`/${notif.actor?.id}`}
         onClick={onClose}
         className="w-12 h-12 rounded-full bg-zinc-600 flex-shrink-0 overflow-hidden"
       >
@@ -484,7 +534,7 @@ function DropdownNotifRow({
       <div className="flex-1 min-w-0">
         <p className="text-sm text-white leading-snug">
           <Link
-            to={`/users/${notif.actor?.id}`}
+            to={`/${notif.actor?.id}`}
             onClick={onClose}
             className="font-bold hover:underline"
           >
@@ -503,14 +553,13 @@ function DropdownNotifRow({
       {notif.type === "user_followed" && (
         <button
           onClick={(e) => { e.stopPropagation(); onFollowBack(); }}
-          disabled={followedBack}
           className={`px-4 py-2 text-sm font-bold rounded-lg flex-shrink-0 transition-colors ${
-            followedBack
+            notif.isFollowed
               ? "bg-zinc-700 text-zinc-400 cursor-default"
               : "bg-white text-black hover:bg-zinc-200"
           }`}
         >
-          {followedBack ? "Following" : "Follow back"}
+          {notif.isFollowed ? "Following" : "Follow back"}
         </button>
       )}
     </div>

@@ -25,10 +25,19 @@ export default function ProfilePage() {
   const [openedFollowing, setOpenedFollowing] = useState<UserFollowing[]>([]);
   const [loading, setLoading] = useState(!!username);
   const [error, setError] = useState<string | null>(null);
+  const [followersCount, setFollowersCount] = useState<number | null>(null);
 
   const refreshProfile = useCallback(() => {
     refreshMe();
   }, [refreshMe]);
+
+  useEffect(() => {
+    if (publicUser) {
+      setFollowersCount(publicUser.followersCount);
+    } else if (me) {
+      setFollowersCount(me.followersCount);
+    }
+  }, [publicUser, me]);
 
   useEffect(() => {
     if (!username) return;
@@ -125,11 +134,13 @@ export default function ProfilePage() {
           isMe={isMe}
           userId={user.id}
           onProfileUpdated={refreshProfile}
+          followersCount={followersCount ?? user.followersCount}
+          onFollowersChange={setFollowersCount}
         />
         <div className="absolute right-[8.333333%] top-full mt-4">
           <ProfileSideBar
-            profileId={user.id}  
-            followers={user.followersCount}
+            profileId={user.id}
+            followers={followersCount ?? user.followersCount}
             following={user.followingCount}
             tracks={"tracksCount" in user ? (user as any).tracksCount : 0}
             bio={user.bio ?? undefined}
