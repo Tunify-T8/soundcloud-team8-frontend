@@ -11,37 +11,28 @@ import { forgotPassword } from '../services/index';
 
 const HELP_URL = 'https://help.soundcloud.com/hc/en-us/sections/46266771825691';
 
-const KNOWN_PROVIDERS: Record<string, string> = {
-  gmail: 'com',
-  yahoo: 'com',
-  hotmail: 'com',
-  outlook: 'com',
-  icloud: 'com',
-  live: 'com',
-};
+const TunifyLogo: React.FC = () => (
+  <Link to="/" className="flex items-center gap-2 no-underline">
+    <svg viewBox="0 0 33 15" className="h-6 w-auto sm:h-7" fill="white" aria-hidden="true">
+      <path d="M0 11.5c0 .8.7 1.5 1.5 1.5s1.5-.7 1.5-1.5V6c0-.8-.7-1.5-1.5-1.5S0 5.2 0 6v5.5zm4.5 1.5c.8 0 1.5-.7 1.5-1.5V3.5C6 2.7 5.3 2 4.5 2S3 2.7 3 3.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V1.5C10.5.7 9.8 0 9 0S7.5.7 7.5 1.5V11.5C7.5 12.3 8.2 13 9 13zm4.5 0c.8 0 1.5-.7 1.5-1.5V3.5C15 2.7 14.3 2 13.5 2S12 2.7 12 3.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V2.5C19.5 1.7 18.8 1 18 1s-1.5.7-1.5 1.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V4.5C24 3.7 23.3 3 22.5 3S21 3.7 21 4.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V4.5C27 3.7 26.3 3 25.5 3S24 3.7 24 4.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V2.5C33 1.7 32.3 1 31.5 1S30 1.7 30 2.5V11.5c0 .8.7 1.5 1.5 1.5z" />
+    </svg>
+    <span className="text-white font-bold text-sm sm:text-base tracking-widest uppercase">SoundCloud</span>
+  </Link>
+);
 
-const isValidEmailFormat = (val: string): boolean => {
-  const trimmed = val.trim().toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(trimmed)) return false;
+const isValidEmailFormat = (val: string): boolean =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
 
-  const [, domain] = trimmed.split('@');
-  const parts = domain.split('.');
-  const provider = parts[0];
-  const tld = parts[parts.length - 1];
-  if (tld.length < 2) return false;
-  if (KNOWN_PROVIDERS[provider] && tld !== KNOWN_PROVIDERS[provider]) {
-    return false;
-  }
-  return true;
-};
 const ForgotPasswordPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const prefillEmail = (location.state as { email?: string })?.email ?? '';
+
   const [email, setEmail] = useState(prefillEmail);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+
   const handleSendResetLink = async () => {
     if (!email.trim()) {
       setError('The request is not valid.');
@@ -51,12 +42,15 @@ const ForgotPasswordPage: React.FC = () => {
       setError('The request is not valid.');
       return;
     }
+
     setError(null);
     setIsSubmitting(true);
     try {
       await forgotPassword(email.trim());
       setSubmitted(true);
     } catch (err) {
+      // Always show success even if email isn't in DB (security best practice)
+      // If you want to show backend errors, replace this with: setError(extractErrorMessage(err));
       setSubmitted(true);
     } finally {
       setIsSubmitting(false);
@@ -69,7 +63,7 @@ const ForgotPasswordPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] flex flex-col " data-testid="forgotPasswordPage">
+    <div className="min-h-screen bg-[#0d0d0d] flex flex-col">
 
      <AuthNavbar />
 
@@ -88,7 +82,6 @@ const ForgotPasswordPage: React.FC = () => {
                       onClick={() => navigate(-1)}
                       className="w-9 h-9 rounded-full bg-[#2a2a2a] hover:bg-[#3a3a3a] flex items-center justify-center transition-colors flex-shrink-0"
                       aria-label="Go back"
-                      data-testid = "backBtn"
                     >
                       <ChevronLeft className="h-5 w-5 text-white" />
                     </button>
@@ -105,7 +98,6 @@ const ForgotPasswordPage: React.FC = () => {
                       placeholder="your@email.com"
                       className="w-full bg-transparent text-white text-sm focus:outline-none placeholder-[#666]"
                       autoComplete="email"
-                      data-testid = "inputEmail"
                     />
                   </div>
 
@@ -121,7 +113,6 @@ const ForgotPasswordPage: React.FC = () => {
                     type="button"
                     onClick={handleSendResetLink}
                     disabled={isSubmitting}
-                    data-testid="sendResetLinkBtn"
                     className="w-full bg-white hover:bg-gray-100 text-black py-3 rounded-sm text-sm font-semibold transition-colors disabled:opacity-70 flex items-center justify-center gap-2 cursor-pointer mb-3"
                   >
                     {isSubmitting
@@ -131,12 +122,12 @@ const ForgotPasswordPage: React.FC = () => {
                   </button>
 
                   {error && (
-                    <p className="text-red-500 text-sm" data-testid="errorMsg">{error}</p>
+                    <p className="text-red-500 text-sm">{error}</p>
                   )}
                 </>
               )}
 
-              {/* Success card*/}
+              {/* ══ CARD 2: Success ══ */}
               {submitted && (
                 <>
                   <div className="flex items-center gap-4 mb-6">
@@ -145,7 +136,6 @@ const ForgotPasswordPage: React.FC = () => {
                       onClick={() => { setSubmitted(false); setError(null); }}
                       className="w-9 h-9 rounded-full bg-[#2a2a2a] hover:bg-[#3a3a3a] flex items-center justify-center transition-colors flex-shrink-0"
                       aria-label="Go back"
-                      data-testid = "backToFormBtn"
                     >
                       <ChevronLeft className="h-5 w-5 text-white" />
                     </button>
@@ -163,7 +153,6 @@ const ForgotPasswordPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => navigate('/reset-password', { state: { email } })}
-                    data-testid = "resetCodeBtn"
                     className="w-full bg-white hover:bg-gray-100 text-black py-3 rounded-sm text-sm font-semibold transition-colors cursor-pointer mb-5"
                   >
                     Enter reset code

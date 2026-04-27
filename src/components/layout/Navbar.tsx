@@ -19,7 +19,7 @@ import {
 } from "@/features/notifications/service/service"; 
 import type {NotificationObject} from "@/features/notifications/types"
 import { getAccessToken } from "@/features/auth/utils/token.utils";
-import CheckoutModal from "../../features/premium/components/CheckoutModal";
+import CheckoutModal from "@/features/premium/components/CheckoutModal";
 
 
 function timeAgo(dateStr: string): string {

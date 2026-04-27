@@ -39,13 +39,6 @@ import SearchPage from "./features/feed/pages/SearchPage";
 import LibraryPage from "./features/library/pages/LibraryPage";
 import NotificationsPage from "./features/notifications/pages/NotificationPage";
 
-import PlansPage from "./features/premium/pages/PlansPage";
-import AllTabPage from  "./features/profile/pages/UserInfoBar/AllTabPage";
-import InsightsOverviewPage from "./features/insights/components/InsightsOverviewPage";
-import { AdPopup } from "./features/premium/components/AdPopUp";
-
-import PlaylistPage from "./features/library/tabs/playlists/pages/PlaylistPage"; 
-
 const router = createBrowserRouter([
   {
     path: "/",
@@ -61,13 +54,13 @@ const router = createBrowserRouter([
     ),
   },
   {
-  path: "/create-account",
-  element: (
-    <PublicOnlyRoute>
-      <SignUpPage />
-    </PublicOnlyRoute>
-  ),
-},
+    path: "/create-account",
+    element: (
+      <PublicOnlyRoute>
+        <SignUpPage />
+      </PublicOnlyRoute>
+    ),
+  },
   {
     path: "/forgot-password",
     element: <ForgotPasswordPage />,
@@ -82,7 +75,6 @@ const router = createBrowserRouter([
       <ProtectedRoute>
         <ProfileProvider>
           <NavBar />
-          <AdPopup />
         </ProfileProvider>
       </ProtectedRoute>
     ),
@@ -92,7 +84,7 @@ const router = createBrowserRouter([
         element: <DiscoverPage />,
       },
       {
-        path: "/notifications" , 
+        path: "/notifications" ,
         element: <NotificationsPage />
       },
       {
@@ -147,15 +139,14 @@ const router = createBrowserRouter([
         path: '/me/history',
         element: <LibraryPage />
       },
-      {
-        path: "/collections/:id",
-        element: <PlaylistPage />
-      },
+      // {
+      //   path: "/collections/:id",
+      //   element: <PlaylistPage />
+      // },
       {
         path: "/me",
         element: <ProfilePage />,
         children: [
-          { path: "", element: <AllTabPage /> },
           { path: "popular-tracks", element: <PopularTracksPage /> },
           { path: "tracks", element: <ProfileTracksPage /> },
           { path: "albums", element: <AlbumsPage /> },
@@ -163,9 +154,7 @@ const router = createBrowserRouter([
           { path: "reposts", element: <ProfileRepostsPage /> },
         ],
       },
-      { path: "/me/insights/overview", element: <InsightsOverviewPage /> },
-      { path: "/me/insights/all-platforms", element: <InsightsOverviewPage /> },
-      { path: "/me/insights/fanz", element: <InsightsOverviewPage /> },
+      // Add public user profile route
       {
         path: "/:username",
         element: <ProfilePage />,
@@ -189,7 +178,6 @@ const router = createBrowserRouter([
         path: "/:username/following",
         element: <FollowingPage />,
       },
-      
     ],
   },
   {
@@ -204,20 +192,10 @@ const router = createBrowserRouter([
     path: "/artists",
     element: (
       <ProtectedRoute>
-        <ProfileProvider>
-          <ArtistsPage />
-        </ProfileProvider>
+        <ArtistsPage />
       </ProtectedRoute>
     ),
   },
-  {
-        path: "/plans",
-        element: (
-          <ProfileProvider>
-            <PlansPage />
-          </ProfileProvider>
-        )
-      }
 ]);
 
 function App() {
