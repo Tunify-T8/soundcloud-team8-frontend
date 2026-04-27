@@ -10,6 +10,7 @@ import TrackPage from "./features/engagement/pages/TrackPage";
 
 import UploadPage from "./features/upload/pages/UploadPage";
 import ArtistsPage from "./features/track-management/pages/ArtistsPage";
+
 import ProfilePage from "./features/profile/pages/ProfilePage";
 import PopularTracksPage from "./features/profile/pages/UserInfoBar/PopularTracksPage";
 import ProfileTracksPage from "./features/profile/pages/UserInfoBar/ProfileTracksPage";
@@ -29,7 +30,7 @@ import useRestoreSession from "./hooks/useRestoreSession";
 import { PlayerProvider } from "./features/playerUI/context/PlayerProvider";
 import PlayerBar from "./features/playerUI/components/PlayerBar";
 import { usePlayer } from "./features/playerUI/context/usePlayer";
-
+import PlaylistPage from "./features/library/tabs/playlists/pages/PlaylistPage";
 import FeedPage from "./features/feed/pages/FeedPage";
 import FollowersPage from "./features/following/pages/FollowersPage";
 import FollowingPage from "./features/following/pages/FollowingPage";
@@ -38,6 +39,8 @@ import DiscoverPage from "./features/discover/pages/DiscoverPage";
 import SearchPage from "./features/feed/pages/SearchPage";
 import LibraryPage from "./features/library/pages/LibraryPage";
 import NotificationsPage from "./features/notifications/pages/NotificationPage";
+import InsightsOverviewPage from "./features/insights/components/InsightsOverviewPage";
+
 
 const router = createBrowserRouter([
   {
@@ -139,10 +142,10 @@ const router = createBrowserRouter([
         path: '/me/history',
         element: <LibraryPage />
       },
-      // {
-      //   path: "/collections/:id",
-      //   element: <PlaylistPage />
-      // },
+      {
+        path: "/collections/:id",
+        element: <PlaylistPage />
+      },
       {
         path: "/me",
         element: <ProfilePage />,
@@ -154,7 +157,9 @@ const router = createBrowserRouter([
           { path: "reposts", element: <ProfileRepostsPage /> },
         ],
       },
-      // Add public user profile route
+      { path: "/me/insights/overview", element: <InsightsOverviewPage /> },
+      { path: "/me/insights/all-platforms", element: <InsightsOverviewPage /> },
+      { path: "/me/insights/fanz", element: <InsightsOverviewPage /> },
       {
         path: "/:username",
         element: <ProfilePage />,
