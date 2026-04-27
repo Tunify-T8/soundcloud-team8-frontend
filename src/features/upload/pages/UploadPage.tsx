@@ -4,7 +4,6 @@ import TrackInfoPage from "../components/TrackInfo";
 import { useDispatch } from "react-redux";
 import { useAppSelector } from "../../../app/hooks";
 import { setAudioSource } from "../../../store/AudioSourceSlice";
-import { SiSoundcloud } from "react-icons/si";
 import CheckoutModal from "@/features/premium/components/CheckoutModal";
 import ArtistModal from "@/features/premium/components/ArtistModal";
 import UploadLimitScreen from "../components/UploadLimitScreen";
@@ -116,31 +115,7 @@ export default function SoundCloudUpload() {
       className="min-h-screen bg-[#111111] text-white flex flex-col font-sans"
       data-testid="upload-page"
     >
-      {/* HEADER */}
-      <header
-        className="flex items-center justify-between px-8 py-4 border-b border-[#222]"
-        data-testid="upload-header"
-      >
-        <div className="flex items-center gap-3 hover:opacity-80 transition">
-          <a href="/">
-            <SiSoundcloud size={36} color="white" />
-          </a>
-          <span className="text-[15px] font-semibold">Upload</span>
-        </div>
-        <a href="/artists">
-          <button
-            className="text-[#888] hover:text-white transition"
-            data-testid="upload-close-btn"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </a>
-      </header>
-
-      {/* QUOTA BAR — always visible */}
+      {/* QUOTA BAR — always visible at top */}
       <div
         className="bg-[hsl(0,0%,11%)] border-b border-[hsl(0,0%,18%)] flex items-center justify-between px-8 py-3 shrink-0"
         data-testid="upload-quota-bar"
@@ -184,7 +159,7 @@ export default function SoundCloudUpload() {
                   className="h-full rounded-full transition-all duration-500"
                   style={{
                     width: `${percentUsed}%`,
-                    backgroundColor: isOverLimit ? "#e74c3c" : "hsl(0,0%,50%)",
+                    backgroundColor: isOverLimit ? "#e74c3c" : "hsl(142,69%,36%)",
                   }}
                 />
               </div>
@@ -206,12 +181,11 @@ export default function SoundCloudUpload() {
 
       {/* MAIN CONTENT — limit screen or normal upload UI */}
       {limitReached && quota ? (
-        // UploadLimitScreen owns its own checkout modal internally
         <UploadLimitScreen quota={quota} />
       ) : (
-        <main className="flex-1 flex justify-center px-6 py-10">
+        <main className="flex-1 flex justify-center px-6 py-6">
           <div className="w-full max-w-[1100px]">
-            <h1 className="text-[26px] font-semibold mb-2 mt-8">
+            <h1 className="text-[26px] font-semibold mb-2 mt-4">
               Upload your audio files.
             </h1>
             <p className="text-[13px] text-[#888] mb-8">
@@ -285,7 +259,6 @@ export default function SoundCloudUpload() {
         </main>
       )}
 
-      {/* These modals belong to the upload page's own quota bar buttons */}
       {checkoutOpen && (
         <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />
       )}

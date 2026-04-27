@@ -6,8 +6,10 @@ import AlbumsTab from "../tabs/AlbumsTab";
 import StationsTab from "../tabs/StationsTab";
 import FollowingTab from "../tabs/FollowingTab";
 import HistoryTab from "../tabs/HistoryTab";
+import DownloadsTab from "../tabs/DownloadsTab";
+import { useMe } from "@/features/profile/context/useMe";
 
-const TABS = ["Overview", "Likes", "Playlists", "Albums", "Stations", "Following", "History"] as const;
+const TABS = ["Overview", "Likes", "Playlists", "Albums", "Stations", "Following", "History", "Downloads"] as const;
 type Tab = typeof TABS[number];
 
 const TAB_TO_PATH: Record<Tab, string> = {
@@ -18,6 +20,7 @@ const TAB_TO_PATH: Record<Tab, string> = {
   Stations:  "/me/stations",
   Following: "/me/following",
   History:   "/me/history",
+  Downloads: "/me/downloads",
 };
 
 const PATH_TO_TAB: Record<string, Tab> = Object.fromEntries(
@@ -25,8 +28,9 @@ const PATH_TO_TAB: Record<string, Tab> = Object.fromEntries(
 );
 
 export default function LibraryPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate   = useNavigate();
+  const location   = useLocation();
+  const { me }     = useMe();
   const activeTab: Tab = PATH_TO_TAB[location.pathname] ?? "Overview";
 
   const footerLinks = [
@@ -43,6 +47,7 @@ export default function LibraryPage() {
       case "Stations":  return <StationsTab />;
       case "Following": return <FollowingTab />;
       case "History":   return <HistoryTab />;
+      case "Downloads": return <DownloadsTab />;
     }
   };
 
@@ -65,7 +70,10 @@ export default function LibraryPage() {
             >
               {tab}
               {activeTab === tab && (
-                <div data-testid={`library-tab-${tab.toLowerCase()}-indicator`} className="absolute bottom-0 left-0 right-0 h-[2px] bg-white" />
+                <div
+                  data-testid={`library-tab-${tab.toLowerCase()}-indicator`}
+                  className="absolute bottom-0 left-0 right-0 h-[2px] bg-white"
+                />
               )}
             </button>
           ))}

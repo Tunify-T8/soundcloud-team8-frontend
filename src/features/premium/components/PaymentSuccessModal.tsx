@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { X, Music, Upload, Wifi, Star, InfinityIcon } from "lucide-react";
+import { X, Upload, Wifi, Star, InfinityIcon } from "lucide-react";
 
 interface PaymentSuccessModalProps {
   plan: "artist" | "artist-pro";
@@ -9,24 +9,21 @@ interface PaymentSuccessModalProps {
 const PLAN_PERKS = {
   artist: {
     displayName: "Artist Plan",
-    color: "from-orange-400 to-orange-600",
-    badge: "bg-orange-500",
+    color: "from-purple-400 to-purple-600",
+    badge: "bg-purple-500",
     perks: [
       { icon: Upload, text: "180 uploads per month" },
-      { icon: Star, text: "Ad-free listening" },
-      { icon: Wifi, text: "Offline listening" },
       { icon: InfinityIcon, text: "Unlimited playlists" },
     ],
   },
   "artist-pro": {
     displayName: "Artist Pro Plan",
-    color: "from-purple-500 to-purple-700",
-    badge: "bg-purple-600",
+    color: "from-green-300 to-green-700",
+    badge: "bg-green-500",
     perks: [
       { icon: Upload, text: "Unlimited uploads" },
       { icon: Star, text: "Ad-free listening" },
       { icon: Wifi, text: "Offline listening" },
-      { icon: Music, text: "Full playback access" },
       { icon: InfinityIcon, text: "Unlimited playlists" },
     ],
   },
@@ -71,14 +68,14 @@ export default function PaymentSuccessModal({
             <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center">
               <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center shadow-lg">
                 <svg
-                  className="w-8 h-8 text-orange-500"
+                  className="w-8 h-8 text-purple-500"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  style={{ color: plan === "artist-pro" ? "#9333ea" : "#f97316" }}
+                  style={{ color: plan === "artist-pro" ? "#64ea33" : "#f97316" }}
                 >
                   <path d="M20 6L9 17l-5-5" />
                 </svg>
@@ -121,7 +118,7 @@ export default function PaymentSuccessModal({
             onClick={onClose}
             className={`mt-6 w-full py-3 rounded-xl bg-gradient-to-r ${config.color} text-white text-sm font-bold transition-opacity hover:opacity-90`}
           >
-            Start listening ›
+            Start Exploring ›
           </button>
         </div>
       </div>

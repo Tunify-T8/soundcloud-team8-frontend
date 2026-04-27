@@ -61,7 +61,7 @@ export default function CheckoutModal({ plan, plans: plansProp = [], onClose }: 
     if (plansProp.length === 0) {
       subscriptionService.getPlans().then(setFetchedPlans);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); 
 
   const plans = plansProp.length > 0 ? plansProp : fetchedPlans;
   const planData = plans.find((p) => p.name === plan);
@@ -227,7 +227,11 @@ export default function CheckoutModal({ plan, plans: plansProp = [], onClose }: 
     return (
       <PaymentSuccessModal
         plan={plan}
-        onClose={() => { setShowSuccess(false); onClose(); }}
+        onClose={() => {
+          setShowSuccess(false);
+          refresh();   
+          onClose();
+        }}
       />
     );
   }
