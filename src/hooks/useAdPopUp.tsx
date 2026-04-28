@@ -5,14 +5,14 @@ const SESSION_KEY = "ad_shown_this_session";
 const INTERVAL_MS = 5 * 60 * 1000; // 5 minutes yayyyyy
 
 export function useAdPopup(loginOnlyMode = false) {
-  const { isFree } = useSubscription();
+  const { isArtistPro } = useSubscription();
   const [isOpen, setIsOpen] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const dismiss = () => setIsOpen(false);
 
   useEffect(() => {
-    if (!isFree) {
+    if (!isArtistPro) {
       setIsOpen(false);
       return;
     }
@@ -31,7 +31,7 @@ export function useAdPopup(loginOnlyMode = false) {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isFree, loginOnlyMode]);
+  }, [isArtistPro, loginOnlyMode]);
 
   return { isOpen, dismiss };
 }

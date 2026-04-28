@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
-import { followingService } from "../followingService";
-import { profileService } from "../../profile/profileService";
-import { useMe } from "../../profile/context/useMe";
-import type { UserFollowing } from "../../../shared/types/User";
-import SocialInfoBar from "../components/SocialInfoBar";
 import { User } from "lucide-react";
-import UserGrid from "../components/UserGrid";
+import { profileService } from "../../profileService";
+import { followingService } from "../../../following/followingService";
+import SocialInfoBar from "../../../following/components/SocialInfoBar";
+import UserGrid from "../../../following/components/UserGrid";
+import { useMe } from "../../context/useMe";
+import type { UserFollowing } from "@/shared/types/User";
 
 export default function FollowingPage() {
   const { username } = useParams<{ username: string }>();
@@ -32,6 +32,9 @@ export default function FollowingPage() {
 
     async function load() {
       setLoading(true);
+      setFollowing([]);
+      setAvatarUrl(null);
+      setTitleName(me && username === me.username ? me.displayName || me.username : "");
       try {
         if (me && username === me.username) {
           const data = await followingService.getUserFollowing(me.id);
@@ -58,7 +61,9 @@ export default function FollowingPage() {
     }
 
     load();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [username, me?.id, me?.username, me?.displayName]);
 
   if (username === "me" && me?.username) {
@@ -71,11 +76,13 @@ export default function FollowingPage() {
     <div data-testid="following-page" className="mx-auto mt-10 w-9/12 text-white">
       <SocialInfoBar
         avatarUrl={avatarUrl}
-        title={`${titleName || "User"} is following`}
+        title={titleName ? `${titleName} is following` : "Following"}
         basePath={basePath}
       />
       {loading ? (
-        <div data-testid="following-loading" className="mt-20 text-center text-zinc-400">Loading following...</div>
+        <div data-testid="following-loading" className="mt-20 text-center text-zinc-400">
+          Loading following...
+        </div>
       ) : following.length === 0 ? (
         <p data-testid="following-empty" className="mt-20 text-center text-xl font-semibold text-white">
           Not following anyone yet.
@@ -89,19 +96,22 @@ export default function FollowingPage() {
               avatarUrl: u.avatarUrl,
               followersCount: u.followersCount,
             }))}
-            placeholders={5}
-            renderAction={(user) => (
-              <button
-                data-testid={`unfollow-btn-${user.id}`}
-                type="button"
-                onClick={() => handleUnfollow(user.id)}
-                disabled={pendingUnfollowId === user.id}
-                className="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-white disabled:opacity-60"
-              >
-                <User size={13} />
-                {pendingUnfollowId === user.id ? "unfollowing..." : "following"}
-              </button>
-            )}
+            renderAction={(user) =>
+              me?.id === user.id ? (
+                <span className="text-sm text-zinc-400">You</span>
+              ) : (
+                <button
+                  data-testid={`unfollow-btn-${user.id}`}
+                  type="button"
+                  onClick={() => handleUnfollow(user.id)}
+                  disabled={pendingUnfollowId === user.id}
+                  className="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-white disabled:opacity-60"
+                >
+                  <User size={13} />
+                  {pendingUnfollowId === user.id ? "unfollowing..." : "following"}
+                </button>
+              )
+            }
           />
         </div>
       )}

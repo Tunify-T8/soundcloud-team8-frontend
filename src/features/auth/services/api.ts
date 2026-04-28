@@ -52,19 +52,8 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
   
-    const PUBLIC_AUTH_ENDPOINTS = [
-      '/auth/verify-email',
-      '/auth/login',
-      '/auth/register',
-      '/auth/forgot-password',
-      '/auth/reset-password',
-      '/auth/resend-verification',
-    ];
-    const isPublicRoute = PUBLIC_AUTH_ENDPOINTS.some(
-      (ep) => originalRequest.url?.includes(ep)
-    );
 
-    if (error.response?.status === 401 && !originalRequest._retry && !isPublicRoute) {
+    if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });

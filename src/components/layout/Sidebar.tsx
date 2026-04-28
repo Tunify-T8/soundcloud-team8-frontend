@@ -5,10 +5,12 @@ import { SiSoundcloud } from "react-icons/si";
 import { Link, useNavigate } from "react-router-dom";
 import { IoChevronDown } from "react-icons/io5";
 import { feedService } from "../../features/feed/feedservice";
+import { followingService } from "../../features/following/followingService";
 import type { LikedTrack } from "@/features/feed/type";
 import UpgradeModal from "@/features/premium/components/UpgradeModal";
 import { api } from "../../features/auth/services/api";
 import avatarFallback from "@/assets/avatar.png";
+import { notifySocialGraphUpdated } from "../../features/profile/socialGraphEvents";
 import amplifyImg from "@/assets/amplifytool.png";
 import replaceImg from "@/assets/replace.png";
 import distributeImg from "@/assets/distribute.png";
@@ -59,6 +61,8 @@ export default function SideBar() {
   const [likedTracks, setLikedTracks] = useState<LikedTrack[]>([]);
   const [likesLoading, setLikesLoading] = useState(true);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [followStates, setFollowStates] = useState<Record<string, boolean>>({});
+  const [pendingFollowId, setPendingFollowId] = useState<string | null>(null);
 
   const handleArtistToolClick = () => {
     setUpgradeOpen(true);
@@ -71,11 +75,46 @@ export default function SideBar() {
       const res = await api.get("/feed/suggested-artists", {
         params: { page: 1, limit: 20 },
       });
-      setSuggestedUsers(res.data.items || []);
+      const items: SuggestedArtist[] = res.data.items || [];
+      setSuggestedUsers(items);
+
+      const statusEntries = await Promise.all(
+        items.map(async (artist) => {
+          try {
+            const status = await followingService.getFollowStatus(artist.id);
+            return [artist.id, status.isFollowing] as const;
+          } catch {
+            return [artist.id, false] as const;
+          }
+        }),
+      );
+
+      setFollowStates(Object.fromEntries(statusEntries));
     } catch {
       setError("Failed to load artists");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSuggestedArtistFollowToggle = async (artistId: string) => {
+    setPendingFollowId(artistId);
+    const wasFollowing = followStates[artistId] ?? false;
+    setFollowStates((prev) => ({ ...prev, [artistId]: !wasFollowing }));
+
+    try {
+      if (wasFollowing) {
+        await followingService.unfollowUser(artistId);
+      } else {
+        await followingService.followUser(artistId);
+      }
+
+      notifySocialGraphUpdated();
+    } catch (err) {
+      setFollowStates((prev) => ({ ...prev, [artistId]: wasFollowing }));
+      console.error("Failed to toggle suggested artist follow state", err);
+    } finally {
+      setPendingFollowId((current) => (current === artistId ? null : current));
     }
   };
 
@@ -172,7 +211,7 @@ export default function SideBar() {
                   data-testid={`suggested-artist-${artist.id}`}
                   className="flex items-center justify-between"
                 >
-                  <Link to={`/${artist.id}`} className="flex items-center gap-3">
+                  <Link to={`/${artist.username || artist.id}`} className="flex items-center gap-3">
                     <img
                       src={artist.avatarUrl || avatarFallback}
                       alt={artist.displayName || artist.username}
@@ -197,9 +236,16 @@ export default function SideBar() {
                   </Link>
                   <button
                     data-testid={`suggested-artist-follow-btn-${artist.id}`}
-                    className="bg-white text-black font-semibold rounded px-5 py-1.5 text-sm hover:bg-gray-100 transition"
+                    type="button"
+                    disabled={pendingFollowId === artist.id}
+                    onClick={() => handleSuggestedArtistFollowToggle(artist.id)}
+                    className={`font-semibold rounded px-5 py-1.5 text-sm transition disabled:opacity-60 ${
+                      followStates[artist.id]
+                        ? "bg-zinc-800 text-white hover:bg-zinc-700"
+                        : "bg-white text-black hover:bg-gray-100"
+                    }`}
                   >
-                    Follow
+                    {followStates[artist.id] ? "Following" : "Follow"}
                   </button>
                 </div>
               ))

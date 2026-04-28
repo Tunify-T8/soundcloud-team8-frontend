@@ -138,7 +138,7 @@ export default function FeedPage() {
     }));
 
     const profileResult = await profileService
-      .getPublicProfile(item.action.username)
+      .getPublicProfile(userId)
       .catch(() => null);
 
     const followResult =
@@ -380,8 +380,10 @@ export default function FeedPage() {
               </p>
             )}
 
-            {displayItems.map((item) => (
-              <div
+            {displayItems.map((item) => {
+              const itemRouteId = item.action.id;
+
+              return <div
                 key={item.trackId}
                 data-testid={`feed-item-${item.trackId}`}
                 className="w-full flex flex-col items-stretch mb-5"
@@ -400,7 +402,7 @@ export default function FeedPage() {
                     }
                   >
                     <Link
-                      to={`/${encodeURIComponent(item.action.id)}`}
+                      to={`/${encodeURIComponent(itemRouteId)}`}
                       data-testid={`feed-avatar-link-${item.trackId}`}
                       aria-label={`Open ${item.action.username} profile`}
                     >
@@ -413,7 +415,7 @@ export default function FeedPage() {
                     </Link>
 
                     <Link
-                      to={`/${encodeURIComponent(item.action.id)}`}
+                      to={`/${encodeURIComponent(itemRouteId)}`}
                       data-testid={`feed-username-link-${item.trackId}`}
                       className="font-semibold text-white text-base hover:text-zinc-300"
                     >
@@ -428,7 +430,7 @@ export default function FeedPage() {
                         <div className="absolute left-4 top-0 h-3 w-3 -translate-y-1/2 rotate-45 border-l border-t border-zinc-700 bg-[#07090f]" />
 
                         <Link
-                          to={`/${encodeURIComponent(item.action.id)}`}
+                          to={`/${encodeURIComponent(itemRouteId)}`}
                           className="flex flex-col items-center"
                         >
                           <img
@@ -471,11 +473,9 @@ export default function FeedPage() {
                             }
                             className="mt-2 w-full rounded-sm bg-zinc-700 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-70"
                           >
-                            {followPendingByUserId[item.action.id]
-                              ? "Please wait..."
-                              : hoverCardByUserId[item.action.id]?.isFollowing
-                                ? "Following"
-                                : "Follow"}
+                            {hoverCardByUserId[item.action.id]?.isFollowing
+                              ? "Following"
+                              : "Follow"}
                           </button>
                         )}
                       </div>
@@ -513,8 +513,8 @@ export default function FeedPage() {
                     />
                   </div>
                 </div>
-              </div>
-            ))}
+              </div>;
+            })}
 
             {feedItems.length > 0 && (
               <div

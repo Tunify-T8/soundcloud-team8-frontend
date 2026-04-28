@@ -21,20 +21,20 @@ export default function ArtistsSidebar() {
  <Link to="/feed">
     <button data-testid="sidebar-nav-feed" className="flex flex-col items-center gap-1.5 text-[hsl(0,0%,45%)] hover:text-white transition-colors w-full py-3">
       <Archive className="w-5 h-5" />
-      <span className="text-[10px]">Feed</span>
+      <span className="text-[10px]">Library</span>
     </button>
     </Link>
 
  <Link to="/library">
     <button data-testid="sidebar-nav-library" className="flex flex-col items-center gap-1.5 text-[hsl(0,0%,45%)] hover:text-white transition-colors w-full py-3">
       <BarChart2 className="w-5 h-5" />
-      <span className="text-[10px]">Library</span>
+      <span className="text-[10px]">Stats</span>
     </button>
     </Link>
 
     <button data-testid="sidebar-nav-for-artists" className="flex flex-col items-center gap-1.5 text-[hsl(0,0%,45%)] hover:text-white transition-colors w-full py-3">
       <Star className="w-5 h-5" />
-      <span className="text-[10px]">For Artists</span>
+      <span className="text-[10px]">Featured</span>
     </button>
       <div className="mt-auto">
         <button data-testid="sidebar-more-menu" className="flex flex-col gap-[3px] items-center text-[hsl(0,0%,45%)] hover:text-white transition-colors px-3 py-2">

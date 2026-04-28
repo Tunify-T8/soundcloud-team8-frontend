@@ -103,6 +103,8 @@ export default function UserInfoBar({
   isMe,
   onProfileUpdated,
   userId,
+  followersCount,
+  onFollowersChange,
 }: {
   displayName?: string;
   username?: string;
@@ -125,6 +127,8 @@ export default function UserInfoBar({
   isMe?: boolean;
   onProfileUpdated?: () => void;
   userId?: string;
+  followersCount?: number;
+  onFollowersChange?: (count: number) => void;
 }) {
   const tabs = [
     { label: "All", path: "." },
@@ -160,18 +164,29 @@ export default function UserInfoBar({
   const handleFollowToggle = async () => {
     if (!userId || followLoading) return;
 
+    const previousFollowersCount = followersCount ?? 0;
+    const newFollowersCount = isFollowing 
+      ? Math.max(0, previousFollowersCount - 1)
+      : previousFollowersCount + 1;
+
+    // Step 1: Update UI immediately (optimistic update)
+    setIsFollowing(!isFollowing);
+    onFollowersChange?.(newFollowersCount);
+
     setFollowLoading(true);
     try {
+      // Step 2: Sync with backend
       if (isFollowing) {
         await followingService.unfollowUser(userId);
-        setIsFollowing(false);
       } else {
         await followingService.followUser(userId);
-        setIsFollowing(true);
       }
 
       notifySocialGraphUpdated();
-      onProfileUpdated?.();
+    } catch {
+      // Step 3: If API call fails, revert the changes
+      setIsFollowing(isFollowing);
+      onFollowersChange?.(previousFollowersCount);
     } finally {
       setFollowLoading(false);
     }

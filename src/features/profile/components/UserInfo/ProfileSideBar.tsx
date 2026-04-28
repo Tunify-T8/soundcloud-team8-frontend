@@ -60,7 +60,8 @@ export default function ProfileSideBar({
   const [localFollowingUsers, setLocalFollowingUsers] = useState<FollowingUser[]>(
     followingUsers ?? [],
   );
-  const [pendingUnfollowId, setPendingUnfollowId] = useState<string | null>(null);
+  const [followStates, setFollowStates] = useState<Record<string, boolean>>({});
+  const [pendingFollowId, setPendingFollowId] = useState<string | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [likedTracks, setLikedTracks] = useState<LikedTrack[]>([]);
   const [likesLoading, setLikesLoading] = useState(true);
@@ -75,34 +76,43 @@ export default function ProfileSideBar({
   }, [followingUsers]);
 
   useEffect(() => {
-    let isMounted = true;
+    let mounted = true;
 
-    const loadLikes = async () => {
-      setLikesLoading(true);
-      try {
-        const data =
-          profileId && me?.id && profileId !== me.id
-            ? await feedService.getUserLikes(profileId, 6)
-            : await feedService.getMyLikes(6);
-        if (!isMounted) return;
-        setLikedTracks(data);
-      } catch {
-        if (!isMounted) return;
-        setLikedTracks([]);
-      } finally {
-        if (!isMounted) return;
-        setLikesLoading(false);
+    async function loadFollowStates() {
+      const users = followingUsers ?? [];
+
+      if (!me?.id || users.length === 0) {
+        if (mounted) setFollowStates({});
+        return;
       }
-    };
 
-    void loadLikes();
+      const statusEntries = await Promise.all(
+        users.map(async (user) => {
+          if (user.id === me.id) {
+            return [user.id, false] as const;
+          }
+
+          try {
+            const status = await followingService.getFollowStatus(user.id);
+            return [user.id, status.isFollowing] as const;
+          } catch {
+            return [user.id, false] as const;
+          }
+        }),
+      );
+
+      if (mounted) {
+        setFollowStates(Object.fromEntries(statusEntries));
+      }
+    }
+
+    void loadFollowStates();
     return () => {
-      isMounted = false;
+      mounted = false;
     };
-  }, [profileId, me?.id]);
+  }, [followingUsers, me?.id]);
 
-  const visibleFollowerUsers = localFollowerUsers.slice(0, 8);
-  const visibleFollowingUsers = localFollowingUsers.slice(0, 6);
+  const visibleFollowingUsers = localFollowingUsers.slice(0, 3);
   const followingCount = localFollowingUsers.length;
   const followersCountLabel = Number(followers ?? 0);
   const hasSocialAccounts = Boolean(
@@ -331,6 +341,7 @@ export default function ProfileSideBar({
                 followingUser.displayName ?? followingUser.username;
               const followingFollowersCount =
                 followingUser.followersCount ?? "0";
+              const followingRouteId = followingUser.username || followingUser.id;
 
               return (
                 <div
@@ -338,11 +349,13 @@ export default function ProfileSideBar({
                   className="flex items-center justify-between gap-2"
                 >
                   <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-                    <img
-                      src={followingUser.avatarUrl || avatarFallback}
-                      alt={followingUser.username}
-                      className="h-12 w-12 rounded-full object-cover"
-                    />
+                    <Link to={`/${followingUser.id}`} className="shrink-0">
+                      <img
+                        src={followingUser.avatarUrl || avatarFallback}
+                        alt={followingUser.username}
+                        className="h-12 w-12 rounded-full object-cover"
+                      />
+                    </Link>
                     <div className="flex min-w-0 flex-col">
                       <Link
                         to={`/${followingUser.id}`}
@@ -351,7 +364,7 @@ export default function ProfileSideBar({
                         {followingDisplayName}
                       </Link>
                       <Link
-                        to={`/${followingUser.id}/followers`}
+                        to={`/${followingRouteId}/followers`}
                         className="mt-2 inline-flex items-center gap-1 text-[13px] text-zinc-400 hover:text-zinc-600"
                       >
                         <FaUser size={12} />
@@ -362,25 +375,29 @@ export default function ProfileSideBar({
                   <button
                     type="button"
                     onClick={async () => {
-                      setPendingUnfollowId(followingUser.id);
+                      const userId = followingUser.id;
+                      const wasFollowing = followStates[userId] ?? false;
+                      setPendingFollowId(userId);
+                      setFollowStates((prev) => ({ ...prev, [userId]: !wasFollowing }));
                       try {
-                        await followingService.unfollowUser(followingUser.id);
-                        setLocalFollowingUsers((prev) =>
-                          prev.filter((user) => user.id !== followingUser.id),
-                        );
-                        onUnfollowUser?.();
+                        if (wasFollowing) {
+                          await followingService.unfollowUser(userId);
+                          onUnfollowUser?.();
+                        } else {
+                          await followingService.followUser(userId);
+                        }
+                      } catch {
+                        setFollowStates((prev) => ({ ...prev, [userId]: wasFollowing }));
                       } finally {
-                        setPendingUnfollowId((current) =>
-                          current === followingUser.id ? null : current,
+                        setPendingFollowId((current) =>
+                          current === userId ? null : current,
                         );
                       }
                     }}
-                    disabled={pendingUnfollowId === followingUser.id}
+                    disabled={pendingFollowId === followingUser.id}
                     className="shrink-0 rounded-md bg-zinc-800 px-3 py-2 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 sm:text-[14px]"
                   >
-                    {pendingUnfollowId === followingUser.id
-                      ? "Unfollowing..."
-                      : "Following"}
+                    {followStates[followingUser.id] ?? true ? "Following" : "Follow"}
                   </button>
                 </div>
               );
@@ -475,50 +492,5 @@ export default function ProfileSideBar({
       </div>
       {checkoutOpen && <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />}
     </div>
-  );
-}
-
-function LikedTrackRow({ track }: { track: LikedTrack }) {
-  return (
-    <Link to={`/tracks/${track.id}`} className="flex items-center gap-2">
-      <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded bg-[hsl(0,0%,15%)]">
-        {track.coverUrl ? (
-          <img
-            src={track.coverUrl}
-            alt={track.title}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <SiSoundcloud size={16} className="text-gray-600" />
-          </div>
-        )}
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-medium leading-tight text-white">
-          {track.title}
-        </p>
-        <p className="truncate text-[11px] text-gray-400">{track.artist}</p>
-        <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[10px] text-gray-500">
-          <span className="flex items-center gap-0.5">
-            <Play size={8} fill="currentColor" />
-            {track.playsCount.toLocaleString()}
-          </span>
-          <span className="flex items-center gap-0.5">
-            <Heart size={8} />
-            {track.likesCount.toLocaleString()}
-          </span>
-          <span className="flex items-center gap-0.5">
-            <Repeat2 size={8} />
-            {track.repostsCount.toLocaleString()}
-          </span>
-          <span className="flex items-center gap-0.5">
-            <MessageSquare size={8} />
-            {track.commentsCount.toLocaleString()}
-          </span>
-        </div>
-      </div>
-    </Link>
   );
 }
