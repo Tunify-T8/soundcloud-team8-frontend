@@ -52,6 +52,19 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
   
+    const PUBLIC_AUTH_ENDPOINTS = [
+      '/auth/verify-email',
+      '/auth/login',
+      '/auth/register',
+      '/auth/forgot-password',
+      '/auth/reset-password',
+      '/auth/resend-verification',
+      '/auth/check-email',
+      '/auth/google',
+    ];
+    const isPublicRoute = PUBLIC_AUTH_ENDPOINTS.some(
+      (ep) => originalRequest.url?.includes(ep)
+    );
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
@@ -69,7 +82,9 @@ api.interceptors.response.use(
       isRefreshing = true;
  
       const refreshToken = getRefreshToken();
-       if (!refreshToken) {
+      if (!refreshToken) {
+        isRefreshing = false;
+        processQueue(error, null);
         clearTokens();
         window.location.href = '/signin';
         return Promise.reject(error);
