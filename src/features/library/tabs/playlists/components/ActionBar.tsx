@@ -1,7 +1,7 @@
 import { Copy, Edit3, Heart, Repeat2, Share, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { playlistService } from "../../../../libraryService";
-import type { Collection } from "../../../../types";
+import { playlistService } from "../../../libraryService";
+import type { Collection } from "../../../types";
 
 interface ActionBarProps {
   playlist: Collection;
@@ -29,7 +29,12 @@ const ActionBar: React.FC<ActionBarProps> = ({
     setLikesCount(playlist.likeCount ?? 0);
     setRepostsCount(playlist.repostsCount ?? 0);
     setIsLiked(playlist.isLiked);
-  }, [playlist.id, playlist.likeCount, playlist.repostsCount, playlist.isLiked]);
+  }, [
+    playlist.id,
+    playlist.likeCount,
+    playlist.repostsCount,
+    playlist.isLiked,
+  ]);
 
   const handleDelete = async () => {
     if (isDeleting) return;

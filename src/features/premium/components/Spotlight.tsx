@@ -33,8 +33,8 @@ export default function Spotlight({ isMe }: SpotlightSectionProps) {
 
   return (
     <div className="mt-6 w-full xl:max-w-[calc(100%-23rem)]">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-white font-bold text-[24px] tracking-tight">Spotlight</h2>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className="text-[20px] font-bold tracking-tight text-white sm:text-[24px]">Spotlight</h2>
 
         {isMe && !showPromo && (
           <div
@@ -42,7 +42,7 @@ export default function Spotlight({ isMe }: SpotlightSectionProps) {
             onMouseEnter={handleEditMouseEnter}
             onMouseLeave={handleEditMouseLeave}
           >
-            <button className="text-[13px] text-zinc-600 border border-zinc-700 hover:border-zinc-00 rounded px-2 py-1.5 transition-colors font-bold tracking-tight">
+            <button className="rounded border border-zinc-700 px-2 py-1.5 text-[12px] font-bold tracking-tight text-zinc-600 transition-colors hover:border-zinc-00 sm:text-[13px]">
               Edit Spotlight
             </button>
 
@@ -71,20 +71,20 @@ export default function Spotlight({ isMe }: SpotlightSectionProps) {
       </div>
 
       {showPromo && (
-        <div className="flex min-w-0 gap-4 items-start">
-          <div className="flex-shrink-0 rounded cursor-pointer" style={{ width: 200, height: 200 }}>
+        <div className="flex min-w-0 flex-col items-start gap-4 md:flex-row">
+          <div className="h-[180px] w-full max-w-[220px] cursor-pointer rounded sm:h-[200px] sm:w-[200px]">
             <img src={spotlightImg} alt="Spotlight" className="w-full h-full object-cover" />
           </div>
 
-          <div className="relative flex min-w-0 w-full items-center gap-6 rounded-lg bg-zinc-800/80 px-8 py-6" style={{ minHeight: 200 }}>
-            <div className="absolute top-4 right-4 flex items-center gap-2">
+          <div className="relative flex min-w-0 w-full flex-col gap-4 rounded-lg bg-zinc-800/80 px-4 py-4 sm:px-6 sm:py-5 lg:min-h-[200px] lg:px-8 lg:py-6">
+            <div className="mb-1 flex w-full items-center justify-end gap-2 lg:absolute lg:right-4 lg:top-4 lg:mb-0 lg:w-auto">
               {isMe && (
                 <div
                   className="relative flex-shrink-0"
                   onMouseEnter={handleEditMouseEnter}
                   onMouseLeave={handleEditMouseLeave}
                 >
-                  <button className="text-[13px] text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 hover:bg-zinc-800 rounded px-3 py-1.5 transition-colors font-medium">
+                  <button className="rounded border border-zinc-700 px-2.5 py-1.5 text-[12px] font-medium text-zinc-400 transition-colors hover:border-zinc-500 hover:bg-zinc-800 hover:text-white sm:px-3 sm:text-[13px]">
                     Edit Spotlight
                   </button>
 
@@ -118,22 +118,24 @@ export default function Spotlight({ isMe }: SpotlightSectionProps) {
               </button>
             </div>
 
-            <div className="min-w-0 flex-1 pr-2">
-              <p className="text-white font-bold text-[22px] tracking-tight mb-2 leading-snug">
+            <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="min-w-0 flex-1 pr-0 sm:pr-2">
+                <p className="mb-2 text-[20px] leading-snug font-bold tracking-tight text-white sm:text-[22px]">
                 Get more plays with Spotlight
-              </p>
-              <p className="text-zinc-400 text-[13px] leading-relaxed">
-                Artist Pro users who spotlight tracks at the top of their profiles get heard
-                10% more than those who don't.
-              </p>
-            </div>
+                </p>
+                <p className="text-[13px] leading-relaxed text-zinc-400">
+                  Artist Pro users who spotlight tracks at the top of their profiles get heard
+                  10% more than those who don't.
+                </p>
+              </div>
 
-            <button
-              onClick={() => window.open("/plans", "_blank")}
-              className="flex-shrink-0 bg-white text-zinc-900 font-bold tracking-tight text-[13px] px-5 py-2.5 rounded transition-all whitespace-nowrap hover:brightness-125 hover:shadow-[0_0_16px_rgba(255,255,255,0.5)]"
-            >
-              Get Spotlight
-            </button>
+              <button
+                onClick={() => window.open("/plans", "_blank")}
+                className="w-full rounded bg-white px-5 py-2.5 text-[13px] font-bold tracking-tight text-zinc-900 whitespace-nowrap transition-all hover:brightness-125 hover:shadow-[0_0_16px_rgba(255,255,255,0.5)] sm:w-auto"
+              >
+                Get Spotlight
+              </button>
+            </div>
           </div>
         </div>
       )}

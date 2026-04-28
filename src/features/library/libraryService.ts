@@ -4,6 +4,7 @@ import type {
   CollectionType,
   CollectionTrack,
   PaginatedResponse,
+  GetUserCollectionsResponse,
   CreateCollectionPayload,
   CreateCollectionResponse,
   UpdateCollectionPayload,
@@ -119,6 +120,22 @@ export const playlistService = {
           ...(type ? { type } : {}),
         },
       });
+      return response.data;
+    } catch {
+      return null;
+    }
+  },
+
+  async getUserPlaylists(
+    username: string,
+    page = 1,
+    limit = 20,
+  ): Promise<GetUserCollectionsResponse | null> {
+    try {
+      const response = await api.get<GetUserCollectionsResponse>(
+        `/users/${encodeURIComponent(username)}/playlists`,
+        { params: { page, limit } },
+      );
       return response.data;
     } catch {
       return null;

@@ -134,9 +134,9 @@ describe('SearchResultItem — dispatcher routing', () => {
     expect(screen.queryByTestId('user-row')).not.toBeInTheDocument();
   });
 
-  it('renders AlbumCard for a playlist result', () => {
+  it('renders SongCard for a playlist result', () => {
     render(<SearchResultItem result={mockPlaylist} />);
-    expect(screen.getByTestId('album-card')).toBeInTheDocument();
+    expect(screen.getByTestId('song-card')).toBeInTheDocument();
   });
 
   it('renders nothing for an unknown type', () => {
@@ -310,24 +310,19 @@ describe('SearchResultItem — CollectionResult props (album)', () => {
 });
 
 describe('SearchResultItem — CollectionResult props (playlist)', () => {
-  it('passes type as "playlist"', () => {
+  it('renders SongCard for playlist', () => {
     render(<SearchResultItem result={mockPlaylist} />);
-    expect(screen.getByTestId('ac-type')).toHaveTextContent('playlist');
+    expect(screen.getByTestId('song-card')).toBeInTheDocument();
   });
 
-  it('passes id correctly', () => {
+  it('passes playlist title to SongCard', () => {
     render(<SearchResultItem result={mockPlaylist} />);
-    expect(screen.getByTestId('ac-id')).toHaveTextContent('playlist-456');
+    expect(screen.getByTestId('sc-title')).toHaveTextContent('Test Playlist');
   });
 
-  it('handles null coverUrl without crashing', () => {
+  it('passes playlist artist to SongCard', () => {
     render(<SearchResultItem result={mockPlaylist} />);
-    expect(screen.getByTestId('album-card')).toBeInTheDocument();
-  });
-
-  it('generates exactly 5 placeholder tracks for a playlist', () => {
-    render(<SearchResultItem result={mockPlaylist} />);
-    expect(screen.getByTestId('ac-trackCount')).toHaveTextContent('5');
+    expect(screen.getByTestId('sc-artist')).toHaveTextContent('Playlist Artist');
   });
 });
 
