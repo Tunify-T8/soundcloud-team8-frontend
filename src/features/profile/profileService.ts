@@ -28,6 +28,18 @@ type RawSocialLink = {
   url?: string | null;
 };
 
+type RawUserTrackResponse =
+  | UserTracksResponse
+  | {
+    data?: unknown[];
+    meta?: {
+      page?: number;
+      limit?: number;
+      total?: number;
+      hasMore?: boolean;
+    };
+  };
+
 function normalizeSocialLinksResponse(payload: unknown): SocialAccountsMap {
   const map: SocialAccountsMap = {};
 
@@ -51,6 +63,81 @@ function normalizeSocialLinksResponse(payload: unknown): SocialAccountsMap {
   });
 
   return map;
+}
+
+function normalizeTracksResponse(payload: RawUserTrackResponse): UserTracksResponse {
+  const dataPayload = payload as {
+    data?: unknown[];
+    meta?: { page?: number; limit?: number; total?: number };
+  };
+  const tracksPayload = payload as UserTracksResponse;
+
+  const rawTracks = Array.isArray(tracksPayload.tracks)
+    ? tracksPayload.tracks
+    : Array.isArray(dataPayload.data)
+      ? dataPayload.data
+      : [];
+
+  const tracks = rawTracks.map((value) => {
+    const track = (value && typeof value === "object"
+      ? value
+      : {}) as Record<string, unknown>;
+    const engagementRaw = (track.engagement && typeof track.engagement === "object"
+      ? track.engagement
+      : {}) as Record<string, unknown>;
+    const interactionRaw = (track.interaction && typeof track.interaction === "object"
+      ? track.interaction
+      : {}) as Record<string, unknown>;
+
+    return {
+      id: String(track.id ?? ""),
+      title: String(track.title ?? "Untitled Track"),
+      description: typeof track.description === "string" ? track.description : null,
+      coverUrl: typeof track.coverUrl === "string" ? track.coverUrl : null,
+      audioUrl: typeof track.audioUrl === "string" ? track.audioUrl : null,
+      genre: typeof track.genre === "string" ? track.genre : null,
+      createdAt: typeof track.createdAt === "string" ? track.createdAt : new Date().toISOString(),
+      artist:
+        track.artist && typeof track.artist === "object"
+          ? (track.artist as {
+            id: string;
+            username: string;
+            displayName?: string | null;
+            avatarUrl?: string | null;
+            isVerified?: boolean;
+          })
+          : undefined,
+      engagement: {
+        likeCount: Number(engagementRaw.likeCount ?? 0),
+        repostCount: Number(engagementRaw.repostCount ?? 0),
+        commentCount: Number(engagementRaw.commentCount ?? 0),
+        playCount: Number(engagementRaw.playCount ?? 0),
+      },
+      interaction: {
+        isLiked: Boolean(interactionRaw.isLiked),
+        isReposted: Boolean(interactionRaw.isReposted),
+      },
+    };
+  });
+
+  return {
+    page: Number(
+      tracksPayload.page ??
+      dataPayload.meta?.page ??
+      1,
+    ),
+    limit: Number(
+      tracksPayload.limit ??
+      dataPayload.meta?.limit ??
+      tracks.length,
+    ),
+    total: Number(
+      tracksPayload.total ??
+      dataPayload.meta?.total ??
+      tracks.length,
+    ),
+    tracks,
+  };
 }
 
 type FallbackRequest = {
@@ -128,10 +215,21 @@ export const profileService = {
   },
 
   async getMeTracks(page = 1, limit = 20): Promise<UserTracksResponse> {
-    const { data } = await api.get<UserTracksResponse>(
+    const { data } = await api.get<RawUserTrackResponse>(
       `/users/me/tracks?page=${page}&limit=${limit}`,
     );
-    return data;
+    return normalizeTracksResponse(data);
+  },
+
+  async getUserTracks(
+    userIdOrUsername: string,
+    page = 1,
+    limit = 20,
+  ): Promise<UserTracksResponse> {
+    const { data } = await api.get<RawUserTrackResponse>(
+      `/users/${encodeURIComponent(userIdOrUsername)}/tracks?page=${page}&limit=${limit}`,
+    );
+    return normalizeTracksResponse(data);
   },
 
   async getMeFollowing(page = 1, limit = 20): Promise<UserFollowingResponse> {

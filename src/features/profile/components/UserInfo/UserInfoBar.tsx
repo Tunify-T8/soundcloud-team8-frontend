@@ -9,10 +9,15 @@ import { useEffect, useState } from "react";
 import { followingService } from "../../../following/followingService";
 import { notifySocialGraphUpdated } from "../../socialGraphEvents";
 
-function ShareOverlay({ onClose }: { onClose: () => void }) {
+function ShareOverlay({
+  onClose,
+  shareUrl,
+}: {
+  onClose: () => void;
+  shareUrl: string;
+}) {
   const [activeTab, setActiveTab] = useState<"share" | "message">("share");
   const [shortenLink, setShortenLink] = useState(false);
-  const url = typeof window !== "undefined" ? window.location.href : "";
 
   return (
     <div
@@ -60,7 +65,7 @@ function ShareOverlay({ onClose }: { onClose: () => void }) {
             <div className="mb-3 rounded-[3px] bg-[#242424] px-4 py-3">
               <input
                 readOnly
-                value={url}
+                value={shareUrl}
                 className="w-full bg-transparent text-[14px] font-semibold text-zinc-100 outline-none sm:text-[15px]"
               />
             </div>
@@ -87,6 +92,7 @@ function ShareOverlay({ onClose }: { onClose: () => void }) {
 
 export default function UserInfoBar({
   displayName,
+  username,
   avatarUrl,
   country,
   city,
@@ -97,8 +103,11 @@ export default function UserInfoBar({
   isMe,
   onProfileUpdated,
   userId,
+  followersCount,
+  onFollowersChange,
 }: {
   displayName?: string;
+  username?: string;
   avatarUrl?: string;
   country?: string;
   city?: string;
@@ -118,6 +127,8 @@ export default function UserInfoBar({
   isMe?: boolean;
   onProfileUpdated?: () => void;
   userId?: string;
+  followersCount?: number;
+  onFollowersChange?: (count: number) => void;
 }) {
   const tabs = [
     { label: "All", path: "." },
@@ -153,18 +164,29 @@ export default function UserInfoBar({
   const handleFollowToggle = async () => {
     if (!userId || followLoading) return;
 
+    const previousFollowersCount = followersCount ?? 0;
+    const newFollowersCount = isFollowing 
+      ? Math.max(0, previousFollowersCount - 1)
+      : previousFollowersCount + 1;
+
+    // Step 1: Update UI immediately (optimistic update)
+    setIsFollowing(!isFollowing);
+    onFollowersChange?.(newFollowersCount);
+
     setFollowLoading(true);
     try {
+      // Step 2: Sync with backend
       if (isFollowing) {
         await followingService.unfollowUser(userId);
-        setIsFollowing(false);
       } else {
         await followingService.followUser(userId);
-        setIsFollowing(true);
       }
 
       notifySocialGraphUpdated();
-      onProfileUpdated?.();
+    } catch {
+      // Step 3: If API call fails, revert the changes
+      setIsFollowing(isFollowing);
+      onFollowersChange?.(previousFollowersCount);
     } finally {
       setFollowLoading(false);
     }
@@ -188,6 +210,13 @@ export default function UserInfoBar({
     setModal(!modal);
   };
 
+  const menuTargetName = (username?.trim() || displayName?.trim() || "user");
+  const sharePathTarget = userId?.trim() || username?.trim() || "";
+  const shareUrl =
+    typeof window === "undefined"
+      ? ""
+      : `${window.location.origin}/${encodeURIComponent(sharePathTarget || "me")}`;
+
   return (
     <div className="item-center flex justify-center w-full">
       <div className="relative mt-8 flex w-10/12 flex-col gap-3 sm:mt-5 sm:gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
@@ -200,7 +229,7 @@ export default function UserInfoBar({
             </NavLink>
           ))}
         </div>
-        <div className="mt-1 flex w-full flex-wrap items-center justify-start lg:ml-auto lg:mt-0 lg:w-auto lg:flex-nowrap lg:justify-end">
+        <div className="mt-1 flex w-full flex-wrap items-center justify-start gap-2 lg:ml-auto lg:mt-0 lg:w-auto lg:flex-nowrap lg:justify-end">
           {!isMe && (
             <button
               type="button"
@@ -228,7 +257,7 @@ export default function UserInfoBar({
               type="button"
               title="Your Insights"
               onClick={() => navigate("/me/insights/overview")}
-              className="mr-[12px] inline-flex items-center justify-center gap-1.5 rounded-sm bg-white px-2 py-1 text-[12px] font-bold text-black hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
+              className="inline-flex items-center justify-center gap-1.5 rounded-sm bg-white px-2 py-1 text-[12px] font-bold text-black hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
             >
               <BarChart2 size={14} />
               <span>Your Insights</span>
@@ -238,7 +267,7 @@ export default function UserInfoBar({
             <button
               type="button"
               title="Station"
-              className="mr-[12px] inline-flex items-center justify-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
+              className="inline-flex items-center justify-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
             >
               <MdPodcasts />
               <span>Station</span>
@@ -248,7 +277,7 @@ export default function UserInfoBar({
             type="button"
             title="Share"
             onClick={() => setShowShareOverlay(true)}
-            className={`inline-flex items-center justify-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm ${isMe ? "mr-[12px]" : ""}`}
+            className="inline-flex items-center justify-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
           >
             <Upload size={14} />
             <span>Share</span>
@@ -289,7 +318,7 @@ export default function UserInfoBar({
                   className="inline-flex items-center gap-2 w-auto whitespace-nowrap text-left text-white font-bold text-[14px] px-3 py-2 hover:text-zinc-500 transition-colors cursor-pointer"
                 >
                   <FiSlash />
-                  {blockLoading ? "Blocking..." : `Block ${displayName}`}
+                  {blockLoading ? "Blocking..." : `Block ${menuTargetName}`}
                 </button>
                 <button
                   type="button"
@@ -297,7 +326,7 @@ export default function UserInfoBar({
                   className="inline-flex items-center gap-2 w-auto whitespace-nowrap text-left text-white font-bold text-[14px] px-3 py-2 hover:text-zinc-500 transition-colors cursor-pointer"
                 >
                   <FiInfo />
-                  Report {displayName}
+                  Report {menuTargetName}
                 </button>
               </div>
             )}
@@ -329,7 +358,12 @@ export default function UserInfoBar({
           socialAccounts={socialAccounts}
         />
       )}
-      {showShareOverlay && <ShareOverlay onClose={() => setShowShareOverlay(false)} />}
+      {showShareOverlay && (
+        <ShareOverlay
+          onClose={() => setShowShareOverlay(false)}
+          shareUrl={shareUrl}
+        />
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { FaApple, FaGooglePlay } from "react-icons/fa";
 import { User } from "lucide-react";
 import { useSelector } from "react-redux";
@@ -7,15 +7,10 @@ import type { RootState } from "@/app/store";
 import { playlistService } from "../../../libraryService";
 import type { Collection, CollectionTrack } from "../../../types";
 
-import PlaylistHeader from "../components/Playlist/PlaylistHeader";
-import TrackList from "../components/Playlist/TrackList";
-import ActionBar from "../components/Playlist/ActionBar";
-import EditPlaylistOverlay from "../components/Playlist/EditPlaylistOverlay";
-import {
-  MOCK_PLAYLIST_ID,
-  buildMockPlaylist,
-  buildMockTracks,
-} from "../../../tests/Mockplaylistdata";
+import PlaylistHeader from "../components/PlaylistHeader";
+import TrackList from "../components/TrackList";
+import ActionBar from "../components/ActionBar";
+import EditPlaylistOverlay from "../components/EditPlaylistOverlay";
 
 const PlaylistPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -34,12 +29,12 @@ const PlaylistPage: React.FC = () => {
     setLoading(true);
     setError(null);
 
-    if (id === MOCK_PLAYLIST_ID && currentUser) {
-      setPlaylist(buildMockPlaylist(currentUser));
-      setTracks(buildMockTracks(currentUser));
-      setLoading(false);
-      return;
-    }
+    // if (id === MOCK_PLAYLIST_ID && currentUser) {
+    //   setPlaylist(buildMockPlaylist(currentUser));
+    //   setTracks(buildMockTracks(currentUser));
+    //   setLoading(false);
+    //   return;
+    // }
 
     try {
       const [playlistData, tracksData] = await Promise.all([
@@ -75,9 +70,9 @@ const PlaylistPage: React.FC = () => {
       setTracks(newTracks);
       setReorderError(null);
 
-      if (id === MOCK_PLAYLIST_ID) {
-        return;
-      }
+      // if (id === MOCK_PLAYLIST_ID) {
+      //   return;
+      // }
 
       const ok = await playlistService.reorderTracks(id, {
         trackIds: newTracks.map((ct) => ct.track.id),
@@ -116,8 +111,9 @@ const PlaylistPage: React.FC = () => {
         >
           {reorderError}
         </div>
+        
       )}
-
+    
       <div className="mx-auto max-w-[1200px] px-6 pb-20 pt-10">
         <PlaylistHeader
           playlist={playlist}
@@ -138,18 +134,33 @@ const PlaylistPage: React.FC = () => {
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
               <aside className="w-full lg:w-[112px] lg:shrink-0">
                 <div className="flex flex-col items-start text-left">
-                  <img
-                    src={playlist.owner?.avatarUrl || "/default-avatar.png"}
-                    alt={playlist.owner?.displayName || playlist.owner?.username}
-                    className="h-28 w-28 rounded-full object-cover"
-                  />
+                  <Link
+                    to={`/${encodeURIComponent(playlist.owner.username)}`}
+                    className="group block"
+                  >
+                    <img
+                      src={playlist.owner?.avatarUrl || "/default-avatar.png"}
+                      alt={
+                        playlist.owner?.displayName || playlist.owner?.username
+                      }
+                      className="h-28 w-28 rounded-full object-cover"
+                    />
+                  </Link>
                   <div className="mt-3 self-center text-center">
-                    <div className="text-[16px] font-bold leading-none text-white">
-                      {playlist.owner?.displayName || playlist.owner?.username}
+                    <div className="text-[16px] font-bold leading-none text-white transition-colors">
+                      <Link
+                        to={`/${encodeURIComponent(playlist.owner.username)}`}
+                        className="hover:text-zinc-300"
+                      >
+                        {playlist.owner?.displayName ||
+                          playlist.owner?.username}
+                      </Link>
                     </div>
                     <div className="mt-2 flex items-center justify-center gap-1 text-sm font-semibold text-zinc-400">
                       <User size={12} />
-                      <span className="text-[11px]">{playlist.owner.followerCount}</span>
+                      <span className="text-[11px]">
+                        {playlist.owner.followerCount}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -206,23 +217,41 @@ const PlaylistPage: React.FC = () => {
 
               <div className="mt-6 text-zinc-400">
                 <div className="text-[14px]">
-                  <a href="#" className="hover:text-zinc-300">Legal</a>
+                  <a href="#" className="hover:text-zinc-300">
+                    Legal
+                  </a>
                   <span> · </span>
-                  <a href="#" className="hover:text-zinc-300">Privacy</a>
+                  <a href="#" className="hover:text-zinc-300">
+                    Privacy
+                  </a>
                   <span> · </span>
-                  <a href="#" className="hover:text-zinc-300">Cookie Policy</a>
+                  <a href="#" className="hover:text-zinc-300">
+                    Cookie Policy
+                  </a>
                   <span> · </span>
-                  <a href="#" className="hover:text-zinc-300">Cookie Manager</a>
+                  <a href="#" className="hover:text-zinc-300">
+                    Cookie Manager
+                  </a>
                   <span> · </span>
-                  <a href="#" className="hover:text-zinc-300">Imprint</a>
+                  <a href="#" className="hover:text-zinc-300">
+                    Imprint
+                  </a>
                   <span> · </span>
-                  <a href="#" className="hover:text-zinc-300">Artist Resources</a>
+                  <a href="#" className="hover:text-zinc-300">
+                    Artist Resources
+                  </a>
                   <span> · </span>
-                  <a href="#" className="hover:text-zinc-300">Newsroom</a>
+                  <a href="#" className="hover:text-zinc-300">
+                    Newsroom
+                  </a>
                   <span> · </span>
-                  <a href="#" className="hover:text-zinc-300">Charts</a>
+                  <a href="#" className="hover:text-zinc-300">
+                    Charts
+                  </a>
                   <span> · </span>
-                  <a href="#" className="hover:text-zinc-300">Transparency Reports</a>
+                  <a href="#" className="hover:text-zinc-300">
+                    Transparency Reports
+                  </a>
                 </div>
                 <div className="mt-7 text-[13px] leading-none">
                   <span className="font-semibold text-white">Language:</span>{" "}

@@ -10,6 +10,7 @@ import { useDispatch } from "react-redux";
 import { useAppSelector } from "../../../app/hooks";
 import { profileService } from "@/features/profile/profileService";
 import albumTemplate from "@/assets/album.png";
+import CheckoutModal from "@/features/premium/components/CheckoutModal";
 
 function Toggle({ enabled, onChange }: ToggleProps) {
   return (
@@ -213,6 +214,43 @@ function GenreInput({ genreRef }: { genreRef: React.RefObject<HTMLInputElement |
   );
 }
 
+// ─── Upload Limit Reached Banner (inline, shown after 403) ───────────────────
+function UploadLimitBanner({
+  minutesRemaining,
+  onUpgrade,
+}: {
+  minutesRemaining: number;
+  onUpgrade: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-6">
+      <div className="bg-[#161616] border border-[#2a2a2a] rounded-xl max-w-md w-full p-8 text-center">
+        <svg className="mx-auto mb-4" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" strokeWidth="1.5">
+          <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z" />
+          <line x1="12" y1="10" x2="12" y2="14" stroke="#e74c3c" strokeWidth="2" />
+          <circle cx="12" cy="17" r="1" fill="#e74c3c" />
+        </svg>
+        <h2 className="text-xl font-bold text-white mb-2">Upload limit reached</h2>
+        <p className="text-[#888] text-sm mb-2">
+          You've reached the upload limit for your plan.
+        </p>
+        {minutesRemaining > 0 && (
+          <p className="text-[#666] text-sm mb-6">
+            {minutesRemaining} minute{minutesRemaining !== 1 ? "s" : ""} remaining — but this track exceeds that.
+          </p>
+        )}
+        <button
+          onClick={onUpgrade}
+          className="w-full bg-white text-black font-bold py-3 rounded-full text-sm hover:bg-[#eee] transition mb-3"
+        >
+          Unlock with Artist Pro
+        </button>
+        <p className="text-[#555] text-xs">Upgrade for unlimited uploads, distribution & more.</p>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 type UserProfile = {
   id: string
@@ -230,6 +268,11 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [fileReady, setFileReady] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Limit-reached state
+  const [limitReached, setLimitReached] = useState(false);
+  const [limitMinutesRemaining, setLimitMinutesRemaining] = useState(0);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [trackSlug, setTrackSlug] = useState("");
@@ -267,20 +310,17 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
   const privacyRef     = useRef<string>("public");
 
   // ── Fetch user profile ────────────────────────────────────────────────────
-useEffect(() => {
-  profileService.getMeProfile()
-    .then((user) => setUserProfile({
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      avatarUrl: user.avatarUrl!,
-      isCertified: user.isCertified,
-    }))
-    .catch((err) => console.error("Failed to fetch user profile:", err));
-}, []);
-
-
-
+  useEffect(() => {
+    profileService.getMeProfile()
+      .then((user) => setUserProfile({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        avatarUrl: user.avatarUrl!,
+        isCertified: user.isCertified,
+      }))
+      .catch((err) => console.error("Failed to fetch user profile:", err));
+  }, []);
 
   // ── Fetch audio blob using raw axios (NOT api) — blob: URLs are local ────
   useEffect(() => {
@@ -401,9 +441,25 @@ useEffect(() => {
         const audioFileName = source?.kind === "file" ? (source.name ?? `audio.${ext}`) : `recording.${ext}`;
         const audioForm = new FormData();
         audioForm.append("file", audioBlobRef.current, audioFileName);
-        await api.post(`/tracks/${id}/audio`, audioForm, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+
+        try {
+          await api.post(`/tracks/${id}/audio`, audioForm, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+        } catch (audioErr: any) {
+          // ── Handle 403 upload_limit_reached ─────────────────────────────
+          if (audioErr?.response?.status === 403) {
+            const errData = audioErr.response.data;
+            if (errData?.error === "upload_limit_reached") {
+              setLimitMinutesRemaining(errData.uploadMinutesRemaining ?? 0);
+              setLimitReached(true);
+              setIsSubmitting(false);
+              return; // Stop — don't mark as done
+            }
+          }
+          // Re-throw other audio upload errors to be caught below
+          throw audioErr;
+        }
       }
 
       if (artworkBase64Ref.current) {
@@ -428,6 +484,15 @@ useEffect(() => {
 
   return (
     <div className="min-h-screen bg-[#0e0e0e] text-white font-sans" data-testid="track-info-page">
+
+      {/* ── Limit reached overlay ─────────────────────────────────────────── */}
+      {limitReached && (
+        <UploadLimitBanner
+          minutesRemaining={limitMinutesRemaining}
+          onUpgrade={() => setCheckoutOpen(true)}
+        />
+      )}
+      {checkoutOpen && <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />}
 
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-3 border-b border-[#1a1a1a]" data-testid="track-info-header">

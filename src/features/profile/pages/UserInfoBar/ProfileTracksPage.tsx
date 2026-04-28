@@ -1,8 +1,112 @@
+import { useEffect, useMemo, useState } from "react";
+import { useParams } from "react-router-dom";
+import SongCard from "@/components/ui/SongCard";
+import { profileService } from "@/features/profile/profileService";
+import { useMe } from "@/features/profile/context/useMe";
+import type { UserTrack } from "@/shared/types/User";
+
+function formatTimeAgo(dateStr: string): string {
+  if (!dateStr) return "";
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diffMs / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} minute${mins !== 1 ? "s" : ""} ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} hour${hrs !== 1 ? "s" : ""} ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days} day${days !== 1 ? "s" : ""} ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months} month${months !== 1 ? "s" : ""} ago`;
+  const years = Math.floor(months / 12);
+  return `${years} year${years !== 1 ? "s" : ""} ago`;
+}
+
+function waveformSeedFromId(id: string): number {
+  return id.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+}
+
 export default function ProfileTracksPage() {
+  const { username } = useParams<{ username: string }>();
+  const { me } = useMe();
+  const isMeView = !username || username === me?.username;
+
+  const [tracks, setTracks] = useState<UserTrack[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        if (isMeView) {
+          const tracksRes = await profileService.getMeTracks(1, 20);
+          if (!isMounted) return;
+          setTracks(tracksRes?.tracks ?? []);
+          return;
+        }
+
+        const tracksRes = await profileService.getUserTracks(username || "", 1, 20);
+
+        if (!isMounted) return;
+        setTracks(tracksRes?.tracks ?? []);
+      } catch {
+        if (!isMounted) return;
+        setTracks([]);
+        setError("Could not load tracks.");
+      } finally {
+        if (!isMounted) return;
+        setLoading(false);
+      }
+    };
+
+    void load();
+    return () => {
+      isMounted = false;
+    };
+  }, [isMeView, username]);
+
+  const content = useMemo(() => {
+    if (loading) return <p className="py-10 text-sm text-zinc-400">Loading tracks...</p>;
+    if (error) return <p className="py-10 text-sm text-red-400">{error}</p>;
+    if (tracks.length === 0) return <p className="py-10 text-sm text-zinc-400">No tracks yet.</p>;
+
+    return (
+      <div className="mt-8 space-y-8">
+        {tracks.map((track) => (
+          <SongCard
+            key={track.id}
+            trackId={track.id}
+            artistName={
+              track.artist?.displayName ||
+              track.artist?.username ||
+              me?.displayName ||
+              me?.username ||
+              "Artist"
+            }
+            title={track.title}
+            coverUrl={track.coverUrl ?? undefined}
+            timeAgo={formatTimeAgo(track.createdAt)}
+            isLikedInitial={Boolean(track.interaction?.isLiked)}
+            isRepostedInitial={Boolean(track.interaction?.isReposted)}
+            likes={String(track.engagement?.likeCount ?? 0)}
+            reposts={String(track.engagement?.repostCount ?? 0)}
+            plays={String(track.engagement?.playCount ?? 0)}
+            comments={String(track.engagement?.commentCount ?? 0)}
+            waveformSeed={waveformSeedFromId(track.id)}
+          />
+        ))}
+      </div>
+    );
+  }, [error, loading, me?.displayName, me?.username, tracks]);
+
   return (
-    <div>
-      <h1>Profile Tracks</h1>
-      {/* Add profile tracks content here */}
+    <div className="w-full min-h-screen bg-[#0b0b0b] text-white">
+      <div className="flex w-full justify-center">
+        <div className="w-10/12 pr-0 lg:pr-[360px]">{content}</div>
+      </div>
     </div>
   );
 }
