@@ -28,6 +28,7 @@ interface SuggestedArtist {
   avatarUrl: string | null;
   followersCount: number;
   tracksCount: number;
+  isFollowing?: boolean;
 }
 
 type ArtistTool = {
@@ -62,7 +63,7 @@ export default function SideBar() {
   const [likesLoading, setLikesLoading] = useState(true);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [followStates, setFollowStates] = useState<Record<string, boolean>>({});
-  const [pendingFollowId, setPendingFollowId] = useState<string | null>(null);
+  const [pendingFollowById, setPendingFollowById] = useState<Record<string, boolean>>({});
 
   const handleArtistToolClick = () => {
     setUpgradeOpen(true);
@@ -78,27 +79,35 @@ export default function SideBar() {
       const items: SuggestedArtist[] = res.data.items || [];
       setSuggestedUsers(items);
 
-      const statusEntries = await Promise.all(
-        items.map(async (artist) => {
-          try {
-            const status = await followingService.getFollowStatus(artist.id);
-            return [artist.id, status.isFollowing] as const;
-          } catch {
-            return [artist.id, false] as const;
-          }
-        }),
+      const seededStates = Object.fromEntries(
+        items.map((artist) => [artist.id, Boolean(artist.isFollowing)]),
       );
+      setFollowStates((prev) => ({ ...prev, ...seededStates }));
+      setLoading(false);
 
-      setFollowStates(Object.fromEntries(statusEntries));
+      // Resolve precise follow states in background so the list appears immediately.
+      void (async () => {
+        const statusEntries = await Promise.all(
+          items.map(async (artist) => {
+            try {
+              const status = await followingService.getFollowStatus(artist.id);
+              return [artist.id, status.isFollowing] as const;
+            } catch {
+              return [artist.id, seededStates[artist.id] ?? false] as const;
+            }
+          }),
+        );
+
+        setFollowStates((prev) => ({ ...prev, ...Object.fromEntries(statusEntries) }));
+      })();
     } catch {
       setError("Failed to load artists");
-    } finally {
       setLoading(false);
     }
   };
 
   const handleSuggestedArtistFollowToggle = async (artistId: string) => {
-    setPendingFollowId(artistId);
+    setPendingFollowById((prev) => ({ ...prev, [artistId]: true }));
     const wasFollowing = followStates[artistId] ?? false;
     setFollowStates((prev) => ({ ...prev, [artistId]: !wasFollowing }));
 
@@ -114,7 +123,7 @@ export default function SideBar() {
       setFollowStates((prev) => ({ ...prev, [artistId]: wasFollowing }));
       console.error("Failed to toggle suggested artist follow state", err);
     } finally {
-      setPendingFollowId((current) => (current === artistId ? null : current));
+      setPendingFollowById((prev) => ({ ...prev, [artistId]: false }));
     }
   };
 
@@ -237,7 +246,7 @@ export default function SideBar() {
                   <button
                     data-testid={`suggested-artist-follow-btn-${artist.id}`}
                     type="button"
-                    disabled={pendingFollowId === artist.id}
+                    disabled={Boolean(pendingFollowById[artist.id])}
                     onClick={() => handleSuggestedArtistFollowToggle(artist.id)}
                     className={`font-semibold rounded px-5 py-1.5 text-sm transition disabled:opacity-60 ${
                       followStates[artist.id]
