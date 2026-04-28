@@ -209,13 +209,13 @@ export default function SongCard({
         </div>
       )}
       {/* Main Content */}
-      <div className="flex min-w-0 flex-1 flex-col px-3 pb-3 pt-1 sm:px-4 sm:pb-3 sm:pt-0">
+      <div className="flex min-w-0 flex-1 flex-col px-2.5 pb-1.5 pt-0.5 sm:px-4 sm:pb-3 sm:pt-0">
         {/* Top row: play button + artist/title + time/genre */}
-        <div className="mb-2 flex flex-wrap items-start gap-3 sm:mb-1 sm:flex-nowrap">
+        <div className="mb-1 flex flex-wrap items-start gap-2 sm:mb-1 sm:flex-nowrap sm:gap-3">
           <button
             onClick={handlePlayToggle}
             disabled={!trackId}
-            className="w-9 h-9 rounded-full bg-white flex items-center justify-center hover:scale-105 transition-transform shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="h-7 w-7 shrink-0 rounded-full bg-white flex items-center justify-center transition-transform hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed sm:h-9 sm:w-9"
             aria-label={playing ? "Pause" : "Play"}
           >
             {playing ? (
@@ -231,28 +231,28 @@ export default function SongCard({
           </button>
 
           <div className="flex-1 min-w-0">
-            <div className="text-[11px] text-[hsl(0,0%,50%)] truncate mb-0.5">
+            <div className="mb-0.5 truncate text-[9px] text-[hsl(0,0%,50%)] sm:text-[11px]">
               {artistName}
             </div>
             {cardPrimaryLink ? (
               <Link
                 to={cardPrimaryLink}
-                className="block text-[13px] text-white font-medium leading-snug line-clamp-2 hover:underline"
+                className="block line-clamp-2 text-[11px] font-medium leading-snug text-white hover:underline sm:text-[13px]"
               >
                 {title}
               </Link>
             ) : (
-              <p className="text-[13px] text-white font-medium leading-snug line-clamp-2">
+              <p className="line-clamp-2 text-[11px] font-medium leading-snug text-white sm:text-[13px]">
                 {title}
               </p>
             )}
           </div>
 
-          <div className="flex w-full items-center gap-2 pl-12 sm:w-auto sm:shrink-0 sm:pl-0">
-            <span className="text-[11px] text-[hsl(0,0%,40%)] whitespace-nowrap">
+          <div className="flex w-full items-center gap-1 pl-9 sm:w-auto sm:shrink-0 sm:gap-2 sm:pl-0">
+            <span className="whitespace-nowrap text-[9px] text-[hsl(0,0%,40%)] sm:text-[11px]">
               {timeAgo}
             </span>
-            <span className="rounded-sm border border-[hsl(0,0%,20%)] bg-[hsl(0,0%,12%)] px-2 py-0.5 text-[10px] whitespace-nowrap text-[hsl(0,0%,55%)]">
+            <span className="whitespace-nowrap rounded-sm border border-[hsl(0,0%,20%)] bg-[hsl(0,0%,12%)] px-1 py-0.5 text-[8px] text-[hsl(0,0%,55%)] sm:px-2 sm:text-[10px]">
               {contextTag ?? `# ${genre}`}
             </span>
           </div>
@@ -260,7 +260,7 @@ export default function SongCard({
 
         {/* Waveform */}
         <div
-          className="mt-1 mb-2 flex h-[36px] w-full cursor-pointer items-end sm:h-[44px]"
+          className="mb-1 mt-0.5 flex h-[30px] w-full cursor-pointer items-end sm:h-[44px]"
           style={{ gap: `${GAP}px` }}
           onClick={handleWaveformClick}
           onMouseEnter={() => setIsWaveHovered(true)}
@@ -336,12 +336,12 @@ export default function SongCard({
         )}
 
         {/* Controls row */}
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:flex-none sm:gap-2">
             <button
               type="button"
               onClick={toggleLike}
-              className="flex h-7 w-9 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f]"
+              className="flex h-7 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f] sm:w-9"
               aria-label={`Like (${likesCount})`}
             >
               <Heart
@@ -356,21 +356,21 @@ export default function SongCard({
               onClick={onToggleRepost}
               disabled={repostDisabled}
               aria-label={isRepostedInitial ? "Undo repost" : "Repost"}
-              className="flex h-7 w-9 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f] disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex h-7 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f] disabled:cursor-not-allowed disabled:opacity-60 sm:w-9"
             >
               <Repeat2 size={12} style={{ color: "#fff" }} />
               <span className="sr-only">{reposts}</span>
             </button>
-            <button className="flex h-7 w-9 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f]">
+            <button className="flex h-7 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f] sm:w-9">
               <Share2 size={12} />
             </button>
-            <button className="flex h-7 w-9 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f]">
+            <button className="flex h-7 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f] sm:w-9">
               <Copy size={12} />
             </button>
             <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setMenuOpen((prev) => !prev)}
-                className="flex h-7 w-9 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f]"
+                className="flex h-7 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f] sm:w-9"
                 aria-label="More options"
               >
                 <MoreHorizontal size={12} />
@@ -423,7 +423,7 @@ export default function SongCard({
             </div>
           </div>
 
-          <div className="ml-auto flex items-center gap-3 text-[11px] text-[hsl(0,0%,40%)] sm:ml-0">
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 text-[10px] text-[hsl(0,0%,40%)] sm:ml-0 sm:gap-3 sm:text-[11px]">
             <span className="flex items-center gap-1">
               <svg
                 width="10"

@@ -79,6 +79,8 @@ const PlaylistPage: React.FC = () => {
           <div className="flex-1">
             <ActionBar
               playlist={playlist}
+              canEmbed={isOwner}
+              canShare={playlist.privacy === "public" || isOwner}
               canDelete={isOwner}
               onEdit={() => setIsEditOpen(true)}
               onDeleted={() => navigate("/library")}

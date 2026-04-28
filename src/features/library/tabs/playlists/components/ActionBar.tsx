@@ -8,11 +8,13 @@ function ShareOverlay({
   shareUrl,
   isPrivate,
   playlistId,
+  canEmbed,
 }: {
   onClose: () => void;
   shareUrl: string;
   isPrivate: boolean;
   playlistId: string;
+  canEmbed: boolean;
 }) {
   const [activeTab, setActiveTab] = useState<"share" | "embed" | "message">(
     "share",
@@ -28,7 +30,7 @@ function ShareOverlay({
   };
 
   useEffect(() => {
-    if (activeTab !== "embed" || embedCode || embedLoading) return;
+    if (!canEmbed || activeTab !== "embed" || embedCode || embedLoading) return;
 
     setEmbedLoading(true);
     void playlistService
@@ -62,17 +64,19 @@ function ShareOverlay({
           >
             Share
           </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("embed")}
-            className={`pb-2 text-[20px] font-bold tracking-tight sm:text-[22px] ${
-              activeTab === "embed"
-                ? "border-b-2 border-white text-white"
-                : "text-zinc-500 hover:text-zinc-300"
-            }`}
-          >
-            Embed
-          </button>
+          {canEmbed && (
+            <button
+              type="button"
+              onClick={() => setActiveTab("embed")}
+              className={`pb-2 text-[20px] font-bold tracking-tight sm:text-[22px] ${
+                activeTab === "embed"
+                  ? "border-b-2 border-white text-white"
+                  : "text-zinc-500 hover:text-zinc-300"
+              }`}
+            >
+              Embed
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setActiveTab("message")}
@@ -135,6 +139,8 @@ function ShareOverlay({
 interface ActionBarProps {
   playlist: Collection;
   canDelete?: boolean;
+  canShare?: boolean;
+  canEmbed?: boolean;
   onEdit?: () => void;
   onDeleted?: () => void;
 }
@@ -145,6 +151,8 @@ const buttonClass =
 const ActionBar: React.FC<ActionBarProps> = ({
   playlist,
   canDelete = false,
+  canShare = false,
+  canEmbed = false,
   onEdit,
   onDeleted,
 }) => {
@@ -212,6 +220,9 @@ const ActionBar: React.FC<ActionBarProps> = ({
       }
     } else {
       shareUrl = await playlistService.getPlaylistShareUrl(playlist.id);
+      if (!shareUrl && typeof window !== "undefined") {
+        shareUrl = window.location.href;
+      }
     }
 
     setIsSharing(false);
@@ -243,22 +254,26 @@ const ActionBar: React.FC<ActionBarProps> = ({
     <>
       <div className="mb-6 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <button
-            className={`${buttonClass} ${isSharing ? "cursor-not-allowed opacity-60" : ""}`}
-            title="Share"
-            onClick={() => void handleShare()}
-            disabled={isSharing}
-          >
-            <Share size={15} strokeWidth={2} />
-          </button>
-          <button
-            className={`${buttonClass} ${isSharing ? "cursor-not-allowed opacity-60" : ""}`}
-            title="Copy Link"
-            onClick={() => void handleCopyLink()}
-            disabled={isSharing}
-          >
-            <Copy size={15} strokeWidth={2} />
-          </button>
+          {canShare && (
+            <>
+              <button
+                className={`${buttonClass} ${isSharing ? "cursor-not-allowed opacity-60" : ""}`}
+                title="Share"
+                onClick={() => void handleShare()}
+                disabled={isSharing}
+              >
+                <Share size={15} strokeWidth={2} />
+              </button>
+              <button
+                className={`${buttonClass} ${isSharing ? "cursor-not-allowed opacity-60" : ""}`}
+                title="Copy Link"
+                onClick={() => void handleCopyLink()}
+                disabled={isSharing}
+              >
+                <Copy size={15} strokeWidth={2} />
+              </button>
+            </>
+          )}
           {canDelete && (
             <button className={buttonClass} title="Edit" onClick={onEdit}>
               <Edit3 size={15} strokeWidth={2} />
@@ -307,9 +322,9 @@ const ActionBar: React.FC<ActionBarProps> = ({
 
       {showCopyToast && (
         <div className="fixed right-6 top-6 z-[140]">
-          <div className="flex items-center gap-4 rounded-[4px] border border-zinc-500 bg-[#2f2f2f] px-5 py-4 text-white shadow-xl">
-            <div className="text-emerald-400 text-xl">✓</div>
-            <div className="text-[16px] font-semibold leading-tight">
+          <div className="flex max-w-[360px] items-center gap-3 rounded-[4px] border border-zinc-500 bg-[#2f2f2f] px-4 py-2.5 text-white shadow-xl">
+            <div className="text-emerald-400 text-lg">✓</div>
+            <div className="text-[13px] font-semibold leading-tight">
               Link has been copied to the clipboard!
             </div>
           </div>
@@ -322,6 +337,7 @@ const ActionBar: React.FC<ActionBarProps> = ({
           shareUrl={shareUrl}
           isPrivate={playlist.privacy?.toLowerCase?.() === "private"}
           playlistId={playlist.id}
+          canEmbed={canEmbed}
         />
       )}
     </>
