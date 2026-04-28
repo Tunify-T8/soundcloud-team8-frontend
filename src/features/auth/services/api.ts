@@ -59,6 +59,7 @@ api.interceptors.response.use(
       '/auth/forgot-password',
       '/auth/reset-password',
       '/auth/resend-verification',
+      '/auth/check-email',
     ];
     const isPublicRoute = PUBLIC_AUTH_ENDPOINTS.some(
       (ep) => originalRequest.url?.includes(ep)
@@ -80,7 +81,9 @@ api.interceptors.response.use(
       isRefreshing = true;
  
       const refreshToken = getRefreshToken();
-       if (!refreshToken) {
+      if (!refreshToken) {
+        isRefreshing = false;
+        processQueue(error, null);
         clearTokens();
         window.location.href = '/signin';
         return Promise.reject(error);
