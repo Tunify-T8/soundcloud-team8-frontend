@@ -65,9 +65,9 @@ export default function SongCard({
   const playing = isThisTrack && isPlaying;
 
   const [isWaveHovered, setIsWaveHovered] = useState(false);
-  const [hoverProgress, setHoverProgress] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showPlaylistOverlay, setShowPlaylistOverlay] = useState(false);
+  const [randomSeed] = useState(() => Math.random() * 1000000);
 
   const handlePlayToggle = () => {
     if (!trackId) return;
@@ -93,13 +93,13 @@ export default function SongCard({
   );
 
   const GAP = 1;
-  const generatorIndex = waveformSeed % waveGenerators.length;
-  const waveRef = useRef<HTMLDivElement>(null);
+  const effectiveSeed = waveformSeed || randomSeed;
+  const generatorIndex = Math.floor(effectiveSeed) % waveGenerators.length;
   const menuRef = useRef<HTMLDivElement>(null);
 
   const bars = useMemo((): number[] => {
-    return waveGenerators[generatorIndex](waveformSeed);
-  }, [generatorIndex, waveformSeed]);
+    return waveGenerators[generatorIndex](effectiveSeed);
+  }, [generatorIndex, effectiveSeed]);
 
   const displayProgress = isThisTrack ? playerProgress : progress;
 
