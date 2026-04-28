@@ -91,11 +91,13 @@ function StudioHeader() {
 
       <div className="flex items-center justify-between flex-1">
         {/* Insights */}
+        <Link to="/me/insights/overview">
         <button data-testid="studio-header-insights-btn" className="group flex flex-col items-center gap-1.5 transition-colors">
           <img src={insightsImg} alt="Insights" className="w-8 h-8 object-contain transition-transform duration-200 group-hover:scale-125" />
           <span className="text-xs font-bold text-[hsl(0,0%,65%)] group-hover:text-white transition-colors">Insights</span>
           <span className="text-[10px] font-bold tracking-tight text-[hsl(0,0%,65%)] opacity-0 group-hover:opacity-100 transition-opacity -mt-1">Limited</span>
         </button>
+        </Link>
 
         {/* Earnings */}
         <button data-testid="studio-header-earnings-btn" className="group flex flex-col items-center gap-1.5 transition-colors">
