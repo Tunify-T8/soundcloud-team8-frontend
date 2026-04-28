@@ -77,7 +77,7 @@ function writeProfileCache(cache: ProfileCache) {
 }
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
-  const cachedProfile = readProfileCache();
+  const [cachedProfile] = useState<ProfileCache | null>(() => readProfileCache());
   const [me, setMe] = useState<MeUserProfile | null>(cachedProfile?.me ?? null);
   const [socialAccounts, setSocialAccounts] = useState<SocialAccounts>(
     cachedProfile?.socialAccounts ?? {},
@@ -86,7 +86,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     cachedProfile?.following ?? [],
   );
   const [subscription, setSubscriptionState] = useState<Subscription>(
-    cachedProfile?.subscription ?? defaultSubscription,
+    defaultSubscription,
   );
   const [tick, setTick] = useState(0);
 
@@ -125,6 +125,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
       if (subscriptionResult.status === "fulfilled") {
         setSubscriptionState(subscriptionResult.value);
+      } else {
+        setSubscriptionState(defaultSubscription);
       }
     });
   }, [tick]);

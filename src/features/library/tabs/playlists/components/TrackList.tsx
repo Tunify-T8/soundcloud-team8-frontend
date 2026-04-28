@@ -16,7 +16,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { CollectionTrack } from "../../../../types";
+import type { CollectionTrack } from "@/features/library/types";
 
 function formatCompactNumber(value?: number) {
   if (value === undefined || value === null || Number.isNaN(value)) return null;

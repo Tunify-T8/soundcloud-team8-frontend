@@ -1,3 +1,4 @@
+import axios from "axios";
 import { api } from "@/features/auth/services/api";
 import type {
   Subscription,
@@ -62,9 +63,80 @@ export interface CancelSubscriptionResponse {
 
 const VALID_TIERS: SubscriptionTier[] = ["free", "artist", "artist-pro"];
 
+const FREE_SUBSCRIPTION: Subscription = {
+  tier: "free",
+  status: "ACTIVE",
+  data: null,
+};
+
 function parseTier(plan: string): SubscriptionTier {
   const normalized = plan.toLowerCase() as SubscriptionTier;
   return VALID_TIERS.includes(normalized) ? normalized : "free";
+}
+
+function normalizeSubscriptionResponse(payload: unknown): Subscription {
+  if (!payload || typeof payload !== "object") {
+    return FREE_SUBSCRIPTION;
+  }
+
+  const candidate = payload as Partial<SubscriptionData> & {
+    data?: Partial<SubscriptionData> | null;
+    subscription?: Partial<SubscriptionData> | null;
+    tier?: string;
+    plan?: string;
+    status?: SubscriptionStatus;
+  };
+
+  const data =
+    candidate.data && typeof candidate.data === "object"
+      ? candidate.data
+      : candidate.subscription && typeof candidate.subscription === "object"
+        ? candidate.subscription
+        : candidate;
+
+  const plan =
+    typeof data.plan === "string"
+      ? data.plan
+      : typeof candidate.plan === "string"
+        ? candidate.plan
+        : typeof candidate.tier === "string"
+          ? candidate.tier
+          : "free";
+
+  const status =
+    typeof data.status === "string"
+      ? (data.status as SubscriptionStatus)
+      : typeof candidate.status === "string"
+        ? candidate.status
+        : "ACTIVE";
+
+  if (parseTier(plan) === "free" && !("features" in data)) {
+    return {
+      tier: "free",
+      status,
+      data: null,
+    };
+  }
+
+  return {
+    tier: parseTier(plan),
+    status,
+    data: {
+      plan,
+      status,
+      startedAt: typeof data.startedAt === "string" ? data.startedAt : "",
+      expiresAt: typeof data.expiresAt === "string" ? data.expiresAt : "",
+      autoRenew: typeof data.autoRenew === "boolean" ? data.autoRenew : false,
+      features: {
+        maxUploads:
+          typeof data.features?.maxUploads === "number"
+            ? data.features.maxUploads
+            : 0,
+        adFree: Boolean(data.features?.adFree),
+        offlineListening: Boolean(data.features?.offlineListening),
+      },
+    },
+  };
 }
 
 /**
@@ -100,22 +172,20 @@ async function getMySubscription(
   options?: { fallbackToFree?: boolean }
 ): Promise<Subscription> {
   try {
-    const response = await api.get<SubscriptionData>("/subscriptions/me");
-    const data = response.data;
-    return {
-      tier: parseTier(data.plan),
-      status: data.status,
-      data,
-    };
-  } catch {
+    const response = await api.get("/subscriptions/me");
+    return normalizeSubscriptionResponse(response.data);
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      if (status === 404 || status === 204) {
+        return FREE_SUBSCRIPTION;
+      }
+    }
+
     if (options?.fallbackToFree === false) {
       throw new Error("Failed to fetch subscription");
     }
-    return {
-      tier: "free",
-      status: "ACTIVE" as SubscriptionStatus,
-      data: null,
-    };
+    return FREE_SUBSCRIPTION;
   }
 }
 
