@@ -56,6 +56,7 @@ export default function MyPlanModal({ onClose }: MyPlanModalProps) {
   const { subscription, setSubscription } = useMe();
   const [isCancelling, setIsCancelling] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [latestDate, setLatestDate] = useState<string | null>(subscription.data?.expiresAt ?? null);
 
   const isCancelled =
     subscription.status === "CANCELLED" || subscription.data?.autoRenew === false;
@@ -77,6 +78,26 @@ export default function MyPlanModal({ onClose }: MyPlanModalProps) {
       document.body.style.overflow = "";
     };
   }, [onClose]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    subscriptionService
+      .getMySubscription({ fallbackToFree: false })
+      .then((latest) => {
+        if (!mounted) return;
+        setSubscription(latest);
+        setLatestDate(latest.data?.expiresAt ?? null);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setLatestDate(subscription.data?.expiresAt ?? null);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [setSubscription, subscription.data?.expiresAt]);
 
   const syncSubscription = async (
     patch?: Partial<NonNullable<Subscription["data"]>> & {
@@ -121,6 +142,7 @@ export default function MyPlanModal({ onClose }: MyPlanModalProps) {
         autoRenew: false,
         expiresAt: result.expiresAt,
       });
+      setLatestDate(result.expiresAt);
       setFeedback(
         `Cancellation successful. Your plan will expire on ${formatDate(result.expiresAt)}.`
       );
@@ -214,7 +236,7 @@ export default function MyPlanModal({ onClose }: MyPlanModalProps) {
               {isCancelled ? "Expiry Date" : "Renewal Date"}
             </p>
             <p className="mt-2 text-base font-semibold text-zinc-900">{relevantDateLabel}</p>
-            <p className="mt-1 text-sm text-zinc-600">{formatDate(relevantDate)}</p>
+            <p className="mt-1 text-sm text-zinc-600">{formatDate(latestDate ?? relevantDate)}</p>
           </div>
 
           <div className="mt-7 flex items-center justify-end gap-3">
@@ -227,7 +249,7 @@ export default function MyPlanModal({ onClose }: MyPlanModalProps) {
             <button
               onClick={handleCancel}
               disabled={isCancelling || isCancelled}
-              className="rounded-full bg-zinc-900 px-6 py-2.5 text-sm font-bold text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:bg-zinc-300"
+              className="rounded-full bg-red-600 px-6 py-2.5 text-sm font-bold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-zinc-300"
             >
               {isCancelling ? (
                 <span className="inline-flex items-center gap-2">
@@ -237,7 +259,7 @@ export default function MyPlanModal({ onClose }: MyPlanModalProps) {
               ) : isCancelled ? (
                 "Undo cancel"
               ) : (
-                "Cancel"
+                "Cancel my subscription"
               )}
             </button>
           </div>

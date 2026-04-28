@@ -3,6 +3,7 @@ import { X, Upload, Zap, Share2, RefreshCw, Plus, Star } from "lucide-react";
 import CheckoutModal from "./CheckoutModal";
 import { subscriptionService } from "@/features/premium/premiumService";
 import type { Plan } from "@/features/premium/premiumService";
+import { useSubscription } from "@/hooks/useSubscription";
 
 interface UpgradeModalProps {
   onClose: () => void;
@@ -13,6 +14,7 @@ function formatPrice(amount: number, currency: string) {
 }
 
 export default function UpgradeModal({ onClose }: UpgradeModalProps) {
+  const { isArtist } = useSubscription();
   const [checkoutPlan, setCheckoutPlan] = useState<"artist" | "artist-pro" | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
 
@@ -81,8 +83,9 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
           </div>
 
           {/* Plans Grid */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className={`grid gap-4 ${isArtist ? "grid-cols-1 max-w-[480px] mx-auto" : "grid-cols-2"}`}>
             {/* Artist Plan */}
+            {!isArtist && (
             <div className="border border-zinc-200 rounded-2xl p-6">
               <div className="flex items-center gap-2 mb-3">
                 <h3 className="text-xl font-semibold text-zinc-700 tracking-tight">Artist</h3>
@@ -130,6 +133,7 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
                 />
               </ul>
             </div>
+            )}
 
             {/* Artist Pro Plan */}
             <div className="border-2 border-[#c9a227] rounded-2xl p-6 relative overflow-hidden">

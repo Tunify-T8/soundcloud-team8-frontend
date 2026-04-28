@@ -258,6 +258,11 @@ export default function Navbar() {
 
   const hasPaidPlan = isArtist || isArtistPro;
   const avatarBadge = tier !== "free";
+  const planButtonClass = isArtistPro
+    ? "border-[#c9a227] hover:bg-[#c9a227] hover:text-black"
+    : isArtist
+      ? "border-[#b8adff] hover:bg-[#b8adff] hover:text-black"
+      : "border-orange-500 hover:bg-orange-500";
 
   return (
     <>
@@ -282,7 +287,7 @@ export default function Navbar() {
             {hasPaidPlan ? (
               <button
                 onClick={() => setPlanModalOpen(true)}
-                className="border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-1 rounded-sm transition-colors duration-150 text-xs"
+                className={`border text-white font-bold tracking-tight px-3 py-1 rounded-sm transition-colors duration-150 text-xs ${planButtonClass}`}
               >
                 View My Plan
               </button>
@@ -503,7 +508,7 @@ export default function Navbar() {
             {hasPaidPlan ? (
               <button
                 onClick={() => setPlanModalOpen(true)}
-                className="w-full border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-2 rounded-sm transition-colors duration-150 text-xs"
+                className={`w-full border text-white font-bold tracking-tight px-3 py-2 rounded-sm transition-colors duration-150 text-xs ${planButtonClass}`}
               >
                 View My Plan
               </button>

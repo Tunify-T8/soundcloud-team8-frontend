@@ -89,8 +89,8 @@ export default function Avatar({
         )}
       </div>
       {isMe && tier !== "free" && (
-        <div className="pointer-events-none absolute -right-1 top-0 z-10 -translate-y-[12%] translate-x-[12%]">
-          <SubscriptionBadge tier={tier} size={34} />
+        <div className="pointer-events-none absolute -right-1 top-0 z-10 -translate-y-[14%] translate-x-[16%]">
+          <SubscriptionBadge tier={tier} size={46} />
         </div>
       )}
 
