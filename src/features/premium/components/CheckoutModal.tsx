@@ -119,6 +119,7 @@ export default function CheckoutModal({ plan, plans: plansProp = [], onClose }: 
     day: "2-digit", month: "short", year: "numeric",
   });
 
+  
   function validate(): CardErrors {
     const e: CardErrors = {};
     const currentYear = new Date().getFullYear();

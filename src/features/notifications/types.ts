@@ -24,6 +24,7 @@ export interface NotificationObject {
   isRead: boolean;
   readAt?: string | null;
   createdAt: string;
+  isFollowed?: boolean;
 }
  
 export interface NotificationsMeta {

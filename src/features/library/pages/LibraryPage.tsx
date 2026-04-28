@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import OverviewTab from "../tabs/OverviewTab";
 import LikesTab from "../tabs/LikesTab";
-import PlaylistsTab from "../tabs/playlists/PlaylistsTab";
+import PlaylistsTab from "../tabs/playlists/pages/PlaylistsTab";
 import AlbumsTab from "../tabs/AlbumsTab";
 import StationsTab from "../tabs/StationsTab";
 import FollowingTab from "../tabs/FollowingTab";
@@ -13,18 +13,18 @@ const TABS = ["Overview", "Likes", "Playlists", "Albums", "Stations", "Following
 type Tab = typeof TABS[number];
 
 const TAB_TO_PATH: Record<Tab, string> = {
-  Overview:  "/library",
-  Likes:     "/me/likes",
+  Overview: "/library",
+  Likes: "/me/likes",
   Playlists: "/me/sets",
-  Albums:    "/me/albums",
-  Stations:  "/me/stations",
+  Albums: "/me/albums",
+  Stations: "/me/stations",
   Following: "/me/following",
   History:   "/me/history",
   Downloads: "/me/downloads",
 };
 
 const PATH_TO_TAB: Record<string, Tab> = Object.fromEntries(
-  Object.entries(TAB_TO_PATH).map(([tab, path]) => [path, tab as Tab])
+  Object.entries(TAB_TO_PATH).map(([tab, path]) => [path, tab as Tab]),
 );
 
 export default function LibraryPage() {
@@ -34,8 +34,15 @@ export default function LibraryPage() {
   const activeTab: Tab = PATH_TO_TAB[location.pathname] ?? "Overview";
 
   const footerLinks = [
-    "Legal", "Privacy", "Cookie Policy", "Cookie Manager", "Imprint",
-    "Artist Resources", "Newsroom", "Charts", "Transparency Reports",
+    "Legal",
+    "Privacy",
+    "Cookie Policy",
+    "Cookie Manager",
+    "Imprint",
+    "Artist Resources",
+    "Newsroom",
+    "Charts",
+    "Transparency Reports",
   ];
 
   const renderTab = () => {
@@ -52,8 +59,14 @@ export default function LibraryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white pb-20" data-testid="library-page">
-      <div className="border-b border-zinc-800 bg-black" data-testid="library-tab-bar">
+    <div
+      className="min-h-screen bg-black text-white pb-20"
+      data-testid="library-page"
+    >
+      <div
+        className="border-b border-zinc-800 bg-black"
+        data-testid="library-tab-bar"
+      >
         <div className="flex gap-0 pl-40">
           {TABS.map((tab) => (
             <button
@@ -62,9 +75,9 @@ export default function LibraryPage() {
               onClick={() => navigate(TAB_TO_PATH[tab])}
               className="px-5 py-3 transition-colors relative whitespace-nowrap"
               style={{
-                color:         activeTab === tab ? "white" : "#71717a",
-                fontWeight:    activeTab === tab ? 700 : 600,
-                fontSize:      "18px",
+                color: activeTab === tab ? "white" : "#71717a",
+                fontWeight: activeTab === tab ? 700 : 600,
+                fontSize: "18px",
                 letterSpacing: "-0.01em",
               }}
             >
@@ -84,11 +97,16 @@ export default function LibraryPage() {
         {renderTab()}
       </div>
 
-      <div className="pl-40 pr-6 pt-12 pb-10 text-xs text-zinc-400" data-testid="library-footer">
+      <div
+        className="pl-40 pr-6 pt-12 pb-10 text-xs text-zinc-400"
+        data-testid="library-footer"
+      >
         <div className="flex flex-wrap items-center gap-1.5">
           {footerLinks.map((link, index) => (
             <span key={link} className="inline-flex items-center">
-              <a href="#" className="hover:text-zinc-200 transition-colors">{link}</a>
+              <a href="#" className="hover:text-zinc-200 transition-colors">
+                {link}
+              </a>
               {index < footerLinks.length - 1 && (
                 <span className="mx-1 text-zinc-600">·</span>
               )}
@@ -97,7 +115,9 @@ export default function LibraryPage() {
         </div>
         <p className="mt-6 text-sm text-zinc-100">
           <span className="font-bold">Language:</span>{" "}
-          <a href="#" className="text-[#2f7fdc] hover:underline">English (US)</a>
+          <a href="#" className="text-[#2f7fdc] hover:underline">
+            English (US)
+          </a>
         </p>
       </div>
     </div>

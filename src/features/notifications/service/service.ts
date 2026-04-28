@@ -69,5 +69,5 @@ export async function followUser(userId: string): Promise<void> {
 
 // POST /users/:userId/unfollow
 export async function unfollowUser(userId: string): Promise<void> {
-  await api.post(`/users/${userId}/unfollow`);
+  await api.delete(`/users/${userId}/unfollow`);
 }
