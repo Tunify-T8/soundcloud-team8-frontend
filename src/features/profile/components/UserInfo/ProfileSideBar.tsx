@@ -13,13 +13,16 @@ import {
   FaSoundcloud,
   FaTiktok,
 } from "react-icons/fa";
+import { SiSoundcloud } from "react-icons/si";
 import { FiInfo } from "react-icons/fi";
-import { Ticket } from "lucide-react";
+import { Ticket, Heart, Play, Repeat2, MessageSquare } from "lucide-react";
 import type { FollowingUser } from "../../../../shared/types/User";
 import { followingService } from "../../../following/followingService";
 import avatarFallback from '@/assets/avatar.png';
 import CheckoutModal from "@/features/premium/components/CheckoutModal";
 import { useMe } from "@/features/profile/context/useMe";
+import { feedService } from "@/features/feed/feedservice";
+import type { LikedTrack } from "@/features/feed/type";
 
 export default function ProfileSideBar({
   profileId,
@@ -59,6 +62,8 @@ export default function ProfileSideBar({
   );
   const [pendingUnfollowId, setPendingUnfollowId] = useState<string | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [likedTracks, setLikedTracks] = useState<LikedTrack[]>([]);
+  const [likesLoading, setLikesLoading] = useState(true);
   const { me } = useMe();
 
   useEffect(() => {
@@ -69,7 +74,34 @@ export default function ProfileSideBar({
     setLocalFollowingUsers(followingUsers ?? []);
   }, [followingUsers]);
 
-  const visibleFollowerUsers = localFollowerUsers.slice(0, 6);
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadLikes = async () => {
+      setLikesLoading(true);
+      try {
+        const data =
+          profileId && me?.id && profileId !== me.id
+            ? await feedService.getUserLikes(profileId, 6)
+            : await feedService.getMyLikes(6);
+        if (!isMounted) return;
+        setLikedTracks(data);
+      } catch {
+        if (!isMounted) return;
+        setLikedTracks([]);
+      } finally {
+        if (!isMounted) return;
+        setLikesLoading(false);
+      }
+    };
+
+    void loadLikes();
+    return () => {
+      isMounted = false;
+    };
+  }, [profileId, me?.id]);
+
+  const visibleFollowerUsers = localFollowerUsers.slice(0, 8);
   const visibleFollowingUsers = localFollowingUsers.slice(0, 6);
   const followingCount = localFollowingUsers.length;
   const followersCountLabel = Number(followers ?? 0);
@@ -219,6 +251,28 @@ export default function ProfileSideBar({
           Upgrade to Artist Pro
         </button>
       </div>
+      <div className="mt-6">
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-extrabold uppercase leading-none tracking-wide text-white">
+            {likedTracks.length > 0 ? `${likedTracks.length} LIKES` : "LIKES"}
+          </span>
+          <button className="text-[13px] text-zinc-500 hover:text-zinc-300">
+            View all
+          </button>
+        </div>
+
+        {likesLoading ? (
+          <div className="mt-3 text-xs text-zinc-400">Loading...</div>
+        ) : likedTracks.length === 0 ? (
+          <div className="mt-3 text-xs text-zinc-400">No liked tracks yet.</div>
+        ) : (
+          <div className="mt-4 flex flex-col gap-3">
+            {likedTracks.map((track) => (
+              <LikedTrackRow key={track.id} track={track} />
+            ))}
+          </div>
+        )}
+      </div>
       {visibleFollowerUsers.length > 0 && (
         <div className="mt-6">
           <div className="flex items-center justify-between">
@@ -240,8 +294,8 @@ export default function ProfileSideBar({
               <Link
                 key={followingUser.id}
                 to={`/${followingUser.id}`}
-                className={`relative block h-14 w-14 overflow-hidden rounded-full border border-zinc-900 bg-zinc-800 ${
-                  index > 0 ? "-ml-3" : ""
+                className={`relative block h-12 w-12 overflow-hidden rounded-full border border-zinc-900 bg-zinc-800 ${
+                  index > 0 ? "-ml-2" : ""
                 }`}
                 title={followingUser.displayName ?? followingUser.username}
               >
@@ -421,5 +475,50 @@ export default function ProfileSideBar({
       </div>
       {checkoutOpen && <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />}
     </div>
+  );
+}
+
+function LikedTrackRow({ track }: { track: LikedTrack }) {
+  return (
+    <Link to={`/tracks/${track.id}`} className="flex items-center gap-2">
+      <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded bg-[hsl(0,0%,15%)]">
+        {track.coverUrl ? (
+          <img
+            src={track.coverUrl}
+            alt={track.title}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">
+            <SiSoundcloud size={16} className="text-gray-600" />
+          </div>
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[13px] font-medium leading-tight text-white">
+          {track.title}
+        </p>
+        <p className="truncate text-[11px] text-gray-400">{track.artist}</p>
+        <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[10px] text-gray-500">
+          <span className="flex items-center gap-0.5">
+            <Play size={8} fill="currentColor" />
+            {track.playsCount.toLocaleString()}
+          </span>
+          <span className="flex items-center gap-0.5">
+            <Heart size={8} />
+            {track.likesCount.toLocaleString()}
+          </span>
+          <span className="flex items-center gap-0.5">
+            <Repeat2 size={8} />
+            {track.repostsCount.toLocaleString()}
+          </span>
+          <span className="flex items-center gap-0.5">
+            <MessageSquare size={8} />
+            {track.commentsCount.toLocaleString()}
+          </span>
+        </div>
+      </div>
+    </Link>
   );
 }

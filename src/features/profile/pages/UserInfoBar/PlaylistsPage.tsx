@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import SongCard from "@/components/ui/SongCard";
 import { playlistService } from "@/features/library/libraryService";
+import { profileService } from "@/features/profile/profileService";
 import type { CollectionPreview, CollectionTrack } from "@/features/library/types";
 import { useMe } from "@/features/profile/context/useMe";
 import trackFallback from "@/assets/track.jpg";
@@ -23,6 +24,12 @@ function formatTimeAgo(dateStr: string): string {
   return `${days} day${days !== 1 ? "s" : ""} ago`;
 }
 
+function isUuidLike(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
+
 export default function PlaylistsPage() {
   const { username } = useParams<{ username: string }>();
   const { me } = useMe();
@@ -35,19 +42,24 @@ export default function PlaylistsPage() {
   useEffect(() => {
     let isMounted = true;
 
-    if (!isMeView) {
-      setItems([]);
-      setLoading(false);
-      setError(null);
-      return;
-    }
-
     const load = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        const res = await playlistService.getMyCollections(1, 20, "PLAYLIST");
+        let targetUsername = username || "";
+        if (!isMeView && targetUsername && isUuidLike(targetUsername)) {
+          try {
+            const profile = await profileService.getPublicProfile(targetUsername);
+            targetUsername = profile.username || targetUsername;
+          } catch {
+            // fallback to route param if resolve fails
+          }
+        }
+
+        const res = isMeView
+          ? await playlistService.getMyCollections(1, 20, "PLAYLIST")
+          : await playlistService.getUserPlaylists(targetUsername, 1, 20);
         const playlists = (res?.data ?? []) as CollectionPreview[];
 
         const withTracks = await Promise.all(
@@ -73,17 +85,9 @@ export default function PlaylistsPage() {
     return () => {
       isMounted = false;
     };
-  }, [isMeView]);
+  }, [isMeView, username]);
 
   const content = useMemo(() => {
-    if (!isMeView) {
-      return (
-        <p className="py-10 text-sm text-zinc-400">
-          Playlists are only available on your own profile right now.
-        </p>
-      );
-    }
-
     if (loading) {
       return <p className="py-10 text-sm text-zinc-400">Loading playlists...</p>;
     }
@@ -114,6 +118,7 @@ export default function PlaylistsPage() {
           const artistName =
             mappedTracks[0]?.artist ||
             me?.displayName ||
+            username ||
             me?.username ||
             "Playlist";
           const totalPlays = tracks.reduce((sum, ct) => {
@@ -147,7 +152,7 @@ export default function PlaylistsPage() {
         })}
       </div>
     );
-  }, [isMeView, loading, error, items, me?.displayName, me?.username]);
+  }, [loading, error, items, me?.displayName, me?.username, username]);
 
   return (
     <div className="w-full min-h-screen bg-[#0b0b0b] text-white">

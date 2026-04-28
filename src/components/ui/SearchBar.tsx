@@ -79,9 +79,9 @@ export default function SearchBar() {
         navigate(`/${result.id}`);
       }
     } else if (result.type === 'track') {
-      navigate(`/${result.artist}`);
+      navigate(`/tracks/${result.id}`);
     } else {
-      navigate(`/${result.artist}`);
+      navigate(`/collections/${result.id}`);
     }
   };
 

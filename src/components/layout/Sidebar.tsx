@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { FaUser, FaMusic, FaGooglePlay, FaApple } from "react-icons/fa";
 import { Heart, Play } from "lucide-react";
 import { SiSoundcloud } from "react-icons/si";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { IoChevronDown } from "react-icons/io5";
 import { feedService } from "../../features/feed/feedservice";
 import type { LikedTrack } from "@/features/feed/type";
@@ -390,10 +390,12 @@ function LikedTrackRow({
   onUnlike: (id: string) => void;
   onReLike: (id: string) => void;
 }) {
+  const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
   const [isLiked, setIsLiked] = useState(true);
 
-  const handleToggle = async () => {
+  const handleToggle = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
     if (isLiked) {
       setIsLiked(false);
       onUnlike(track.id);
@@ -418,9 +420,12 @@ function LikedTrackRow({
   return (
     <div
       data-testid={`liked-track-${track.id}`}
-      className="flex items-center gap-2 group"
+      className="flex cursor-pointer items-center gap-2 group"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={() => {
+        if (track.id) navigate(`/tracks/${track.id}`);
+      }}
     >
       <div className="relative w-11 h-11 shrink-0 rounded overflow-hidden bg-[hsl(0,0%,15%)]">
         {track.coverUrl ? (
