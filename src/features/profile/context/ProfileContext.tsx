@@ -36,6 +36,8 @@ type ProfileContextType = {
   setSubscription: (subscription: Subscription) => void;
 };
 
+const PROFILE_CACHE_KEY = "profile_context_cache_v1";
+
 const ProfileContext = createContext<ProfileContextType>({
   me: null,
   socialAccounts: {},
@@ -45,26 +47,85 @@ const ProfileContext = createContext<ProfileContextType>({
   setSubscription: () => {},
 });
 
+type ProfileCache = {
+  me: MeUserProfile | null;
+  socialAccounts: SocialAccounts;
+  following: UserFollowing[];
+  subscription: Subscription;
+};
+
+function readProfileCache(): ProfileCache | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.localStorage.getItem(PROFILE_CACHE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as ProfileCache;
+  } catch {
+    return null;
+  }
+}
+
+function writeProfileCache(cache: ProfileCache) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // Ignore storage failures and keep app state in memory.
+  }
+}
+
 export function ProfileProvider({ children }: { children: ReactNode }) {
-  const [me, setMe] = useState<MeUserProfile | null>(null);
-  const [socialAccounts, setSocialAccounts] = useState<SocialAccounts>({});
-  const [following, setFollowing] = useState<UserFollowing[]>([]);
-  const [subscription, setSubscription] = useState<Subscription>(defaultSubscription);
+  const cachedProfile = readProfileCache();
+  const [me, setMe] = useState<MeUserProfile | null>(cachedProfile?.me ?? null);
+  const [socialAccounts, setSocialAccounts] = useState<SocialAccounts>(
+    cachedProfile?.socialAccounts ?? {},
+  );
+  const [following, setFollowing] = useState<UserFollowing[]>(
+    cachedProfile?.following ?? [],
+  );
+  const [subscription, setSubscriptionState] = useState<Subscription>(
+    cachedProfile?.subscription ?? defaultSubscription,
+  );
   const [tick, setTick] = useState(0);
 
   const refresh = useCallback(() => setTick((prev) => prev + 1), []);
+  const setSubscription = useCallback((nextSubscription: Subscription) => {
+    setSubscriptionState(nextSubscription);
+  }, []);
 
   useEffect(() => {
-    Promise.all([
-      profileService.getMeProfile().catch(() => null),
-      profileService.getMeSocialLinks().catch(() => ({})),
-      followingService.getMeFollowing().catch(() => ({ following: [] })),
-      subscriptionService.getMySubscription().catch(() => null),
-    ]).then(([meData, linksData, followingData, subscriptionData]) => {
-      setMe(meData);
-      setSocialAccounts(linksData);
-      setFollowing(followingData.following ?? []);
-      setSubscription(subscriptionData || defaultSubscription);
+    writeProfileCache({
+      me,
+      socialAccounts,
+      following,
+      subscription,
+    });
+  }, [me, socialAccounts, following, subscription]);
+
+  useEffect(() => {
+    Promise.allSettled([
+      profileService.getMeProfile(),
+      profileService.getMeSocialLinks(),
+      followingService.getMeFollowing(),
+      subscriptionService.getMySubscription({ fallbackToFree: false }),
+    ]).then(([meResult, linksResult, followingResult, subscriptionResult]) => {
+      if (meResult.status === "fulfilled") {
+        setMe(meResult.value);
+      }
+
+      if (linksResult.status === "fulfilled") {
+        setSocialAccounts(linksResult.value);
+      }
+
+      if (followingResult.status === "fulfilled") {
+        setFollowing(followingResult.value.following ?? []);
+      }
+
+      if (subscriptionResult.status === "fulfilled") {
+        setSubscriptionState(subscriptionResult.value);
+      }
     });
   }, [tick]);
 

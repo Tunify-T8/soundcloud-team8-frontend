@@ -54,18 +54,20 @@ function getPlanCopy(tier: SubscriptionTier) {
 
 export default function MyPlanModal({ onClose }: MyPlanModalProps) {
   const { subscription, setSubscription } = useMe();
+  const [subscriptionSnapshot, setSubscriptionSnapshot] = useState(subscription);
   const [isCancelling, setIsCancelling] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
-  const [latestDate, setLatestDate] = useState<string | null>(subscription.data?.expiresAt ?? null);
 
+  const activeSubscription = subscriptionSnapshot.data ? subscriptionSnapshot : subscription;
   const isCancelled =
-    subscription.status === "CANCELLED" || subscription.data?.autoRenew === false;
+    activeSubscription.status === "CANCELLED" ||
+    activeSubscription.data?.autoRenew === false;
 
-  const copy = useMemo(() => getPlanCopy(subscription.tier), [subscription.tier]);
+  const copy = useMemo(() => getPlanCopy(activeSubscription.tier), [activeSubscription.tier]);
   const relevantDateLabel = isCancelled
     ? "Your plan expires on:"
     : "Your plan renews on:";
-  const relevantDate = subscription.data?.expiresAt;
+  const relevantDate = activeSubscription.data?.expiresAt;
 
   useEffect(() => {
     const handleKey = (event: KeyboardEvent) => {
@@ -86,12 +88,12 @@ export default function MyPlanModal({ onClose }: MyPlanModalProps) {
       .getMySubscription({ fallbackToFree: false })
       .then((latest) => {
         if (!mounted) return;
+        setSubscriptionSnapshot(latest);
         setSubscription(latest);
-        setLatestDate(latest.data?.expiresAt ?? null);
       })
       .catch(() => {
         if (!mounted) return;
-        setLatestDate(subscription.data?.expiresAt ?? null);
+        setSubscriptionSnapshot(subscription);
       });
 
     return () => {
@@ -109,10 +111,14 @@ export default function MyPlanModal({ onClose }: MyPlanModalProps) {
         fallbackToFree: false,
       });
       if (latest.data) {
-        setSubscription({
+        const nextSubscription = {
           ...latest,
           status: patch?.status ?? latest.status,
           data: patch ? { ...latest.data, ...patch } : latest.data,
+        };
+        setSubscriptionSnapshot(nextSubscription);
+        setSubscription({
+          ...nextSubscription,
         });
         return;
       }
@@ -121,10 +127,14 @@ export default function MyPlanModal({ onClose }: MyPlanModalProps) {
     }
 
     if (subscription.data && patch) {
-      setSubscription({
+      const nextSubscription = {
         ...subscription,
         status: patch.status ?? subscription.status,
         data: { ...subscription.data, ...patch },
+      };
+      setSubscriptionSnapshot(nextSubscription);
+      setSubscription({
+        ...nextSubscription,
       });
     }
   };
@@ -142,7 +152,6 @@ export default function MyPlanModal({ onClose }: MyPlanModalProps) {
         autoRenew: false,
         expiresAt: result.expiresAt,
       });
-      setLatestDate(result.expiresAt);
       setFeedback(
         `Cancellation successful. Your plan will expire on ${formatDate(result.expiresAt)}.`
       );
@@ -153,7 +162,7 @@ export default function MyPlanModal({ onClose }: MyPlanModalProps) {
     }
   };
 
-  if (subscription.tier === "free") {
+  if (activeSubscription.tier === "free") {
     return null;
   }
 
@@ -213,7 +222,7 @@ export default function MyPlanModal({ onClose }: MyPlanModalProps) {
                 className="rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em]"
                 style={{ backgroundColor: copy.accentSoft, color: copy.accent }}
               >
-                {subscription.status === "TRIAL" ? "Trial" : subscription.tier}
+                {activeSubscription.status === "TRIAL" ? "Trial" : activeSubscription.tier}
               </span>
             </div>
             <ul className="space-y-3">
@@ -236,7 +245,7 @@ export default function MyPlanModal({ onClose }: MyPlanModalProps) {
               {isCancelled ? "Expiry Date" : "Renewal Date"}
             </p>
             <p className="mt-2 text-base font-semibold text-zinc-900">{relevantDateLabel}</p>
-            <p className="mt-1 text-sm text-zinc-600">{formatDate(latestDate ?? relevantDate)}</p>
+            <p className="mt-1 text-sm text-zinc-600">{formatDate(relevantDate)}</p>
           </div>
 
           <div className="mt-7 flex items-center justify-end gap-3">

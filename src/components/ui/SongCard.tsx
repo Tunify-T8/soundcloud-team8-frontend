@@ -41,11 +41,12 @@ async function saveDownload(
   userId: string,
   trackId: string,
   meta: { id: string; title: string; artist: string; coverUrl: string },
-  blob: Blob
+  blob: Blob,
+  artwork?: Blob | null
 ) {
   const db = await openDB();
   const tx = db.transaction(STORE, "readwrite");
-  tx.objectStore(STORE).put({ meta, audio: blob }, `user_${userId}_song_${trackId}`);
+  tx.objectStore(STORE).put({ meta, audio: blob, artwork: artwork ?? null }, `user_${userId}_song_${trackId}`);
 }
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -142,16 +143,29 @@ export default function SongCard({
       const streamData = await playbackService.requestStreamUrl(trackId);
       const audioRes = await fetch(streamData.stream.url);
       const blob = await audioRes.blob();
+      const artworkBlob =
+        coverUrl
+          ? await fetch(coverUrl)
+              .then((res) => (res.ok ? res.blob() : null))
+              .catch(() => null)
+          : null;
 
       const estimate = await navigator.storage.estimate();
       const free = (estimate.quota ?? 0) - (estimate.usage ?? 0);
-      if (free < blob.size) {
+      const requiredBytes = blob.size + (artworkBlob?.size ?? 0);
+      if (free < requiredBytes) {
         alert("Not enough storage space to download this track.");
         return;
       }
 
       await navigator.storage.persist().catch(() => {});
-      await saveDownload(me.id, trackId, { id: trackId, title, artist: artistName, coverUrl }, blob);
+      await saveDownload(
+        me.id,
+        trackId,
+        { id: trackId, title, artist: artistName, coverUrl },
+        blob,
+        artworkBlob,
+      );
       setDownloaded(true);
     } catch (err) {
       console.error("Download failed", err);

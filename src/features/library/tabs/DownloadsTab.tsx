@@ -5,8 +5,6 @@ import SongCard from "@/components/ui/SongCard";
 import { Genre } from "@/shared/types/Genre";
 import downloadImg from "@/assets/download.png";
 import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
-import { subscriptionService } from "@/features/premium/premiumService";
-import type { Subscription } from "@/features/premium/types";
 
 const OfflineIcon = () => (
   <img
@@ -38,9 +36,12 @@ interface DownloadedEntry {
     coverUrl: string;
   };
   audio: Blob;
+  artwork?: Blob | null;
 }
 
-async function getDownloadedTracks(userId: string): Promise<Array<DownloadedEntry & { blobUrl: string }>> {
+async function getDownloadedTracks(
+  userId: string,
+): Promise<Array<DownloadedEntry & { blobUrl: string; artworkBlobUrl?: string }>> {
   const db    = await openDB();
   const tx    = db.transaction(STORE, "readonly");
   const store = tx.objectStore(STORE);
@@ -52,7 +53,7 @@ async function getDownloadedTracks(userId: string): Promise<Array<DownloadedEntr
   });
 
   const userKeys = allKeys.filter((k) => k.startsWith(`user_${userId}_`));
-  const results: Array<DownloadedEntry & { blobUrl: string }> = [];
+  const results: Array<DownloadedEntry & { blobUrl: string; artworkBlobUrl?: string }> = [];
 
   for (const key of userKeys) {
     const val: DownloadedEntry = await new Promise((res, rej) => {
@@ -64,6 +65,7 @@ async function getDownloadedTracks(userId: string): Promise<Array<DownloadedEntr
       results.push({
         ...val,
         blobUrl: URL.createObjectURL(val.audio),
+        artworkBlobUrl: val.artwork ? URL.createObjectURL(val.artwork) : undefined,
       });
     }
   }
@@ -106,12 +108,11 @@ function UpsellPage() {
 
       <div className="flex flex-col gap-3 mb-10 w-full max-w-xs">
         {[
-          { icon: "⬇️", text: "Download unlimited tracks" },
-          { icon: "📶", text: "Play without internet" },
-          { icon: "🔒", text: "Your library, always available" },
-        ].map(({ icon, text }) => (
+          { text: "- Download unlimited tracks" },
+          { text: "- Play without internet" },
+          { text: "- Your downloads, always available" },
+        ].map(({ text }) => (
           <div key={text} className="flex items-center gap-3">
-            <span className="text-base">{icon}</span>
             <span className="text-zinc-300 text-sm">{text}</span>
           </div>
         ))}
@@ -137,7 +138,7 @@ function UpsellPage() {
 // ─── Downloads list ───────────────────────────────────────────────────────────
 
 function DownloadsList({ userId }: { userId: string }) {
-  const [tracks, setTracks]   = useState<Array<DownloadedEntry & { blobUrl: string }>>([]);
+  const [tracks, setTracks]   = useState<Array<DownloadedEntry & { blobUrl: string; artworkBlobUrl?: string }>>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -147,7 +148,10 @@ function DownloadsList({ userId }: { userId: string }) {
 
     return () => {
       setTracks((prev) => {
-        prev.forEach((t) => URL.revokeObjectURL(t.blobUrl));
+        prev.forEach((t) => {
+          URL.revokeObjectURL(t.blobUrl);
+          if (t.artworkBlobUrl) URL.revokeObjectURL(t.artworkBlobUrl);
+        });
         return [];
       });
     };
@@ -186,7 +190,7 @@ function DownloadsList({ userId }: { userId: string }) {
             trackId={track.meta.id}
             title={track.meta.title}
             artistName={track.meta.artist}
-            coverUrl={track.meta.coverUrl}
+            coverUrl={track.artworkBlobUrl ?? track.meta.coverUrl}
             genre={Genre.POP}
             offlineSrc={track.blobUrl}
           />
@@ -199,49 +203,12 @@ function DownloadsList({ userId }: { userId: string }) {
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 export default function DownloadsTab() {
-  const { hasOfflineListening, raw } = useSubscription();
-  const { me, setSubscription } = useMe();
-  const [latestSubscription, setLatestSubscription] = useState<Subscription | null>(null);
-  const [checkingPlan, setCheckingPlan] = useState(true);
-
-  useEffect(() => {
-    let mounted = true;
-
-    subscriptionService
-      .getMySubscription({ fallbackToFree: false })
-      .then((subscription) => {
-        if (!mounted) return;
-        setLatestSubscription(subscription);
-        setSubscription(subscription);
-      })
-      .catch(() => {
-        if (!mounted) return;
-        setLatestSubscription(null);
-      })
-      .finally(() => {
-        if (mounted) {
-          setCheckingPlan(false);
-        }
-      });
-
-    return () => {
-      mounted = false;
-    };
-  }, [setSubscription]);
-
-  const effectiveSubscription = latestSubscription ?? raw;
-  const effectiveHasOfflineListening =
-    (effectiveSubscription?.status === "ACTIVE" ||
-      effectiveSubscription?.status === "TRIAL") &&
-    (effectiveSubscription?.data?.features?.offlineListening ?? hasOfflineListening);
-
-  if (checkingPlan && !effectiveSubscription?.data && hasOfflineListening === false) {
-    return <div className="py-10 text-sm text-zinc-400">Checking your plan...</div>;
-  }
+  const { hasOfflineListening } = useSubscription();
+  const { me } = useMe();
 
   return (
     <div data-testid="downloads-tab">
-      {effectiveHasOfflineListening ? (
+      {hasOfflineListening ? (
         <DownloadsList userId={me?.id ?? ""} />
       ) : (
         <UpsellPage />
