@@ -8,6 +8,7 @@ interface TrackRowProps {
   track: TrackItem;
   view?: "grid" | "list";
   isLiked?: boolean;
+  onUnlike?: (trackId: string) => Promise<void>;
 }
   const MENU_ITEMS = [
   { label: "Repost", icon: Repeat2 },
@@ -18,10 +19,11 @@ interface TrackRowProps {
   { label: "Station", icon: Radio },
 ];
 
-export default function TrackRow({ track, view = "list", isLiked = false }: TrackRowProps) {
+export default function TrackRow({ track, view = "list", isLiked = false, onUnlike }: TrackRowProps) {
   const { currentTrack, isPlaying, setCurrentTrack, setIsPlaying } = usePlayer();
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuAbove, setMenuAbove] = useState(false);
+  const [unliking, setUnliking] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
 
@@ -51,6 +53,17 @@ export default function TrackRow({ track, view = "list", isLiked = false }: Trac
         duration: 0,
       });
       setIsPlaying(true);
+    }
+  };
+
+  const handleUnlike = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onUnlike || unliking) return;
+    setUnliking(true);
+    try {
+      await onUnlike(track.id);
+    } finally {
+      setUnliking(false);
     }
   };
 
@@ -91,8 +104,9 @@ export default function TrackRow({ track, view = "list", isLiked = false }: Trac
         <div className="absolute bottom-8 left-0 right-0 flex items-center justify-end gap-2 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
           <button
             data-testid={`track-like-btn-${track.id}`}
-            onClick={(e) => e.stopPropagation()}
-            className="hover:scale-110 transition-transform"
+            onClick={handleUnlike}
+            disabled={unliking}
+            className="hover:scale-110 transition-transform disabled:opacity-50"
           >
             <Heart
               size={15}
