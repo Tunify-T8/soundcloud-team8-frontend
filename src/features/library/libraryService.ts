@@ -4,6 +4,7 @@ import type {
   CollectionType,
   CollectionTrack,
   PaginatedResponse,
+  GetUserCollectionsResponse,
   CreateCollectionPayload,
   CreateCollectionResponse,
   UpdateCollectionPayload,
@@ -17,6 +18,7 @@ import type {
   LikeCollectionResponse,
   UnlikeCollectionResponse,
   PrivateCollectionResponse,
+  PlaylistShareResponse,
 } from "./types";
 
 export interface HistoryTrack {
@@ -84,7 +86,104 @@ function formatTimeAgo(isoDate: string): string {
   return `${days}d ago`;
 }
 
+// ─── Liked Tracks ───────────────────────────────────────────
+
+export interface LikedTrackItem {
+  likedAt: string;
+  track: {
+    id: string;
+    title: string;
+    description?: string;
+    audioUrl: string;
+    coverUrl: string | null;
+    duration: number;
+    likesCount: number;
+    commentsCount: number;
+    repostsCount: number;
+    createdAt: string;
+  };
+  artist: {
+    id: string;
+    username: string;
+    displayName: string | null;
+  };
+}
+
+export interface LikedTracksResponse {
+  data: LikedTrackItem[];
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
+
+export async function getLikedTracks(
+  page = 1,
+  limit = 20,
+): Promise<LikedTracksResponse | null> {
+  try {
+    const response = await api.get<LikedTracksResponse>(
+      "/users/me/liked-tracks",
+      { params: { page, limit } },
+    );
+    console.log("Liked tracks API response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch liked tracks:", error);
+    return null;
+  }
+}
+
+/** Maps API LikedTrackItem → TrackItem used by TrackRow / SongCard */
+export function mapLikedTrackToTrackItem(item: LikedTrackItem) {
+  const { track, likedAt, artist } = item;
+  return {
+    id: track.id,
+    title: track.title,
+    artist: artist.displayName || artist.username,
+    coverUrl: track.coverUrl ?? undefined,
+    timeAgo: formatTimeAgo(likedAt),
+    durationSeconds: track.duration,
+    likes: String(track.likesCount),
+    reposts: String(track.repostsCount),
+    comments: String(track.commentsCount),
+  };
+}
+
 export const playlistService = {
+  extractShareUrl(payload: unknown): string | null {
+    if (!payload || typeof payload !== "object") return null;
+
+    const obj = payload as Record<string, unknown>;
+    const direct =
+      obj.shareUrl ??
+      obj.shareURL ??
+      obj.url ??
+      obj.link ??
+      obj.shareLink ??
+      obj.share_link;
+
+    if (typeof direct === "string" && direct.trim()) {
+      return direct;
+    }
+
+    const nested = obj.data;
+    if (nested && typeof nested === "object") {
+      const nestedObj = nested as Record<string, unknown>;
+      const nestedUrl =
+        nestedObj.shareUrl ??
+        nestedObj.shareURL ??
+        nestedObj.url ??
+        nestedObj.link ??
+        nestedObj.shareLink ??
+        nestedObj.share_link;
+      if (typeof nestedUrl === "string" && nestedUrl.trim()) {
+        return nestedUrl;
+      }
+    }
+
+    return null;
+  },
+
   // ─── Playlist ───────────────────────────────────────────────
 
   async createCollection(
@@ -119,6 +218,22 @@ export const playlistService = {
           ...(type ? { type } : {}),
         },
       });
+      return response.data;
+    } catch {
+      return null;
+    }
+  },
+
+  async getUserPlaylists(
+    username: string,
+    page = 1,
+    limit = 20,
+  ): Promise<GetUserCollectionsResponse | null> {
+    try {
+      const response = await api.get<GetUserCollectionsResponse>(
+        `/users/${encodeURIComponent(username)}/playlists`,
+        { params: { page, limit } },
+      );
       return response.data;
     } catch {
       return null;
@@ -259,6 +374,28 @@ export const playlistService = {
     try {
       const response = await api.get(`/collections/${id}/embed`);
       return response.data.embedCode;
+    } catch {
+      return null;
+    }
+  },
+
+  async getPlaylistShareUrl(id: string): Promise<string | null> {
+    try {
+      const response = await api.get<PlaylistShareResponse>(
+        `/collections/${id}/share`,
+      );
+      return playlistService.extractShareUrl(response.data);
+    } catch {
+      return null;
+    }
+  },
+
+  async resetPrivatePlaylistShareUrl(id: string): Promise<string | null> {
+    try {
+      const response = await api.post<PlaylistShareResponse>(
+        `/collections/${id}/share/reset`,
+      );
+      return playlistService.extractShareUrl(response.data);
     } catch {
       return null;
     }

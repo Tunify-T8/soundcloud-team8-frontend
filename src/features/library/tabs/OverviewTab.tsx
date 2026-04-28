@@ -1,15 +1,36 @@
+import { useEffect, useState } from "react";
 import CollectionGrid from "../components/CollectionGrid";
 import EmptyCollectionGrid from "../components/EmptyCollectionGrid";
 import FollowingSection from "../components/FollowingSection";
 import TrackRow from "../components/TrackRow";
 import { useRecentlyPlayed } from "@/features/playerUI/context/useRecentlyPlayed";
-import { LIKED_TRACKS, FOLLOWING, ALBUMS, HISTORY_TRACKS } from "../tests/mockdata";
+import { FOLLOWING, ALBUMS, HISTORY_TRACKS } from "../tests/mockdata";
 import MediaCard from "../components/MediaCard";
+import { getLikedTracks, mapLikedTrackToTrackItem } from "../libraryService";
+import { feedService } from "@/features/feed/feedservice";
+import type { TrackItem } from "../types";
 
 const COLS = 6;
 
 export default function OverviewTab() {
   const recentlyPlayed = useRecentlyPlayed();
+  const [likedTracks, setLikedTracks] = useState<TrackItem[]>([]);
+
+  useEffect(() => {
+    const fetchLikedTracks = async () => {
+      const response = await getLikedTracks(1, 6);
+      if (response) {
+        const mapped = response.data.map(mapLikedTrackToTrackItem);
+        setLikedTracks(mapped);
+      }
+    };
+    void fetchLikedTracks();
+  }, []);
+
+  const handleUnlike = async (trackId: string) => {
+    await feedService.unlikeTrack(trackId);
+    setLikedTracks((prev) => prev.filter((t) => t.id !== trackId));
+  };
 
   const recentlyPlayedItems = recentlyPlayed.map((entry) => ({
     id: entry.id,
@@ -18,7 +39,7 @@ export default function OverviewTab() {
     coverUrl: entry.artworkUrl,
   }));
 
-  const likedTotalSlots = Math.ceil(Math.max(LIKED_TRACKS.length, 1) / COLS) * COLS;
+  const likedTotalSlots = Math.ceil(Math.max(likedTracks.length, 1) / COLS) * COLS;
   const albumTotalSlots = Math.ceil(Math.max(ALBUMS.length, 1) / COLS) * COLS;
   const historyTotalSlots = Math.ceil(Math.max(HISTORY_TRACKS.length, 1) / COLS) * COLS;
 
@@ -32,14 +53,14 @@ export default function OverviewTab() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-white font-bold text-sm">Likes</h2>
         </div>
-        {LIKED_TRACKS.length === 0 ? (
+        {likedTracks.length === 0 ? (
           <EmptyCollectionGrid title="" emptyMessage="You haven't liked any tracks yet" />
         ) : (
           <div className="grid grid-cols-6 gap-4">
             {Array.from({ length: likedTotalSlots }).map((_, i) => {
-              const track = LIKED_TRACKS[i];
+              const track = likedTracks[i];
               return track ? (
-                <TrackRow key={track.id} track={track} view="grid" isLiked={true} />
+                <TrackRow key={track.id} track={track} view="grid" isLiked={true} onUnlike={handleUnlike} />
               ) : (
                 <div key={i} data-testid={`overview-likes-slot-${i}`} className="w-full aspect-square rounded-sm bg-[#282828]" />
               );

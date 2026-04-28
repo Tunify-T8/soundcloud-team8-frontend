@@ -16,9 +16,12 @@ import { useLike } from "@/features/feed/hooks/useLike";
 import { Genre } from "@/shared/types/Genre";
 import { usePlayer } from "@/features/playerUI/context/usePlayer";
 import CreatePlaylistOverlay from "@/features/library/tabs/playlists/components/CreatePlaylistOverlay";
+import trackFallback from "@/assets/track.jpg";
 
 interface PlayerProps {
   trackId?: string;
+  entityLinkTo?: string;
+  smallCoverOnMobile?: boolean;
   isLikedInitial?: boolean;
   isRepostedInitial?: boolean;
   artistName?: string;
@@ -37,10 +40,21 @@ interface PlayerProps {
   onAddToNextUp?: () => void;
   onAddToPlaylist?: () => void;
   onStation?: () => void;
+  contextTag?: string;
+  playlistTracks?: Array<{
+    id: string;
+    number: number;
+    title: string;
+    artist: string;
+    playsCount: number;
+    avatarUrl?: string | null;
+  }>;
 }
 
 export default function SongCard({
   trackId = "",
+  entityLinkTo,
+  smallCoverOnMobile = false,
   isLikedInitial = false,
   isRepostedInitial = false,
   artistName = "",
@@ -59,15 +73,17 @@ export default function SongCard({
   onAddToNextUp,
   onAddToPlaylist,
   onStation,
+  contextTag,
+  playlistTracks = [],
 }: PlayerProps) {
   const { currentTrack, isPlaying, progress: playerProgress, setCurrentTrack, setIsPlaying, requestSeek } = usePlayer();
   const isThisTrack = currentTrack?.id === trackId;
   const playing = isThisTrack && isPlaying;
 
   const [isWaveHovered, setIsWaveHovered] = useState(false);
-  const [hoverProgress, setHoverProgress] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showPlaylistOverlay, setShowPlaylistOverlay] = useState(false);
+  const [randomSeed] = useState(() => Math.random() * 1000000);
 
   const handlePlayToggle = () => {
     if (!trackId) return;
@@ -93,15 +109,41 @@ export default function SongCard({
   );
 
   const GAP = 1;
-  const generatorIndex = waveformSeed % waveGenerators.length;
-  const waveRef = useRef<HTMLDivElement>(null);
+  const effectiveSeed = waveformSeed || randomSeed;
+  const generatorIndex = Math.floor(effectiveSeed) % waveGenerators.length;
   const menuRef = useRef<HTMLDivElement>(null);
 
   const bars = useMemo((): number[] => {
-    return waveGenerators[generatorIndex](waveformSeed);
-  }, [generatorIndex, waveformSeed]);
+    return waveGenerators[generatorIndex](effectiveSeed);
+  }, [generatorIndex, effectiveSeed]);
 
   const displayProgress = isThisTrack ? playerProgress : progress;
+  const hasPlaylistTracks = playlistTracks.length > 0;
+  const cardPrimaryLink = entityLinkTo || (trackId ? `/tracks/${trackId}` : "");
+  const mobileCoverSizeClass = smallCoverOnMobile ? "h-[84px] w-[84px]" : "h-[110px] w-[110px]";
+
+  const playPlaylistTrack = (track: {
+    id: string;
+    title: string;
+    artist: string;
+  }) => {
+    if (!track.id) return;
+
+    const isCurrent = currentTrack?.id === track.id;
+    if (isCurrent) {
+      setIsPlaying(!isPlaying);
+      return;
+    }
+
+    setCurrentTrack({
+      id: track.id,
+      title: track.title,
+      artist: track.artist,
+      thumbnailUrl: coverUrl || undefined,
+      duration: 0,
+    });
+    setIsPlaying(true);
+  };
 
   const handleWaveformClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!trackId) return;
@@ -139,12 +181,12 @@ export default function SongCard({
   }, [menuOpen]);
 
   return (
-    <div className="bg-[#0b0b0b] rounded-sm flex gap-0 overflow-visible w-full font-sans">
+    <div className="flex w-full gap-0 overflow-visible rounded-sm bg-[#0b0b0b] font-sans">
       {/* Cover Art */}
-      {trackId ? (
+      {cardPrimaryLink ? (
         <Link
-          to={`/tracks/${trackId}`}
-          className="w-[130px] h-[130px] shrink-0 bg-[#111] relative block"
+          to={cardPrimaryLink}
+          className={`relative block shrink-0 bg-[#111] sm:h-[130px] sm:w-[130px] ${mobileCoverSizeClass}`}
           aria-label={`Open ${title || "track"}`}
         >
           {coverUrl ? (
@@ -156,7 +198,7 @@ export default function SongCard({
           )}
         </Link>
       ) : (
-        <div className="w-[130px] h-[130px] shrink-0 bg-[#111] relative">
+        <div className={`relative shrink-0 bg-[#111] sm:h-[130px] sm:w-[130px] ${mobileCoverSizeClass}`}>
           {coverUrl ? (
             <img src={coverUrl} alt={title} className="w-full h-full object-cover" />
           ) : (
@@ -167,9 +209,9 @@ export default function SongCard({
         </div>
       )}
       {/* Main Content */}
-      <div className="flex-1 flex flex-col px-4 pt-0 pb-3 min-w-0">
+      <div className="flex min-w-0 flex-1 flex-col px-3 pb-3 pt-1 sm:px-4 sm:pb-3 sm:pt-0">
         {/* Top row: play button + artist/title + time/genre */}
-        <div className="flex items-start gap-3 mb-1">
+        <div className="mb-2 flex flex-wrap items-start gap-3 sm:mb-1 sm:flex-nowrap">
           <button
             onClick={handlePlayToggle}
             disabled={!trackId}
@@ -192,24 +234,33 @@ export default function SongCard({
             <div className="text-[11px] text-[hsl(0,0%,50%)] truncate mb-0.5">
               {artistName}
             </div>
-            <p className="text-[13px] text-white font-medium leading-snug line-clamp-2">
-              {title}
-            </p>
+            {cardPrimaryLink ? (
+              <Link
+                to={cardPrimaryLink}
+                className="block text-[13px] text-white font-medium leading-snug line-clamp-2 hover:underline"
+              >
+                {title}
+              </Link>
+            ) : (
+              <p className="text-[13px] text-white font-medium leading-snug line-clamp-2">
+                {title}
+              </p>
+            )}
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex w-full items-center gap-2 pl-12 sm:w-auto sm:shrink-0 sm:pl-0">
             <span className="text-[11px] text-[hsl(0,0%,40%)] whitespace-nowrap">
               {timeAgo}
             </span>
-            <span className="text-[10px] text-[hsl(0,0%,55%)] bg-[hsl(0,0%,12%)] border border-[hsl(0,0%,20%)] px-2 py-0.5 rounded-sm whitespace-nowrap">
-              # {genre}
+            <span className="rounded-sm border border-[hsl(0,0%,20%)] bg-[hsl(0,0%,12%)] px-2 py-0.5 text-[10px] whitespace-nowrap text-[hsl(0,0%,55%)]">
+              {contextTag ?? `# ${genre}`}
             </span>
           </div>
         </div>
 
         {/* Waveform */}
         <div
-          className="flex items-end h-[44px] cursor-pointer mt-1 mb-2 w-full"
+          className="mt-1 mb-2 flex h-[36px] w-full cursor-pointer items-end sm:h-[44px]"
           style={{ gap: `${GAP}px` }}
           onClick={handleWaveformClick}
           onMouseEnter={() => setIsWaveHovered(true)}
@@ -237,9 +288,56 @@ export default function SongCard({
           })}
         </div>
 
+        {hasPlaylistTracks && (
+          <div className="mb-2 space-y-1.5">
+            {playlistTracks.map((track) => (
+              <button
+                key={track.id}
+                type="button"
+                onClick={() => playPlaylistTrack(track)}
+                className="flex w-full items-center justify-between rounded px-1 py-1 text-left transition-colors hover:bg-[hsl(0,0%,13%)]"
+              >
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="w-4 shrink-0 text-right text-[13px] text-zinc-400">
+                    {track.number}
+                  </span>
+                  <div className="h-7 w-7 shrink-0 rounded bg-[hsl(0,0%,18%)] flex items-center justify-center">
+                    {track.avatarUrl ? (
+                      <img
+                        src={track.avatarUrl}
+                        alt={track.artist}
+                        className="h-full w-full rounded object-cover"
+                      />
+                    ) : (
+                      <img
+                        src={trackFallback}
+                        alt="Track cover fallback"
+                        className="h-full w-full rounded object-cover"
+                      />
+                    )}
+                  </div>
+                  <p className="truncate text-[13px] text-zinc-200">
+                    <span>{track.artist}</span>
+                    <span className="text-zinc-500"> · </span>
+                    <span className="text-white">{track.title}</span>
+                  </p>
+                </div>
+                <span className="ml-3 hidden shrink-0 items-center gap-1 text-[13px] text-zinc-400 sm:flex">
+                  <svg width="10" height="10" viewBox="0 0 14 14" fill="currentColor">
+                    <polygon points="2,0 14,7 2,14" />
+                  </svg>
+                  {Intl.NumberFormat("en-US", { notation: "compact" }).format(
+                    track.playsCount,
+                  )}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Controls row */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <button
               type="button"
               onClick={toggleLike}
@@ -325,7 +423,7 @@ export default function SongCard({
             </div>
           </div>
 
-          <div className="flex items-center gap-3 text-[11px] text-[hsl(0,0%,40%)]">
+          <div className="ml-auto flex items-center gap-3 text-[11px] text-[hsl(0,0%,40%)] sm:ml-0">
             <span className="flex items-center gap-1">
               <svg
                 width="10"

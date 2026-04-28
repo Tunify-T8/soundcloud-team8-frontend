@@ -217,6 +217,13 @@ export interface EmbedResponse {
   embedCode: string;
 }
 
+export interface PlaylistShareResponse {
+  shareUrl?: string;
+  url?: string;
+  deepLink?: string;
+  appDeepLink?: string;
+}
+
 // ==============================
 // SPECIAL ENDPOINTS
 // ==============================

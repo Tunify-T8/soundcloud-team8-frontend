@@ -117,9 +117,26 @@ export interface UserTrack {
   title: string;
   description?: string | null;
   coverUrl?: string | null;
-  audioUrl: string;
-  genre: string;
+  audioUrl?: string | null;
+  genre?: string | null;
   createdAt: string;
+  artist?: {
+    id: string;
+    username: string;
+    displayName?: string | null;
+    avatarUrl?: string | null;
+    isVerified?: boolean;
+  };
+  engagement?: {
+    likeCount: number;
+    repostCount: number;
+    commentCount: number;
+    playCount: number;
+  };
+  interaction?: {
+    isLiked: boolean;
+    isReposted: boolean;
+  };
 }
 
 export interface UserTracksResponse {

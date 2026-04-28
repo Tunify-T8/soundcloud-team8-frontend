@@ -5,25 +5,36 @@ import type { TrackItem } from "../types";
 
 // Mock SongCard since TrackRow delegates the list view to it
 vi.mock("@/components/ui/SongCard", () => ({
-  default: vi.fn(({ title, artistName, coverUrl, timeAgo, likes, reposts, plays, comments }) => (
-    <div data-testid="song-card">
-      <span data-testid="sc-title">{title}</span>
-      <span data-testid="sc-artist">{artistName}</span>
-      <span data-testid="sc-cover">{coverUrl}</span>
-      <span data-testid="sc-timeago">{timeAgo}</span>
-      <span data-testid="sc-likes">{likes}</span>
-      <span data-testid="sc-reposts">{reposts}</span>
-      <span data-testid="sc-plays">{plays}</span>
-      <span data-testid="sc-comments">{comments}</span>
-    </div>
-  )),
+  default: vi.fn(
+    ({
+      title,
+      artistName,
+      coverUrl,
+      timeAgo,
+      likes,
+      reposts,
+      plays,
+      comments,
+    }) => (
+      <div data-testid="song-card">
+        <span data-testid="sc-title">{title}</span>
+        <span data-testid="sc-artist">{artistName}</span>
+        <span data-testid="sc-cover">{coverUrl}</span>
+        <span data-testid="sc-timeago">{timeAgo}</span>
+        <span data-testid="sc-likes">{likes}</span>
+        <span data-testid="sc-reposts">{reposts}</span>
+        <span data-testid="sc-plays">{plays}</span>
+        <span data-testid="sc-comments">{comments}</span>
+      </div>
+    ),
+  ),
 }));
 
 const mockTrack: TrackItem = {
   id: "track-1",
   title: "Sunset Drive",
   artist: "Lo-Fi Artist",
-  coverUrl: "https://example.com/track.jpg",
+  coverUrl: "https://example.com/track.png",
   timeAgo: "2 hours ago",
   likes: "42",
   reposts: "10",
@@ -45,7 +56,7 @@ describe("TrackRow – grid view", () => {
   it("renders the cover image when coverUrl is provided", () => {
     render(<TrackRow track={mockTrack} view="grid" />);
     const img = screen.getByRole("img");
-    expect(img).toHaveAttribute("src", "https://example.com/track.jpg");
+    expect(img).toHaveAttribute("src", "https://example.com/track.png");
     expect(img).toHaveAttribute("alt", "Sunset Drive");
   });
 
@@ -91,7 +102,9 @@ describe("TrackRow – list view (default)", () => {
 
   it("passes the correct coverUrl to SongCard", () => {
     render(<TrackRow track={mockTrack} view="list" />);
-    expect(screen.getByTestId("sc-cover")).toHaveTextContent("https://example.com/track.jpg");
+    expect(screen.getByTestId("sc-cover")).toHaveTextContent(
+      "https://example.com/track.png",
+    );
   });
 
   it("passes stats props to SongCard", () => {
@@ -110,9 +123,10 @@ describe("TrackRow – list view (default)", () => {
   it("does not render grid-specific elements in list view", () => {
     render(<TrackRow track={mockTrack} view="list" />);
     // The grid view's play button polygon should not be present
-    expect(screen.queryByText("Lo-Fi Artist", { selector: "p" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Lo-Fi Artist", { selector: "p" }),
+    ).not.toBeInTheDocument();
   });
 });
-
 
 //npm run test -- src/features/library/tests/TrackRow.test.tsx
