@@ -213,6 +213,7 @@ const TrackPage = () => {
   const [fansTab, setFansTab]                     = useState<'top' | 'first'>('top');
   const [isFollowingArtist, setIsFollowingArtist] = useState(false);
   const [artistFollowers, setArtistFollowers]     = useState(0);
+  const [artistUsername, setArtistUsername]       = useState('');
   const [followLoading, setFollowLoading]         = useState(false);
 
   const {
@@ -244,13 +245,19 @@ const TrackPage = () => {
     if (trackUser) {
       setIsFollowingArtist(Boolean(trackUser.isFollowing));
       setArtistFollowers(trackUser.followersCount ?? 0);
-      return;
+      if (typeof trackUser.username === 'string' && trackUser.username.trim()) {
+        setArtistUsername(trackUser.username);
+        return;
+      }
     }
 
     if (!artistId) return;
 
     api.get(`/users/${artistId}`)
       .then(res => {
+        if (typeof res.data?.username === 'string' && res.data.username.trim()) {
+          setArtistUsername(res.data.username);
+        }
         setIsFollowingArtist(res.data.isFollowing ?? false);
         setArtistFollowers(res.data.followersCount ?? 0);
       })
@@ -278,7 +285,7 @@ const TrackPage = () => {
   const artworkSrc    = (track as any).artworkUrl ?? '';
   const ownerInit     = artistName.slice(0, 2).toUpperCase();
   const artistAvatar  = trackUser?.avatarUrl ?? makeOwnerAvatar(ownerInit, 88);
-  const artistRouteId = trackUser?.username ?? artistId;
+  const artistRouteId = artistId || artistUsername || trackUser?.username || '';
   const tracksCount   = trackUser?.tracksUploadedCount ?? 28;
   //const currentUserId = localStorage.getItem('userId') ?? '';
 

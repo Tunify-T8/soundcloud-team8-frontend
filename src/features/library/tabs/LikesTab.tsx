@@ -91,7 +91,7 @@ export default function LikesTab() {
             placeholder="Filter"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="bg-[#282828] border border-zinc-700 rounded-sm px-3 py-1 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 w-64"
+            className="bg-[#282828] border border-zinc-700 rounded-sm px-3 py-1.5 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 w-64"
           />
         </div>
       </div>
