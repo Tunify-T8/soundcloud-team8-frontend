@@ -4,6 +4,11 @@ import { Provider } from "react-redux"
 import { configureStore } from "@reduxjs/toolkit"
 import TrackInfoPage from "../components/TrackInfo"
 import audioSourceReducer from "../../../store/AudioSourceSlice"
+import {
+  mockAlbumBoxStyles,
+  mockFileSource,
+  mockRecordedSource,
+} from "./mockData"
 
 // ✅ FULL axios mock
 vi.mock("axios", () => {
@@ -28,21 +33,6 @@ vi.mock("axios", () => {
 })
 
 // ─── Setup ────────────────────────────────────────────────────────────────────
-
-const mockFileSource = {
-  kind: "file",
-  url: "blob:mock-audio",
-  name: "my-track.mp3",
-  size: 2048,
-  mimeType: "audio/mpeg",
-}
-
-const mockRecordedSource = {
-  kind: "recorded",
-  url: "blob:mock-recorded",
-  duration: 125,
-  size: 1024,
-}
 
 function makeStore(source = mockFileSource) {
   const store = configureStore({
@@ -335,6 +325,14 @@ describe("TrackInfoPage — interactions (artwork)", () => {
   it("artwork area shows Add new artwork text by default", () => {
     renderPage()
     expect(screen.getByText("Add new artwork")).toBeInTheDocument()
+  })
+
+  it("renders artwork inside the small album box dimensions", () => {
+    const { container } = renderPage()
+    const box = container.querySelector(
+      `div[style*="left: ${mockAlbumBoxStyles.left}"][style*="top: ${mockAlbumBoxStyles.top}"][style*="width: ${mockAlbumBoxStyles.size}"][style*="height: ${mockAlbumBoxStyles.size}"]`
+    )
+    expect(box).toBeInTheDocument()
   })
 })
 

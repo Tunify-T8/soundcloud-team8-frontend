@@ -1,6 +1,7 @@
 import Avatar from "../Header/Avatar";
 import { useEffect, useState } from "react";
 import { FiInfo } from "react-icons/fi";
+import { X } from "lucide-react";
 import { profileService } from "../../profileService";
 import type {
   SocialPlatform,
@@ -33,6 +34,8 @@ export default function EditInfo({
   country,
   city,
   bio,
+  role,
+  visibility,
   socialAccounts,
 }: {
   onClick: () => void;
@@ -42,18 +45,25 @@ export default function EditInfo({
   country?: string;
   city?: string;
   bio?: string;
+  role?: "ARTIST" | "LISTENER";
+  visibility?: "PUBLIC" | "PRIVATE";
   socialAccounts?: {
     facebook?: string;
     instagram?: string;
     twitter?: string;
     website?: string;
     youtube?: string;
+    spotify?: string;
+    tiktok?: string;
+    soundcloud?: string;
   };
 }) {
   const initialDisplayName = displayName ?? "";
   const initialCountry = country ?? "";
   const initialCity = city ?? "";
   const initialBio = bio ?? "";
+  const initialRole = role ?? "ARTIST";
+  const initialVisibility = visibility ?? "PUBLIC";
   const initialLinks: UserSocialLink[] = PLATFORM_OPTIONS.map((platform) => {
     let url = "";
     switch (platform) {
@@ -88,9 +98,11 @@ export default function EditInfo({
   const [bioState, setBioState] = useState(initialBio);
   const [linksState, setLinksState] = useState<UserSocialLink[]>(initialLinks);
   const [visibilityState, setVisibilityState] = useState<"PUBLIC" | "PRIVATE">(
-    "PUBLIC",
+    initialVisibility,
   );
-  const [roleState, setroleState] = useState<"ARTIST" | "LISTENER">("ARTIST");
+  const [roleState, setRoleState] = useState<"ARTIST" | "LISTENER">(
+    initialRole,
+  );
   const [showLinkInputs, setShowLinkInputs] = useState(initialLinks.length > 0);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -104,6 +116,8 @@ export default function EditInfo({
     countryState !== initialCountry ||
     cityState !== initialCity ||
     bioState !== initialBio ||
+    roleState !== initialRole ||
+    visibilityState !== initialVisibility ||
     hasSocialLinksChanges;
 
   useEffect(() => {
@@ -153,8 +167,19 @@ export default function EditInfo({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-white/40">
-      <div className="mx-auto my-6 flex max-h-[90vh] w-[95%] max-w-3xl flex-col overflow-y-auto rounded-md bg-zinc-900 p-6">
+    <div
+      className="fixed inset-0 z-50 overflow-y-auto hide-scrollbar bg-white/40"
+      onClick={(e) => e.target === e.currentTarget && onClick()}
+    >
+      <button
+        onClick={onClick}
+        className="fixed right-6 top-6 z-[72] flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800 text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white"
+        aria-label="Close edit profile overlay"
+      >
+        <X className="h-5 w-5" />
+      </button>
+
+      <div className="mx-auto my-6 flex max-h-[90vh] w-[95%] max-w-3xl flex-col overflow-y-auto hide-scrollbar rounded-md bg-zinc-900 p-6">
         <h2 className="text-lg font-bold mb-6">Edit your Profile</h2>
 
         {errorMsg && (
@@ -229,7 +254,7 @@ export default function EditInfo({
                 <select
                   value={roleState}
                   onChange={(e) =>
-                    setroleState(e.target.value as "ARTIST" | "LISTENER")
+                    setRoleState(e.target.value as "ARTIST" | "LISTENER")
                   }
                   className="w-full rounded-sm border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white outline-none focus:border-zinc-500 cursor-pointer"
                 >

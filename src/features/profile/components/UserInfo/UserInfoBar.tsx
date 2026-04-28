@@ -3,11 +3,87 @@ import EditInfo from "./EditInfo";
 import { FaUser, FaPen, FaEnvelope } from "react-icons/fa";
 import { MdPodcasts, MdMoreHoriz } from "react-icons/md";
 import { FiSlash, FiInfo } from "react-icons/fi";
-import { NavLink } from "react-router-dom";
-import { Upload } from "lucide-react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { Upload, BarChart2, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { profileService } from "../../profileService";
+import { followingService } from "../../../following/followingService";
 import { notifySocialGraphUpdated } from "../../socialGraphEvents";
+
+function ShareOverlay({ onClose }: { onClose: () => void }) {
+  const [activeTab, setActiveTab] = useState<"share" | "message">("share");
+  const [shortenLink, setShortenLink] = useState(false);
+  const url = typeof window !== "undefined" ? window.location.href : "";
+
+  return (
+    <div
+      className="fixed inset-0 z-[120] flex items-start justify-center bg-white/40 px-4 pt-28"
+      onClick={onClose}
+    >
+      <button
+        onClick={onClose}
+        className="fixed right-6 top-6 z-[121] flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800 text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white"
+        aria-label="Close share overlay"
+      >
+        <X className="h-5 w-5" />
+      </button>
+      <div
+        className="w-full max-w-[540px] rounded-[3px] border border-zinc-800 bg-zinc-900 p-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-4 flex items-center gap-7 border-b border-zinc-800">
+          <button
+            type="button"
+            onClick={() => setActiveTab("share")}
+            className={`pb-2 text-[20px] font-bold tracking-tight sm:text-[22px] ${
+              activeTab === "share"
+                ? "border-b-2 border-white text-white"
+                : "text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            Share
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("message")}
+            className={`pb-2 text-[20px] font-bold tracking-tight sm:text-[22px] ${
+              activeTab === "message"
+                ? "border-b-2 border-white text-white"
+                : "text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            Message
+          </button>
+        </div>
+
+        {activeTab === "share" ? (
+          <>
+            <div className="mb-3 rounded-[3px] bg-[#242424] px-4 py-3">
+              <input
+                readOnly
+                value={url}
+                className="w-full bg-transparent text-[14px] font-semibold text-zinc-100 outline-none sm:text-[15px]"
+              />
+            </div>
+
+            <label className="flex cursor-pointer items-center gap-3 text-[14px] font-semibold text-zinc-100 sm:text-[15px]">
+              <input
+                type="checkbox"
+                checked={shortenLink}
+                onChange={(e) => setShortenLink(e.target.checked)}
+                className="h-5 w-5 rounded border-zinc-500 bg-transparent"
+              />
+              Shorten link
+            </label>
+          </>
+        ) : (
+          <div className="py-6 text-[24px] text-zinc-400">
+            Messaging share is coming soon.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function UserInfoBar({
   displayName,
@@ -15,26 +91,37 @@ export default function UserInfoBar({
   country,
   city,
   bio,
+  role,
+  visibility,
   socialAccounts,
   isMe,
   onProfileUpdated,
   userId,
+  followersCount,
+  onFollowersChange,
 }: {
   displayName?: string;
   avatarUrl?: string;
   country?: string;
   city?: string;
   bio?: string;
+  role?: "ARTIST" | "LISTENER";
+  visibility?: "PUBLIC" | "PRIVATE";
   socialAccounts?: {
     facebook?: string;
     instagram?: string;
     twitter?: string;
     website?: string;
     youtube?: string;
+    spotify?: string;
+    tiktok?: string;
+    soundcloud?: string;
   };
   isMe?: boolean;
   onProfileUpdated?: () => void;
   userId?: string;
+  followersCount?: number;
+  onFollowersChange?: (count: number) => void;
 }) {
   const tabs = [
     { label: "All", path: "." },
@@ -43,14 +130,6 @@ export default function UserInfoBar({
     { label: "Albums", path: "albums" },
     { label: "Playlists", path: "playlists" },
     { label: "Reposts", path: "reposts" },
-    ...(isMe
-      ? [
-          { label: "Followers", path: "followers" },
-          { label: "Following", path: "following" },
-          { label: "Suggested", path: "suggested-users" },
-          { label: "Blocked", path: "blocked-users" },
-        ]
-      : []),
   ];
 
   const [modal, setModal] = useState(false);
@@ -58,11 +137,14 @@ export default function UserInfoBar({
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [blockLoading, setBlockLoading] = useState(false);
+  const [showShareOverlay, setShowShareOverlay] = useState(false);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (isMe || !userId) return;
 
-    profileService
+    followingService
       .getFollowStatus(userId)
       .then((status) => {
         setIsFollowing(status.isFollowing);
@@ -75,18 +157,29 @@ export default function UserInfoBar({
   const handleFollowToggle = async () => {
     if (!userId || followLoading) return;
 
+    const previousFollowersCount = followersCount ?? 0;
+    const newFollowersCount = isFollowing 
+      ? Math.max(0, previousFollowersCount - 1)
+      : previousFollowersCount + 1;
+
+    // Step 1: Update UI immediately (optimistic update)
+    setIsFollowing(!isFollowing);
+    onFollowersChange?.(newFollowersCount);
+
     setFollowLoading(true);
     try {
+      // Step 2: Sync with backend
       if (isFollowing) {
-        await profileService.unfollowUser(userId);
-        setIsFollowing(false);
+        await followingService.unfollowUser(userId);
       } else {
-        await profileService.followUser(userId);
-        setIsFollowing(true);
+        await followingService.followUser(userId);
       }
 
       notifySocialGraphUpdated();
-      onProfileUpdated?.();
+    } catch {
+      // Step 3: If API call fails, revert the changes
+      setIsFollowing(isFollowing);
+      onFollowersChange?.(previousFollowersCount);
     } finally {
       setFollowLoading(false);
     }
@@ -97,7 +190,7 @@ export default function UserInfoBar({
 
     setBlockLoading(true);
     try {
-      await profileService.blockUser(userId);
+      await followingService.blockUser(userId);
       notifySocialGraphUpdated();
       onProfileUpdated?.();
       setShowMoreActions(false);
@@ -109,10 +202,11 @@ export default function UserInfoBar({
   const toggleModal = () => {
     setModal(!modal);
   };
+
   return (
     <div className="item-center flex justify-center w-full">
-      <div className="relative w-10/12 mt-5 flex items-center justify-between">
-        <div className="flex flex-row gap-6 cursor-pointer">
+      <div className="relative mt-8 flex w-10/12 flex-col gap-3 sm:mt-5 sm:gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
+        <div className="hide-scrollbar flex w-full flex-row gap-3 overflow-x-auto whitespace-nowrap pr-1 cursor-pointer sm:gap-4 lg:w-auto lg:flex-1">
           {tabs.map(({ label, path }) => (
             <NavLink key={label} to={path} end={path === "."}>
               {({ isActive }) => (
@@ -121,12 +215,12 @@ export default function UserInfoBar({
             </NavLink>
           ))}
         </div>
-        <div className={`flex items-center ${isMe ? "gap-2" : "gap-4"}`}>
+        <div className="mt-1 flex w-full flex-wrap items-center justify-start lg:ml-auto lg:mt-0 lg:w-auto lg:flex-nowrap lg:justify-end">
           {!isMe && (
             <button
               type="button"
               title="Station"
-              className="inline-flex items-center gap-2 rounded-sm bg-zinc-800 px-3 py-1.5 text-sm font-bold text-white hover:text-zinc-500 cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
             >
               <MdPodcasts />
               <span>Station</span>
@@ -138,16 +232,38 @@ export default function UserInfoBar({
               title={isFollowing ? "Following" : "Follow"}
               onClick={handleFollowToggle}
               disabled={followLoading || !userId}
-              className="inline-flex items-center gap-2 rounded-sm bg-white px-3 py-1.5 text-sm font-bold text-black hover:text-zinc-500 cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-sm bg-white px-2 py-1 text-[12px] font-bold text-black hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
             >
               <FaUser />
               <span>{isFollowing ? "Following" : "Follow"}</span>
             </button>
           )}
+          {isMe && (
+            <button
+              type="button"
+              title="Your Insights"
+              onClick={() => navigate("/me/insights/overview")}
+              className="mr-[12px] inline-flex items-center justify-center gap-1.5 rounded-sm bg-white px-2 py-1 text-[12px] font-bold text-black hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
+            >
+              <BarChart2 size={14} />
+              <span>Your Insights</span>
+            </button>
+          )}
+          {isMe && (
+            <button
+              type="button"
+              title="Station"
+              className="mr-[12px] inline-flex items-center justify-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
+            >
+              <MdPodcasts />
+              <span>Station</span>
+            </button>
+          )}
           <button
             type="button"
             title="Share"
-            className="inline-flex items-center gap-2 rounded-sm bg-zinc-800 px-3 py-1.5 text-sm font-bold text-white hover:text-zinc-500 cursor-pointer"
+            onClick={() => setShowShareOverlay(true)}
+            className={`inline-flex items-center justify-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm ${isMe ? "mr-[12px]" : ""}`}
           >
             <Upload size={14} />
             <span>Share</span>
@@ -157,7 +273,7 @@ export default function UserInfoBar({
               <button
                 type="button"
                 title="Messages"
-                className="inline-flex items-center justify-center rounded-sm bg-zinc-800 px-3 py-2.25 text-sm font-bold text-white hover:text-zinc-500 cursor-pointer"
+                className="inline-flex items-center justify-center rounded-sm bg-zinc-800 px-2 py-1.5 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:px-3 sm:py-2.25 sm:text-sm"
               >
                 <FaEnvelope />
               </button>
@@ -169,7 +285,7 @@ export default function UserInfoBar({
                 type="button"
                 title="More"
                 onClick={() => setShowMoreActions((prev) => !prev)}
-                className={`inline-flex items-center gap-2 rounded-sm bg-zinc-800 px-3 py-[6.9px] text-sm font-bold cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold cursor-pointer sm:gap-2 sm:px-3 sm:py-[6.9px] sm:text-sm ${
                   showMoreActions
                     ? "text-orange-500 hover:text-orange-400"
                     : "text-white hover:text-zinc-500"
@@ -206,7 +322,7 @@ export default function UserInfoBar({
               type="button"
               title="Edit"
               onClick={toggleModal}
-              className="inline-flex items-center gap-2 rounded-sm bg-zinc-800 px-3 py-1.5 text-sm font-bold text-white hover:text-zinc-500 cursor-pointer"
+              className="inline-flex items-center justify-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
             >
               <FaPen />
               <span>Edit</span>
@@ -223,9 +339,12 @@ export default function UserInfoBar({
           country={country}
           city={city}
           bio={bio}
+          role={role}
+          visibility={visibility}
           socialAccounts={socialAccounts}
         />
       )}
+      {showShareOverlay && <ShareOverlay onClose={() => setShowShareOverlay(false)} />}
     </div>
   );
 }

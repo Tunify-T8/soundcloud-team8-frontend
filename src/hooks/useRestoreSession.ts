@@ -39,8 +39,11 @@ const useRestoreSession = () => {
           isVerified: user.isVerified ?? user.isCertified ?? false,
           avatarUrl: user.avatar_url ?? user.avatarUrl ?? null,
         }));
-      } catch {
-        clearTokens();
+      } catch (err:any) {
+        const status = err?.response?.status;
+        if (status === 401) {
+          clearTokens();
+        }
       }
     };
 

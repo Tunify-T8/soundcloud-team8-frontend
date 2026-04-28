@@ -9,12 +9,15 @@ import { SiSoundcloud } from "react-icons/si";
 import { useDispatch } from "react-redux";
 import { useAppSelector } from "../../../app/hooks";
 import { profileService } from "@/features/profile/profileService";
+import albumTemplate from "@/assets/album.png";
+import CheckoutModal from "@/features/premium/components/CheckoutModal";
 
 function Toggle({ enabled, onChange }: ToggleProps) {
   return (
     <div
       onClick={() => onChange(!enabled)}
       className={`relative cursor-pointer flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200 ${enabled ? "bg-[#169b45]" : "bg-[#333]"}`}
+      data-testid="toggle"
     >
       <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all duration-200 ${enabled ? "left-5" : "left-0.5"}`} />
     </div>
@@ -97,6 +100,9 @@ const GENRE_MAP: Record<string, string> = {
 };
 
 const DEFAULT_GENRES = Object.keys(GENRE_MAP);
+const ALBUM_BOX_LEFT = "18.615%";
+const ALBUM_BOX_TOP = "20.976%";
+const ALBUM_BOX_SIZE = "61.373%";
 
 // ─── Genre Input Component ────────────────────────────────────────────────────
 
@@ -154,6 +160,7 @@ function GenreInput({ genreRef }: { genreRef: React.RefObject<HTMLInputElement |
             onFocus={() => setOpen(true)}
             placeholder="Add or search for genre"
             className="w-full bg-transparent text-white text-sm py-1 focus:outline-none placeholder-[#555] pr-8"
+            data-testid="genre-input"
             aria-label="genre"
           />
           {query && (
@@ -161,6 +168,7 @@ function GenreInput({ genreRef }: { genreRef: React.RefObject<HTMLInputElement |
               type="button"
               onClick={handleClear}
               className="absolute right-0 top-1/2 -translate-y-1/2 text-[#555] hover:text-white transition"
+              data-testid="genre-clear-btn"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="18" y1="6" x2="6" y2="18" />
@@ -175,7 +183,7 @@ function GenreInput({ genreRef }: { genreRef: React.RefObject<HTMLInputElement |
       </div>
 
       {open && (
-        <div className="absolute z-50 top-full left-0 right-0 bg-[#1a1a1a] border border-[#333] max-h-52 overflow-y-auto shadow-xl">
+        <div className="absolute z-50 top-full left-0 right-0 bg-[#1a1a1a] border border-[#333] max-h-52 overflow-y-auto shadow-xl" data-testid="genre-dropdown">
           {filtered.length > 0 ? (
             filtered.map((genre) => (
               <div
@@ -206,6 +214,43 @@ function GenreInput({ genreRef }: { genreRef: React.RefObject<HTMLInputElement |
   );
 }
 
+// ─── Upload Limit Reached Banner (inline, shown after 403) ───────────────────
+function UploadLimitBanner({
+  minutesRemaining,
+  onUpgrade,
+}: {
+  minutesRemaining: number;
+  onUpgrade: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-6">
+      <div className="bg-[#161616] border border-[#2a2a2a] rounded-xl max-w-md w-full p-8 text-center">
+        <svg className="mx-auto mb-4" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" strokeWidth="1.5">
+          <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z" />
+          <line x1="12" y1="10" x2="12" y2="14" stroke="#e74c3c" strokeWidth="2" />
+          <circle cx="12" cy="17" r="1" fill="#e74c3c" />
+        </svg>
+        <h2 className="text-xl font-bold text-white mb-2">Upload limit reached</h2>
+        <p className="text-[#888] text-sm mb-2">
+          You've reached the upload limit for your plan.
+        </p>
+        {minutesRemaining > 0 && (
+          <p className="text-[#666] text-sm mb-6">
+            {minutesRemaining} minute{minutesRemaining !== 1 ? "s" : ""} remaining — but this track exceeds that.
+          </p>
+        )}
+        <button
+          onClick={onUpgrade}
+          className="w-full bg-white text-black font-bold py-3 rounded-full text-sm hover:bg-[#eee] transition mb-3"
+        >
+          Unlock with Artist Pro
+        </button>
+        <p className="text-[#555] text-xs">Upgrade for unlimited uploads, distribution & more.</p>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 type UserProfile = {
   id: string
@@ -223,6 +268,11 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [fileReady, setFileReady] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Limit-reached state
+  const [limitReached, setLimitReached] = useState(false);
+  const [limitMinutesRemaining, setLimitMinutesRemaining] = useState(0);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [trackSlug, setTrackSlug] = useState("");
@@ -260,20 +310,17 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
   const privacyRef     = useRef<string>("public");
 
   // ── Fetch user profile ────────────────────────────────────────────────────
-useEffect(() => {
-  profileService.getMeProfile()
-    .then((user) => setUserProfile({
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      avatarUrl: user.avatarUrl!,
-      isCertified: user.isCertified,
-    }))
-    .catch((err) => console.error("Failed to fetch user profile:", err));
-}, []);
-
-
-
+  useEffect(() => {
+    profileService.getMeProfile()
+      .then((user) => setUserProfile({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        avatarUrl: user.avatarUrl!,
+        isCertified: user.isCertified,
+      }))
+      .catch((err) => console.error("Failed to fetch user profile:", err));
+  }, []);
 
   // ── Fetch audio blob using raw axios (NOT api) — blob: URLs are local ────
   useEffect(() => {
@@ -394,9 +441,25 @@ useEffect(() => {
         const audioFileName = source?.kind === "file" ? (source.name ?? `audio.${ext}`) : `recording.${ext}`;
         const audioForm = new FormData();
         audioForm.append("file", audioBlobRef.current, audioFileName);
-        await api.post(`/tracks/${id}/audio`, audioForm, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+
+        try {
+          await api.post(`/tracks/${id}/audio`, audioForm, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+        } catch (audioErr: any) {
+          // ── Handle 403 upload_limit_reached ─────────────────────────────
+          if (audioErr?.response?.status === 403) {
+            const errData = audioErr.response.data;
+            if (errData?.error === "upload_limit_reached") {
+              setLimitMinutesRemaining(errData.uploadMinutesRemaining ?? 0);
+              setLimitReached(true);
+              setIsSubmitting(false);
+              return; // Stop — don't mark as done
+            }
+          }
+          // Re-throw other audio upload errors to be caught below
+          throw audioErr;
+        }
       }
 
       if (artworkBase64Ref.current) {
@@ -420,10 +483,19 @@ useEffect(() => {
   if (uploadDone) return <UploadSuccessScreen />;
 
   return (
-    <div className="min-h-screen bg-[#0e0e0e] text-white font-sans">
+    <div className="min-h-screen bg-[#0e0e0e] text-white font-sans" data-testid="track-info-page">
+
+      {/* ── Limit reached overlay ─────────────────────────────────────────── */}
+      {limitReached && (
+        <UploadLimitBanner
+          minutesRemaining={limitMinutesRemaining}
+          onUpgrade={() => setCheckoutOpen(true)}
+        />
+      )}
+      {checkoutOpen && <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />}
 
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-[#1a1a1a]">
+      <div className="flex items-center justify-between px-6 py-3 border-b border-[#1a1a1a]" data-testid="track-info-header">
         <a href="/" className="flex items-center gap-3 hover:opacity-80 transition">
           <SiSoundcloud size={32} color="white" />
           <span className="font-semibold text-base">Track info</span>
@@ -453,7 +525,7 @@ useEffect(() => {
                 </svg>
               </button>
               <span className="max-w-[200px] truncate">{fileName}</span>
-              <button className="text-white text-sm font-semibold hover:text-[#aaa] transition">Replace track</button>
+              <button className="text-white text-sm font-semibold hover:text-[#aaa] transition" data-testid="replace-track-btn">Replace track</button>
             </div>
           )}
 
@@ -483,6 +555,7 @@ useEffect(() => {
           <button
             onClick={() => onBack ? onBack() : dispatch(clearAudioSource())}
             className="text-[#aaa] hover:text-white transition"
+            data-testid="track-info-close-btn"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -504,34 +577,47 @@ useEffect(() => {
                 <audio controls src={source.url} className="w-full max-w-[380px] h-10" style={{ colorScheme: "dark" }} />
               </div>
             )}
-            <input ref={artworkInputRef} type="file" accept="image/*" className="hidden" onChange={handleArtworkSelect} />
+            <input ref={artworkInputRef} type="file" accept="image/*" className="hidden" onChange={handleArtworkSelect} data-testid="artwork-file-input" />
             <div
               onClick={() => artworkInputRef.current?.click()}
-              className="w-full aspect-square border border-dashed border-[#444] flex flex-col items-center justify-center text-[#888] hover:border-[#666] transition cursor-pointer max-w-[380px] overflow-hidden relative group"
+              className="w-full aspect-square border border-dashed border-[#444] hover:border-[#666] transition cursor-pointer max-w-[380px] overflow-hidden relative group"
+              data-testid="artwork-upload-area"
             >
-              {artworkPreview ? (
-                <>
-                  <img src={artworkPreview} alt="Artwork" className="absolute inset-0 w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="17 8 12 3 7 8"/>
-                      <line x1="12" y1="3" x2="12" y2="15"/>
+              <img
+                src={albumTemplate}
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+              />
+
+              <div
+                className="absolute overflow-hidden"
+                style={{ left: ALBUM_BOX_LEFT, top: ALBUM_BOX_TOP, width: ALBUM_BOX_SIZE, height: ALBUM_BOX_SIZE }}
+              >
+                {artworkPreview ? (
+                  <>
+                    <img src={artworkPreview} alt="Artwork" className="absolute inset-0 w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                      </svg>
+                      <p className="text-white text-sm font-semibold">Change artwork</p>
+                    </div>
+                  </>
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-[#888] bg-[#f2f2f2]">
+                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+                      <rect x="3" y="3" width="18" height="18" rx="1" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <polyline points="21,15 16,10 5,21" />
                     </svg>
-                    <p className="text-white text-sm font-semibold">Change artwork</p>
+                    <p className="mt-3 text-sm text-[#666]">Add new artwork</p>
+                    <p className="text-xs text-[#777] mt-1">Click to upload an image</p>
                   </div>
-                </>
-              ) : (
-                <>
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
-                    <rect x="3" y="3" width="18" height="18" rx="1" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <polyline points="21,15 16,10 5,21" />
-                  </svg>
-                  <p className="mt-3 text-sm text-[#999]">Add new artwork</p>
-                  <p className="text-xs text-[#555] mt-1">Click to upload an image</p>
-                </>
-              )}
+                )}
+              </div>
             </div>
           </div>
 
@@ -549,6 +635,7 @@ useEffect(() => {
                 type="text"
                 ref={titleRef}
                 defaultValue={defaultTitle}
+                data-testid="track-title-input"
                 onChange={(e) => setTrackSlug(slugify(e.target.value))}
                 className="w-full bg-transparent text-white text-sm py-1 focus:outline-none"
               />
@@ -567,6 +654,7 @@ useEffect(() => {
                     value={trackSlug || slugify(defaultTitle)}
                     onChange={(e) => setTrackSlug(e.target.value)}
                     className="bg-transparent text-white focus:outline-none flex-1 min-w-0"
+                    data-testid="track-slug-input"
                   />
                 </div>
               ) : (
@@ -583,6 +671,7 @@ useEffect(() => {
               <input
                 type="text"
                 ref={artistsRef}
+                data-testid="artists-input"
                 defaultValue={userProfile?.username ?? ""}
                 key={userProfile?.username}
                 placeholder={userProfile ? "" : "Loading..."}
@@ -606,6 +695,7 @@ useEffect(() => {
               <input
                 ref={tagsRef}
                 placeholder="Add styles, moods, tempo."
+                data-testid="tags-input"
                 className="w-full bg-transparent text-[#555] text-sm py-1 focus:outline-none placeholder-[#555]"
               />
             </div>
@@ -616,6 +706,7 @@ useEffect(() => {
               <textarea
                 ref={descriptionRef}
                 rows={3}
+                data-testid="description-input"
                 placeholder="Tracks with descriptions tend to get more plays and engagements."
                 className="w-full bg-transparent text-[#555] text-sm py-1 resize-none focus:outline-none placeholder-[#555]"
               />
@@ -644,7 +735,7 @@ useEffect(() => {
 
         {/* Advanced Details */}
         <div className="border-t border-[#2a2a2a]">
-          <button onClick={() => setAdvancedOpen(!advancedOpen)} className="flex items-center justify-between w-full text-left py-5">
+          <button onClick={() => setAdvancedOpen(!advancedOpen)} className="flex items-center justify-between w-full text-left py-5" data-testid="advanced-details-toggle">
             <div>
               <p className="text-sm font-bold text-white">Advanced details</p>
               <p className="text-sm text-[#666] mt-0.5">Buy link, record label, release date, publisher...</p>
@@ -699,7 +790,7 @@ useEffect(() => {
 
         {/* Permissions */}
         <div className="border-t border-[#2a2a2a]">
-          <button onClick={() => setPermissionsOpen(!permissionsOpen)} className="flex items-center justify-between w-full text-left py-5">
+          <button onClick={() => setPermissionsOpen(!permissionsOpen)} className="flex items-center justify-between w-full text-left py-5" data-testid="permissions-toggle">
             <div className="flex items-center gap-4">
               <svg width="36" height="22" viewBox="0 0 36 22" fill="none">
                 <rect width="36" height="22" rx="11" fill="#333" />
@@ -765,7 +856,7 @@ useEffect(() => {
 
         {/* Audio Clip */}
         <div className="border-t border-[#2a2a2a]">
-          <button onClick={() => setAudioClipOpen(!audioClipOpen)} className="flex items-center justify-between w-full text-left py-5">
+          <button onClick={() => setAudioClipOpen(!audioClipOpen)} className="flex items-center justify-between w-full text-left py-5" data-testid="audio-clip-toggle">
             <div className="flex items-center gap-4">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="1.5">
                 <polygon points="11,5 6,9 2,9 2,15 6,15 11,19" fill="none" />
@@ -797,7 +888,7 @@ useEffect(() => {
 
         {/* Licensing */}
         <div className="border-t border-[#2a2a2a]">
-          <button onClick={() => setLicensingOpen(!licensingOpen)} className="flex items-center justify-between w-full text-left py-5">
+          <button onClick={() => setLicensingOpen(!licensingOpen)} className="flex items-center justify-between w-full text-left py-5" data-testid="licensing-toggle">
             <div className="flex items-center gap-4">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="1.5">
                 <circle cx="12" cy="12" r="10" />
@@ -834,7 +925,7 @@ useEffect(() => {
       </div>
 
       {/* Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 border-t border-[#1a1a1a] bg-[#0e0e0e] px-10 py-3 flex items-center">
+      <div className="fixed bottom-0 left-0 right-0 border-t border-[#1a1a1a] bg-[#0e0e0e] px-10 py-3 flex items-center" data-testid="track-info-bottom-bar">
         <p className="text-xs text-[#555] flex-1 text-center">
           By uploading, you confirm that your sounds comply with our{" "}
           <span className="underline cursor-pointer hover:text-[#888] transition">Terms of Use</span>{" "}
@@ -844,6 +935,7 @@ useEffect(() => {
           onClick={handleUpload}
           disabled={!fileReady || isSubmitting}
           className="bg-[#169b45] hover:bg-[#1db954] disabled:opacity-40 disabled:cursor-not-allowed text-white px-8 py-2.5 rounded-full font-semibold text-sm transition flex items-center gap-2"
+          data-testid="upload-submit-btn"
         >
           {(!fileReady || isSubmitting) && (
             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
