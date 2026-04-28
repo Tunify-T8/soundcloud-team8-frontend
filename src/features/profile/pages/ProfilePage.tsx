@@ -193,7 +193,7 @@ export default function ProfilePage() {
           <ProfileSideBar {...sidebarProps} />
         </div>
       </div>
-      <div className="bg-[#0b0b0b] min-h-screen">
+      <div className="bg-[#0b0b0b] min-h-screen pb-28">
         <Outlet />
         <div className="mx-auto mt-4 w-10/12 lg:hidden">
           <ProfileSideBar {...sidebarProps} />

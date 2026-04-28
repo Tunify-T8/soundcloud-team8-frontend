@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { FaApple, FaGooglePlay } from "react-icons/fa";
 import { User } from "lucide-react";
 import { useSelector } from "react-redux";
@@ -87,16 +87,27 @@ const PlaylistPage: React.FC = () => {
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
               <aside className="w-full lg:w-[112px] lg:shrink-0">
                 <div className="flex flex-col items-start text-left">
-                  <img
-                    src={playlist.owner?.avatarUrl || "/default-avatar.png"}
-                    alt={
-                      playlist.owner?.displayName || playlist.owner?.username
-                    }
-                    className="h-28 w-28 rounded-full object-cover"
-                  />
+                  <Link
+                    to={`/${encodeURIComponent(playlist.owner.username)}`}
+                    className="group block"
+                  >
+                    <img
+                      src={playlist.owner?.avatarUrl || "/default-avatar.png"}
+                      alt={
+                        playlist.owner?.displayName || playlist.owner?.username
+                      }
+                      className="h-28 w-28 rounded-full object-cover"
+                    />
+                  </Link>
                   <div className="mt-3 self-center text-center">
-                    <div className="text-[16px] font-bold leading-none text-white">
-                      {playlist.owner?.displayName || playlist.owner?.username}
+                    <div className="text-[16px] font-bold leading-none text-white transition-colors">
+                      <Link
+                        to={`/${encodeURIComponent(playlist.owner.username)}`}
+                        className="hover:text-zinc-300"
+                      >
+                        {playlist.owner?.displayName ||
+                          playlist.owner?.username}
+                      </Link>
                     </div>
                     <div className="mt-2 flex items-center justify-center gap-1 text-sm font-semibold text-zinc-400">
                       <User size={12} />

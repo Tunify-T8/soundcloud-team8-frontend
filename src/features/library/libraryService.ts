@@ -18,6 +18,7 @@ import type {
   LikeCollectionResponse,
   UnlikeCollectionResponse,
   PrivateCollectionResponse,
+  PlaylistShareResponse,
 } from "./types";
 
 export interface HistoryTrack {
@@ -86,6 +87,40 @@ function formatTimeAgo(isoDate: string): string {
 }
 
 export const playlistService = {
+  extractShareUrl(payload: unknown): string | null {
+    if (!payload || typeof payload !== "object") return null;
+
+    const obj = payload as Record<string, unknown>;
+    const direct =
+      obj.shareUrl ??
+      obj.shareURL ??
+      obj.url ??
+      obj.link ??
+      obj.shareLink ??
+      obj.share_link;
+
+    if (typeof direct === "string" && direct.trim()) {
+      return direct;
+    }
+
+    const nested = obj.data;
+    if (nested && typeof nested === "object") {
+      const nestedObj = nested as Record<string, unknown>;
+      const nestedUrl =
+        nestedObj.shareUrl ??
+        nestedObj.shareURL ??
+        nestedObj.url ??
+        nestedObj.link ??
+        nestedObj.shareLink ??
+        nestedObj.share_link;
+      if (typeof nestedUrl === "string" && nestedUrl.trim()) {
+        return nestedUrl;
+      }
+    }
+
+    return null;
+  },
+
   // ─── Playlist ───────────────────────────────────────────────
 
   async createCollection(
@@ -276,6 +311,28 @@ export const playlistService = {
     try {
       const response = await api.get(`/collections/${id}/embed`);
       return response.data.embedCode;
+    } catch {
+      return null;
+    }
+  },
+
+  async getPlaylistShareUrl(id: string): Promise<string | null> {
+    try {
+      const response = await api.get<PlaylistShareResponse>(
+        `/collections/${id}/share`,
+      );
+      return playlistService.extractShareUrl(response.data);
+    } catch {
+      return null;
+    }
+  },
+
+  async resetPrivatePlaylistShareUrl(id: string): Promise<string | null> {
+    try {
+      const response = await api.post<PlaylistShareResponse>(
+        `/collections/${id}/share/reset`,
+      );
+      return playlistService.extractShareUrl(response.data);
     } catch {
       return null;
     }

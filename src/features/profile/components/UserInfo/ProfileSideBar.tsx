@@ -76,6 +76,33 @@ export default function ProfileSideBar({
   }, [followingUsers]);
 
   useEffect(() => {
+    let isMounted = true;
+
+    const loadLikes = async () => {
+      setLikesLoading(true);
+      try {
+        const data =
+          profileId && me?.id && profileId !== me.id
+            ? await feedService.getUserLikes(profileId, 6)
+            : await feedService.getMyLikes(6);
+        if (!isMounted) return;
+        setLikedTracks(data);
+      } catch {
+        if (!isMounted) return;
+        setLikedTracks([]);
+      } finally {
+        if (!isMounted) return;
+        setLikesLoading(false);
+      }
+    };
+
+    void loadLikes();
+    return () => {
+      isMounted = false;
+    };
+  }, [profileId, me?.id]);
+
+  useEffect(() => {
     let mounted = true;
 
     async function loadFollowStates() {
@@ -112,6 +139,7 @@ export default function ProfileSideBar({
     };
   }, [followingUsers, me?.id]);
 
+  const visibleFollowerUsers = localFollowerUsers.slice(0, 8);
   const visibleFollowingUsers = localFollowingUsers.slice(0, 3);
   const followingCount = localFollowingUsers.length;
   const followersCountLabel = Number(followers ?? 0);
@@ -492,5 +520,50 @@ export default function ProfileSideBar({
       </div>
       {checkoutOpen && <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />}
     </div>
+  );
+}
+
+function LikedTrackRow({ track }: { track: LikedTrack }) {
+  return (
+    <Link to={`/tracks/${track.id}`} className="flex items-center gap-2">
+      <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded bg-[hsl(0,0%,15%)]">
+        {track.coverUrl ? (
+          <img
+            src={track.coverUrl}
+            alt={track.title}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">
+            <SiSoundcloud size={16} className="text-gray-600" />
+          </div>
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[13px] font-medium leading-tight text-white">
+          {track.title}
+        </p>
+        <p className="truncate text-[11px] text-gray-400">{track.artist}</p>
+        <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[10px] text-gray-500">
+          <span className="flex items-center gap-0.5">
+            <Play size={8} fill="currentColor" />
+            {track.playsCount.toLocaleString()}
+          </span>
+          <span className="flex items-center gap-0.5">
+            <Heart size={8} />
+            {track.likesCount.toLocaleString()}
+          </span>
+          <span className="flex items-center gap-0.5">
+            <Repeat2 size={8} />
+            {track.repostsCount.toLocaleString()}
+          </span>
+          <span className="flex items-center gap-0.5">
+            <MessageSquare size={8} />
+            {track.commentsCount.toLocaleString()}
+          </span>
+        </div>
+      </div>
+    </Link>
   );
 }
