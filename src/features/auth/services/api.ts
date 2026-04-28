@@ -60,6 +60,7 @@ api.interceptors.response.use(
       '/auth/reset-password',
       '/auth/resend-verification',
       '/auth/check-email',
+      '/auth/google',
     ];
     const isPublicRoute = PUBLIC_AUTH_ENDPOINTS.some(
       (ep) => originalRequest.url?.includes(ep)
