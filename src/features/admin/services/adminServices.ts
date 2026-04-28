@@ -99,6 +99,11 @@ export const adminServices = {
       return data.message;
     },
 
+    async ban(userId: string): Promise<string> {
+      const { data } = await api.post<MessageResponse>(`/admin/users/${userId}/ban`);
+      return data.message;
+    },
+
     async getModeration(userId: string): Promise<UserModerationOverview> {
       const { data } = await api.get<UserModerationOverview>(`/admin/users/${userId}/moderation`);
       return data;

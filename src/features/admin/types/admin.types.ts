@@ -63,6 +63,7 @@ export interface UpdateReportPayload {
 export interface UserModerationOverview {
   userId: string;
   isSuspended: boolean;
+  isBanned?: boolean;
   suspendedUntil?: string | null;
   suspensionReason?: string | null;
 }
@@ -79,13 +80,20 @@ export interface PlatformSummary {
   activeUsers: number;
   suspendedUsers: number;
   bannedUsers: number;
+  artistCount?: number;
+  listenerCount?: number;
   totalTracks: number;
   newTracksToday: number;
   newTracksThisWeek: number;
   totalPlays: number;
   playsToday: number;
+  completedPlays?: number;
+  playThroughRate?: number;
   totalReports: number;
   pendingReports: number;
+  totalStorageBytes?: number;
+  totalStorageGB?: number;
+  artistToListenerRatio?: number | null;
   generatedAt: string;
 }
 

@@ -81,11 +81,11 @@ const AdminDashboardPage = () => {
     const analyticsAny = (analytics ?? {}) as unknown as Record<string, unknown>;
 
     const artistCount =
-      pickNumber(summaryAny, ['artistUsers', 'artistCount', 'artistsCount', 'totalArtists']) ??
-      pickNumber(analyticsAny, ['artistUsers', 'artistCount', 'artistsCount', 'totalArtists']);
+      pickNumber(summaryAny, ['artistCount']) ??
+      pickNumber(analyticsAny, ['artistCount']);
     const listenerCount =
-      pickNumber(summaryAny, ['listenerUsers', 'listenerCount', 'listenersCount', 'totalListeners']) ??
-      pickNumber(analyticsAny, ['listenerUsers', 'listenerCount', 'listenersCount', 'totalListeners']);
+      pickNumber(summaryAny, ['listenerCount']) ??
+      pickNumber(analyticsAny, ['listenerCount']);
 
     const playThroughRate =
       pickNumber(summaryAny, ['playThroughRate', 'playthroughRate', 'play_through_rate']) ??
@@ -123,7 +123,9 @@ const AdminDashboardPage = () => {
       artistCount,
       listenerCount,
       artistListenerRatio:
-        artistCount !== null && listenerCount !== null && listenerCount > 0
+        summary?.artistToListenerRatio !== undefined
+          ? summary.artistToListenerRatio
+          : artistCount !== null && listenerCount !== null && listenerCount > 0
           ? artistCount / listenerCount
           : null,
       playThroughRate,

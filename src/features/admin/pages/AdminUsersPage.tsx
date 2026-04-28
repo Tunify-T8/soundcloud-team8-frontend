@@ -3,6 +3,9 @@ import { adminServices } from '../services/adminServices';
 import type { UserModerationOverview } from '../types/admin.types';
 import { profileService } from '../../profile/profileService';
 import type { PublicUserProfile } from '../../../shared/types/User';
+import { useDebounce } from '@/hooks/useDebounce';
+import { feedService } from '@/features/feed/feedservice';
+import type { UserSearchResult } from '@/features/feed/type';
 
 const PAGE_HINTS = [
   'Paste a username or user ID to inspect moderation state.',
@@ -20,6 +23,9 @@ const DURATION_PRESETS = [
 
 const AdminUsersPage = () => {
   const [userIdInput, setUserIdInput] = useState('');
+  const debouncedUserQuery = useDebounce(userIdInput, 300);
+  const [userSearchResults, setUserSearchResults] = useState<UserSearchResult[]>([]);
+  const [isSearchingUsers, setIsSearchingUsers] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState('');
   const [selectedUserProfile, setSelectedUserProfile] = useState<PublicUserProfile | null>(null);
   const [moderation, setModeration] = useState<UserModerationOverview | null>(null);
@@ -56,6 +62,33 @@ const AdminUsersPage = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!debouncedUserQuery.trim()) {
+      setUserSearchResults([]);
+      setIsSearchingUsers(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsSearchingUsers(true);
+    void (async () => {
+      try {
+        const results = await feedService.search(debouncedUserQuery.trim());
+        if (cancelled) return;
+        const users = results.filter((r): r is UserSearchResult => r.type === 'user');
+        setUserSearchResults(users.slice(0, 6));
+      } catch {
+        if (!cancelled) setUserSearchResults([]);
+      } finally {
+        if (!cancelled) setIsSearchingUsers(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedUserQuery]);
 
   useEffect(() => {
     if (!selectedUserId) return;
@@ -124,8 +157,35 @@ const AdminUsersPage = () => {
     }
   };
 
+  const handleBan = async () => {
+    if (!selectedUserId) {
+      setError('Load a user moderation record first.');
+      return;
+    }
+
+    if (!confirm('Are you sure you want to ban this user? This action is permanent.')) {
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      await adminServices.users.ban(selectedUserId);
+      const data = await adminServices.users.getModeration(selectedUserId);
+      setModeration(data);
+      setSuccess('User banned successfully.');
+    } catch {
+      setError('Failed to ban the user.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const suspensionLabel = useMemo(() => {
     if (!moderation) return 'No user selected';
+    if (moderation.isBanned) return 'Banned';
     if (!moderation.isSuspended) return 'Active';
     return moderation.suspendedUntil ? `Suspended until ${new Date(moderation.suspendedUntil).toLocaleString()}` : 'Permanently suspended';
   }, [moderation]);
@@ -135,7 +195,7 @@ const AdminUsersPage = () => {
       <div className="flex items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-black tracking-tight">User Moderation</h1>
-          <p className="text-zinc-400 text-sm mt-1">Search a user by username or ID, review moderation status, and manage suspension state.</p>
+            {/* Removed the descriptive paragraph */}
         </div>
         <button
           type="button"
@@ -162,6 +222,38 @@ const AdminUsersPage = () => {
               placeholder="Paste a user UUID here"
               className="w-full bg-zinc-950 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600"
             />
+
+            {((isSearchingUsers && userIdInput.trim()) || userSearchResults.length > 0) && (
+              <div className="mt-2 rounded-md border border-zinc-800 bg-zinc-950/50 p-2 max-h-56 overflow-y-auto">
+                {isSearchingUsers && <div className="text-xs text-zinc-400 px-2 py-1">Searching users...</div>}
+                {userSearchResults.map((u) => (
+                  <button
+                    key={u.id}
+                    type="button"
+                    onClick={() => {
+                      setUserIdInput(u.id);
+                    }}
+                    className="w-full text-left px-2 py-2 hover:bg-zinc-900/40 rounded"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-zinc-800 overflow-hidden">
+                        {u.avatarUrl ? (
+                          <img src={u.avatarUrl} alt={u.username} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-zinc-700" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm text-white truncate">{u.displayName ?? u.username}</div>
+                        <div className="text-xs text-zinc-400">
+                          @{u.username} · {u.followersCount.toLocaleString()} followers
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </label>
 
           <button
@@ -188,7 +280,6 @@ const AdminUsersPage = () => {
           {error}
         </div>
       )}
-
       {success && (
         <div className="mb-5 rounded-sm border border-emerald-900 bg-emerald-950/40 px-4 py-3 text-sm text-emerald-300">
           {success}
@@ -203,8 +294,8 @@ const AdminUsersPage = () => {
               <p className="text-xs text-zinc-500 mt-1">{suspensionLabel}</p>
             </div>
             {moderation && (
-              <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] ${moderation.isSuspended ? 'border-red-500/40 bg-red-500/10 text-red-300' : 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'}`}>
-                {moderation.isSuspended ? 'Suspended' : 'Active'}
+              <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] ${moderation.isBanned ? 'border-red-600/60 bg-red-600/15 text-red-300' : moderation.isSuspended ? 'border-red-500/40 bg-red-500/10 text-red-300' : 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'}`}>
+                {moderation.isBanned ? 'Banned' : moderation.isSuspended ? 'Suspended' : 'Active'}
               </span>
             )}
           </div>
@@ -216,16 +307,16 @@ const AdminUsersPage = () => {
                 <p className="mt-2 text-sm text-zinc-100 break-all">{selectedUserProfile?.username ?? 'Unknown user'}</p>
               </div>
               <div className="rounded-md border border-zinc-800 bg-zinc-950/60 p-4">
+                <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">Status</p>
+                <p className="mt-2 text-sm text-zinc-100">{moderation.isBanned ? 'Banned' : moderation.isSuspended ? 'Suspended' : 'Active'}</p>
+              </div>
+              <div className="rounded-md border border-zinc-800 bg-zinc-950/60 p-4">
                 <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">Suspension reason</p>
                 <p className="mt-2 text-sm text-zinc-100">{moderation.suspensionReason || 'None'}</p>
               </div>
               <div className="rounded-md border border-zinc-800 bg-zinc-950/60 p-4">
                 <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">Suspended until</p>
                 <p className="mt-2 text-sm text-zinc-100">{moderation.suspendedUntil ? new Date(moderation.suspendedUntil).toLocaleString() : 'N/A'}</p>
-              </div>
-              <div className="rounded-md border border-zinc-800 bg-zinc-950/60 p-4">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">State</p>
-                <p className="mt-2 text-sm text-zinc-100">{moderation.isSuspended ? 'Suspended' : 'Active'}</p>
               </div>
             </div>
           ) : loading ? (
@@ -281,16 +372,23 @@ const AdminUsersPage = () => {
                 value={suspensionReason}
                 onChange={(e) => setSuspensionReason(e.target.value)}
                 rows={5}
-                className="w-full bg-zinc-950 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-200 resize-none"
+                disabled={moderation?.isBanned}
+                className="w-full bg-zinc-950 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-200 resize-none disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="Repeated abuse, spam, policy violation, etc."
               />
             </label>
+
+            {moderation?.isBanned && (
+              <div className="rounded-sm border border-red-900 bg-red-950/40 px-4 py-3 text-sm text-red-300">
+                Banned users cannot be suspended or unsuspended.
+              </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <button
                 type="button"
                 onClick={() => void handleSuspend()}
-                disabled={submitting || !selectedUserId}
+                disabled={submitting || !selectedUserId || moderation?.isBanned}
                 className="rounded-sm border border-orange-500 bg-orange-500/10 px-4 py-2.5 text-sm font-bold text-orange-200 hover:bg-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? 'Saving...' : 'Suspend User'}
@@ -299,10 +397,19 @@ const AdminUsersPage = () => {
               <button
                 type="button"
                 onClick={() => void handleUnsuspend()}
-                disabled={submitting || !selectedUserId}
+                disabled={submitting || !selectedUserId || moderation?.isBanned}
                 className="rounded-sm border border-zinc-700 px-4 py-2.5 text-sm font-bold text-zinc-200 hover:text-white hover:border-zinc-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Unsuspend User
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void handleBan()}
+                disabled={submitting || !selectedUserId || moderation?.isBanned}
+                className="rounded-sm border border-red-600 bg-red-600/10 px-4 py-2.5 text-sm font-bold text-red-300 hover:bg-red-600/20 disabled:opacity-50 disabled:cursor-not-allowed sm:col-span-2"
+              >
+                {moderation?.isBanned ? 'User Already Banned' : submitting ? 'Banning...' : 'Ban User'}
               </button>
             </div>
           </div>
