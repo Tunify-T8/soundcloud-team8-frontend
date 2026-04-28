@@ -7,7 +7,7 @@ import type { Track } from "@/shared/types/Track";
 import { trackService } from "../trackService";
 import { usePlayer } from "@/features/playerUI/context/usePlayer";
 import amplify from "@/assets/amplify.png";
-import CheckoutModal from "@/features/premium/components/CheckoutModal";
+import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
 
 function formatDate(raw: string): string {
   const d = new Date(raw);
@@ -105,8 +105,6 @@ function DeleteConfirmModal({
 }
 
 function AmplifyModal({ onClose }: { onClose: () => void }) {
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
-
   return (
     <>
       <div className="fixed inset-0 z-50" style={{ background: "rgba(246, 235, 235, 0.58)" }} onClick={onClose} />
@@ -162,13 +160,12 @@ function AmplifyModal({ onClose }: { onClose: () => void }) {
           </div>
 
           <div className="flex items-center justify-start gap-4 px-6 sm:px-10 pb-8 sm:pb-10">
-            <button
+            <ArtistProUpgradeButton
               data-testid="amplify-modal-unlock-btn"
-              onClick={() => setCheckoutOpen(true)}
               className="px-6 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold transition-colors tracking-tight"
             >
               Unlock with Artist Pro
-            </button>
+            </ArtistProUpgradeButton>
             <button
               data-testid="amplify-modal-later-btn"
               onClick={onClose}
@@ -177,7 +174,6 @@ function AmplifyModal({ onClose }: { onClose: () => void }) {
               Maybe later
             </button>
           </div>
-          {checkoutOpen && <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />}
         </div>
       </div>
     </>

@@ -19,7 +19,7 @@ import {
 } from "@/features/notifications/service/service"; 
 import type {NotificationObject} from "@/features/notifications/types"
 import { getAccessToken } from "@/features/auth/utils/token.utils";
-import CheckoutModal from "@/features/premium/components/CheckoutModal";
+import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
 
 
 function timeAgo(dateStr: string): string {
@@ -62,8 +62,6 @@ export default function Navbar() {
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
-
   // Notification state
   const [notifications, setNotifications] = useState<NotificationObject[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -273,12 +271,11 @@ export default function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center gap-5 text-sm">
-            <button
-              onClick={() => setCheckoutOpen(true)}
+            <ArtistProUpgradeButton
               className="border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-1 rounded-sm transition-colors duration-150 text-xs"
             >
               Try Free
-            </button>
+            </ArtistProUpgradeButton>
             <Link to="/artists" className="text-zinc-400 hover:text-white font-bold tracking-tight">For Artists</Link>
             <Link to="/upload" className="text-zinc-400 hover:text-white font-bold tracking-tight ml-1">Upload</Link>
 
@@ -479,17 +476,15 @@ export default function Navbar() {
               <Link to="/upload" className="text-zinc-300 hover:text-white">Upload</Link>
               <Link to="/me" className="text-zinc-300 hover:text-white">Profile</Link>
             </div>
-            <button
-              onClick={() => setCheckoutOpen(true)}
+            <ArtistProUpgradeButton
               className="w-full border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-2 rounded-sm transition-colors duration-150 text-xs"
             >
               Try Free
-            </button>
+            </ArtistProUpgradeButton>
           </div>
         )}
       </nav>
       <Outlet />
-      {checkoutOpen && <CheckoutModal plan = "artist-pro" onClose={() => setCheckoutOpen(false)} />}
     </>
   );
 }

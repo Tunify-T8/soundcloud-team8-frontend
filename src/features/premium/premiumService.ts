@@ -80,8 +80,8 @@ export function detectCardBrand(cardNumber: string): string {
  */
 async function getPlans(): Promise<Plan[]> {
   try {
-    const data: PlansResponse = await api.get("/subscriptions/plans");
-    return data.plans ?? [];
+    const response = await api.get<PlansResponse>("/subscriptions/plans");
+    return response.data.plans ?? [];
   } catch {
     return [];
   }
@@ -93,7 +93,8 @@ async function getPlans(): Promise<Plan[]> {
  */
 async function getMySubscription(): Promise<Subscription> {
   try {
-    const data: SubscriptionData = await api.get("/subscriptions/me");
+    const response = await api.get<SubscriptionData>("/subscriptions/me");
+    const data = response.data;
     return {
       tier: parseTier(data.plan),
       status: data.status,
@@ -115,7 +116,11 @@ async function getMySubscription(): Promise<Subscription> {
 async function subscribe(
   payload: SubscribePayload
 ): Promise<SubscribeSuccessResponse> {
-  return api.post("/subscriptions/subscribe", payload);
+  const response = await api.post<SubscribeSuccessResponse>(
+    "/subscriptions/subscribe",
+    payload
+  );
+  return response.data;
 }
 
 export const subscriptionService = { getMySubscription, getPlans, subscribe };

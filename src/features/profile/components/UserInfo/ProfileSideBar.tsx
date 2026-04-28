@@ -19,7 +19,7 @@ import { Ticket, Heart, Play, Repeat2, MessageSquare } from "lucide-react";
 import type { FollowingUser } from "../../../../shared/types/User";
 import { followingService } from "../../../following/followingService";
 import avatarFallback from '@/assets/avatar.png';
-import CheckoutModal from "@/features/premium/components/CheckoutModal";
+import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
 import { useMe } from "@/features/profile/context/useMe";
 import { feedService } from "@/features/feed/feedservice";
 import type { LikedTrack } from "@/features/feed/type";
@@ -62,7 +62,6 @@ export default function ProfileSideBar({
   );
   const [followStates, setFollowStates] = useState<Record<string, boolean>>({});
   const [pendingFollowId, setPendingFollowId] = useState<string | null>(null);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [likedTracks, setLikedTracks] = useState<LikedTrack[]>([]);
   const [likesLoading, setLikesLoading] = useState(true);
   const { me } = useMe();
@@ -253,14 +252,11 @@ export default function ProfileSideBar({
           With an Artist Pro account, you can create ticketed live events on
           SoundCloud, and list existing events.
         </p>
-        <button
+        <ArtistProUpgradeButton
           className="mt-4 flex w-full items-center justify-center rounded-full bg-white px-6 py-2.5 text-[13px] font-bold text-zinc-900 transition-colors hover:bg-zinc-100 sm:py-3 sm:text-[14px]"
-          onClick={() => {
-            setCheckoutOpen(true);
-          }}
         >
           Upgrade to Artist Pro
-        </button>
+        </ArtistProUpgradeButton>
       </div>
       <div className="mt-6">
         <div className="flex items-center justify-between">
@@ -491,7 +487,6 @@ export default function ProfileSideBar({
           </a>
         </div>
       </div>
-      {checkoutOpen && <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />}
     </div>
   );
 }

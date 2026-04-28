@@ -10,7 +10,7 @@ import { useDispatch } from "react-redux";
 import { useAppSelector } from "../../../app/hooks";
 import { profileService } from "@/features/profile/profileService";
 import albumTemplate from "@/assets/album.png";
-import CheckoutModal from "@/features/premium/components/CheckoutModal";
+import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
 
 function Toggle({ enabled, onChange }: ToggleProps) {
   return (
@@ -217,10 +217,8 @@ function GenreInput({ genreRef }: { genreRef: React.RefObject<HTMLInputElement |
 // ─── Upload Limit Reached Banner (inline, shown after 403) ───────────────────
 function UploadLimitBanner({
   minutesRemaining,
-  onUpgrade,
 }: {
   minutesRemaining: number;
-  onUpgrade: () => void;
 }) {
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-6">
@@ -239,12 +237,11 @@ function UploadLimitBanner({
             {minutesRemaining} minute{minutesRemaining !== 1 ? "s" : ""} remaining — but this track exceeds that.
           </p>
         )}
-        <button
-          onClick={onUpgrade}
+        <ArtistProUpgradeButton
           className="w-full bg-white text-black font-bold py-3 rounded-full text-sm hover:bg-[#eee] transition mb-3"
         >
           Unlock with Artist Pro
-        </button>
+        </ArtistProUpgradeButton>
         <p className="text-[#555] text-xs">Upgrade for unlimited uploads, distribution & more.</p>
       </div>
     </div>
@@ -272,8 +269,6 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
   // Limit-reached state
   const [limitReached, setLimitReached] = useState(false);
   const [limitMinutesRemaining, setLimitMinutesRemaining] = useState(0);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
-
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [trackSlug, setTrackSlug] = useState("");
 
@@ -489,10 +484,8 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
       {limitReached && (
         <UploadLimitBanner
           minutesRemaining={limitMinutesRemaining}
-          onUpgrade={() => setCheckoutOpen(true)}
         />
       )}
-      {checkoutOpen && <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />}
 
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-3 border-b border-[#1a1a1a]" data-testid="track-info-header">

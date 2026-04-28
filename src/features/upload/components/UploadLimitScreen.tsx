@@ -1,5 +1,4 @@
-import { useState } from "react";
-import CheckoutModal from "@/features/premium/components/CheckoutModal";
+import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
 import hourglassImg from "@/assets/broken_clock.png"; 
 
 type UploadQuota = {
@@ -85,8 +84,6 @@ const FEATURES = [
 ];
 
 export default function UploadLimitScreen({ quota }: UploadLimitScreenProps) {
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
-
   return (
     <>
       <main className="flex-1 flex px-8 py-12 max-w-[1100px] mx-auto w-full gap-16 items-start">
@@ -96,12 +93,11 @@ export default function UploadLimitScreen({ quota }: UploadLimitScreenProps) {
           <p className="text-[#aaa] text-[15px] mb-8">
             Unlock unlimited uploads, monetization, distribution, and much more with Artist Pro
           </p>
-          <button
-            onClick={() => setCheckoutOpen(true)}
+          <ArtistProUpgradeButton
             className="bg-white text-black font-bold px-6 py-3 rounded-full text-[14px] hover:bg-[#eee] transition"
           >
             Unlock with Artist Pro
-          </button>
+          </ArtistProUpgradeButton>
 
           {/* Feature highlights */}
           <div className="mt-12">
@@ -132,10 +128,6 @@ export default function UploadLimitScreen({ quota }: UploadLimitScreenProps) {
           />
         </div>
       </main>
-
-      {checkoutOpen && (
-        <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />
-      )}
     </>
   );
 }

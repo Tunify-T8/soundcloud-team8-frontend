@@ -31,7 +31,9 @@ type ProfileContextType = {
   me: MeUserProfile | null;
   socialAccounts: SocialAccounts;
   following: UserFollowing[];
-  subscription: Subscription;  refresh: () => void;
+  subscription: Subscription;
+  refresh: () => void;
+  setSubscription: (subscription: Subscription) => void;
 };
 
 const ProfileContext = createContext<ProfileContextType>({
@@ -40,6 +42,7 @@ const ProfileContext = createContext<ProfileContextType>({
   following: [],
   subscription: defaultSubscription,
   refresh: () => {},
+  setSubscription: () => {},
 });
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
@@ -67,7 +70,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
   return (
     <ProfileContext.Provider
-      value={{ me, socialAccounts, following, subscription, refresh }}
+      value={{ me, socialAccounts, following, subscription, refresh, setSubscription }}
     >
       {children}
     </ProfileContext.Provider>

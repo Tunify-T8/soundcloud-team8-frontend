@@ -4,8 +4,8 @@ import { SiSoundcloud } from "react-icons/si";
 import { useAppSelector } from "../../../app/hooks";
 import { setAudioSource } from "../../../store/AudioSourceSlice";
 import { api } from "@/features/auth/services/api";
-import CheckoutModal from "@/features/premium/components/CheckoutModal";
 import ArtistModal from "@/features/premium/components/ArtistModal";
+import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
 import Recorder from "../components/Recorder";
 import TrackInfoPage from "../components/TrackInfo";
 import uploadImg from "@/assets/upload.png";
@@ -22,10 +22,8 @@ type UploadQuota = {
 
 function UploadLimitScreen({
   quota,
-  onUpgrade,
 }: {
   quota: UploadQuota;
-  onUpgrade: () => void;
 }) {
   const used = quota.uploadMinutesUsed;
   const limit = quota.uploadMinutesLimit ?? 180;
@@ -62,12 +60,11 @@ function UploadLimitScreen({
             {used} of {limit} minutes
           </span>
         </div>
-        <button
-          onClick={onUpgrade}
+        <ArtistProUpgradeButton
           className="bg-black text-white text-sm font-bold tracking-tighter px-5 py-2 rounded-full hover:bg-[hsl(0,0%,20%)] transition-colors border border-[#333]"
         >
           Get unlimited uploads
-        </button>
+        </ArtistProUpgradeButton>
       </div>
 
       <main className="flex-1 flex px-8 py-12 max-w-[1100px] mx-auto w-full gap-16 items-start">
@@ -76,12 +73,11 @@ function UploadLimitScreen({
           <p className="text-[#aaa] text-[15px] mb-8">
             Unlock unlimited uploads, monetization, distribution, and much more with Artist Pro
           </p>
-          <button
-            onClick={onUpgrade}
+          <ArtistProUpgradeButton
             className="bg-white text-black font-bold px-6 py-3 rounded-full text-[14px] hover:bg-[#eee] transition"
           >
             Unlock with Artist Pro
-          </button>
+          </ArtistProUpgradeButton>
 
           <div className="mt-12">
             <p className="text-xs text-[#666] font-semibold tracking-widest uppercase mb-6">
@@ -203,7 +199,6 @@ export default function SoundCloudUpload() {
   const [isDragging, setIsDragging] = useState(false);
   const [micOpen, setMicOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [showArtistModal, setShowArtistModal] = useState(false);
 
   const [quota, setQuota] = useState<UploadQuota | null>(null);
@@ -290,10 +285,7 @@ export default function SoundCloudUpload() {
   if (limitReached && quota) {
     return (
       <>
-        <UploadLimitScreen quota={quota} onUpgrade={() => setCheckoutOpen(true)} />
-        {checkoutOpen ? (
-          <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />
-        ) : null}
+        <UploadLimitScreen quota={quota} />
       </>
     );
   }
@@ -381,13 +373,12 @@ export default function SoundCloudUpload() {
               )}
             </div>
 
-            <button
-              onClick={() => setCheckoutOpen(true)}
+            <ArtistProUpgradeButton
               className="bg-black text-white text-sm font-bold tracking-tighter px-5 py-2 rounded-full hover:bg-[hsl(0,0%,20%)] transition-colors"
               data-testid="get-unlimited-btn"
             >
               Get unlimited uploads
-            </button>
+            </ArtistProUpgradeButton>
           </div>
 
           <h1 className="text-[26px] font-semibold mb-2 mt-8">Upload your audio files.</h1>
@@ -455,10 +446,6 @@ export default function SoundCloudUpload() {
           </footer>
         </div>
       </main>
-
-      {checkoutOpen ? (
-        <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />
-      ) : null}
       {showArtistModal ? <ArtistModal onClose={() => setShowArtistModal(false)} /> : null}
     </div>
   );

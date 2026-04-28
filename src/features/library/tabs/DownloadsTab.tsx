@@ -4,6 +4,7 @@ import { useMe } from "@/features/profile/context/useMe";
 import SongCard from "@/components/ui/SongCard";
 import { Genre } from "@/shared/types/Genre";
 import downloadImg from "@/assets/download.png";
+import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
 
 const OfflineIcon = () => (
   <img
@@ -118,8 +119,7 @@ function UpsellPage() {
         Free for 7 days · then <span className="text-zinc-300">EGP 74.99/month</span>
       </p>
 
-      <button
-        onClick={() => (window.location.href = "/premium")}
+      <ArtistProUpgradeButton
         className="px-8 py-3 rounded-full font-bold text-sm text-black transition-all hover:scale-105 active:scale-95"
         style={{
           background: "linear-gradient(135deg, #f90 0%, #ff6200 100%)",
@@ -127,7 +127,7 @@ function UpsellPage() {
         }}
       >
         Upgrade to Artist Pro
-      </button>
+      </ArtistProUpgradeButton>
     </div>
   );
 }

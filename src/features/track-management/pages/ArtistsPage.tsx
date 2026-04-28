@@ -19,7 +19,7 @@ import pandoraImg from "@/assets/pandora.png";
 import vinylImg from "@/assets/vinyl.png";
 import commentsImg from "@/assets/comment_bubbles.png";
 import { BenefitsSection } from "../components/BenefitsSection";
-import CheckoutModal from "@/features/premium/components/CheckoutModal";
+import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
 
 import insightsImg from "@/assets/insights.png";
 import earningsImg from "@/assets/monetize.png";
@@ -29,7 +29,6 @@ import fansHoverImg from "@/assets/top_fans_hover.png";
 import benefitsHoverImg from "@/assets/benefits_hover.png";
 
 export function UploadBanner() {
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
   return (
     <div data-testid="upload-banner" className="bg-[hsl(0,0%,11%)] border-b border-[hsl(0,0%,18%)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-4 sm:px-8 py-3 shrink-0">
       <div className="flex items-center gap-3 flex-wrap">
@@ -40,15 +39,12 @@ export function UploadBanner() {
         </div>
         <span className="text-[hsl(0,100%,99%)] text-sm font-semibold">0 of 180 minutes</span>
       </div>
-      <button
+      <ArtistProUpgradeButton
         data-testid="upload-banner-unlimited-btn"
-        onClick={() => setCheckoutOpen(true)}
         className="self-end sm:self-auto bg-black text-white text-sm font-bold tracking-tighter px-5 py-2 rounded-full hover:bg-[hsl(0,0%,20%)] transition-colors whitespace-nowrap"
       >
         Get unlimited uploads
-      </button>
-
-      {checkoutOpen && <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />}
+      </ArtistProUpgradeButton>
     </div>
   );
 }
@@ -138,7 +134,6 @@ function StudioHeader() {
 
 
 function DistributionTab() {
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const platforms = [
     { img: spotifyImg,      alt: "Spotify"       },
     { img: appleMusicImg,   alt: "Apple Music"   },
@@ -166,12 +161,11 @@ function DistributionTab() {
             get your music on to social media like Instagram, TikTok, Facebook
             and others — extending your reach and audience.
           </p>
-          <button
+          <ArtistProUpgradeButton
             className="bg-white text-black text-sm font-bold px-6 py-2.5 rounded-full hover:bg-zinc-200 transition-colors"
-            onClick={() => setCheckoutOpen(true)}
           >
             Get Artist Pro
-          </button>
+          </ArtistProUpgradeButton>
         </div>
 
         <div className="w-full sm:flex-shrink-0 sm:w-[280px] h-[200px] sm:h-[280px]">
@@ -227,13 +221,11 @@ function DistributionTab() {
           ))}
         </div>
       </div>
-      {checkoutOpen && <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />}
     </div>
   );
 }
 
 function VinylRecordsTab() {
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
   return (
     <div className="px-4 sm:px-8 py-8 sm:py-10 text-white">
 
@@ -258,12 +250,11 @@ function VinylRecordsTab() {
             way, you get paid for every sale.
           </p>
           <div className="flex items-center gap-3 flex-wrap">
-            <button
+            <ArtistProUpgradeButton
               className="bg-white text-black text-sm font-bold px-6 py-2.5 rounded-full hover:bg-zinc-200 transition-colors"
-              onClick={() => setCheckoutOpen(true)}
             >
               Get Artist Pro
-            </button>
+            </ArtistProUpgradeButton>
             <button className="bg-[hsl(0,0%,16%)] text-white text-sm font-bold px-6 py-2.5 rounded-full hover:bg-[hsl(0,0%,22%)] border border-[hsl(0,0%,26%)] transition-colors">
               Learn More
             </button>
@@ -363,13 +354,11 @@ function VinylRecordsTab() {
           ))}
         </div>
       </div>
-      {checkoutOpen && <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />}
     </div>
   );
 }
 
 function CommentsTab() {
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
   return (
     <div className="px-4 sm:px-8 py-8 sm:py-10 text-white">
       <div className="flex flex-col-reverse sm:flex-row items-start justify-between gap-8">
@@ -387,19 +376,17 @@ function CommentsTab() {
             fans are saying about you. Read, moderate and respond to your
             comments, all in one place.
           </p>
-          <button
+          <ArtistProUpgradeButton
             className="bg-white text-black text-sm font-bold px-6 py-2.5 rounded-full hover:bg-zinc-200 transition-colors"
-            onClick={() => setCheckoutOpen(true)}
           >
             Get Artist Pro
-          </button>
+          </ArtistProUpgradeButton>
         </div>
 
         <div className="w-full sm:flex-shrink-0 sm:w-[340px] h-[180px] sm:h-[240px]">
           <img src={commentsImg} alt="Comments Hub" className="w-full h-full object-contain" />
         </div>
       </div>
-      {checkoutOpen && <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />}
     </div>
   );
 }

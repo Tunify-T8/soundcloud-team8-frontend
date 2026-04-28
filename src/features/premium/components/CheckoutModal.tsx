@@ -98,7 +98,7 @@ export default function CheckoutModal({ plan, plans: plansProp = [], onClose }: 
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const { refresh } = useContext(ProfileContext);
+  const { refresh, setSubscription } = useContext(ProfileContext);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -204,6 +204,34 @@ export default function CheckoutModal({ plan, plans: plansProp = [], onClose }: 
         trialDays: 7,
       });
 
+      const now = new Date();
+      const expiresAt = new Date(now);
+      if (billing === "yearly") {
+        expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+      } else {
+        expiresAt.setMonth(expiresAt.getMonth() + 1);
+      }
+
+      setSubscription({
+        tier: plan,
+        status: plan === "artist-pro" ? "TRIAL" : "ACTIVE",
+        data: {
+          plan,
+          status: plan === "artist-pro" ? "TRIAL" : "ACTIVE",
+          startedAt: now.toISOString(),
+          expiresAt: expiresAt.toISOString(),
+          autoRenew: true,
+          features: {
+            maxUploads:
+              planData?.features.maxUploads === "unlimited"
+                ? Number.MAX_SAFE_INTEGER
+                : planData?.features.maxUploads ?? 0,
+            adFree: planData?.features.adFree ?? plan === "artist-pro",
+            offlineListening:
+              planData?.features.offlineListening ?? plan === "artist-pro",
+          },
+        },
+      });
       refresh();
       setShowSuccess(true);
     } catch (err: unknown) {
