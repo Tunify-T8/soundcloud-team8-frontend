@@ -5,6 +5,8 @@ import SongCard from "@/components/ui/SongCard";
 import { Genre } from "@/shared/types/Genre";
 import downloadImg from "@/assets/download.png";
 import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
+import { subscriptionService } from "@/features/premium/premiumService";
+import type { Subscription } from "@/features/premium/types";
 
 const OfflineIcon = () => (
   <img
@@ -197,12 +199,49 @@ function DownloadsList({ userId }: { userId: string }) {
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 export default function DownloadsTab() {
-  const { hasOfflineListening } = useSubscription();
-  const { me } = useMe();
+  const { hasOfflineListening, raw } = useSubscription();
+  const { me, setSubscription } = useMe();
+  const [latestSubscription, setLatestSubscription] = useState<Subscription | null>(null);
+  const [checkingPlan, setCheckingPlan] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    subscriptionService
+      .getMySubscription({ fallbackToFree: false })
+      .then((subscription) => {
+        if (!mounted) return;
+        setLatestSubscription(subscription);
+        setSubscription(subscription);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setLatestSubscription(null);
+      })
+      .finally(() => {
+        if (mounted) {
+          setCheckingPlan(false);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [setSubscription]);
+
+  const effectiveSubscription = latestSubscription ?? raw;
+  const effectiveHasOfflineListening =
+    (effectiveSubscription?.status === "ACTIVE" ||
+      effectiveSubscription?.status === "TRIAL") &&
+    (effectiveSubscription?.data?.features?.offlineListening ?? hasOfflineListening);
+
+  if (checkingPlan && !effectiveSubscription?.data && hasOfflineListening === false) {
+    return <div className="py-10 text-sm text-zinc-400">Checking your plan...</div>;
+  }
 
   return (
     <div data-testid="downloads-tab">
-      {hasOfflineListening ? (
+      {effectiveHasOfflineListening ? (
         <DownloadsList userId={me?.id ?? ""} />
       ) : (
         <UpsellPage />

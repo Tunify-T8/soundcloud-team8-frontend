@@ -55,6 +55,11 @@ export interface SubscribeErrorResponse {
   message: string;
 }
 
+export interface CancelSubscriptionResponse {
+  message: string;
+  expiresAt: string;
+}
+
 const VALID_TIERS: SubscriptionTier[] = ["free", "artist", "artist-pro"];
 
 function parseTier(plan: string): SubscriptionTier {
@@ -91,7 +96,9 @@ async function getPlans(): Promise<Plan[]> {
  * GET /subscriptions/me
  * Returns a fully-typed Subscription. Falls back to free tier on any error.
  */
-async function getMySubscription(): Promise<Subscription> {
+async function getMySubscription(
+  options?: { fallbackToFree?: boolean }
+): Promise<Subscription> {
   try {
     const response = await api.get<SubscriptionData>("/subscriptions/me");
     const data = response.data;
@@ -101,6 +108,9 @@ async function getMySubscription(): Promise<Subscription> {
       data,
     };
   } catch {
+    if (options?.fallbackToFree === false) {
+      throw new Error("Failed to fetch subscription");
+    }
     return {
       tier: "free",
       status: "ACTIVE" as SubscriptionStatus,
@@ -123,4 +133,16 @@ async function subscribe(
   return response.data;
 }
 
-export const subscriptionService = { getMySubscription, getPlans, subscribe };
+async function cancelSubscription(): Promise<CancelSubscriptionResponse> {
+  const response = await api.post<CancelSubscriptionResponse>(
+    "/subscriptions/cancel"
+  );
+  return response.data;
+}
+
+export const subscriptionService = {
+  getMySubscription,
+  getPlans,
+  subscribe,
+  cancelSubscription,
+};

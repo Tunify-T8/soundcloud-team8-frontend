@@ -1,5 +1,7 @@
 import { useRef, useState } from "react";
 import { profileService } from "../../profileService";
+import { useSubscription } from "@/hooks/useSubscription";
+import SubscriptionBadge from "@/features/premium/components/SubscriptionBadge";
 
 export default function Avatar({
   avatarUrl,
@@ -16,6 +18,7 @@ export default function Avatar({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showActions, setShowActions] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const { tier } = useSubscription();
 
   async function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -85,6 +88,11 @@ export default function Avatar({
           </div>
         )}
       </div>
+      {isMe && tier !== "free" && (
+        <div className="pointer-events-none absolute -right-1 top-0 z-10 -translate-y-[12%] translate-x-[12%]">
+          <SubscriptionBadge tier={tier} size={34} />
+        </div>
+      )}
 
       {isMe && (
         <div
