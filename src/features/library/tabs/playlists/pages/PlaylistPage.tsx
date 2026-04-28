@@ -114,7 +114,7 @@ const PlaylistPage: React.FC = () => {
         
       )}
     
-      <div className="mx-auto max-w-[1200px] px-6 pb-20 pt-10">
+      <div className="mx-auto max-w-[1200px] px-4 pb-20 pt-6 sm:px-6 sm:pt-10">
         <PlaylistHeader
           playlist={playlist}
           tracks={tracks}
@@ -133,21 +133,21 @@ const PlaylistPage: React.FC = () => {
 
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
               <aside className="w-full lg:w-[112px] lg:shrink-0">
-                <div className="flex flex-col items-start text-left">
+                <div className="flex flex-row items-center gap-4 lg:flex-col lg:items-start lg:gap-0">
                   <Link
                     to={`/${encodeURIComponent(playlist.owner.username)}`}
-                    className="group block"
+                    className="group block shrink-0"
                   >
                     <img
                       src={playlist.owner?.avatarUrl || "/default-avatar.png"}
                       alt={
                         playlist.owner?.displayName || playlist.owner?.username
                       }
-                      className="h-28 w-28 rounded-full object-cover"
+                      className="h-16 w-16 rounded-full object-cover sm:h-20 sm:w-20 lg:h-28 lg:w-28"
                     />
                   </Link>
-                  <div className="mt-3 self-center text-center">
-                    <div className="text-[16px] font-bold leading-none text-white transition-colors">
+                  <div className="lg:mt-3 lg:self-center lg:text-center">
+                    <div className="text-[15px] font-bold leading-none text-white transition-colors lg:text-[16px]">
                       <Link
                         to={`/${encodeURIComponent(playlist.owner.username)}`}
                         className="hover:text-zinc-300"
@@ -156,7 +156,7 @@ const PlaylistPage: React.FC = () => {
                           playlist.owner?.username}
                       </Link>
                     </div>
-                    <div className="mt-2 flex items-center justify-center gap-1 text-sm font-semibold text-zinc-400">
+                    <div className="mt-1 flex items-center gap-1 text-sm font-semibold text-zinc-400 lg:mt-2 lg:justify-center">
                       <User size={12} />
                       <span className="text-[11px]">
                         {playlist.owner.followerCount}

@@ -191,9 +191,9 @@ const EditPlaylistOverlay: React.FC<EditPlaylistOverlayProps> = ({
         <X className="h-5 w-5" />
       </button>
 
-      <div className="mx-auto mb-8 mt-10 max-h-[calc(100vh-5rem)] w-[min(760px,92vw)] overflow-y-auto hide-scrollbar rounded-sm border border-zinc-800 bg-[#0a0a0c] p-3 shadow-2xl">
+      <div className="mx-auto mb-0 mt-0 h-full w-full overflow-y-auto hide-scrollbar rounded-none border-0 bg-[#0a0a0c] p-4 shadow-2xl sm:mb-8 sm:mt-10 sm:h-auto sm:max-h-[calc(100vh-5rem)] sm:w-[min(760px,92vw)] sm:rounded-sm sm:border sm:border-zinc-800 sm:p-3">
         <div className="mb-4 flex items-center">
-          <div className="flex items-center gap-6 text-[20px] font-bold">
+          <div className="flex items-center gap-4 text-[16px] font-bold sm:gap-6 sm:text-[20px]">
             <button
               className={`relative pb-2 transition ${
                 activeTab === "basic"

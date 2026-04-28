@@ -57,7 +57,7 @@ const SortableTrackRow: React.FC<SortableTrackRowProps> = ({ ct, index, draggabl
             type="button"
             data-testid={`playlist-track-drag-handle-${ct.track.id}`}
             aria-label="Drag to reorder"
-            className="cursor-grab touch-none text-zinc-500 hover:text-zinc-300 active:cursor-grabbing"
+            className="cursor-grab touch-none p-1 text-zinc-500 hover:text-zinc-300 active:cursor-grabbing"
             {...attributes}
             {...listeners}
           >

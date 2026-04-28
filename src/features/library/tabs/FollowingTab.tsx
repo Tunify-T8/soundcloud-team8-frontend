@@ -44,7 +44,7 @@ const { me } = useMe();
       <p className="text-white font-bold text-sm mb-4">
         Hear what the people you follow have posted:
       </p>
-      <div className="flex overflow-x-auto gap-6 pb-2" style={{ scrollbarWidth: "none" }}>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 md:grid-cols-4 lg:grid-cols-5">
         {following.map((user) => (
           <UserCard
             key={user.id}
