@@ -9,6 +9,7 @@ import { SiSoundcloud } from "react-icons/si";
 import { useDispatch } from "react-redux";
 import { useAppSelector } from "../../../app/hooks";
 import { profileService } from "@/features/profile/profileService";
+import albumTemplate from "@/assets/album.png";
 
 function Toggle({ enabled, onChange }: ToggleProps) {
   return (
@@ -97,6 +98,9 @@ const GENRE_MAP: Record<string, string> = {
 };
 
 const DEFAULT_GENRES = Object.keys(GENRE_MAP);
+const ALBUM_BOX_LEFT = "18.615%";
+const ALBUM_BOX_TOP = "20.976%";
+const ALBUM_BOX_SIZE = "61.373%";
 
 // ─── Genre Input Component ────────────────────────────────────────────────────
 
@@ -507,31 +511,43 @@ useEffect(() => {
             <input ref={artworkInputRef} type="file" accept="image/*" className="hidden" onChange={handleArtworkSelect} />
             <div
               onClick={() => artworkInputRef.current?.click()}
-              className="w-full aspect-square border border-dashed border-[#444] flex flex-col items-center justify-center text-[#888] hover:border-[#666] transition cursor-pointer max-w-[380px] overflow-hidden relative group"
+              className="w-full aspect-square border border-dashed border-[#444] hover:border-[#666] transition cursor-pointer max-w-[380px] overflow-hidden relative group"
             >
-              {artworkPreview ? (
-                <>
-                  <img src={artworkPreview} alt="Artwork" className="absolute inset-0 w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="17 8 12 3 7 8"/>
-                      <line x1="12" y1="3" x2="12" y2="15"/>
+              <img
+                src={albumTemplate}
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+              />
+
+              <div
+                className="absolute overflow-hidden"
+                style={{ left: ALBUM_BOX_LEFT, top: ALBUM_BOX_TOP, width: ALBUM_BOX_SIZE, height: ALBUM_BOX_SIZE }}
+              >
+                {artworkPreview ? (
+                  <>
+                    <img src={artworkPreview} alt="Artwork" className="absolute inset-0 w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                      </svg>
+                      <p className="text-white text-sm font-semibold">Change artwork</p>
+                    </div>
+                  </>
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-[#888] bg-[#f2f2f2]">
+                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+                      <rect x="3" y="3" width="18" height="18" rx="1" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <polyline points="21,15 16,10 5,21" />
                     </svg>
-                    <p className="text-white text-sm font-semibold">Change artwork</p>
+                    <p className="mt-3 text-sm text-[#666]">Add new artwork</p>
+                    <p className="text-xs text-[#777] mt-1">Click to upload an image</p>
                   </div>
-                </>
-              ) : (
-                <>
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
-                    <rect x="3" y="3" width="18" height="18" rx="1" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <polyline points="21,15 16,10 5,21" />
-                  </svg>
-                  <p className="mt-3 text-sm text-[#999]">Add new artwork</p>
-                  <p className="text-xs text-[#555] mt-1">Click to upload an image</p>
-                </>
-              )}
+                )}
+              </div>
             </div>
           </div>
 

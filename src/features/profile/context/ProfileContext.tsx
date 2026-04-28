@@ -1,12 +1,12 @@
 import {
   createContext,
-  useContext,
   useEffect,
   useState,
   useCallback,
 } from "react";
 import type { ReactNode } from "react";
 import { profileService } from "../profileService";
+import { followingService } from "../../following/followingService";
 import type { MeUserProfile, UserFollowing } from "../../../shared/types/User";
 
 type SocialAccounts = {
@@ -44,7 +44,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     Promise.all([
       profileService.getMeProfile().catch(() => null),
       profileService.getMeSocialLinks().catch(() => ({})),
-      profileService.getMeFollowing().catch(() => ({ following: [] })),
+      followingService.getMeFollowing().catch(() => ({ following: [] })),
     ]).then(([meData, linksData, followingData]) => {
       setMe(meData);
       setSocialAccounts(linksData);
