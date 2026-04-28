@@ -2,7 +2,7 @@
 // VerifyEmailPage.tsx
 // Location: src/features/auth/pages/VerifyEmailPage.tsx
 // ============================================================
-
+//help this is the final version 
 import React, { useState, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import AuthNavbar from '../components/AuthNavbar';
