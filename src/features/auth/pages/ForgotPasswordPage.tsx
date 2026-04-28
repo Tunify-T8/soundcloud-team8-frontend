@@ -11,6 +11,7 @@ const ForgotPasswordPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const prefillEmail = (location.state as { email?: string })?.email ?? '';
+
   const [email, setEmail] = useState(prefillEmail);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);

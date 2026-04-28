@@ -31,16 +31,17 @@ import benefitsHoverImg from "@/assets/benefits_hover.png";
 export function UploadBanner() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   return (
-    <div className="bg-[hsl(0,0%,11%)] border-b border-[hsl(0,0%,18%)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-4 sm:px-8 py-3 shrink-0">
+    <div data-testid="upload-banner" className="bg-[hsl(0,0%,11%)] border-b border-[hsl(0,0%,18%)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-4 sm:px-8 py-3 shrink-0">
       <div className="flex items-center gap-3 flex-wrap">
         <Upload className="w-4 h-4 text-[hsl(0,0%,60%)] shrink-0" />
         <span className="text-white text-sm font-medium tracking-tighter">0% of uploads used</span>
-        <div className="w-32 sm:w-44 h-1.5 bg-[hsl(0,0%,23%)] rounded-full overflow-hidden">
+        <div data-testid="upload-banner-progress-bar" className="w-32 sm:w-44 h-1.5 bg-[hsl(0,0%,23%)] rounded-full overflow-hidden">
           <div className="h-full bg-[hsl(0,0%,50%)] rounded-full" style={{ width: "0%" }} />
         </div>
         <span className="text-[hsl(0,100%,99%)] text-sm font-semibold">0 of 180 minutes</span>
       </div>
       <button
+        data-testid="upload-banner-unlimited-btn"
         onClick={() => setCheckoutOpen(true)}
         className="self-end sm:self-auto bg-black text-white text-sm font-bold tracking-tighter px-5 py-2 rounded-full hover:bg-[hsl(0,0%,20%)] transition-colors whitespace-nowrap"
       >
@@ -54,7 +55,7 @@ export function UploadBanner() {
 
 function StudioHeader() {
   return (
-    <div className="bg-[hsl(0,0%,7%)] border border-[hsl(0,0%,17%)] rounded-md mx-3 sm:mx-6 mt-5 mb-6 px-4 sm:px-7 py-5 sm:py-6">
+    <div data-testid="studio-header" className="bg-[hsl(0,0%,7%)] border border-[hsl(0,0%,17%)] rounded-md mx-3 sm:mx-6 mt-5 mb-6 px-4 sm:px-7 py-5 sm:py-6">
       <div className="flex items-baseline gap-3 mb-5 sm:mb-6 flex-wrap">
         <h1 className="text-white text-2xl sm:text-[28px] font-bold tracking-tight">Artist Studio</h1>
         <span className="text-[hsl(0,0%,45%)] text-sm">All time stats updated daily.</span>
@@ -90,21 +91,21 @@ function StudioHeader() {
 
       <div className="flex items-center justify-between flex-1">
         {/* Insights */}
-        <button className="group flex flex-col items-center gap-1.5 transition-colors">
+        <button data-testid="studio-header-insights-btn" className="group flex flex-col items-center gap-1.5 transition-colors">
           <img src={insightsImg} alt="Insights" className="w-8 h-8 object-contain transition-transform duration-200 group-hover:scale-125" />
           <span className="text-xs font-bold text-[hsl(0,0%,65%)] group-hover:text-white transition-colors">Insights</span>
           <span className="text-[10px] font-bold tracking-tight text-[hsl(0,0%,65%)] opacity-0 group-hover:opacity-100 transition-opacity -mt-1">Limited</span>
         </button>
 
         {/* Earnings */}
-        <button className="group flex flex-col items-center gap-1.5 transition-colors">
+        <button data-testid="studio-header-earnings-btn" className="group flex flex-col items-center gap-1.5 transition-colors">
           <img src={earningsImg} alt="Earnings" className="w-8 h-8 object-contain transition-transform duration-200 group-hover:scale-125" />
           <span className="text-xs font-bold text-[hsl(0,0%,65%)] group-hover:text-white transition-colors">Earnings</span>
              </button>
 
         {/* Fans */}
           <Link to = "/me/insights/fanz"> 
-        <button className="group flex flex-col items-center gap-1.5 transition-colors">
+        <button data-testid="studio-header-fans-btn" className="group flex flex-col items-center gap-1.5 transition-colors">
         
           <div className="relative overview-visible">
             <img src={fansImg}      alt="Fans" className="w-10 h-11 object-contain transition-all duration-200 group-hover:scale-130 group-hover:opacity-0 absolute" />
@@ -118,7 +119,7 @@ function StudioHeader() {
         </Link>
 
         {/* Benefits */}
-        <button className="group flex flex-col items-center gap-1.5 transition-colors">
+        <button data-testid="studio-header-benefits-btn" className="group flex flex-col items-center gap-1.5 transition-colors">
           <div className="relative overview-visible">
             <img src={benefitsImg}      alt="Benefits" className="w-8 h-8 object-contain transition-all duration-200 group-hover:scale-125 group-hover:opacity-0 absolute" />
             <img src={benefitsHoverImg} alt="Benefits" className="w-8 h-8 object-contain transition-all duration-200 group-hover:scale-125 opacity-0 group-hover:opacity-100" />
@@ -461,10 +462,11 @@ export default function ArtistsPage() {
           <StudioHeader />
 
           {/* Tabs — horizontally scrollable on mobile */}
-          <div className="flex items-center gap-0 border-b border-[hsl(0,0%,17%)] px-3 sm:px-6 mb-5 overflow-x-auto scrollbar-none">
+          <div data-testid="artists-page-tabs" className="flex items-center gap-0 border-b border-[hsl(0,0%,17%)] px-3 sm:px-6 mb-5 overflow-x-auto scrollbar-none">
             {TABS.map((tab) => (
               <button
                 key={tab}
+                data-testid={`tab-${tab.toLowerCase().replace(/\s+/g, "-")}`}
                 onClick={() => setActiveTab(tab)}
                 className={`relative whitespace-nowrap px-3 sm:px-4 py-3 text-sm transition-colors shrink-0
                   ${activeTab === tab
@@ -505,6 +507,7 @@ export default function ArtistsPage() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(0,0%,42%)]" />
                   <input
+                    data-testid="tracks-search-input"
                     type="text"
                     placeholder="Search tracks"
                     value={searchQuery}
@@ -515,6 +518,7 @@ export default function ArtistsPage() {
 
                 <div className="flex gap-2">
                   <button
+                    data-testid="tracks-filter-public"
                     onClick={() => handleVisibilityChange("public")}
                     className={`px-4 sm:px-5 py-2 text-sm border font-semibold rounded-full transition-colors
                       ${visibilityFilter === "public"
@@ -525,6 +529,7 @@ export default function ArtistsPage() {
                     Public
                   </button>
                   <button
+                    data-testid="tracks-filter-private"
                     onClick={() => handleVisibilityChange("private")}
                     className={`px-4 sm:px-5 py-2 text-sm border font-semibold rounded-full transition-colors
                       ${visibilityFilter === "private"
@@ -536,9 +541,9 @@ export default function ArtistsPage() {
                   </button>
                 </div>
 
-                <div className="ml-auto flex items-center gap-2 text-[hsl(0,0%,50%)] text-sm">
-                  <span>{filteredTracks.length} tracks</span>
-                  <button className="flex items-center gap-1 hover:text-white transition-colors">
+                <div data-testid="tracks-count-sort" className="ml-auto flex items-center gap-2 text-[hsl(0,0%,50%)] text-sm">
+                  <span data-testid="tracks-count">{filteredTracks.length} tracks</span>
+                  <button data-testid="tracks-sort-btn" className="flex items-center gap-1 hover:text-white transition-colors">
                     <ArrowUpDown className="w-3.5 h-3.5" />
                     <span>Date</span>
                   </button>

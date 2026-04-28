@@ -17,11 +17,12 @@ const THUMB_COLORS = [
 function TrackThumbnail({ index, isPlaying }: { index: number; isPlaying: boolean }) {
   return (
     <div
+      data-testid={`next-up-track-thumbnail-${index}`}
       className="w-10 h-10 rounded-sm flex-shrink-0 flex items-center justify-center"
       style={{ background: THUMB_COLORS[index % THUMB_COLORS.length] }}
     >
       {isPlaying ? (
-        <div className="flex items-end gap-[2px] h-4">
+        <div data-testid={`next-up-track-equalizer-${index}`} className="flex items-end gap-[2px] h-4">
           {[0, 1, 2].map((i) => (
             <div
               key={i}
@@ -34,7 +35,7 @@ function TrackThumbnail({ index, isPlaying }: { index: number; isPlaying: boolea
           ))}
         </div>
       ) : (
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="rgba(255,255,255,0.3)">
+        <svg data-testid={`next-up-track-play-icon-${index}`} width="14" height="14" viewBox="0 0 14 14" fill="rgba(255,255,255,0.3)">
           <polygon points="2,0 14,7 2,14" />
         </svg>
       )}
@@ -60,18 +61,19 @@ function TrackContextMenu({ x, y, onClose }: ContextMenuProps) {
   }, [onClose]);
 
   const items = [
-    { icon: <Heart size={14} />,        label: "Like" },
-    { icon: <Repeat2 size={14} />,      label: "Repost" },
-    { icon: <Share2 size={14} />,       label: "Share" },
-    { icon: <ListPlus size={14} />,     label: "Add to Next up" },
-    { icon: <ListPlus size={14} />,     label: "Add to Playlist" },
-    { icon: <Download size={14} />,     label: "Download file" },
-    { icon: <Radio size={14} />,        label: "Station" },
+    { icon: <Heart size={14} />,        label: "Like",              testId: "context-menu-like"         },
+    { icon: <Repeat2 size={14} />,      label: "Repost",            testId: "context-menu-repost"       },
+    { icon: <Share2 size={14} />,       label: "Share",             testId: "context-menu-share"        },
+    { icon: <ListPlus size={14} />,     label: "Add to Next up",    testId: "context-menu-add-next-up"  },
+    { icon: <ListPlus size={14} />,     label: "Add to Playlist",   testId: "context-menu-add-playlist" },
+    { icon: <Download size={14} />,     label: "Download file",     testId: "context-menu-download"     },
+    { icon: <Radio size={14} />,        label: "Station",           testId: "context-menu-station"      },
   ];
 
   return (
     <div
       ref={menuRef}
+      data-testid="next-up-context-menu"
       className="fixed z-[100] py-1 rounded-lg shadow-2xl"
       style={{
         top:        y,
@@ -81,9 +83,10 @@ function TrackContextMenu({ x, y, onClose }: ContextMenuProps) {
         minWidth:   "180px",
       }}
     >
-      {items.map(({ icon, label }) => (
+      {items.map(({ icon, label, testId }) => (
         <button
           key={label}
+          data-testid={testId}
           className="w-full flex items-center gap-3 px-3 py-2 text-sm text-white hover:bg-white/10 transition-colors text-left tracking-tight"
           style={{ fontWeight: 500 }}
           onClick={(e) => { e.stopPropagation(); onClose(); }}
@@ -100,8 +103,8 @@ export default function NextUpPanel({ isOpen, onClose }: NextUpPanelProps) {
   const { tracks, jumpTo, clearQueue } = useQueue();
   const { currentTrack } = usePlayer();
 
-  const [autoplay,   setAutoplay]   = useState(true);
-  const [hoveredId,  setHoveredId]  = useState<string | null>(null);
+  const [autoplay,    setAutoplay]    = useState(true);
+  const [hoveredId,   setHoveredId]   = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; trackId: string } | null>(null);
 
   if (!isOpen) return null;
@@ -131,9 +134,10 @@ export default function NextUpPanel({ isOpen, onClose }: NextUpPanelProps) {
         />
       )}
 
-      <div className="fixed inset-0 z-40" onClick={onClose} style={{ background: "transparent" }} />
+      <div data-testid="next-up-overlay" className="fixed inset-0 z-40" onClick={onClose} style={{ background: "transparent" }} />
 
       <div
+        data-testid="next-up-panel"
         className="next-up-panel fixed right-75 z-50 flex flex-col"
         style={{
           bottom:       "56px",
@@ -147,13 +151,11 @@ export default function NextUpPanel({ isOpen, onClose }: NextUpPanelProps) {
         }}
       >
         {/* Header */}
-        <div
-          className="flex items-center justify-between px-4 py-3 flex-shrink-0"
-          style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}
-        >
-          <span className="text-white font-bold text-base tracking-tight">Next up</span>
+        <div data-testid="next-up-header" className="flex items-center justify-between px-4 py-3 flex-shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+          <span data-testid="next-up-title" className="text-white font-bold text-base tracking-tight">Next up</span>
           <div className="flex items-center gap-3">
             <button
+              data-testid="next-up-clear-button"
               onClick={clearQueue}
               className="text-xs text-zinc-400 hover:text-white transition-colors"
               style={{ fontWeight: 600 }}
@@ -161,6 +163,7 @@ export default function NextUpPanel({ isOpen, onClose }: NextUpPanelProps) {
               Clear
             </button>
             <button
+              data-testid="next-up-close-button"
               onClick={onClose}
               className="w-7 h-7 rounded-full bg-zinc-700 hover:bg-zinc-600 flex items-center justify-center transition-colors"
             >
@@ -171,21 +174,24 @@ export default function NextUpPanel({ isOpen, onClose }: NextUpPanelProps) {
 
         {/* Track list */}
         <div
+          data-testid="next-up-track-list"
           className="flex-1 overflow-y-auto"
           style={{ scrollbarWidth: "thin", scrollbarColor: "#444 transparent" }}
         >
           {tracks.length === 0 ? (
-            <div className="flex items-center justify-center h-24 text-zinc-500 text-sm">
+            <div data-testid="next-up-empty-state" className="flex items-center justify-center h-24 text-zinc-500 text-sm">
               Queue is empty
             </div>
           ) : (
             tracks.map((track: queueTrack, i: number) => {
-              // ✅ fix: compare currentTrack.id to track.trackId
               const isPlaying = currentTrack?.id === track.trackId;
 
               return (
                 <div
                   key={track.trackId}
+                  data-testid={`next-up-track-row-${track.trackId}`}
+                  data-playing={isPlaying}
+                  data-track-index={i}
                   className="track-row flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors"
                   style={{
                     background: isPlaying
@@ -203,6 +209,7 @@ export default function NextUpPanel({ isOpen, onClose }: NextUpPanelProps) {
                     <TrackThumbnail index={i} isPlaying={isPlaying} />
                     {!isPlaying && hoveredId === track.trackId && (
                       <div
+                        data-testid={`next-up-track-hover-overlay-${track.trackId}`}
                         className="absolute inset-0 rounded-sm flex items-center justify-center"
                         style={{ background: "rgba(0,0,0,0.55)" }}
                       >
@@ -214,10 +221,11 @@ export default function NextUpPanel({ isOpen, onClose }: NextUpPanelProps) {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-zinc-400 truncate leading-tight" style={{ fontWeight: 600 }}>
+                    <p data-testid={`next-up-track-artist-${track.trackId}`} className="text-xs text-zinc-400 truncate leading-tight" style={{ fontWeight: 600 }}>
                       {track.artist}
                     </p>
                     <p
+                      data-testid={`next-up-track-title-${track.trackId}`}
                       className="text-xs truncate leading-tight mt-0.5"
                       style={{ color: isPlaying ? "#FF5500" : "white", fontWeight: 600 }}
                     >
@@ -227,6 +235,7 @@ export default function NextUpPanel({ isOpen, onClose }: NextUpPanelProps) {
 
                   <div className="flex-shrink-0 flex items-center gap-2">
                     <span
+                      data-testid={`next-up-track-duration-${track.trackId}`}
                       className="track-duration text-xs text-zinc-500"
                       style={{ fontWeight: 600, fontVariantNumeric: "tabular-nums" }}
                     >
@@ -234,6 +243,8 @@ export default function NextUpPanel({ isOpen, onClose }: NextUpPanelProps) {
                     </span>
                     <div className="track-actions items-center gap-1.5">
                       <button
+                        data-testid={`next-up-track-like-${track.trackId}`}
+                        data-liked={isPlaying}
                         className="hover:opacity-80 transition-opacity"
                         onClick={(e) => e.stopPropagation()}
                       >
@@ -244,10 +255,10 @@ export default function NextUpPanel({ isOpen, onClose }: NextUpPanelProps) {
                         />
                       </button>
                       <button
+                        data-testid={`next-up-track-more-${track.trackId}`}
                         className="hover:opacity-80 transition-opacity"
                         onClick={(e) => {
                           e.stopPropagation();
-                          // position menu above the button
                           const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                           setContextMenu({
                             x:       rect.left - 170,
@@ -267,13 +278,12 @@ export default function NextUpPanel({ isOpen, onClose }: NextUpPanelProps) {
         </div>
 
         {/* Autoplay */}
-        <div
-          className="flex-shrink-0 px-4 py-3"
-          style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}
-        >
+        <div data-testid="next-up-autoplay-section" className="flex-shrink-0 px-4 py-3" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
           <div className="flex items-center justify-between">
-            <span className="text-white text-sm font-bold">Autoplay station</span>
+            <span data-testid="next-up-autoplay-label" className="text-white text-sm font-bold">Autoplay station</span>
             <button
+              data-testid="next-up-autoplay-toggle"
+              data-enabled={autoplay}
               onClick={() => setAutoplay((v) => !v)}
               className="relative flex-shrink-0"
               style={{
@@ -288,6 +298,7 @@ export default function NextUpPanel({ isOpen, onClose }: NextUpPanelProps) {
               aria-label="Toggle autoplay"
             >
               <span
+                data-testid="next-up-autoplay-knob"
                 style={{
                   position:     "absolute",
                   top:          "3px",
@@ -301,7 +312,7 @@ export default function NextUpPanel({ isOpen, onClose }: NextUpPanelProps) {
               />
             </button>
           </div>
-          <p className="text-zinc-500 text-xs mt-1" style={{ fontWeight: 500 }}>
+          <p data-testid="next-up-autoplay-description" className="text-zinc-500 text-xs mt-1" style={{ fontWeight: 500 }}>
             Hear related tracks based on what's playing now.
           </p>
         </div>

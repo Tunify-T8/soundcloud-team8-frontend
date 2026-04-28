@@ -1,12 +1,12 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod'; 
+import { useForm } from 'react-hook-form';//This is a library to handle forms (like login forms).
+import { zodResolver } from '@hookform/resolvers/zod'; //(a validation library
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Eye, EyeOff, Loader2, ChevronLeft, AlertCircle } from 'lucide-react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { signInSchema, type SignInFormData } from '../schemas/auth.schemas';
-import { login, socialLogin, googleSignIn, googleLink, resendVerification, } from '../services/index';
-import { storeTokens, storeUser } from '../utils/token.utils';
+import { login, socialLogin, googleSignIn, googleLink } from '../services/index';
+import { storeTokens } from '../utils/token.utils';
 import { extractErrorMessage } from '../hooks/useAuth';
 import type { SocialProvider } from '../types/auth.types';
 import { checkEmail } from '../services/index';
@@ -14,7 +14,7 @@ import AuthNavbar from '../components/AuthNavbar';
 import { useDispatch } from 'react-redux';
 import { setUser } from '../../../store/userSlice';
 import type { AppDispatch } from '../../../app/store';
-const GoogleIcon: React.FC = () => ( 
+const GoogleIcon: React.FC = () => ( //creating google icon componenet 
   <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
     <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
@@ -60,32 +60,17 @@ const SocialButton: React.FC<SocialButtonProps> = ({
   </button>
 );
 
+const TunifyLogo: React.FC = () => (
+  <Link to="/" className="flex items-center gap-2 no-underline">
+    <svg viewBox="0 0 33 15" className="h-6 w-auto sm:h-7" fill="white" aria-hidden="true">
+      <path d="M0 11.5c0 .8.7 1.5 1.5 1.5s1.5-.7 1.5-1.5V6c0-.8-.7-1.5-1.5-1.5S0 5.2 0 6v5.5zm4.5 1.5c.8 0 1.5-.7 1.5-1.5V3.5C6 2.7 5.3 2 4.5 2S3 2.7 3 3.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V1.5C10.5.7 9.8 0 9 0S7.5.7 7.5 1.5V11.5C7.5 12.3 8.2 13 9 13zm4.5 0c.8 0 1.5-.7 1.5-1.5V3.5C15 2.7 14.3 2 13.5 2S12 2.7 12 3.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V2.5C19.5 1.7 18.8 1 18 1s-1.5.7-1.5 1.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V4.5C24 3.7 23.3 3 22.5 3S21 3.7 21 4.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V4.5C27 3.7 26.3 3 25.5 3S24 3.7 24 4.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V2.5C33 1.7 32.3 1 31.5 1S30 1.7 30 2.5V11.5c0 .8.7 1.5 1.5 1.5z" />
+    </svg>
+    <span className="text-white font-bold text-sm sm:text-base tracking-widest uppercase">SoundCloud</span>
+  </Link>
+);
 
-type Step = 'social' | 'email' | 'password';
-const KNOWN_PROVIDERS: Record<string, string> = {
-  gmail: 'com',
-  yahoo: 'com',
-  hotmail: 'com',
-  outlook: 'com',
-  icloud: 'com',
-  live: 'com',
-};
-
-const isValidEmail = (val: string): boolean => {
-  const trimmed = val.trim().toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(trimmed)) return false;
-
-  const [, domain] = trimmed.split('@');
-  const parts = domain.split('.');
-  const provider = parts[0];
-  const tld = parts[parts.length - 1];
-  if (tld.length < 2) return false;
-  if (KNOWN_PROVIDERS[provider] && tld !== KNOWN_PROVIDERS[provider]) {
-    return false;
-  }
-
-  return true;
-};
+type Step = 'social' | 'email' | 'password'; //to controll which part of the sign in process is showing 
+const isValidEmail = (val: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
 
 const SignInPage: React.FC = () => {
   const navigate = useNavigate();
@@ -103,18 +88,13 @@ const SignInPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [socialLoading, setSocialLoading] = useState<SocialProvider | null>(null);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
-  const [emailExistsAlert, setEmailExistsAlert] = useState(false);
   const [linkingToken, setLinkingToken] = useState<string | null>(null);
-  const [shake, setShake] = useState(false);
   const [showLinkPassword, setShowLinkPassword] = useState(false);
   const [linkPassword, setLinkPassword] = useState('');
   const [isLinking, setIsLinking] = useState(false);
 
   const emailRef = useRef<HTMLInputElement>(null);
-  const triggerShake = () => {
-    setShake(true);
-    setTimeout(() => setShake(false), 500);
-  };
+
   const { register, handleSubmit, formState: { errors }, setValue, reset } = useForm<SignInFormData>({
     resolver: zodResolver(signInSchema),
   });
@@ -135,13 +115,6 @@ const SignInPage: React.FC = () => {
   };
 }, []);
 
-useEffect(() => {
-  const handlePageShow = (e: PageTransitionEvent) => {
-    if (e.persisted) window.location.reload();
-  };
-  window.addEventListener('pageshow', handlePageShow);
-  return () => window.removeEventListener('pageshow', handlePageShow);
-}, []);
   // ── Google OAuth ───────────────────────────────────────────────
   const googleLogin = useGoogleLogin({
     onSuccess: async (response) => {
@@ -155,18 +128,16 @@ useEffect(() => {
           setSocialLoading(null);
           return;
         }
-        storeTokens(res.accessToken, res.refreshToken, 900);
+        storeTokens(res.accessToken, res.refreshToken, 3600);
         if (res.user) {
-          const userPayload = {
+          dispatch(setUser({
             id: res.user.id,
             username: res.user.username,
             email: res.user.email,
             role: res.user.role,
-            isVerified: res.user.isVerified ?? res.user.isCertified ?? true,
-            avatarUrl: res.user.avatarUrl ?? res.user.avatar_url ?? null,
-          };
-          storeUser(userPayload);
-          dispatch(setUser(userPayload));
+            isVerified: res.user.isCertified,
+            avatarUrl: res.user.avatarUrl ?? null,
+          }));
         }
         navigate(from);
       } catch (error) {
@@ -232,7 +203,6 @@ useEffect(() => {
         navigate('/create-account', { state: { email } });
         return;
       }
-      setEmailExistsAlert(true);
       setValue('email', email);
       setStep('password');
     } catch (error) {
@@ -247,46 +217,37 @@ useEffect(() => {
     setIsSubmitting(true);
     try {
       const res = await login(data);
-
-      if (res.user && !res.accessToken) {
-        try { await resendVerification(data.email); } catch { /* silent */ }
+      if (res.user && res.user.isCertified === false) {
         navigate('/verify-email', { state: { email: data.email } });
         return;
       }
-
       if (!res.accessToken) {
         setApiError('Login failed. Please try again.');
         return;
       }
-
-      storeTokens(res.accessToken, res.refreshToken, res.expiresIn ?? 900);
-
+      storeTokens(res.accessToken, res.refreshToken, res.expiresIn ?? 3600);
       if (res.user) {
-        const userPayload = {
+        dispatch(setUser({
           id: res.user.id,
           username: res.user.username,
           email: res.user.email,
           role: res.user.role,
-          isVerified: res.user.isCertified ?? res.user.isCertified ?? false,
-          avatarUrl: res.user.avatarUrl ?? res.user.avatarUrl ?? null,
-        };
-        storeUser(userPayload);
-        dispatch(setUser(userPayload));
+          isVerified: res.user.isCertified,
+          avatarUrl: res.user.avatarUrl ?? null,
+        }));
       }
-
       navigate(from);
     } catch (error) {
       const msg = extractErrorMessage(error);
-      const isNotFound =
-        msg.toLowerCase().includes('no account') ||
-        msg.toLowerCase().includes('user not found') ||
-        msg.toLowerCase().includes('email not found');
+      const isNotFound = msg.toLowerCase().includes('no account') || 
+                         msg.toLowerCase().includes('user not found') ||
+                         msg.toLowerCase().includes('email not found');
       if (isNotFound) {
-        navigate('/signin');
+        navigate('/create-account', { state: { email: data.email } });
       } else {
         setApiError('This password is incorrect.');
       }
-    } finally {
+    }finally {
       setIsSubmitting(false);
     }
   };
@@ -297,7 +258,7 @@ useEffect(() => {
     try {
       const res = await socialLogin({ provider, providerToken: 'mock_oauth_token' });
       storeTokens(res.accessToken, res.refreshToken, res.expiresIn);
-      navigate(from); 
+      navigate(from); // ← no replace
     } catch (error) {
       setApiError(extractErrorMessage(error));
     } finally {
@@ -318,18 +279,19 @@ useEffect(() => {
   );
 
   return (
-    <div data-testid="signInPage" className="min-h-screen bg-[#0d0d0d] flex flex-col" >
+    <div className="min-h-screen bg-[#0d0d0d] flex flex-col">
 
-      <AuthNavbar onCreateAccount={triggerShake} />
+      <AuthNavbar />
 
       {/* ── Main ── */}
       <main className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-[480px]">
-          <div className={`border sm:border-[#3a3a3a] sm:rounded-sm sm:p-[3px] sm:bg-[#111] ${shake ? 'shake' : ''}`}>
+          <div className="border sm:border-[#3a3a3a] sm:rounded-sm sm:p-[3px] sm:bg-[#111]">
             <div className="border sm:border-[#555] sm:rounded-sm bg-[#181818] sm:min-h-[520px]">
 
+              {/* ══ STEP: social ══ */}
               {step === 'social' && (
-                <div data-testid="socialStep" className="px-6 py-8 sm:p-8 flex flex-col gap-3">
+                <div className="px-6 py-8 sm:p-8 flex flex-col gap-3">
                   <h1 className="text-white text-2xl sm:text-xl font-bold mb-1 text-left sm:text-center leading-tight">
                     Sign in or create an account
                   </h1>
@@ -346,7 +308,6 @@ useEffect(() => {
                     type="button"
                     disabled={isSocialDisabled}
                     onClick={() => googleLogin()}
-                    data-testid="googleBtn"
                     className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-sm font-medium text-sm text-white transition-colors duration-150 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed bg-[#3c3c3c] hover:bg-[#4a4a4a]"
                   >
                     <GoogleIcon />
@@ -356,23 +317,21 @@ useEffect(() => {
                   <SocialButton provider="apple" label="Continue with Apple" icon={<AppleIcon />} bgColor="bg-black" hoverColor="hover:bg-[#1a1a1a]" borderColor="border-[#555]" onClick={handleSocialLogin} disabled={isSocialDisabled} />
 
                   {showLinkPassword && (
-                    <div className="bg-[#2a2a2a] border border-[#555] rounded-sm p-4 flex flex-col gap-3" data-testid="googleLinkPanel">
+                    <div className="bg-[#2a2a2a] border border-[#555] rounded-sm p-4 flex flex-col gap-3">
                       <p className="text-white text-sm font-medium">This email is already registered.</p>
                       <p className="text-[#aaa] text-xs">Enter your Tunify password to link your Google account.</p>
-                      {apiError && <p className="text-red-400 text-xs" data-testid="linkError">{apiError}</p>}
+                      {apiError && <p className="text-red-400 text-xs">{apiError}</p>}
                       <input
                         type="password"
                         value={linkPassword}
                         onChange={(e) => setLinkPassword(e.target.value)}
-                        placeholder="Your SoundCloud password"
-                        data-testid="linkPasswordInput"
+                        placeholder="Your Tunify password"
                         className="w-full bg-[#1a1a1a] border border-[#555] rounded-sm px-4 py-3 text-white text-sm placeholder-[#666] focus:outline-none focus:border-[#888]"
                       />
                       <button
                         type="button"
                         onClick={handleGoogleLink}
                         disabled={!linkPassword || isLinking}
-                        data-testid="linkGoogleBtn"
                         className={`w-full py-3 rounded-sm text-sm font-semibold transition-all ${
                           linkPassword && !isLinking
                             ? 'bg-white text-black hover:bg-gray-100 cursor-pointer'
@@ -384,7 +343,6 @@ useEffect(() => {
                       <button
                         type="button"
                         onClick={() => { setShowLinkPassword(false); setLinkPassword(''); setApiError(null); }}
-                        data-testid="linkCancelBtn"
                         className="text-[#0066cc] text-xs hover:underline text-left"
                       >
                         Cancel
@@ -405,13 +363,11 @@ useEffect(() => {
                     onChange={(e) => setEmailInput(e.target.value)}
                     onFocus={handleEmailFocus}
                     placeholder="Your email address or profile URL"
-                    data-testid="emailInput"
                     className="w-full bg-[#2a2a2a] border border-[#444] rounded-sm px-4 py-3 text-white text-sm placeholder-[#666] focus:outline-none focus:border-[#888] transition-colors"
                     autoComplete="email"
                   />
                   <button type="button" onClick={handleEmailContinue}
                     disabled={!emailInput.trim() || isSocialDisabled}
-                    data-testid="socialContinueBtn"
                     className="w-full bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white py-3 rounded-sm text-sm font-medium border border-[#555] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
                   >
                     Continue
@@ -422,8 +378,9 @@ useEffect(() => {
                 </div>
               )}
 
+              {/* ══ STEP: email ══ */}
               {step === 'email' && (
-                <div className="p-8" data-testid="emailStep">
+                <div className="p-8">
                   <div className="flex items-center gap-4 mb-6">
                     <BackButton onClick={handleBack} />
                     <h1 className="text-white text-base font-bold">Sign in or create an account</h1>
@@ -437,7 +394,6 @@ useEffect(() => {
                       onChange={(e) => { setEmailInput(e.target.value); setEmailError(null); }}
                       onKeyDown={(e) => { if (e.key === 'Enter') handleEmailContinue(); }}
                       placeholder="Your email address or profile URL"
-                      data-testid="email-input"
                       className={`w-full bg-[#2a2a2a] border rounded-sm px-4 py-3 pr-10 text-white text-sm placeholder-[#666] focus:outline-none transition-colors ${emailError ? 'border-red-500 focus:border-red-500' : 'border-[#555] focus:border-[#888]'}`}
                       autoComplete="email"
                     />
@@ -448,13 +404,12 @@ useEffect(() => {
                     )}
                   </div>
                   {emailError
-                    ? <p className="text-red-500 text-xs mb-3 mt-1" data-testid="email-error">{emailError}</p>
+                    ? <p className="text-red-500 text-xs mb-3 mt-1">{emailError}</p>
                     : <div className="mb-4" />
                   }
 
                   <button type="button" onClick={handleEmailContinue}
                     disabled={!emailInput.trim() || isCheckingEmail}
-                    data-testid="email-continue-btn"
                     className="w-full bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white py-3 rounded-sm text-sm font-medium border border-[#555] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2 mb-4"
                   >
                     {isCheckingEmail ? <><Loader2 className="h-4 w-4 animate-spin" /> Checking…</> : 'Continue'}
@@ -463,21 +418,16 @@ useEffect(() => {
                 </div>
               )}
 
-              {/* STEP: password */}
+              {/* ══ STEP: password ══ */}
               {step === 'password' && (
-                <div className="p-8" data-testid="password-step">
+                <div className="p-8">
                   <div className="flex items-center gap-4 mb-6">
                     <BackButton onClick={handleBack} />
                     <h1 className="text-white text-base font-bold">Welcome back!</h1>
                   </div>
 
-                  {emailExistsAlert && (
-                    <div role="alert" data-testid="email-exists-alert" className="mb-4 px-4 py-3 bg-[#1a2a1a] border border-green-500/40 rounded text-green-400 text-sm">
-                      This email is already registered. Please sign in below.
-                    </div>
-                  )}
                   {apiError && (
-                    <div role="alert" data-testid="api-error" className="mb-4 px-4 py-3 bg-[#2a1a1a] border border-red-500/40 rounded text-red-400 text-sm">
+                    <div role="alert" className="mb-4 px-4 py-3 bg-[#2a1a1a] border border-red-500/40 rounded text-red-400 text-sm">
                       {apiError}
                     </div>
                   )}
@@ -493,13 +443,11 @@ useEffect(() => {
                       <input
                         type={showPassword ? 'text' : 'password'}
                         {...register('password')}
-                        data-testid="password-input"
                         placeholder="Your password"
                         className={`w-full bg-[#2a2a2a] border rounded-sm px-4 py-3 pr-10 text-white text-sm focus:outline-none transition-colors ${errors.password ? 'border-red-500' : 'border-[#444] focus:border-[#888]'}`}
                         autoComplete="current-password"
                       />
                       <button type="button" onClick={() => setShowPassword((p) => !p)}
-                        data-testid="toggle-password-btn"
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-[#777] hover:text-white"
                       >
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -508,13 +456,12 @@ useEffect(() => {
                     {errors.password && <p className="text-red-400 text-xs -mt-3 mb-3">{errors.password.message}</p>}
 
                     <button type="submit" disabled={isSubmitting}
-                      data-testid="submit-btn"
                       className="w-full bg-white hover:bg-gray-200 text-black py-3 rounded-sm text-sm font-semibold transition-colors disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer mb-4"
                     >
                       {isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin text-black" />Signing in…</> : 'Continue'}
                     </button>
 
-                    <Link to="/forgot-password" data-testid="forgot-password-link" className="text-[#0066cc] text-sm hover:underline">Forgot your password?</Link>
+                    <Link to="/forgot-password" className="text-[#0066cc] text-sm hover:underline">Forgot your password?</Link>
                   </form>
                 </div>
               )}
@@ -524,7 +471,7 @@ useEffect(() => {
 
           <p className="hidden sm:block text-center text-[#777] text-sm mt-6">
             Don't have an account?{' '}
-            <Link to="/signin" className="text-white hover:underline font-medium">Create one for free</Link>
+            <Link to="/create-account" className="text-white hover:underline font-medium">Create one for free</Link>
           </p>
         </div>
       </main>

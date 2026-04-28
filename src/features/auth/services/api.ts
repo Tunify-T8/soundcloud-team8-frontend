@@ -66,7 +66,7 @@ api.interceptors.response.use(
       (ep) => originalRequest.url?.includes(ep)
     );
 
-    if (error.response?.status === 401 && !originalRequest._retry && !isPublicRoute) {
+    if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });

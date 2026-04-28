@@ -2,13 +2,15 @@ import { useState, useEffect } from "react";
 import { FaUser, FaMusic, FaGooglePlay, FaApple } from "react-icons/fa";
 import { Heart, Play } from "lucide-react";
 import { SiSoundcloud } from "react-icons/si";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { IoChevronDown } from "react-icons/io5";
 import { feedService } from "../../features/feed/feedservice";
+import { followingService } from "../../features/following/followingService";
 import type { LikedTrack } from "@/features/feed/type";
 import UpgradeModal from "@/features/premium/components/UpgradeModal";
-import { api } from '../../features/auth/services/api';
+import { api } from "../../features/auth/services/api";
 import avatarFallback from "@/assets/avatar.png";
+import { notifySocialGraphUpdated } from "../../features/profile/socialGraphEvents";
 import amplifyImg from "@/assets/amplifytool.png";
 import replaceImg from "@/assets/replace.png";
 import distributeImg from "@/assets/distribute.png";
@@ -51,26 +53,21 @@ const artistToolRows: ArtistTool[][] = [
   ],
 ];
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
 export default function SideBar() {
   const [open, setOpen] = useState(true);
-
-  // Artists state — typed so TypeScript knows the shape
- const [suggestedUsers, setSuggestedUsers] = useState<SuggestedArtist[]>([]);
-  const [loading, setLoading]               = useState(true);
-  const [error, setError]                   = useState<string | null>(null);
-
-  // Likes state
-  const [likedTracks, setLikedTracks]   = useState<LikedTrack[]>([]);
+  const [suggestedUsers, setSuggestedUsers] = useState<SuggestedArtist[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [likedTracks, setLikedTracks] = useState<LikedTrack[]>([]);
   const [likesLoading, setLikesLoading] = useState(true);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [followStates, setFollowStates] = useState<Record<string, boolean>>({});
+  const [pendingFollowId, setPendingFollowId] = useState<string | null>(null);
 
   const handleArtistToolClick = () => {
     setUpgradeOpen(true);
   };
 
-  // ── Fetch artists ────────────────────────────────────────────────────────────
   const fetchArtists = async () => {
     setLoading(true);
     setError(null);
@@ -78,7 +75,21 @@ export default function SideBar() {
       const res = await api.get("/feed/suggested-artists", {
         params: { page: 1, limit: 20 },
       });
-      setSuggestedUsers(res.data.items || []);
+      const items: SuggestedArtist[] = res.data.items || [];
+      setSuggestedUsers(items);
+
+      const statusEntries = await Promise.all(
+        items.map(async (artist) => {
+          try {
+            const status = await followingService.getFollowStatus(artist.id);
+            return [artist.id, status.isFollowing] as const;
+          } catch {
+            return [artist.id, false] as const;
+          }
+        }),
+      );
+
+      setFollowStates(Object.fromEntries(statusEntries));
     } catch {
       setError("Failed to load artists");
     } finally {
@@ -86,11 +97,31 @@ export default function SideBar() {
     }
   };
 
+  const handleSuggestedArtistFollowToggle = async (artistId: string) => {
+    setPendingFollowId(artistId);
+    const wasFollowing = followStates[artistId] ?? false;
+    setFollowStates((prev) => ({ ...prev, [artistId]: !wasFollowing }));
+
+    try {
+      if (wasFollowing) {
+        await followingService.unfollowUser(artistId);
+      } else {
+        await followingService.followUser(artistId);
+      }
+
+      notifySocialGraphUpdated();
+    } catch (err) {
+      setFollowStates((prev) => ({ ...prev, [artistId]: wasFollowing }));
+      console.error("Failed to toggle suggested artist follow state", err);
+    } finally {
+      setPendingFollowId((current) => (current === artistId ? null : current));
+    }
+  };
+
   useEffect(() => {
     fetchArtists();
   }, []);
 
-  // ── Fetch liked tracks ───────────────────────────────────────────────────────
   useEffect(() => {
     feedService
       .getMyLikes(4)
@@ -99,12 +130,12 @@ export default function SideBar() {
   }, []);
 
   return (
-    <header className="flex flex-col justify-end mt-2">
+    <header data-testid="sidebar" className="flex flex-col justify-end mt-2">
       <div className="ml-auto flex flex-col w-[310px] mr-6">
 
-        {/* ── ARTIST TOOLS ──────────────────────────────────────────────────── */}
-        <div className="w-full rounded-none bg-transparent px-0 py-4">
+        <div data-testid="artist-tools-section" className="w-full rounded-none bg-transparent px-0 py-4">
           <div
+            data-testid="artist-tools-toggle"
             onClick={() => setOpen(!open)}
             className="mb-6 flex cursor-pointer items-center justify-between border-b border-zinc-800 pb-5"
           >
@@ -133,26 +164,26 @@ export default function SideBar() {
 
           <button
             type="button"
+            data-testid="artist-tools-upgrade-btn"
+            onClick={handleArtistToolClick}
             className="flex w-full items-center rounded-[9px] bg-[#433873] px-3 py-3.5 text-left text-white transition-colors hover:bg-[#4b3f80]"
           >
             <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#735ef2] text-[22px] font-black leading-none">
               +
             </span>
-            <button onClick = {handleArtistToolClick} className = "px-1">
-            <span className="text-[13px] font-medium tracking-tight leading-snug">
+            <span className="px-1 text-[13px] font-medium tracking-tight leading-snug">
               Unlock Artist tools from EGP 29.99/month.
             </span>
-            </button>
           </button>
         </div>
 
-        {/* ── ARTISTS YOU SHOULD FOLLOW ──────────────────────────────────────── */}
-        <div className="mt-8 mb-6">
+        <div data-testid="suggested-artists-section" className="mt-8 mb-6">
           <div className="flex items-center justify-between mb-5">
             <span className="text-xs font-extrabold text-white tracking-wide uppercase">
               ARTISTS YOU SHOULD FOLLOW
             </span>
             <button
+              data-testid="suggested-artists-refresh-btn"
               onClick={fetchArtists}
               className="text-xs text-gray-400 hover:underline"
             >
@@ -162,21 +193,29 @@ export default function SideBar() {
 
           <div className="flex flex-col gap-3">
             {loading ? (
-              <div className="text-gray-400 text-xs">Loading...</div>
+              <div data-testid="suggested-artists-loading" className="text-gray-400 text-xs">
+                Loading...
+              </div>
             ) : error ? (
-              <div className="text-red-400 text-xs">{error}</div>
+              <div data-testid="suggested-artists-error" className="text-red-400 text-xs">
+                {error}
+              </div>
             ) : suggestedUsers.length === 0 ? (
-              <div className="text-gray-400 text-xs">No suggestions found.</div>
+              <div data-testid="suggested-artists-empty" className="text-gray-400 text-xs">
+                No suggestions found.
+              </div>
             ) : (
               suggestedUsers.map((artist) => (
-                <div key={artist.id} className="flex items-center justify-between">
-                  <Link
-                    to={`/${artist.id}`}
-                    className="flex items-center gap-3 "
-                  >
+                <div
+                  key={artist.id}
+                  data-testid={`suggested-artist-${artist.id}`}
+                  className="flex items-center justify-between"
+                >
+                  <Link to={`/${artist.username || artist.id}`} className="flex items-center gap-3">
                     <img
                       src={artist.avatarUrl || avatarFallback}
                       alt={artist.displayName || artist.username}
+                      data-testid={`suggested-artist-avatar-${artist.id}`}
                       className="w-11 h-11 rounded-full object-cover bg-linear-to-br from-gray-700 to-gray-900"
                     />
                     <div>
@@ -195,8 +234,18 @@ export default function SideBar() {
                       </div>
                     </div>
                   </Link>
-                  <button className="bg-white text-black font-semibold rounded px-5 py-1.5 text-sm hover:bg-gray-100 transition">
-                    Follow
+                  <button
+                    data-testid={`suggested-artist-follow-btn-${artist.id}`}
+                    type="button"
+                    disabled={pendingFollowId === artist.id}
+                    onClick={() => handleSuggestedArtistFollowToggle(artist.id)}
+                    className={`font-semibold rounded px-5 py-1.5 text-sm transition disabled:opacity-60 ${
+                      followStates[artist.id]
+                        ? "bg-zinc-800 text-white hover:bg-zinc-700"
+                        : "bg-white text-black hover:bg-gray-100"
+                    }`}
+                  >
+                    {followStates[artist.id] ? "Following" : "Follow"}
                   </button>
                 </div>
               ))
@@ -204,21 +253,27 @@ export default function SideBar() {
           </div>
         </div>
 
-        {/* ── LIKES SECTION ─────────────────────────────────────────────────── */}
-        <div className="mb-6">
+        <div data-testid="likes-section" className="mb-6">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-extrabold text-white tracking-wide uppercase">
               {likedTracks.length > 0 ? `${likedTracks.length} LIKES` : "LIKES"}
             </span>
-            <button className="text-xs text-gray-400 hover:underline">
+            <button
+              data-testid="likes-view-all-btn"
+              className="text-xs text-gray-400 hover:underline"
+            >
               View all
             </button>
           </div>
 
           {likesLoading ? (
-            <div className="text-gray-400 text-xs">Loading...</div>
+            <div data-testid="likes-loading" className="text-gray-400 text-xs">
+              Loading...
+            </div>
           ) : likedTracks.length === 0 ? (
-            <div className="text-gray-400 text-xs">No liked tracks yet.</div>
+            <div data-testid="likes-empty" className="text-gray-400 text-xs">
+              No liked tracks yet.
+            </div>
           ) : (
             <div className="flex flex-col gap-3">
               {likedTracks.map((track) => (
@@ -239,8 +294,7 @@ export default function SideBar() {
           )}
         </div>
 
-        {/* ── GO MOBILE ─────────────────────────────────────────────────────── */}
-        <div>
+        <div data-testid="go-mobile-section">
           <span className="text-xs font-bold tracking-wide text-white">
             GO MOBILE
           </span>
@@ -249,6 +303,7 @@ export default function SideBar() {
               href="https://apps.apple.com/us/app/soundcloud-the-music-you-love/id336353151"
               target="_blank"
               rel="noopener noreferrer"
+              data-testid="app-store-link"
               className="flex h-11 w-37 items-center gap-2 rounded-md border border-zinc-500 bg-black px-3 text-white hover:border-zinc-300 transition"
             >
               <FaApple size={24} />
@@ -261,11 +316,11 @@ export default function SideBar() {
                 </span>
               </div>
             </a>
-              <a
+            <a
               href="https://play.google.com/store/apps/details?id=com.soundcloud.android&hl=us"
-
               target="_blank"
               rel="noopener noreferrer"
+              data-testid="google-play-link"
               className="flex h-11 w-38 items-center gap-2 rounded-md border border-zinc-500 bg-black px-3 text-white hover:border-zinc-300 transition"
             >
               <FaGooglePlay size={24} />
@@ -281,7 +336,6 @@ export default function SideBar() {
           </div>
         </div>
 
-        {/* ── LEGAL ─────────────────────────────────────────────────────────── */}
         <div className="mt-6 text-zinc-400">
           <div className="text-[14px]">
             <a href="#" className="hover:text-zinc-300">Legal</a>
@@ -309,7 +363,8 @@ export default function SideBar() {
             </a>
           </div>
         </div>
-      {upgradeOpen && <UpgradeModal onClose={() => setUpgradeOpen(false)} />}
+
+        {upgradeOpen && <UpgradeModal onClose={() => setUpgradeOpen(false)} />}
       </div>
     </header>
   );
@@ -336,17 +391,16 @@ function Tool({ tool, onClick }: ToolProps) {
   return (
     <button
       type="button"
+      data-testid={`artist-tool-${tool.id}`}
       onClick={() => onClick(tool)}
       className="group relative h-[86px] w-full overflow-hidden rounded-2xl border border-zinc-700/60 bg-[#1a1a1a] transition-colors hover:border-zinc-600"
     >
-      {/* Badge */}
       <span
         className={`absolute right-2.5 top-2.5 flex h-6 w-6 items-center justify-center rounded-full text-[13px] font-black ${badgeClasses}`}
       >
         {badgeSymbol}
       </span>
 
-      {/* Icon + Label */}
       <div className="flex h-full flex-col items-center justify-center">
         <div className="flex h-[40px] w-[45px] items-center justify-center">
           {tool.imageSrc ? (
@@ -359,13 +413,11 @@ function Tool({ tool, onClick }: ToolProps) {
             <div className="h-full w-full rounded-2xl border border-dashed border-zinc-600/80 bg-zinc-900/40" />
           )}
         </div>
-
         <span className="text-center text-[13px] font-semibold leading-tight tracking-tight text-white transition-opacity group-hover:opacity-0">
           {tool.label}
         </span>
       </div>
 
-      {/* Upgrade bar — slides up on hover */}
       <div className="absolute inset-x-0 bottom-0 translate-y-full transition-transform duration-200 group-hover:translate-y-0">
         <div className={`flex h-11 items-center justify-center text-[13px] font-black ${hoverBarClasses}`}>
           Upgrade
@@ -384,17 +436,18 @@ function LikedTrackRow({
   onUnlike: (id: string) => void;
   onReLike: (id: string) => void;
 }) {
-  const [hovered, setHovered]   = useState(false);
-  const [isLiked, setIsLiked]   = useState(true);
+  const navigate = useNavigate();
+  const [hovered, setHovered] = useState(false);
+  const [isLiked, setIsLiked] = useState(true);
 
-  const handleToggle = async () => {
+  const handleToggle = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
     if (isLiked) {
       setIsLiked(false);
       onUnlike(track.id);
       try {
         await feedService.unlikeTrack(track.id);
       } catch {
-        // revert if API fails
         setIsLiked(true);
         onReLike(track.id);
       }
@@ -412,16 +465,20 @@ function LikedTrackRow({
 
   return (
     <div
-      className="flex items-center gap-2 group"
+      data-testid={`liked-track-${track.id}`}
+      className="flex cursor-pointer items-center gap-2 group"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={() => {
+        if (track.id) navigate(`/tracks/${track.id}`);
+      }}
     >
-      {/* Thumbnail with heart overlay on hover */}
       <div className="relative w-11 h-11 shrink-0 rounded overflow-hidden bg-[hsl(0,0%,15%)]">
         {track.coverUrl ? (
           <img
             src={track.coverUrl}
             alt={track.title}
+            data-testid={`liked-track-cover-${track.id}`}
             className="w-full h-full object-cover"
           />
         ) : (
@@ -430,23 +487,22 @@ function LikedTrackRow({
           </div>
         )}
 
-        {/* Heart overlay — appears on hover */}
         {hovered && (
           <button
+            data-testid={`liked-track-toggle-btn-${track.id}`}
             onClick={handleToggle}
             className="absolute inset-0 flex items-center justify-center bg-black/50 transition-colors"
-            aria-label={isLiked ? 'Unlike track' : 'Like track'}
+            aria-label={isLiked ? "Unlike track" : "Like track"}
           >
             <Heart
               size={16}
-              fill={isLiked ? '#f97316' : 'none'}
-              className={isLiked ? 'text-orange-500' : 'text-white'}
+              fill={isLiked ? "#f97316" : "none"}
+              className={isLiked ? "text-orange-500" : "text-white"}
             />
           </button>
         )}
       </div>
 
-      {/* Info */}
       <div className="flex-1 min-w-0">
         <p className="text-white text-[13px] font-medium truncate leading-tight">
           {track.title}
@@ -458,7 +514,11 @@ function LikedTrackRow({
             {track.playsCount.toLocaleString()}
           </span>
           <span className="flex items-center gap-0.5">
-            <Heart size={8} fill={isLiked ? 'currentColor' : 'none'} className={isLiked ? 'text-orange-500' : ''} />
+            <Heart
+              size={8}
+              fill={isLiked ? "currentColor" : "none"}
+              className={isLiked ? "text-orange-500" : ""}
+            />
             {track.likesCount.toLocaleString()}
           </span>
         </div>

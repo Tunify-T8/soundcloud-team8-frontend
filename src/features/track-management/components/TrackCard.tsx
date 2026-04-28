@@ -50,10 +50,11 @@ function DeleteConfirmModal({
     <>
       <div className="fixed inset-0 bg-black/60 z-50" onClick={onCancel} />
       <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none px-4">
-        <div className="bg-[#111] border border-zinc-800 rounded-xl w-full max-w-[540px] p-6 sm:p-8 pointer-events-auto shadow-2xl">
+        <div data-testid="delete-confirm-modal" className="bg-[#111] border border-zinc-800 rounded-xl w-full max-w-[540px] p-6 sm:p-8 pointer-events-auto shadow-2xl">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-white text-lg sm:text-xl font-bold">Permanently delete this track?</h2>
             <button
+              data-testid="delete-modal-close-btn"
               onClick={onCancel}
               className="w-7 h-7 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center text-zinc-400 hover:text-white transition-colors flex-shrink-0"
             >
@@ -82,12 +83,14 @@ function DeleteConfirmModal({
           </p>
           <div className="flex items-center justify-end gap-3">
             <button
+              data-testid="delete-modal-cancel-btn"
               onClick={onCancel}
               className="px-5 py-2.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-semibold transition-colors"
             >
               Cancel
             </button>
             <button
+              data-testid="delete-modal-confirm-btn"
               onClick={handleDelete}
               disabled={loading}
               className="px-5 py-2.5 rounded-full bg-red-500 hover:bg-red-600 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
@@ -108,9 +111,10 @@ function AmplifyModal({ onClose }: { onClose: () => void }) {
     <>
       <div className="fixed inset-0 z-50" style={{ background: "rgba(246, 235, 235, 0.58)" }} onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none px-4">
-        <div className="bg-black rounded-2xl w-full max-w-[820px] overflow-hidden pointer-events-auto shadow-2xl relative">
+        <div data-testid="amplify-modal" className="bg-black rounded-2xl w-full max-w-[820px] overflow-hidden pointer-events-auto shadow-2xl relative">
 
           <button
+            data-testid="amplify-modal-close-btn"
             onClick={onClose}
             className="absolute top-4 right-4 w-8 h-8 rounded-full bg-zinc-700 hover:bg-zinc-600 flex items-center justify-center text-zinc-300 hover:text-white transition-colors z-10"
           >
@@ -159,12 +163,14 @@ function AmplifyModal({ onClose }: { onClose: () => void }) {
 
           <div className="flex items-center justify-start gap-4 px-6 sm:px-10 pb-8 sm:pb-10">
             <button
+              data-testid="amplify-modal-unlock-btn"
               onClick={() => setCheckoutOpen(true)}
               className="px-6 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold transition-colors tracking-tight"
             >
               Unlock with Artist Pro
             </button>
             <button
+              data-testid="amplify-modal-later-btn"
               onClick={onClose}
               className="px-6 py-2.5 text-white text-sm font-semibold hover:text-zinc-300 transition-colors"
             >
@@ -211,6 +217,24 @@ function MenuItem({ icon, label, onClick, danger = false }: MenuItemProps) {
       {label}
     </button>
   );
+}
+
+// Dropdown animation keyframes injected once
+const DROPDOWN_STYLE_ID = "track-card-dropdown-anim";
+if (typeof document !== "undefined" && !document.getElementById(DROPDOWN_STYLE_ID)) {
+  const style = document.createElement("style");
+  style.id = DROPDOWN_STYLE_ID;
+  style.textContent = `
+    @keyframes menuPopDown {
+      from { opacity: 0; transform: scale(0.72) translateY(-8px); }
+      to   { opacity: 1; transform: scale(1)    translateY(0);    }
+    }
+    @keyframes menuPopUp {
+      from { opacity: 0; transform: scale(0.72) translateY(8px); }
+      to   { opacity: 1; transform: scale(1)    translateY(0);   }
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 export default function TrackCard({
@@ -270,6 +294,7 @@ export default function TrackCard({
 
   return (
     <div
+      data-testid={`track-card-${track.id}`}
       className={`relative flex items-center gap-3 px-4 py-3 rounded transition-colors cursor-pointer overflow-visible
         ${hovered ? "bg-zinc-800" : "bg-zinc-900"}
         border border-transparent hover:border-zinc-700`}
@@ -278,6 +303,7 @@ export default function TrackCard({
     >
       {/* Checkbox */}
       <button
+        data-testid={`track-card-select-${track.id}`}
         onClick={(e) => { e.stopPropagation(); onSelect?.(track.id); }}
         className={`w-4 h-4 rounded flex items-center justify-center border flex-shrink-0 transition-colors
           ${isSelected
@@ -294,6 +320,7 @@ export default function TrackCard({
 
       {/* Thumbnail */}
       <div
+        data-testid={`track-card-thumbnail-${track.id}`}
         className="relative w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 bg-zinc-700 rounded overflow-hidden group"
         onClick={handlePlayToggle}
       >
@@ -326,7 +353,7 @@ export default function TrackCard({
         )}
       </div>
 
-      {/* Title + Artist — always visible, takes remaining flex space */}
+      {/* Title + Artist */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-white text-sm font-semibold truncate">{track.title}</span>
@@ -339,17 +366,17 @@ export default function TrackCard({
         <p className="text-zinc-400 text-xs mt-0.5 truncate">{track.artist}</p>
       </div>
 
-      {/* Duration — hidden on mobile */}
+      {/* Duration */}
       <div className="hidden sm:block w-16 text-center flex-shrink-0">
         <span className="text-zinc-300 text-sm tabular-nums">{formatDuration(track.duration)}</span>
       </div>
 
-      {/* Date — hidden below md */}
+      {/* Date */}
       <div className="hidden md:block w-28 text-center flex-shrink-0">
         <span className="text-zinc-300 text-sm">{formatDate(track.date)}</span>
       </div>
 
-      {/* Engagements — hidden below lg */}
+      {/* Engagements */}
       <div className="hidden lg:flex items-center gap-3 w-48 justify-center flex-shrink-0">
         <span className="flex items-center gap-1 text-zinc-500 text-xs">
           <Heart className="w-3.5 h-3.5" />{fmt(track.likes)}
@@ -365,13 +392,14 @@ export default function TrackCard({
         </span>
       </div>
 
-      {/* Plays — always visible */}
+      {/* Plays */}
       <div className="w-12 sm:w-16 text-right flex-shrink-0">
         <span className="text-white text-sm tabular-nums">{track.plays}</span>
       </div>
 
-      {/* Amplify button — hidden on mobile, shown sm+ */}
+      {/* Amplify button */}
       <button
+        data-testid={`track-card-amplify-btn-${track.id}`}
         onClick={(e) => { e.stopPropagation(); setShowAmplifyModal(true); }}
         onMouseEnter={() => setAmplifyHovered(true)}
         onMouseLeave={() => setAmplifyHovered(false)}
@@ -385,15 +413,15 @@ export default function TrackCard({
       </button>
 
       {/* More menu */}
-      <div className="relative flex-shrink-0" ref={menuRef}>
+      <div data-testid={`track-card-menu-container-${track.id}`} className="relative flex-shrink-0" ref={menuRef}>
         <button
+          data-testid={`track-card-menu-btn-${track.id}`}
           ref={menuButtonRef}
           className="p-1 rounded hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors"
           onClick={(e) => {
             e.stopPropagation();
             if (!menuOpen && menuButtonRef.current) {
               const rect = menuButtonRef.current.getBoundingClientRect();
-              // Approximate menu height: 10 items × 38px ≈ 380px
               const menuHeight = 380;
               const spaceBelow = window.innerHeight - rect.bottom;
               setDropdownUp(spaceBelow < menuHeight);
@@ -405,8 +433,15 @@ export default function TrackCard({
         </button>
 
         {menuOpen && (
-          <div className={`absolute right-0 z-50 bg-zinc-800 rounded-lg shadow-xl border border-zinc-700 overflow-hidden min-w-[180px] py-1
-            ${dropdownUp ? "bottom-full mb-1" : "top-full mt-1"}`}>
+          <div
+            data-testid={`track-card-menu-dropdown-${track.id}`}
+            style={{
+              transformOrigin: dropdownUp ? "bottom right" : "top right",
+              animation: `${dropdownUp ? "menuPopUp" : "menuPopDown"} 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards`,
+            }}
+            className={`absolute right-0 z-50 bg-zinc-800 rounded-lg shadow-xl border border-zinc-700 overflow-hidden min-w-[180px] py-1
+              ${dropdownUp ? "bottom-full mb-1" : "top-full mt-1"}`}
+          >
             <MenuItem icon={<Pencil className="w-4 h-4" />} label="Edit" onClick={() => { onEdit?.(track.id); setMenuOpen(false); }} />
             <MenuItem icon={<ListPlus className="w-4 h-4" />} label="Add to playlist" onClick={() => { onAddToPlaylist?.(track.id); setMenuOpen(false); }} />
             {/* Amplify in menu on mobile */}
