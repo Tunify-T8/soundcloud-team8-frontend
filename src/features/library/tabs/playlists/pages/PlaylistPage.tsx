@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { FaApple, FaGooglePlay } from "react-icons/fa";
 import { User } from "lucide-react";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/app/store";
 import { playlistService } from "../../../libraryService";
+import { profileService } from "@/features/profile/profileService";
 import type { Collection, CollectionTrack } from "../../../types";
 
 import PlaylistHeader from "../components/PlaylistHeader";
@@ -12,8 +13,16 @@ import TrackList from "../components/TrackList";
 import ActionBar from "../components/ActionBar";
 import EditPlaylistOverlay from "../components/EditPlaylistOverlay";
 
+function isUuidLike(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
+
 const PlaylistPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id, token } = useParams<{ id?: string; token?: string }>();
+  const [searchParams] = useSearchParams();
+  const tokenFromQuery = searchParams.get("token") ?? undefined;
   const navigate = useNavigate();
   const currentUser = useSelector((state: RootState) => state.user.currentUser);
   const [playlist, setPlaylist] = useState<Collection | null>(null);
@@ -21,18 +30,24 @@ const PlaylistPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [ownerProfileSlug, setOwnerProfileSlug] = useState<string>("");
 
   const fetchData = useCallback(async () => {
-    if (!id) return;
+    if (!id && !token && !tokenFromQuery) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      const [playlistData, tracksData] = await Promise.all([
-        playlistService.getPlaylistById(id),
-        playlistService.getPlaylistTracks(id),
-      ]);
+      const accessToken = token ?? tokenFromQuery;
+      const playlistData = accessToken
+        ? await playlistService.getPlaylistByToken(accessToken)
+        : await playlistService.getPlaylistById(id as string);
+
+      const playlistId = playlistData?.id;
+      const tracksData = playlistId
+        ? await playlistService.getPlaylistTracks(playlistId)
+        : null;
 
       setPlaylist(playlistData ?? null);
       setTracks(tracksData?.data ?? []);
@@ -43,11 +58,39 @@ const PlaylistPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, token, tokenFromQuery]);
 
   useEffect(() => {
     void fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const resolveOwnerSlug = async () => {
+      if (!playlist?.owner) return;
+      const fallbackSlug = playlist.owner.username || playlist.owner.id;
+      if (!fallbackSlug) return;
+
+      if (!isUuidLike(fallbackSlug)) {
+        setOwnerProfileSlug(fallbackSlug);
+        return;
+      }
+
+      try {
+        const profile = await profileService.getPublicProfile(playlist.owner.id);
+        if (!isMounted) return;
+        setOwnerProfileSlug(profile.username || fallbackSlug);
+      } catch {
+        if (!isMounted) return;
+        setOwnerProfileSlug(fallbackSlug);
+      }
+    };
+
+    void resolveOwnerSlug();
+    return () => {
+      isMounted = false;
+    };
+  }, [playlist]);
 
   if (loading)
     return (
@@ -64,6 +107,7 @@ const PlaylistPage: React.FC = () => {
     );
 
   const isOwner = currentUser?.id === playlist.owner.id;
+  const profileLink = `/${encodeURIComponent(playlist.owner.id)}`;
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -90,7 +134,7 @@ const PlaylistPage: React.FC = () => {
               <aside className="w-full lg:w-[112px] lg:shrink-0">
                 <div className="flex flex-col items-start text-left">
                   <Link
-                    to={`/${encodeURIComponent(playlist.owner.username)}`}
+                    to={profileLink}
                     className="group block"
                   >
                     <img
@@ -104,7 +148,7 @@ const PlaylistPage: React.FC = () => {
                   <div className="mt-3 self-center text-center">
                     <div className="text-[16px] font-bold leading-none text-white transition-colors">
                       <Link
-                        to={`/${encodeURIComponent(playlist.owner.username)}`}
+                        to={profileLink}
                         className="hover:text-zinc-300"
                       >
                         {playlist.owner?.displayName ||

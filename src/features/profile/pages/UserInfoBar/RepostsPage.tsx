@@ -1,8 +1,102 @@
+import { useEffect, useMemo, useState } from "react";
+import { useParams } from "react-router-dom";
+import SongCard from "@/components/ui/SongCard";
+import { profileService } from "@/features/profile/profileService";
+import { useMe } from "@/features/profile/context/useMe";
+import type { RepostItemDto } from "@/shared/types/User";
+
+function formatTimeAgo(dateStr: string): string {
+  if (!dateStr) return "";
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diffMs / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} minute${mins !== 1 ? "s" : ""} ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} hour${hrs !== 1 ? "s" : ""} ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days} day${days !== 1 ? "s" : ""} ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months} month${months !== 1 ? "s" : ""} ago`;
+  const years = Math.floor(months / 12);
+  return `${years} year${years !== 1 ? "s" : ""} ago`;
+}
+
+function waveformSeedFromId(id: string): number {
+  return id.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+}
+
 export default function RepostsPage() {
+  const { username } = useParams<{ username: string }>();
+  const { me } = useMe();
+  const isMeView = !username || username === me?.username;
+
+  const [reposts, setReposts] = useState<RepostItemDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        if (!isMeView) {
+          if (!isMounted) return;
+          setReposts([]);
+          return;
+        }
+
+        const repostsRes = await profileService.getMeReposts(1, 20);
+        if (!isMounted) return;
+        setReposts(repostsRes?.data ?? []);
+      } catch {
+        if (!isMounted) return;
+        setReposts([]);
+        setError("Could not load reposts.");
+      } finally {
+        if (!isMounted) return;
+        setLoading(false);
+      }
+    };
+
+    void load();
+    return () => {
+      isMounted = false;
+    };
+  }, [isMeView]);
+
+  const content = useMemo(() => {
+    if (loading) return <p className="py-10 text-sm text-zinc-400">Loading reposts...</p>;
+    if (error) return <p className="py-10 text-sm text-red-400">{error}</p>;
+    if (!isMeView) return <p className="py-10 text-sm text-zinc-400">Reposts are only available on your profile for now.</p>;
+    if (reposts.length === 0) return <p className="py-10 text-sm text-zinc-400">No reposts yet.</p>;
+
+    return (
+      <div className="mt-8 space-y-8">
+        {reposts.map((item) => (
+          <SongCard
+            key={item.repostId}
+            trackId={item.track.id}
+            artistName={me?.displayName || me?.username || "Artist"}
+            title={item.track.title}
+            coverUrl={item.track.coverUrl ?? undefined}
+            timeAgo={formatTimeAgo(item.repostedAt)}
+            likes={String(item.track.likesCount ?? 0)}
+            reposts={String(item.track.repostsCount ?? 0)}
+            comments={String(item.track.commentsCount ?? 0)}
+            waveformSeed={waveformSeedFromId(item.track.id)}
+          />
+        ))}
+      </div>
+    );
+  }, [error, isMeView, loading, me?.displayName, me?.username, reposts]);
+
   return (
-    <div>
-      <h1>Reposts</h1>
-      {/* Add reposts content here */}
+    <div className="w-full min-h-screen bg-[#0b0b0b] text-white">
+      <div className="flex w-full justify-center">
+        <div className="w-10/12 pr-0 lg:pr-[360px]">{content}</div>
+      </div>
     </div>
   );
 }

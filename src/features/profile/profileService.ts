@@ -12,6 +12,7 @@ import type {
   BlockedUsersResponse,
   SuggestedUsersResponse,
   MutualFriendsResponse,
+  UserRepostsDto,
 } from "../../shared/types/User";
 
 type SocialAccountsMap = {
@@ -38,6 +39,15 @@ type RawUserTrackResponse =
       total?: number;
       hasMore?: boolean;
     };
+  };
+
+type RawUserRepostsResponse =
+  | UserRepostsDto
+  | {
+    data?: unknown[];
+    page?: number;
+    limit?: number;
+    hasMore?: boolean;
   };
 
 function normalizeSocialLinksResponse(payload: unknown): SocialAccountsMap {
@@ -140,6 +150,46 @@ function normalizeTracksResponse(payload: RawUserTrackResponse): UserTracksRespo
   };
 }
 
+function normalizeRepostsResponse(payload: RawUserRepostsResponse): UserRepostsDto {
+  const raw = payload as {
+    data?: unknown[];
+    page?: number;
+    limit?: number;
+    hasMore?: boolean;
+  };
+
+  const reposts = (Array.isArray(raw.data) ? raw.data : []).map((value, index) => {
+    const repost = (value && typeof value === "object" ? value : {}) as Record<string, unknown>;
+    const trackRaw = (repost.track && typeof repost.track === "object"
+      ? repost.track
+      : {}) as Record<string, unknown>;
+
+    return {
+      repostId: String(repost.repostId ?? repost.id ?? `repost-${index}`),
+      repostedAt: typeof repost.repostedAt === "string" ? repost.repostedAt : new Date().toISOString(),
+      track: {
+        id: String(trackRaw.id ?? ""),
+        title: String(trackRaw.title ?? "Untitled Track"),
+        description: typeof trackRaw.description === "string" ? trackRaw.description : null,
+        audioUrl: String(trackRaw.audioUrl ?? ""),
+        coverUrl: typeof trackRaw.coverUrl === "string" ? trackRaw.coverUrl : null,
+        duration: Number(trackRaw.duration ?? 0),
+        likesCount: Number(trackRaw.likesCount ?? 0),
+        commentsCount: Number(trackRaw.commentsCount ?? 0),
+        repostsCount: Number(trackRaw.repostsCount ?? 0),
+        createdAt: typeof trackRaw.createdAt === "string" ? trackRaw.createdAt : new Date().toISOString(),
+      },
+    };
+  });
+
+  return {
+    data: reposts,
+    page: Number(raw.page ?? 1),
+    limit: Number(raw.limit ?? reposts.length),
+    hasMore: Boolean(raw.hasMore),
+  };
+}
+
 type FallbackRequest = {
   method: "post" | "delete";
   url: string;
@@ -219,6 +269,13 @@ export const profileService = {
       `/users/me/tracks?page=${page}&limit=${limit}`,
     );
     return normalizeTracksResponse(data);
+  },
+
+  async getMeReposts(page = 1, limit = 20): Promise<UserRepostsDto> {
+    const { data } = await api.get<RawUserRepostsResponse>(
+      `/users/me/reposts?page=${page}&limit=${limit}`,
+    );
+    return normalizeRepostsResponse(data);
   },
 
   async getUserTracks(

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { playlistService } from "../../../libraryService";
-import type { Collection, CollectionTrack } from "../../../types";
+import type { Collection, CollectionTrack, CollectionType } from "../../../types";
 import trackFallback from "@/assets/track.jpg";
 
 interface EditPlaylistOverlayProps {
@@ -52,6 +52,7 @@ const EditPlaylistOverlay: React.FC<EditPlaylistOverlayProps> = ({
   );
   const [title, setTitle] = useState(playlist.title);
   const [description, setDescription] = useState(playlist.description ?? "");
+  const [type, setType] = useState<CollectionType>(playlist.type);
   const [privacy, setPrivacy] = useState<"public" | "private">(
     playlist.privacy,
   );
@@ -70,6 +71,7 @@ const EditPlaylistOverlay: React.FC<EditPlaylistOverlayProps> = ({
     setRemovingTrackIds(new Set());
     setTitle(playlist.title);
     setDescription(playlist.description ?? "");
+    setType(playlist.type);
     setPrivacy(playlist.privacy);
     setCoverChanged(false);
     setUploadedCoverUrl(null);
@@ -98,6 +100,7 @@ const EditPlaylistOverlay: React.FC<EditPlaylistOverlayProps> = ({
   const hasChanges =
     normalizedTitle !== playlist.title ||
     normalizedDescription !== (playlist.description ?? "") ||
+    type !== playlist.type ||
     privacy !== playlist.privacy ||
     coverChanged;
   const canSave =
@@ -122,6 +125,7 @@ const EditPlaylistOverlay: React.FC<EditPlaylistOverlayProps> = ({
 
     const payload: {
       title?: string;
+      type?: CollectionType;
       description?: string;
       privacy?: "public" | "private";
       coverUrl?: string;
@@ -131,6 +135,7 @@ const EditPlaylistOverlay: React.FC<EditPlaylistOverlayProps> = ({
     if (normalizedDescription !== (playlist.description ?? "")) {
       payload.description = normalizedDescription;
     }
+    if (type !== playlist.type) payload.type = type;
     if (privacy !== playlist.privacy) payload.privacy = privacy;
     if (uploadedCoverUrl) payload.coverUrl = uploadedCoverUrl;
 
@@ -306,6 +311,18 @@ const EditPlaylistOverlay: React.FC<EditPlaylistOverlayProps> = ({
                 >
                   <span>{permalink}</span>
                 </div>
+              </div>
+
+              <div>
+                <div className={labelClass}>Type</div>
+                <select
+                  className={fieldClass}
+                  value={type}
+                  onChange={(e) => setType(e.target.value as CollectionType)}
+                >
+                  <option value="PLAYLIST">Playlist</option>
+                  <option value="ALBUM">Album</option>
+                </select>
               </div>
 
               {/* <div className="grid grid-cols-1 gap-3 md:grid-cols-2">

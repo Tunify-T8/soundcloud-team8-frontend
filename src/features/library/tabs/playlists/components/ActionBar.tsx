@@ -210,19 +210,12 @@ const ActionBar: React.FC<ActionBarProps> = ({
   const fetchShareUrl = async (): Promise<string | null> => {
     if (isSharing) return null;
     setIsSharing(true);
-    const isPrivatePlaylist = playlist.privacy?.toLowerCase?.() === "private";
-    let shareUrl: string | null = null;
+    let shareUrl: string | null = await playlistService.getPlaylistShareUrl(
+      playlist.id,
+    );
 
-    if (isPrivatePlaylist) {
-      shareUrl = await playlistService.resetPrivatePlaylistShareUrl(playlist.id);
-      if (!shareUrl) {
-        shareUrl = await playlistService.getPlaylistShareUrl(playlist.id);
-      }
-    } else {
-      shareUrl = await playlistService.getPlaylistShareUrl(playlist.id);
-      if (!shareUrl && typeof window !== "undefined") {
-        shareUrl = window.location.href;
-      }
+    if (!shareUrl && typeof window !== "undefined") {
+      shareUrl = window.location.href;
     }
 
     setIsSharing(false);

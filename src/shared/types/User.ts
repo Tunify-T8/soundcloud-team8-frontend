@@ -146,6 +146,32 @@ export interface UserTracksResponse {
   tracks: UserTrack[];
 }
 
+export interface RepostedTrackDto {
+  id: string;
+  title: string;
+  description: string | null;
+  audioUrl: string;
+  coverUrl: string | null;
+  duration: number;
+  likesCount: number;
+  commentsCount: number;
+  repostsCount: number;
+  createdAt: string;
+}
+
+export interface RepostItemDto {
+  repostId: string;
+  repostedAt: string;
+  track: RepostedTrackDto;
+}
+
+export interface UserRepostsDto {
+  data: RepostItemDto[];
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
+
 // Followers (GET /users/{userId}/followers)
 export interface UserFollower {
   id: string;

@@ -151,6 +151,14 @@ const router = createBrowserRouter([
         element: <PlaylistPage />
       },
       {
+        path: "/playlist/:id",
+        element: <PlaylistPage />
+      },
+      {
+        path: "/collections/token/:token",
+        element: <PlaylistPage />
+      },
+      {
         path: "/me",
         element: <ProfilePage />,
         children: [

@@ -133,6 +133,7 @@ export interface CreateCollectionPayload {
 // Update Collection (multipart/form-data)
 export interface UpdateCollectionPayload {
   title?: string;
+  type?: CollectionType;
   description?: string;
   privacy?: CollectionPrivacy;
   coverUrl?: File | string;
