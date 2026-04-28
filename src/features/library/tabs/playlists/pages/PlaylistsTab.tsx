@@ -141,7 +141,7 @@ export default function PlaylistsTab() {
 
   return (
     <div data-testid="playlists-tab">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-white font-bold text-sm">
           Hear your own playlists and the playlists you've liked:
         </h2>
@@ -151,7 +151,7 @@ export default function PlaylistsTab() {
             placeholder="Filter"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="bg-[#282828] border border-zinc-700 rounded-sm px-3 py-1.5 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 w-52"
+            className="bg-[#282828] border border-zinc-700 rounded-sm px-3 py-1.5 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 w-full sm:w-52"
           />
           <div className="relative">
             <button
@@ -187,7 +187,7 @@ export default function PlaylistsTab() {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-6 gap-4" data-testid="playlists-loading">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6" data-testid="playlists-loading">
           {Array.from({ length: COLS }).map((_, i) => (
             <div
               key={i}
@@ -212,7 +212,7 @@ export default function PlaylistsTab() {
             : "You have no playlists yet"}
         </p>
       ) : (
-        <div className="grid grid-cols-6 gap-4" data-testid="playlists-grid">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6" data-testid="playlists-grid">
           {Array.from({ length: totalSlots }).map((_, i) => {
             const item = filteredItems[i];
             return item ? (

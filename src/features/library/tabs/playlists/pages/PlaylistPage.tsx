@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { FaApple, FaGooglePlay } from "react-icons/fa";
 import { User } from "lucide-react";
 import { useSelector } from "react-redux";
@@ -21,12 +21,20 @@ const PlaylistPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [reorderError, setReorderError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!id) return;
 
     setLoading(true);
     setError(null);
+
+    // if (id === MOCK_PLAYLIST_ID && currentUser) {
+    //   setPlaylist(buildMockPlaylist(currentUser));
+    //   setTracks(buildMockTracks(currentUser));
+    //   setLoading(false);
+    //   return;
+    // }
 
     try {
       const [playlistData, tracksData] = await Promise.all([
@@ -43,11 +51,39 @@ const PlaylistPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, currentUser]);
 
   useEffect(() => {
     void fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (!reorderError) return;
+    const timeout = setTimeout(() => setReorderError(null), 4000);
+    return () => clearTimeout(timeout);
+  }, [reorderError]);
+
+  const handleReorder = useCallback(
+    async (newTracks: CollectionTrack[]) => {
+      if (!id) return;
+      const previousTracks = tracks;
+      setTracks(newTracks);
+      setReorderError(null);
+
+      // if (id === MOCK_PLAYLIST_ID) {
+      //   return;
+      // }
+
+      const ok = await playlistService.reorderTracks(id, {
+        trackIds: newTracks.map((ct) => ct.track.id),
+      });
+      if (!ok) {
+        setTracks(previousTracks);
+        setReorderError("Couldn't save the new track order. Please try again.");
+      }
+    },
+    [id, tracks],
+  );
 
   if (loading)
     return (
@@ -67,7 +103,18 @@ const PlaylistPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="mx-auto max-w-[1200px] px-6 pb-20 pt-10">
+      {reorderError && (
+        <div
+          data-testid="playlist-reorder-error"
+          role="alert"
+          className="fixed left-1/2 top-6 z-50 -translate-x-1/2 rounded-md border border-red-500/40 bg-red-950/90 px-4 py-2 text-sm font-semibold text-red-200 shadow-lg backdrop-blur"
+        >
+          {reorderError}
+        </div>
+        
+      )}
+    
+      <div className="mx-auto max-w-[1200px] px-4 pb-20 pt-6 sm:px-6 sm:pt-10">
         <PlaylistHeader
           playlist={playlist}
           tracks={tracks}
@@ -86,19 +133,30 @@ const PlaylistPage: React.FC = () => {
 
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
               <aside className="w-full lg:w-[112px] lg:shrink-0">
-                <div className="flex flex-col items-start text-left">
-                  <img
-                    src={playlist.owner?.avatarUrl || "/default-avatar.png"}
-                    alt={
-                      playlist.owner?.displayName || playlist.owner?.username
-                    }
-                    className="h-28 w-28 rounded-full object-cover"
-                  />
-                  <div className="mt-3 self-center text-center">
-                    <div className="text-[16px] font-bold leading-none text-white">
-                      {playlist.owner?.displayName || playlist.owner?.username}
+                <div className="flex flex-row items-center gap-4 lg:flex-col lg:items-start lg:gap-0">
+                  <Link
+                    to={`/${encodeURIComponent(playlist.owner.username)}`}
+                    className="group block shrink-0"
+                  >
+                    <img
+                      src={playlist.owner?.avatarUrl || "/default-avatar.png"}
+                      alt={
+                        playlist.owner?.displayName || playlist.owner?.username
+                      }
+                      className="h-16 w-16 rounded-full object-cover sm:h-20 sm:w-20 lg:h-28 lg:w-28"
+                    />
+                  </Link>
+                  <div className="lg:mt-3 lg:self-center lg:text-center">
+                    <div className="text-[15px] font-bold leading-none text-white transition-colors lg:text-[16px]">
+                      <Link
+                        to={`/${encodeURIComponent(playlist.owner.username)}`}
+                        className="hover:text-zinc-300"
+                      >
+                        {playlist.owner?.displayName ||
+                          playlist.owner?.username}
+                      </Link>
                     </div>
-                    <div className="mt-2 flex items-center justify-center gap-1 text-sm font-semibold text-zinc-400">
+                    <div className="mt-1 flex items-center gap-1 text-sm font-semibold text-zinc-400 lg:mt-2 lg:justify-center">
                       <User size={12} />
                       <span className="text-[11px]">
                         {playlist.owner.followerCount}
@@ -109,7 +167,10 @@ const PlaylistPage: React.FC = () => {
               </aside>
 
               <div className="min-w-0 flex-1 mt-4">
-                <TrackList tracks={tracks} />
+                <TrackList
+                  tracks={tracks}
+                  onReorder={isOwner ? handleReorder : undefined}
+                />
               </div>
             </div>
           </div>
