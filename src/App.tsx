@@ -147,6 +147,10 @@ const router = createBrowserRouter([
         element: <LibraryPage />
       },
       {
+        path: '/me/downloads',
+        element: <LibraryPage />
+      },
+      {
         path: "/collections/:id",
         element: <PlaylistPage />
       },

@@ -6,17 +6,11 @@ import AlbumsTab from "../tabs/AlbumsTab";
 import StationsTab from "../tabs/StationsTab";
 import FollowingTab from "../tabs/FollowingTab";
 import HistoryTab from "../tabs/HistoryTab";
+import DownloadsTab from "../tabs/DownloadsTab";
+import { useMe } from "@/features/profile/context/useMe";
 
-const TABS = [
-  "Overview",
-  "Likes",
-  "Playlists",
-  "Albums",
-  "Stations",
-  "Following",
-  "History",
-] as const;
-type Tab = (typeof TABS)[number];
+const TABS = ["Overview", "Likes", "Playlists", "Albums", "Stations", "Following", "History", "Downloads"] as const;
+type Tab = typeof TABS[number];
 
 const TAB_TO_PATH: Record<Tab, string> = {
   Overview: "/library",
@@ -25,7 +19,8 @@ const TAB_TO_PATH: Record<Tab, string> = {
   Albums: "/me/albums",
   Stations: "/me/stations",
   Following: "/me/following",
-  History: "/me/history",
+  History:   "/me/history",
+  Downloads: "/me/downloads",
 };
 
 const PATH_TO_TAB: Record<string, Tab> = Object.fromEntries(
@@ -33,8 +28,9 @@ const PATH_TO_TAB: Record<string, Tab> = Object.fromEntries(
 );
 
 export default function LibraryPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate   = useNavigate();
+  const location   = useLocation();
+  const { me }     = useMe();
   const activeTab: Tab = PATH_TO_TAB[location.pathname] ?? "Overview";
 
   const footerLinks = [
@@ -51,20 +47,14 @@ export default function LibraryPage() {
 
   const renderTab = () => {
     switch (activeTab) {
-      case "Overview":
-        return <OverviewTab />;
-      case "Likes":
-        return <LikesTab />;
-      case "Playlists":
-        return <PlaylistsTab />;
-      case "Albums":
-        return <AlbumsTab />;
-      case "Stations":
-        return <StationsTab />;
-      case "Following":
-        return <FollowingTab />;
-      case "History":
-        return <HistoryTab />;
+      case "Overview":  return <OverviewTab />;
+      case "Likes":     return <LikesTab />;
+      case "Playlists": return <PlaylistsTab />;
+      case "Albums":    return <AlbumsTab />;
+      case "Stations":  return <StationsTab />;
+      case "Following": return <FollowingTab />;
+      case "History":   return <HistoryTab />;
+      case "Downloads": return <DownloadsTab />;
     }
   };
 

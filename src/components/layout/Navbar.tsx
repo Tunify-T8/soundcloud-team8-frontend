@@ -19,7 +19,10 @@ import {
 } from "@/features/notifications/service/service"; 
 import type {NotificationObject} from "@/features/notifications/types"
 import { getAccessToken } from "@/features/auth/utils/token.utils";
-import CheckoutModal from "@/features/premium/components/CheckoutModal";
+import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
+import { useSubscription } from "@/hooks/useSubscription";
+import SubscriptionBadge from "@/features/premium/components/SubscriptionBadge";
+import MyPlanModal from "@/features/premium/components/MyPlanModal";
 
 
 function timeAgo(dateStr: string): string {
@@ -54,16 +57,16 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { me } = useMe();
+  const { tier, isArtist, isArtistPro } = useSubscription();
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [planModalOpen, setPlanModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
-
   // Notification state
   const [notifications, setNotifications] = useState<NotificationObject[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -253,6 +256,14 @@ export default function Navbar() {
     ]},
   ];
 
+  const hasPaidPlan = isArtist || isArtistPro;
+  const avatarBadge = tier !== "free";
+  const planButtonClass = isArtistPro
+    ? "border-[#c9a227] hover:bg-[#c9a227] hover:text-black"
+    : isArtist
+      ? "border-[#b8adff] hover:bg-[#b8adff] hover:text-black"
+      : "border-orange-500 hover:bg-orange-500";
+
   return (
     <>
       <nav className="w-full bg-black text-white border-b border-zinc-800 sticky top-0 z-50">
@@ -273,12 +284,20 @@ export default function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center gap-5 text-sm">
-            <button
-              onClick={() => setCheckoutOpen(true)}
-              className="border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-1 rounded-sm transition-colors duration-150 text-xs"
-            >
-              Try Free
-            </button>
+            {hasPaidPlan ? (
+              <button
+                onClick={() => setPlanModalOpen(true)}
+                className={`border text-white font-bold tracking-tight px-3 py-1 rounded-sm transition-colors duration-150 text-xs ${planButtonClass}`}
+              >
+                View My Plan
+              </button>
+            ) : (
+              <ArtistProUpgradeButton
+                className="border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-1 rounded-sm transition-colors duration-150 text-xs"
+              >
+                Try Free
+              </ArtistProUpgradeButton>
+            )}
             <Link to="/artists" className="text-zinc-400 hover:text-white font-bold tracking-tight">For Artists</Link>
             <Link to="/upload" className="text-zinc-400 hover:text-white font-bold tracking-tight ml-1">Upload</Link>
 
@@ -286,14 +305,21 @@ export default function Navbar() {
             <div className="relative flex items-center gap-0" ref={profileMenuRef}>
               <Link
                 to="/me"
-                className="w-7 h-7 bg-zinc-600 rounded-full cursor-pointer flex items-center justify-center overflow-hidden"
+                className="relative w-7 h-7 bg-zinc-600 rounded-full cursor-pointer flex items-center justify-center overflow-visible"
                 title="My Profile"
               >
-                {me?.avatarUrl ? (
-                  <img src={me.avatarUrl} alt="My Profile" className="w-full h-full object-cover rounded-full" />
-                ) : (
-                  <span className="text-xs text-white font-bold">
-                    {me?.username?.charAt(0).toUpperCase()}
+                <span className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
+                  {me?.avatarUrl ? (
+                    <img src={me.avatarUrl} alt="My Profile" className="w-full h-full object-cover rounded-full" />
+                  ) : (
+                    <span className="text-xs text-white font-bold">
+                      {me?.username?.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                </span>
+                {avatarBadge && (
+                  <span className="pointer-events-none absolute right-0 top-0 z-10 translate-x-[28%] -translate-y-[18%]">
+                    <SubscriptionBadge tier={tier} size={16} />
                   </span>
                 )}
               </Link>
@@ -479,17 +505,25 @@ export default function Navbar() {
               <Link to="/upload" className="text-zinc-300 hover:text-white">Upload</Link>
               <Link to="/me" className="text-zinc-300 hover:text-white">Profile</Link>
             </div>
-            <button
-              onClick={() => setCheckoutOpen(true)}
-              className="w-full border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-2 rounded-sm transition-colors duration-150 text-xs"
-            >
-              Try Free
-            </button>
+            {hasPaidPlan ? (
+              <button
+                onClick={() => setPlanModalOpen(true)}
+                className={`w-full border text-white font-bold tracking-tight px-3 py-2 rounded-sm transition-colors duration-150 text-xs ${planButtonClass}`}
+              >
+                View My Plan
+              </button>
+            ) : (
+              <ArtistProUpgradeButton
+                className="w-full border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-2 rounded-sm transition-colors duration-150 text-xs"
+              >
+                Try Free
+              </ArtistProUpgradeButton>
+            )}
           </div>
         )}
       </nav>
       <Outlet />
-      {checkoutOpen && <CheckoutModal plan = "artist-pro" onClose={() => setCheckoutOpen(false)} />}
+      {planModalOpen && <MyPlanModal onClose={() => setPlanModalOpen(false)} />}
     </>
   );
 }

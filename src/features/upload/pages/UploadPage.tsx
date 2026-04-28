@@ -1,18 +1,18 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import Recorder from "../components/Recorder";
-import TrackInfoPage from "../components/TrackInfo";
 import { useDispatch } from "react-redux";
+import { SiSoundcloud } from "react-icons/si";
 import { useAppSelector } from "../../../app/hooks";
 import { setAudioSource } from "../../../store/AudioSourceSlice";
-import { SiSoundcloud } from "react-icons/si";
-import CheckoutModal from "@/features/premium/components/CheckoutModal";
-import ArtistModal from "@/features/premium/components/ArtistModal";
 import { api } from "@/features/auth/services/api";
+import ArtistModal from "@/features/premium/components/ArtistModal";
+import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
+import Recorder from "../components/Recorder";
+import TrackInfoPage from "../components/TrackInfo";
 import uploadImg from "@/assets/upload.png";
 
 type UploadQuota = {
   tier: string;
-  uploadMinutesLimit: number | null; // null = unlimited (Artist Pro)
+  uploadMinutesLimit: number | null;
   uploadMinutesUsed: number;
   uploadMinutesRemaining: number | null;
   canReplaceFiles: boolean;
@@ -20,20 +20,16 @@ type UploadQuota = {
   canAccessAdvancedTab: boolean;
 };
 
-// ─── Limit Reached Screen ────────────────────────────────────────────────────
 function UploadLimitScreen({
   quota,
-  onUpgrade,
 }: {
   quota: UploadQuota;
-  onUpgrade: () => void;
 }) {
   const used = quota.uploadMinutesUsed;
   const limit = quota.uploadMinutesLimit ?? 180;
 
   return (
     <div className="min-h-screen bg-[#111111] text-white flex flex-col font-sans">
-      {/* Header */}
       <header className="flex items-center justify-between px-8 py-4 border-b border-[#222]">
         <div className="flex items-center gap-3">
           <a href="/">
@@ -51,15 +47,12 @@ function UploadLimitScreen({
         </a>
       </header>
 
-      {/* Quota bar — red/over-limit */}
       <div className="bg-[hsl(0,0%,11%)] border-b border-[hsl(0,0%,18%)] flex items-center justify-between px-8 py-3 shrink-0">
         <div className="flex items-center gap-3">
-          {/* Cloud icon with crack / broken look */}
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" strokeWidth="2">
             <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z" />
           </svg>
           <span className="text-white text-sm font-medium tracking-tighter">100% of uploads used</span>
-          {/* Red progress bar */}
           <div className="w-44 h-1.5 bg-[hsl(0,0%,23%)] rounded-full overflow-hidden">
             <div className="h-full bg-[#e74c3c] rounded-full" style={{ width: "100%" }} />
           </div>
@@ -67,30 +60,25 @@ function UploadLimitScreen({
             {used} of {limit} minutes
           </span>
         </div>
-        <button
-          onClick={onUpgrade}
+        <ArtistProUpgradeButton
           className="bg-black text-white text-sm font-bold tracking-tighter px-5 py-2 rounded-full hover:bg-[hsl(0,0%,20%)] transition-colors border border-[#333]"
         >
           Get unlimited uploads
-        </button>
+        </ArtistProUpgradeButton>
       </div>
 
-      {/* Main content */}
       <main className="flex-1 flex px-8 py-12 max-w-[1100px] mx-auto w-full gap-16 items-start">
-        {/* Left: text */}
         <div className="flex-1 pt-4">
           <h1 className="text-[28px] font-bold mb-3">You've reached your upload limit.</h1>
           <p className="text-[#aaa] text-[15px] mb-8">
             Unlock unlimited uploads, monetization, distribution, and much more with Artist Pro
           </p>
-          <button
-            onClick={onUpgrade}
+          <ArtistProUpgradeButton
             className="bg-white text-black font-bold px-6 py-3 rounded-full text-[14px] hover:bg-[#eee] transition"
           >
             Unlock with Artist Pro
-          </button>
+          </ArtistProUpgradeButton>
 
-          {/* Feature highlights */}
           <div className="mt-12">
             <p className="text-xs text-[#666] font-semibold tracking-widest uppercase mb-6">
               Artist Pro Membership Highlights
@@ -106,7 +94,7 @@ function UploadLimitScreen({
                     </svg>
                   ),
                   title: "Unlimited track uploads",
-                  desc: "Artist Pro subscribers can upload as many private & public tracks as they want.",
+                  desc: "Artist Pro subscribers can upload as many private and public tracks as they want.",
                 },
                 {
                   icon: (
@@ -175,10 +163,8 @@ function UploadLimitScreen({
           </div>
         </div>
 
-        {/* Right: hourglass illustration placeholder */}
         <div className="w-[320px] flex-shrink-0 flex items-center justify-center pt-4">
           <div className="w-64 h-64 flex items-center justify-center">
-            {/* Hourglass SVG illustration */}
             <svg viewBox="0 0 200 260" width="220" height="280" fill="none">
               <ellipse cx="100" cy="30" rx="70" ry="18" fill="#e74c3c" opacity="0.9" />
               <ellipse cx="100" cy="230" rx="70" ry="18" fill="#e74c3c" opacity="0.9" />
@@ -186,7 +172,6 @@ function UploadLimitScreen({
               <path d="M30 230 Q100 130 170 230" fill="#c0392b" opacity="0.85" />
               <rect x="28" y="18" width="144" height="12" rx="6" fill="#e74c3c" />
               <rect x="28" y="230" width="144" height="12" rx="6" fill="#e74c3c" />
-              {/* sand particles */}
               {[95, 100, 105, 98, 102].map((cx, i) => (
                 <circle key={i} cx={cx} cy={140 + i * 8} r="3" fill="#e67e22" opacity="0.7" />
               ))}
@@ -196,7 +181,6 @@ function UploadLimitScreen({
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="border-t border-[#1e1e1e] py-6 flex justify-center flex-wrap gap-2 text-[12px] text-[#666]">
         {["Legal", "Privacy", "Cookie Policy", "Cookie Manager", "Imprint", "About us", "Copyright", "Feedback"].map(
           (item, i) => (
@@ -204,22 +188,19 @@ function UploadLimitScreen({
               <a className="hover:text-[#aaa] px-1 cursor-pointer">{item}</a>
               {i < 7 && <span>-</span>}
             </span>
-          )
+          ),
         )}
       </footer>
     </div>
   );
 }
 
-// ─── Main Upload Page ─────────────────────────────────────────────────────────
 export default function SoundCloudUpload() {
   const [isDragging, setIsDragging] = useState(false);
   const [micOpen, setMicOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [showArtistModal, setShowArtistModal] = useState(false);
 
-  // Quota state
   const [quota, setQuota] = useState<UploadQuota | null>(null);
   const [quotaLoading, setQuotaLoading] = useState(true);
   const [limitReached, setLimitReached] = useState(false);
@@ -227,13 +208,11 @@ export default function SoundCloudUpload() {
   const dispatch = useDispatch();
   const readyToNavigate = useAppSelector((s) => s.audioSource.readyToNavigate);
 
-  // ── Fetch upload quota on mount ──────────────────────────────────────────
   useEffect(() => {
     const fetchQuota = async () => {
       try {
         const { data } = await api.get<UploadQuota>("/users/me/upload");
         setQuota(data);
-        // If already at/over limit, show limit screen immediately
         if (
           data.uploadMinutesLimit !== null &&
           data.uploadMinutesUsed >= data.uploadMinutesLimit
@@ -249,13 +228,13 @@ export default function SoundCloudUpload() {
     fetchQuota();
   }, []);
 
-  // ── Derived quota display values ─────────────────────────────────────────
   const isUnlimited = quota?.uploadMinutesLimit === null;
   const minutesLimit = quota?.uploadMinutesLimit ?? 0;
   const minutesUsed = quota?.uploadMinutesUsed ?? 0;
-  const percentUsed = isUnlimited || minutesLimit === 0
-    ? 0
-    : Math.min(100, Math.round((minutesUsed / minutesLimit) * 100));
+  const percentUsed =
+    isUnlimited || minutesLimit === 0
+      ? 0
+      : Math.min(100, Math.round((minutesUsed / minutesLimit) * 100));
   const isOverLimit = !isUnlimited && percentUsed >= 100;
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -279,10 +258,10 @@ export default function SoundCloudUpload() {
           name: file.name,
           size: file.size,
           mimeType: file.type,
-        })
+        }),
       );
     },
-    [dispatch, limitReached]
+    [dispatch, limitReached],
   );
 
   const handleFileSelect = useCallback(
@@ -297,19 +276,17 @@ export default function SoundCloudUpload() {
           name: file.name,
           size: file.size,
           mimeType: file.type,
-        })
+        }),
       );
     },
-    [dispatch, limitReached]
+    [dispatch, limitReached],
   );
 
-  // Show limit-reached screen
   if (limitReached && quota) {
     return (
-      <UploadLimitScreen
-        quota={quota}
-        onUpgrade={() => setCheckoutOpen(true)}
-      />
+      <>
+        <UploadLimitScreen quota={quota} />
+      </>
     );
   }
 
@@ -318,10 +295,14 @@ export default function SoundCloudUpload() {
   }
 
   return (
-    <div className="min-h-screen bg-[#111111] text-white flex flex-col font-sans" data-testid="upload-page">
-
-      {/* HEADER */}
-      <header className="flex items-center justify-between px-8 py-4 border-b border-[#222]" data-testid="upload-header">
+    <div
+      className="min-h-screen bg-[#111111] text-white flex flex-col font-sans"
+      data-testid="upload-page"
+    >
+      <header
+        className="flex items-center justify-between px-8 py-4 border-b border-[#222]"
+        data-testid="upload-header"
+      >
         <div className="flex items-center gap-3 hover:opacity-80 transition">
           <a href="/">
             <SiSoundcloud size={36} color="white" />
@@ -338,11 +319,8 @@ export default function SoundCloudUpload() {
         </a>
       </header>
 
-      {/* MAIN */}
       <main className="flex-1 flex justify-center px-6 py-10">
         <div className="w-full max-w-[1100px]">
-
-          {/* QUOTA BAR */}
           <div
             className="bg-[hsl(0,0%,11%)] border-b border-[hsl(0,0%,18%)] flex items-center justify-between px-8 py-3 shrink-0"
             data-testid="upload-quota-bar"
@@ -351,22 +329,28 @@ export default function SoundCloudUpload() {
               className="flex items-center gap-3 cursor-pointer"
               onClick={() => setShowArtistModal(true)}
             >
-              {/* Cloud upload icon */}
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={isOverLimit ? "#e74c3c" : "hsl(0,0%,60%)"} strokeWidth="2">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={isOverLimit ? "#e74c3c" : "hsl(0,0%,60%)"}
+                strokeWidth="2"
+              >
                 <polyline points="16 16 12 12 8 16" />
                 <line x1="12" y1="12" x2="12" y2="21" />
                 <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
               </svg>
 
               {quotaLoading ? (
-                <span className="text-[#555] text-sm animate-pulse">Loading…</span>
+                <span className="text-[#555] text-sm animate-pulse">Loading...</span>
               ) : isUnlimited ? (
                 <>
                   <span className="text-white text-sm font-medium tracking-tighter">Unlimited uploads</span>
                   <div className="w-44 h-1.5 bg-[hsl(0,0%,23%)] rounded-full overflow-hidden">
                     <div className="h-full bg-[hsl(142,69%,36%)] rounded-full" style={{ width: "0%" }} />
                   </div>
-                  <span className="text-white text-sm font-semibold">∞ minutes</span>
+                  <span className="text-white text-sm font-semibold">Unlimited</span>
                 </>
               ) : (
                 <>
@@ -389,41 +373,29 @@ export default function SoundCloudUpload() {
               )}
             </div>
 
-            <button
-              onClick={() => setCheckoutOpen(true)}
+            <ArtistProUpgradeButton
               className="bg-black text-white text-sm font-bold tracking-tighter px-5 py-2 rounded-full hover:bg-[hsl(0,0%,20%)] transition-colors"
               data-testid="get-unlimited-btn"
             >
               Get unlimited uploads
-            </button>
-
-            {checkoutOpen && <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />}
+            </ArtistProUpgradeButton>
           </div>
 
-          {/* TITLE */}
           <h1 className="text-[26px] font-semibold mb-2 mt-8">Upload your audio files.</h1>
           <p className="text-[13px] text-[#888] mb-8">
             For best quality, use WAV, FLAC, AIFF, or ALAC. The maximum file size is 4GB uncompressed.
             <a className="underline ml-1 hover:text-white cursor-pointer">Learn more</a>
           </p>
 
-          {/* DROPZONE — cloned layout from screenshot 4 */}
           <div
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onClick={() => !limitReached && fileInputRef.current?.click()}
             data-testid="upload-dropzone"
-            className={`
-              w-full rounded-xl
-              flex flex-col items-center justify-center
-              cursor-pointer transition-all mb-6 py-20
-              border-2 border-dashed
-              ${isDragging
-                ? "border-[#ff5500] bg-[#ff5500]/5"
-                : "border-[#3a3a3a] hover:border-[#555]"
-              }
-            `}
+            className={`w-full rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all mb-6 py-20 border-2 border-dashed ${
+              isDragging ? "border-[#ff5500] bg-[#ff5500]/5" : "border-[#3a3a3a] hover:border-[#555]"
+            }`}
             style={{
               background: isDragging ? undefined : "linear-gradient(180deg, #161616 0%, #111111 100%)",
               boxShadow: "0 15px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.03)",
@@ -439,7 +411,7 @@ export default function SoundCloudUpload() {
               onChange={handleFileSelect}
             />
 
-           <img src={uploadImg} alt="Upload" className="w-16 h-16 mb-4 opacity-90" />
+            <img src={uploadImg} alt="Upload" className="w-16 h-16 mb-4 opacity-90" />
 
             <p className="mt-6 text-[15px] font-semibold text-white">
               Drag and drop audio files to get started.
@@ -459,7 +431,6 @@ export default function SoundCloudUpload() {
 
           <Recorder micOpen={micOpen} setMicOpen={setMicOpen} />
 
-          {/* FOOTER */}
           <footer
             className="border-t border-[#1e1e1e] py-6 flex justify-center flex-wrap gap-2 text-[12px] text-[#666]"
             data-testid="upload-footer"
@@ -470,14 +441,12 @@ export default function SoundCloudUpload() {
                   <a className="hover:text-[#aaa] px-1 cursor-pointer">{item}</a>
                   {i < 7 && <span>-</span>}
                 </span>
-              )
+              ),
             )}
           </footer>
         </div>
       </main>
-
-      {checkoutOpen && <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />}
-      {showArtistModal && <ArtistModal onClose={() => setShowArtistModal(false)} />}
+      {showArtistModal ? <ArtistModal onClose={() => setShowArtistModal(false)} /> : null}
     </div>
   );
 }
