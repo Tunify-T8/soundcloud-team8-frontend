@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import SettingsSection from "../components/shared/SettingsSection";
 
 function FieldLabel({ children }: { children: ReactNode }) {
-  return <label className="mb-2 block font-black text-[var(--sc-text)]">{children}</label>;
+  return <label className="mb-2 block font-black text-white">{children}</label>;
 }
 
 function TextInput({
@@ -24,7 +24,7 @@ function TextInput({
       placeholder={placeholder}
       readOnly={readOnly}
       onChange={() => undefined}
-      className="h-10 w-full rounded-sm bg-[var(--sc-surface)] px-4 text-[13px] font-semibold text-[var(--sc-text)] placeholder:text-[var(--sc-text-secondary)]"
+      className="h-10 w-full rounded-sm bg-[var(--sc-surface)] px-4 text-[13px] font-semibold text-white placeholder:text-zinc-400"
     />
   );
 }
@@ -34,7 +34,7 @@ function SelectInput({ testId, value }: { testId: string; value: string }) {
     <button
       type="button"
       data-testid={testId}
-      className="flex h-10 w-full items-center justify-between rounded-sm bg-[var(--sc-surface)] px-4 text-left text-[13px] font-semibold text-[var(--sc-text)]"
+      className="flex h-10 w-full items-center justify-between rounded-sm bg-[var(--sc-surface)] px-4 text-left text-[13px] font-semibold text-white"
     >
       {value}
       <ChevronDown size={22} className="text-zinc-200" aria-hidden="true" />
@@ -44,7 +44,7 @@ function SelectInput({ testId, value }: { testId: string; value: string }) {
 
 function CheckRow({ label, testId }: { label: string; testId: string }) {
   return (
-    <label className="flex w-fit cursor-pointer items-center gap-4 font-black text-[var(--sc-text)]">
+    <label className="flex w-fit cursor-pointer items-center gap-4 font-black text-white">
       <input type="checkbox" data-testid={testId} className="h-5 w-5 rounded-sm accent-white" />
       {label}
     </label>
@@ -110,7 +110,7 @@ export default function ContentTab() {
       </SettingsSection>
 
       <div className="flex justify-end gap-8" data-testid="content-actions">
-        <button type="button" data-testid="content-cancel-button" className="font-black text-[var(--sc-text)]">
+        <button type="button" data-testid="content-cancel-button" className="font-black text-white">
           Cancel
         </button>
         <button type="button" data-testid="content-save-button" className="rounded-sm bg-zinc-400 px-5 py-3 text-[13px] font-black text-black">

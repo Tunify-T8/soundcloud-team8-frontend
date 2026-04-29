@@ -145,7 +145,7 @@ export default function AccountTab() {
                 data-testid={themeOption.testId}
                 className="h-4 w-4 accent-[var(--sc-text)]"
               />
-              <span className="text-sm">{themeOption.label}</span>
+              <span className="text-sm text-white">{themeOption.label}</span>
             </label>
           ))}
         </div>
@@ -153,13 +153,13 @@ export default function AccountTab() {
 
       <SettingsSection title="Email addresses" data-testid="settings-section-email-addresses">
         <div className="mb-4 space-y-3">
-          <p data-testid="email-primary" className="font-semibold">
-            asmahanbettar@gmail.com <span className="text-[var(--sc-text-secondary)]">(Primary)</span>
+            <p data-testid="email-primary" className="font-semibold text-white">
+            asmahanbettar@gmail.com <span className="text-zinc-400">(Primary)</span>
           </p>
           {unconfirmedEmail && (
-            <p data-testid="email-unconfirmed" className="font-semibold text-[var(--sc-text-secondary)]">
+            <p data-testid="email-unconfirmed" className="font-semibold text-zinc-400">
               {unconfirmedEmail} (Not confirmed -{" "}
-              <button type="button" data-testid="email-resend-confirmation" className="font-black text-[var(--sc-text)]">
+              <button type="button" data-testid="email-resend-confirmation" className="font-black text-white">
                 Resend confirmation email
               </button>{" "}
               -{" "}
@@ -167,7 +167,7 @@ export default function AccountTab() {
                 type="button"
                 data-testid="email-remove-address"
                 onClick={() => setUnconfirmedEmail("")}
-                className="font-black text-[var(--sc-text)]"
+                className="font-black text-white"
               >
                 Remove address
               </button>
@@ -183,14 +183,14 @@ export default function AccountTab() {
               onChange={(event) => setEmailInput(event.target.value)}
               placeholder="Please enter your email address *"
               data-testid="email-input"
-              className="h-11 w-full max-w-[380px] rounded-sm border border-[var(--sc-text-secondary)] bg-[var(--sc-surface)] px-5 text-sm text-[var(--sc-text)] placeholder:text-[var(--sc-text-secondary)]"
+              className="h-11 w-full max-w-[380px] rounded-sm border border-zinc-500 bg-[var(--sc-surface)] px-5 text-sm text-white placeholder:text-zinc-400"
             />
             <div className="flex items-center gap-8">
               <button
                 type="button"
                 data-testid="email-submit-button"
                 onClick={submitEmail}
-                className="rounded-md bg-[var(--sc-text)] px-5 py-3 text-sm font-black text-[var(--sc-bg)] hover:opacity-90"
+                className="rounded-md bg-white px-5 py-3 text-sm font-black text-black hover:opacity-90"
               >
                 Add
               </button>
@@ -198,7 +198,7 @@ export default function AccountTab() {
                 type="button"
                 data-testid="email-cancel-button"
                 onClick={() => setIsEmailFormOpen(false)}
-                className="text-sm font-black text-[var(--sc-text)] hover:opacity-80"
+                className="text-sm font-black text-white hover:opacity-80"
               >
                 Cancel
               </button>
@@ -221,7 +221,7 @@ export default function AccountTab() {
             <FcGoogle size={18} aria-hidden="true" />
             <p className="font-semibold">Asmahan Bettar</p>
           </div>
-          <button type="button" data-testid="social-disconnect-google" className="w-fit font-semibold text-[var(--sc-text)] hover:underline">
+          <button type="button" data-testid="social-disconnect-google" className="w-fit font-semibold text-white hover:underline">
             Disconnect account
           </button>
         </div>
@@ -229,10 +229,10 @@ export default function AccountTab() {
           <button type="button" data-testid="social-add-facebook" className="flex items-center gap-3 rounded-sm bg-[#1457d9] px-4 py-2 text-sm font-black text-white">
             <FaFacebookF /> Add Facebook account
           </button>
-          <button type="button" data-testid="social-add-google" className="flex items-center gap-3 rounded-sm bg-white/10 px-4 py-2 text-sm font-black text-[var(--sc-text)]">
+          <button type="button" data-testid="social-add-google" className="flex items-center gap-3 rounded-sm bg-white/10 px-4 py-2 text-sm font-black text-white">
             <FcGoogle /> Add Google account
           </button>
-          <button type="button" data-testid="social-add-apple" className="flex items-center gap-3 rounded-sm bg-white px-4 py-2 text-sm font-black text-black">
+          <button type="button" data-testid="social-add-apple" className="flex items-center gap-3 rounded-sm bg-white px-4 py-2 text-sm font-black text-[var(--sc-bg)]">
             <FaApple /> Add Apple account
           </button>
         </div>
