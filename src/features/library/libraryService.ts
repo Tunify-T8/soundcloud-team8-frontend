@@ -86,6 +86,69 @@ function formatTimeAgo(isoDate: string): string {
   return `${days}d ago`;
 }
 
+// ─── Liked Tracks ───────────────────────────────────────────
+
+export interface LikedTrackItem {
+  likedAt: string;
+  track: {
+    id: string;
+    title: string;
+    description?: string;
+    audioUrl: string;
+    coverUrl: string | null;
+    duration: number;
+    likesCount: number;
+    commentsCount: number;
+    repostsCount: number;
+    createdAt: string;
+  };
+  artist: {
+    id: string;
+    username: string;
+    displayName: string | null;
+  };
+}
+
+export interface LikedTracksResponse {
+  data: LikedTrackItem[];
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
+
+export async function getLikedTracks(
+  page = 1,
+  limit = 20,
+): Promise<LikedTracksResponse | null> {
+  try {
+    const response = await api.get<LikedTracksResponse>(
+      "/users/me/liked-tracks",
+      { params: { page, limit } },
+    );
+    console.log("Liked tracks API response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch liked tracks:", error);
+    return null;
+  }
+}
+
+/** Maps API LikedTrackItem → TrackItem used by TrackRow / SongCard */
+export function mapLikedTrackToTrackItem(item: LikedTrackItem) {
+  const { track, likedAt, artist } = item;
+  return {
+    id: track.id,
+    title: track.title,
+    artist: artist.displayName || artist.username,
+    coverUrl: track.coverUrl ?? undefined,
+    timeAgo: formatTimeAgo(likedAt),
+    durationSeconds: track.duration,
+    likes: String(track.likesCount),
+    reposts: String(track.repostsCount),
+    comments: String(track.commentsCount),
+  };
+}
+
 export const playlistService = {
   normalizeShareUrl(rawUrl: string): string {
     const trimmed = rawUrl.trim();

@@ -139,7 +139,7 @@ export default function ProfileSideBar({
     };
   }, [followingUsers, me?.id]);
 
-  const visibleFollowerUsers = localFollowerUsers.slice(0, 8);
+  const visibleFollowerUsers = localFollowerUsers.slice(0, 3);
   const visibleFollowingUsers = localFollowingUsers.slice(0, 3);
   const followingCount = localFollowingUsers.length;
   const followersCountLabel = Number(followers ?? 0);

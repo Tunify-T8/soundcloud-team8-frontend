@@ -23,6 +23,8 @@ function ShareOverlay({
   const linkRef = useRef<HTMLInputElement>(null);
   const [embedCode, setEmbedCode] = useState("");
   const [embedLoading, setEmbedLoading] = useState(false);
+  const [embedFailed, setEmbedFailed] = useState(false);
+  const [embedCopied, setEmbedCopied] = useState(false);
 
   const selectAllLink = () => {
     linkRef.current?.focus();
@@ -30,18 +32,29 @@ function ShareOverlay({
   };
 
   useEffect(() => {
-    if (!canEmbed || activeTab !== "embed" || embedCode || embedLoading) return;
+    if (activeTab !== "embed" || embedCode || embedLoading || embedFailed) return;
 
     setEmbedLoading(true);
     void playlistService
       .getEmbedCode(playlistId)
       .then((code) => {
-        setEmbedCode(code ?? "");
+        if (code) {
+          setEmbedCode(code);
+        } else {
+          setEmbedFailed(true);
+        }
       })
       .finally(() => {
         setEmbedLoading(false);
       });
-  }, [activeTab, embedCode, embedLoading, playlistId]);
+  }, [activeTab, embedCode, embedLoading, embedFailed, playlistId]);
+
+  const handleCopyEmbed = async () => {
+    if (!embedCode) return;
+    await navigator.clipboard.writeText(embedCode);
+    setEmbedCopied(true);
+    window.setTimeout(() => setEmbedCopied(false), 2200);
+  };
 
   return (
     <div
@@ -119,13 +132,30 @@ function ShareOverlay({
             </label>
           </>
         ) : activeTab === "embed" ? (
-          <div className="mb-3 rounded-[3px] bg-[#242424] px-4 py-3">
-            <textarea
-              readOnly
-              value={embedLoading ? "Loading embed code..." : embedCode}
-              className="min-h-[96px] w-full resize-none bg-transparent text-[14px] font-semibold text-zinc-100 outline-none sm:text-[15px]"
-            />
-          </div>
+          embedFailed ? (
+            <div className="py-6 text-center text-[15px] font-semibold text-zinc-400">
+              Embed is only available for public playlists.
+            </div>
+          ) : (
+            <>
+              <div className="mb-3 rounded-[3px] bg-[#242424] px-4 py-3">
+                <textarea
+                  readOnly
+                  value={embedLoading ? "Loading embed code…" : embedCode}
+                  className="min-h-[96px] w-full resize-none bg-transparent text-[14px] font-semibold text-zinc-100 outline-none sm:text-[15px]"
+                />
+              </div>
+              <button
+                type="button"
+                disabled={embedLoading || !embedCode}
+                onClick={() => void handleCopyEmbed()}
+                className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-[3px] bg-[#f50] px-4 py-2 text-[15px] font-bold text-white transition hover:bg-[#ff6a1f] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Copy size={15} strokeWidth={2} />
+                {embedCopied ? "Copied!" : "Copy Code"}
+              </button>
+            </>
+          )
         ) : (
           <div className="py-6 text-[24px] text-zinc-400">
             Messaging share is coming soon.
@@ -146,7 +176,7 @@ interface ActionBarProps {
 }
 
 const buttonClass =
-  "flex h-8 w-9 items-center justify-center rounded-[4px] bg-[#2b2d31] text-zinc-200 transition-colors hover:bg-[#3a3d42] hover:text-white";
+  "flex h-11 w-11 items-center justify-center rounded-[4px] bg-[#2b2d31] text-zinc-200 transition-colors hover:bg-[#3a3d42] hover:text-white sm:h-8 sm:w-9";
 
 const ActionBar: React.FC<ActionBarProps> = ({
   playlist,
