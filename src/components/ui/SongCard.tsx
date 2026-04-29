@@ -347,7 +347,7 @@ export default function SongCard({
               className="flex h-6 w-7 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f] sm:h-7 sm:w-9"
               aria-label={`Like (${likesCount})`}
             >
-              <Heart size={12} fill={isLiked ? "#fff" : "none"} style={{ color: "#fff" }} />
+              <Heart size={12} fill={isLiked ? "currentColor" : "none"} />
               <span className="sr-only">{likesCount}</span>
             </button>
             <button
@@ -357,7 +357,7 @@ export default function SongCard({
               aria-label={isRepostedInitial ? "Undo repost" : "Repost"}
               className="flex h-6 w-7 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f] disabled:cursor-not-allowed disabled:opacity-60 sm:h-7 sm:w-9"
             >
-              <Repeat2 size={12} style={{ color: "#fff" }} />
+              <Repeat2 size={12} />
               <span className="sr-only">{reposts}</span>
             </button>
             <button className="flex h-6 w-7 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f] sm:h-7 sm:w-9">
