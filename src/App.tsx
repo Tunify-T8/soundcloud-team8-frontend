@@ -127,7 +127,7 @@ const router = createBrowserRouter([
         element: <LibraryPage />
       },
       {
-        path: '/me/albums',
+        path: '/library/albums',
         element: <LibraryPage />
       },
       {

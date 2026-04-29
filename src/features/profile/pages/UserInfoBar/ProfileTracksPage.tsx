@@ -69,41 +69,42 @@ export default function ProfileTracksPage() {
   }, [isMeView, username]);
 
   const content = useMemo(() => {
-    if (loading) return <p className="py-10 text-sm text-zinc-400">Loading tracks...</p>;
-    if (error) return <p className="py-10 text-sm text-red-400">{error}</p>;
-    if (tracks.length === 0) return <p className="py-10 text-sm text-zinc-400">No tracks yet.</p>;
+    if (loading) return <p data-testid="profile-tracks-loading" className="py-10 text-sm text-zinc-400">Loading tracks...</p>;
+    if (error) return <p data-testid="profile-tracks-error" className="py-10 text-sm text-red-400">{error}</p>;
+    if (tracks.length === 0) return <p data-testid="profile-tracks-empty" className="py-10 text-sm text-zinc-400">No tracks yet.</p>;
 
     return (
-      <div className="mt-8 space-y-8">
+      <div data-testid="profile-tracks-list" className="mt-8 space-y-8">
         {tracks.map((track) => (
-          <SongCard
-            key={track.id}
-            trackId={track.id}
-            artistName={
-              track.artist?.displayName ||
-              track.artist?.username ||
-              me?.displayName ||
-              me?.username ||
-              "Artist"
-            }
-            title={track.title}
-            coverUrl={track.coverUrl ?? undefined}
-            timeAgo={formatTimeAgo(track.createdAt)}
-            isLikedInitial={Boolean(track.interaction?.isLiked)}
-            isRepostedInitial={Boolean(track.interaction?.isReposted)}
-            likes={String(track.engagement?.likeCount ?? 0)}
-            reposts={String(track.engagement?.repostCount ?? 0)}
-            plays={String(track.engagement?.playCount ?? 0)}
-            comments={String(track.engagement?.commentCount ?? 0)}
-            waveformSeed={waveformSeedFromId(track.id)}
-          />
+          <div key={track.id} data-testid={`profile-track-item-${track.id}`}>
+            <SongCard
+              trackId={track.id}
+              artistName={
+                track.artist?.displayName ||
+                track.artist?.username ||
+                me?.displayName ||
+                me?.username ||
+                "Artist"
+              }
+              title={track.title}
+              coverUrl={track.coverUrl ?? undefined}
+              timeAgo={formatTimeAgo(track.createdAt)}
+              isLikedInitial={Boolean(track.interaction?.isLiked)}
+              isRepostedInitial={Boolean(track.interaction?.isReposted)}
+              likes={String(track.engagement?.likeCount ?? 0)}
+              reposts={String(track.engagement?.repostCount ?? 0)}
+              plays={String(track.engagement?.playCount ?? 0)}
+              comments={String(track.engagement?.commentCount ?? 0)}
+              waveformSeed={waveformSeedFromId(track.id)}
+            />
+          </div>
         ))}
       </div>
     );
   }, [error, loading, me?.displayName, me?.username, tracks]);
 
   return (
-    <div className="w-full min-h-screen bg-[#0b0b0b] text-white">
+    <div data-testid="profile-tracks-page" className="w-full min-h-screen bg-[#0b0b0b] text-white">
       <div className="flex w-full justify-center">
         <div className="w-10/12 pr-0 lg:pr-[360px]">{content}</div>
       </div>

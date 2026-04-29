@@ -263,6 +263,22 @@ export const playlistService = {
     }
   },
 
+  async getUserAlbums(
+    username: string,
+    page = 1,
+    limit = 20,
+  ): Promise<GetUserCollectionsResponse | null> {
+    try {
+      const response = await api.get<GetUserCollectionsResponse>(
+        `/users/${encodeURIComponent(username)}/albums`,
+        { params: { page, limit } },
+      );
+      return response.data;
+    } catch {
+      return null;
+    }
+  },
+
   async getPlaylistById(id: string): Promise<Collection | null> {
     try {
       const response = await api.get(`/collections/${id}`);

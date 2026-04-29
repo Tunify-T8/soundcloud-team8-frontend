@@ -16,6 +16,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import trackFallback from "@/assets/track.jpg";
 import type { CollectionTrack } from "@/features/library/types";
 
 function formatCompactNumber(value?: number) {
@@ -65,7 +66,7 @@ const SortableTrackRow: React.FC<SortableTrackRowProps> = ({ ct, index, draggabl
           </button>
         )}
         <img
-          src={ct.track.coverUrl || "/default-cover.png"}
+          src={ct.track.coverUrl || trackFallback}
           alt={ct.track.title}
           className="h-7 w-7 shrink-0 object-cover"
         />

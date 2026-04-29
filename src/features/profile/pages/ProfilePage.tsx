@@ -114,18 +114,18 @@ export default function ProfilePage() {
   }, [isMe, me?.id, publicUser?.id]);
 
   if (!username && !me) {
-    return <div className="min-h-screen bg-[#0b0b0b] text-white">Loading...</div>;
+    return <div data-testid="profile-page-loading-me" className="min-h-screen bg-[#0b0b0b] text-white">Loading...</div>;
   }
 
   if (loading) {
-    return <div className="min-h-screen bg-[#0b0b0b] text-white">Loading...</div>;
+    return <div data-testid="profile-page-loading" className="min-h-screen bg-[#0b0b0b] text-white">Loading...</div>;
   }
 
   const user = username ? publicUser : me;
 
   if (error || !user) {
     return (
-      <div className="min-h-screen bg-[#0b0b0b] text-white">
+      <div data-testid="profile-page-error" className="min-h-screen bg-[#0b0b0b] text-white">
         {error || "User not found."}
       </div>
     );
@@ -160,7 +160,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0b0b0b] text-white">
+    <div data-testid="profile-page" className="min-h-screen bg-[#0b0b0b] text-white">
       <Header
         displayName={user.displayName ?? undefined}
         username={user.username}
@@ -172,7 +172,7 @@ export default function ProfilePage() {
         isMe={isMe}
         onProfileUpdated={refreshProfile}
       />
-      <div className="relative bg-[#0b0b0b]">
+      <div data-testid="profile-page-user-info" className="relative bg-[#0b0b0b]">
         <UserInfoBar
           displayName={user.displayName ?? undefined}
           username={user.username}
@@ -189,13 +189,13 @@ export default function ProfilePage() {
           followersCount={followersCount ?? user.followersCount}
           onFollowersChange={setFollowersCount}
         />
-        <div className="absolute right-[8.333333%] top-full mt-4 hidden lg:block">
+        <div data-testid="profile-sidebar-desktop" className="absolute right-[8.333333%] top-full mt-4 hidden lg:block">
           <ProfileSideBar {...sidebarProps} />
         </div>
       </div>
-      <div className="bg-[#0b0b0b] min-h-screen pb-28">
+      <div data-testid="profile-page-content" className="bg-[#0b0b0b] min-h-screen pb-28">
         <Outlet />
-        <div className="mx-auto mt-4 w-10/12 lg:hidden">
+        <div data-testid="profile-sidebar-mobile" className="mx-auto mt-4 w-10/12 lg:hidden">
           <ProfileSideBar {...sidebarProps} />
         </div>
       </div>

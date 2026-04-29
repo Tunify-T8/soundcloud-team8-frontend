@@ -50,6 +50,13 @@ type RawUserRepostsResponse =
     hasMore?: boolean;
   };
 
+type RawPopularTracksResponse = {
+  tracks?: unknown[];
+  page?: number;
+  limit?: number;
+  hasMore?: boolean;
+};
+
 function normalizeSocialLinksResponse(payload: unknown): SocialAccountsMap {
   const map: SocialAccountsMap = {};
 
@@ -271,6 +278,45 @@ export const profileService = {
     return normalizeTracksResponse(data);
   },
 
+  async getMePopularTracks(page = 1, limit = 20): Promise<UserTracksResponse> {
+    const { data } = await api.get<RawPopularTracksResponse>(
+      `/users/me/popular-tracks?page=${page}&limit=${limit}`,
+    );
+
+    const tracks = (Array.isArray(data.tracks) ? data.tracks : []).map((value) => {
+      const track = (value && typeof value === "object"
+        ? value
+        : {}) as Record<string, unknown>;
+
+      return {
+        id: String(track.id ?? ""),
+        title: String(track.title ?? "Untitled Track"),
+        description: typeof track.description === "string" ? track.description : null,
+        coverUrl: typeof track.coverUrl === "string" ? track.coverUrl : null,
+        audioUrl: typeof track.audioUrl === "string" ? track.audioUrl : null,
+        genre: null,
+        createdAt: typeof track.createdAt === "string" ? track.createdAt : new Date().toISOString(),
+        engagement: {
+          likeCount: Number(track.likesCount ?? 0),
+          repostCount: Number(track.repostsCount ?? 0),
+          commentCount: Number(track.commentsCount ?? 0),
+          playCount: Number(track.playsCount ?? 0),
+        },
+        interaction: {
+          isLiked: false,
+          isReposted: false,
+        },
+      };
+    });
+
+    return {
+      page: Number(data.page ?? page),
+      limit: Number(data.limit ?? limit),
+      total: tracks.length,
+      tracks,
+    };
+  },
+
   async getMeReposts(page = 1, limit = 20): Promise<UserRepostsDto> {
     const { data } = await api.get<RawUserRepostsResponse>(
       `/users/me/reposts?page=${page}&limit=${limit}`,
@@ -347,6 +393,7 @@ export const profileService = {
   async unfollowUser(userId: string): Promise<void> {
     const encodedId = encodeURIComponent(userId);
     await requestWithFallback([
+      { method: "delete", url: `/users/${encodedId}/unfollow` },
       { method: "delete", url: `/users/${encodedId}/follow` },
       { method: "delete", url: `/users/${encodedId}/followers` },
     ]);

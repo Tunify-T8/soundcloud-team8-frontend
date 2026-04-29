@@ -24,12 +24,13 @@ import { useSubscription } from "@/hooks/useSubscription";
 interface SuggestedArtist {
   id: string;
   username: string;
-  displayName: string | null;
-  isCertified: boolean;
   avatarUrl: string | null;
+  coverUrl: string | null;
+  role: "ARTIST";
+  isCertified: boolean;
   followersCount: number;
-  tracksCount: number;
-  isFollowing?: boolean;
+  isFollowing: boolean;
+  tracksUploadedCount: number;
 }
 
 type ArtistTool = {
@@ -64,8 +65,7 @@ export default function SideBar() {
   const [likedTracks, setLikedTracks] = useState<LikedTrack[]>([]);
   const [likesLoading, setLikesLoading] = useState(true);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
-  const [followStates, setFollowStates] = useState<Record<string, boolean>>({});
-  const [pendingFollowById, setPendingFollowById] = useState<Record<string, boolean>>({});
+  const [pendingFollowId, setPendingFollowId] = useState<string | null>(null);
 
   const handleArtistToolClick = () => {
     setUpgradeOpen(true);
@@ -77,57 +77,71 @@ export default function SideBar() {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get("/feed/suggested-artists", {
+      const res = await api.get("/users/me/suggested/artists", {
         params: { page: 1, limit: 20 },
       });
-      const items: SuggestedArtist[] = res.data.items || [];
-      setSuggestedUsers(items);
-
-      const seededStates = Object.fromEntries(
-        items.map((artist) => [artist.id, Boolean(artist.isFollowing)]),
+      const rawItems: SuggestedArtist[] = res.data?.data || [];
+      const items: SuggestedArtist[] = await Promise.all(
+        rawItems.map(async (artist) => {
+          try {
+            const profileRes = await api.get(`/users/${encodeURIComponent(artist.id)}`);
+            return {
+              ...artist,
+              tracksUploadedCount: Number(
+                profileRes?.data?.tracksUploadedCount ?? 0,
+              ),
+            };
+          } catch {
+            return {
+              ...artist,
+              tracksUploadedCount: 0,
+            };
+          }
+        }),
       );
-      setFollowStates((prev) => ({ ...prev, ...seededStates }));
-      setLoading(false);
 
-      // Resolve precise follow states in background so the list appears immediately.
-      void (async () => {
-        const statusEntries = await Promise.all(
-          items.map(async (artist) => {
-            try {
-              const status = await followingService.getFollowStatus(artist.id);
-              return [artist.id, status.isFollowing] as const;
-            } catch {
-              return [artist.id, seededStates[artist.id] ?? false] as const;
-            }
-          }),
+      // Fallback: if artist-only suggestions are empty, use legacy feed endpoint
+      // so the sidebar section does not disappear for users with sparse signals.
+      if (items.length === 0) {
+        const fallbackRes = await api.get("/feed/suggested-artists", {
+          params: { page: 1, limit: 20 },
+        });
+        const fallbackItems = (fallbackRes.data?.items ?? []).map(
+          (artist: Record<string, unknown>) =>
+            ({
+              id: String(artist.id ?? ""),
+              username: String(artist.username ?? ""),
+              avatarUrl: (artist.avatarUrl as string | null) ?? null,
+              coverUrl: null,
+              role: "ARTIST" as const,
+              isCertified: Boolean(artist.isCertified),
+              followersCount: Number(artist.followersCount ?? 0),
+              isFollowing: false,
+              tracksUploadedCount: Number(artist.tracksCount ?? 0),
+                }),
         );
-
-        setFollowStates((prev) => ({ ...prev, ...Object.fromEntries(statusEntries) }));
-      })();
+        setSuggestedUsers(fallbackItems);
+      } else {
+        setSuggestedUsers(items);
+      }
+      setLoading(false);
     } catch {
       setError("Failed to load artists");
       setLoading(false);
     }
   };
 
-  const handleSuggestedArtistFollowToggle = async (artistId: string) => {
-    setPendingFollowById((prev) => ({ ...prev, [artistId]: true }));
-    const wasFollowing = followStates[artistId] ?? false;
-    setFollowStates((prev) => ({ ...prev, [artistId]: !wasFollowing }));
+  const handleSuggestedArtistFollow = async (artistId: string) => {
+    setPendingFollowId(artistId);
 
     try {
-      if (wasFollowing) {
-        await followingService.unfollowUser(artistId);
-      } else {
-        await followingService.followUser(artistId);
-      }
-
+      await followingService.followUser(artistId);
+      setSuggestedUsers((prev) => prev.filter((artist) => artist.id !== artistId));
       notifySocialGraphUpdated();
     } catch (err) {
-      setFollowStates((prev) => ({ ...prev, [artistId]: wasFollowing }));
-      console.error("Failed to toggle suggested artist follow state", err);
+      console.error("Failed to follow suggested artist", err);
     } finally {
-      setPendingFollowById((prev) => ({ ...prev, [artistId]: false }));
+      setPendingFollowId((current) => (current === artistId ? null : current));
     }
   };
 
@@ -239,41 +253,43 @@ export default function SideBar() {
                   data-testid={`suggested-artist-${artist.id}`}
                   className="flex items-center justify-between"
                 >
-                  <Link to={`/${artist.username || artist.id}`} className="flex items-center gap-3">
+                  <Link to={`/${artist.id}`} className="flex items-center gap-3">
                     <img
                       src={artist.avatarUrl || avatarFallback}
-                      alt={artist.displayName || artist.username}
+                      alt={artist.username}
                       data-testid={`suggested-artist-avatar-${artist.id}`}
                       className="w-11 h-11 rounded-full object-cover bg-linear-to-br from-gray-700 to-gray-900"
                     />
                     <div>
                       <div className="font-bold text-white text-[15px] leading-tight hover:text-zinc-500">
-                        {artist.displayName || artist.username}
+                        {artist.username}
                       </div>
                       <div className="flex items-center gap-3 text-xs text-gray-400 mt-0.5">
-                        <span className="flex items-center gap-1 hover:text-zinc-600">
+                        <Link
+                          to={`/${artist.id}/followers`}
+                          className="flex items-center gap-1 hover:text-zinc-200"
+                        >
                           <FaUser size={12} />
                           {artist.followersCount}
-                        </span>
-                        <span className="flex items-center gap-1 hover:text-zinc-600">
+                        </Link>
+                        <Link
+                          to={`/${artist.id}/tracks`}
+                          className="flex items-center gap-1 hover:text-zinc-200"
+                        >
                           <FaMusic size={12} />
-                          {artist.tracksCount}
-                        </span>
+                          {artist.tracksUploadedCount}
+                        </Link>
                       </div>
                     </div>
                   </Link>
                   <button
                     data-testid={`suggested-artist-follow-btn-${artist.id}`}
                     type="button"
-                    disabled={Boolean(pendingFollowById[artist.id])}
-                    onClick={() => handleSuggestedArtistFollowToggle(artist.id)}
-                    className={`font-semibold rounded px-5 py-1.5 text-sm transition disabled:opacity-60 ${
-                      followStates[artist.id]
-                        ? "bg-zinc-800 text-white hover:bg-zinc-700"
-                        : "bg-white text-black hover:bg-gray-100"
-                    }`}
+                    disabled={pendingFollowId === artist.id}
+                    onClick={() => handleSuggestedArtistFollow(artist.id)}
+                    className="font-semibold rounded px-5 py-1.5 text-sm transition disabled:opacity-60 bg-white text-black hover:bg-gray-100"
                   >
-                    {followStates[artist.id] ? "Following" : "Follow"}
+                    {pendingFollowId === artist.id ? "Following..." : "Follow"}
                   </button>
                 </div>
               ))

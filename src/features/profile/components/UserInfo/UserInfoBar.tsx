@@ -218,9 +218,9 @@ export default function UserInfoBar({
       : `${window.location.origin}/${encodeURIComponent(sharePathTarget || "me")}`;
 
   return (
-    <div className="item-center flex justify-center w-full">
+    <div data-testid="profile-user-info-bar" className="item-center flex justify-center w-full">
       <div className="relative mt-8 flex w-10/12 flex-col gap-3 sm:mt-5 sm:gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
-        <div className="hide-scrollbar flex w-full flex-row gap-3 overflow-x-auto whitespace-nowrap pr-1 cursor-pointer sm:gap-4 lg:w-auto lg:flex-1">
+        <div data-testid="profile-user-info-tabs" className="hide-scrollbar flex w-full flex-row gap-3 overflow-x-auto whitespace-nowrap pr-1 cursor-pointer sm:gap-4 lg:w-auto lg:flex-1">
           {tabs.map(({ label, path }) => (
             <NavLink key={label} to={path} end={path === "."}>
               {({ isActive }) => (
@@ -232,6 +232,7 @@ export default function UserInfoBar({
         <div className="mt-1 flex w-full flex-wrap items-center justify-start gap-2 lg:ml-auto lg:mt-0 lg:w-auto lg:flex-nowrap lg:justify-end">
           {!isMe && (
             <button
+              data-testid="profile-station-btn"
               type="button"
               title="Station"
               className="inline-flex items-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
@@ -242,6 +243,7 @@ export default function UserInfoBar({
           )}
           {!isMe && (
             <button
+              data-testid="profile-follow-btn"
               type="button"
               title={isFollowing ? "Following" : "Follow"}
               onClick={handleFollowToggle}
@@ -254,6 +256,7 @@ export default function UserInfoBar({
           )}
           {isMe && (
             <button
+              data-testid="profile-insights-btn"
               type="button"
               title="Your Insights"
               onClick={() => navigate("/me/insights/overview")}
@@ -265,6 +268,7 @@ export default function UserInfoBar({
           )}
           {isMe && (
             <button
+              data-testid="profile-share-btn"
               type="button"
               title="Station"
               className="inline-flex items-center justify-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
@@ -285,6 +289,7 @@ export default function UserInfoBar({
           {!isMe && (
             <div className="relative group">
               <button
+                data-testid="profile-messages-btn"
                 type="button"
                 title="Messages"
                 className="inline-flex items-center justify-center rounded-sm bg-zinc-800 px-2 py-1.5 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:px-3 sm:py-2.25 sm:text-sm"
@@ -296,6 +301,7 @@ export default function UserInfoBar({
           <div className="relative">
             {!isMe && (
               <button
+                data-testid="profile-more-actions-btn"
                 type="button"
                 title="More"
                 onClick={() => setShowMoreActions((prev) => !prev)}
@@ -311,6 +317,7 @@ export default function UserInfoBar({
             {showMoreActions && (
               <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 flex w-max flex-col rounded-sm border border-zinc-800 bg-zinc-950 shadow-lg z-10">
                 <button
+                  data-testid="profile-block-btn"
                   type="button"
                   title="Block"
                   onClick={handleBlock}
@@ -321,6 +328,7 @@ export default function UserInfoBar({
                   {blockLoading ? "Blocking..." : `Block ${menuTargetName}`}
                 </button>
                 <button
+                  data-testid="profile-report-btn"
                   type="button"
                   title="Report"
                   className="inline-flex items-center gap-2 w-auto whitespace-nowrap text-left text-white font-bold text-[14px] px-3 py-2 hover:text-zinc-500 transition-colors cursor-pointer"
@@ -333,6 +341,7 @@ export default function UserInfoBar({
           </div>
           {isMe && (
             <button
+              data-testid="profile-edit-btn"
               type="button"
               title="Edit"
               onClick={toggleModal}

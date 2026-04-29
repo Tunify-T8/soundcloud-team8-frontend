@@ -66,12 +66,12 @@ export default function Avatar({
   const src = previewUrl ?? avatarUrl;
 
   return (
-    <div className="relative w-full h-full group overflow-visible">
+    <div data-testid="profile-avatar" className="relative w-full h-full group overflow-visible">
       <div className="relative w-full h-full rounded-full bg-gray-300 overflow-hidden">
         {src ? (
-          <img src={src} alt="Avatar" className="w-full h-full object-cover" />
+          <img data-testid="profile-avatar-image" src={src} alt="Avatar" className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-white">
+          <div data-testid="profile-avatar-fallback" className="w-full h-full flex items-center justify-center text-2xl font-bold text-white">
             {displayName?.charAt(0)}
           </div>
         )}
@@ -101,6 +101,7 @@ export default function Avatar({
           }`}
         >
           <button
+            data-testid="profile-avatar-update-btn"
             type="button"
             onClick={src ? () => setShowActions((prev) => !prev) : handleOpenUpload}
             className={`w-24 rounded-sm bg-zinc-800 px-2 py-1 text-[11px] font-bold transition-colors cursor-pointer sm:w-32 sm:text-[14px] ${
@@ -112,6 +113,7 @@ export default function Avatar({
           {src && showActions && (
             <div className="absolute top-full left-1/2 mt-2 flex w-24 -translate-x-1/2 flex-col rounded-sm border border-zinc-700 bg-zinc-950 shadow-lg sm:w-32">
               <button
+                data-testid="profile-avatar-replace-btn"
                 type="button"
                 onClick={handleOpenUpload}
                 className="w-full cursor-pointer px-2 py-2 text-left text-[11px] font-bold text-white transition-colors hover:text-gray-300 sm:px-3 sm:text-[14px]"
@@ -119,6 +121,7 @@ export default function Avatar({
                 Replace image
               </button>
               <button
+                data-testid="profile-avatar-delete-btn"
                 type="button"
                 onClick={handleRemoveImage}
                 className="w-full cursor-pointer px-2 py-2 text-left text-[11px] font-bold text-white transition-colors hover:text-gray-300 sm:px-3 sm:text-[14px]"
@@ -131,6 +134,7 @@ export default function Avatar({
       )}
 
       <input
+        data-testid="profile-avatar-file-input"
         ref={fileInputRef}
         type="file"
         accept="image/*"

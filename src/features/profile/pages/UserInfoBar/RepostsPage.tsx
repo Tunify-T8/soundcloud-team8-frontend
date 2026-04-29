@@ -67,33 +67,34 @@ export default function RepostsPage() {
   }, [isMeView]);
 
   const content = useMemo(() => {
-    if (loading) return <p className="py-10 text-sm text-zinc-400">Loading reposts...</p>;
-    if (error) return <p className="py-10 text-sm text-red-400">{error}</p>;
-    if (!isMeView) return <p className="py-10 text-sm text-zinc-400">Reposts are only available on your profile for now.</p>;
-    if (reposts.length === 0) return <p className="py-10 text-sm text-zinc-400">No reposts yet.</p>;
+    if (loading) return <p data-testid="profile-reposts-loading" className="py-10 text-sm text-zinc-400">Loading reposts...</p>;
+    if (error) return <p data-testid="profile-reposts-error" className="py-10 text-sm text-red-400">{error}</p>;
+    if (!isMeView) return <p data-testid="profile-reposts-not-available" className="py-10 text-sm text-zinc-400">Reposts are only available on your profile for now.</p>;
+    if (reposts.length === 0) return <p data-testid="profile-reposts-empty" className="py-10 text-sm text-zinc-400">No reposts yet.</p>;
 
     return (
-      <div className="mt-8 space-y-8">
+      <div data-testid="profile-reposts-list" className="mt-8 space-y-8">
         {reposts.map((item) => (
-          <SongCard
-            key={item.repostId}
-            trackId={item.track.id}
-            artistName={me?.displayName || me?.username || "Artist"}
-            title={item.track.title}
-            coverUrl={item.track.coverUrl ?? undefined}
-            timeAgo={formatTimeAgo(item.repostedAt)}
-            likes={String(item.track.likesCount ?? 0)}
-            reposts={String(item.track.repostsCount ?? 0)}
-            comments={String(item.track.commentsCount ?? 0)}
-            waveformSeed={waveformSeedFromId(item.track.id)}
-          />
+          <div key={item.repostId} data-testid={`profile-repost-item-${item.repostId}`}>
+            <SongCard
+              trackId={item.track.id}
+              artistName={me?.displayName || me?.username || "Artist"}
+              title={item.track.title}
+              coverUrl={item.track.coverUrl ?? undefined}
+              timeAgo={formatTimeAgo(item.repostedAt)}
+              likes={String(item.track.likesCount ?? 0)}
+              reposts={String(item.track.repostsCount ?? 0)}
+              comments={String(item.track.commentsCount ?? 0)}
+              waveformSeed={waveformSeedFromId(item.track.id)}
+            />
+          </div>
         ))}
       </div>
     );
   }, [error, isMeView, loading, me?.displayName, me?.username, reposts]);
 
   return (
-    <div className="w-full min-h-screen bg-[#0b0b0b] text-white">
+    <div data-testid="profile-reposts-page" className="w-full min-h-screen bg-[#0b0b0b] text-white">
       <div className="flex w-full justify-center">
         <div className="w-10/12 pr-0 lg:pr-[360px]">{content}</div>
       </div>

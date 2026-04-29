@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { FaApple, FaGooglePlay } from "react-icons/fa";
-import { User } from "lucide-react";
+import { ListMusic, User } from "lucide-react";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/app/store";
 import { playlistService } from "../../../libraryService";
@@ -32,6 +32,8 @@ const PlaylistPage: React.FC = () => {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [reorderError, setReorderError] = useState<string | null>(null);
   const [ownerProfileSlug, setOwnerProfileSlug] = useState<string>("");
+  const [isFollowingOwner, setIsFollowingOwner] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!id && !token && !tokenFromQuery) return;
@@ -135,6 +137,28 @@ const PlaylistPage: React.FC = () => {
     };
   }, [playlist]);
 
+  useEffect(() => {
+    let mounted = true;
+    const ownerId = playlist?.owner?.id;
+    const isOwner = !!ownerId && currentUser?.id === ownerId;
+    if (!ownerId || isOwner) return;
+
+    profileService
+      .getFollowStatus(ownerId)
+      .then((status) => {
+        if (!mounted) return;
+        setIsFollowingOwner(Boolean(status.isFollowing));
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setIsFollowingOwner(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [currentUser?.id, playlist?.owner?.id]);
+
   if (loading)
     return (
       <div className="min-h-screen bg-black text-zinc-400 text-center py-20">
@@ -151,6 +175,25 @@ const PlaylistPage: React.FC = () => {
 
   const isOwner = currentUser?.id === playlist.owner.id;
   const profileLink = `/${encodeURIComponent(playlist.owner.id)}`;
+  const trackCount = playlist.trackCount ?? tracks.length;
+
+  const handleToggleFollow = async () => {
+    if (isOwner || followLoading) return;
+    setFollowLoading(true);
+    const prev = isFollowingOwner;
+    setIsFollowingOwner(!prev);
+    try {
+      if (prev) {
+        await profileService.unfollowUser(playlist.owner.id);
+      } else {
+        await profileService.followUser(playlist.owner.id);
+      }
+    } catch {
+      setIsFollowingOwner(prev);
+    } finally {
+      setFollowLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -209,12 +252,30 @@ const PlaylistPage: React.FC = () => {
                           playlist.owner?.username}
                       </Link>
                     </div>
-                    <div className="mt-1 flex items-center gap-1 text-sm font-semibold text-zinc-400 lg:mt-2 lg:justify-center">
-                      <User size={12} />
-                      <span className="text-[11px]">
-                        {playlist.owner.followerCount}
+                    <div className="mt-1 flex items-center gap-3 text-sm font-semibold text-zinc-400 lg:mt-2 lg:justify-center">
+                      <span className="flex items-center gap-1">
+                        <User size={12} />
+                        <span className="text-[11px]">{playlist.owner.followerCount}</span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <ListMusic size={12} />
+                        <span className="text-[11px]">{trackCount}</span>
                       </span>
                     </div>
+                    {!isOwner && (
+                      <button
+                        type="button"
+                        onClick={() => void handleToggleFollow()}
+                        disabled={followLoading}
+                        className={`mt-2 min-w-[108px] rounded-sm border px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                          isFollowingOwner
+                            ? "border-zinc-500 bg-transparent text-white hover:border-zinc-300"
+                            : "border-zinc-100 bg-zinc-100 text-[#111] hover:bg-white"
+                        }`}
+                      >
+                        {followLoading ? "..." : isFollowingOwner ? "Following" : "Follow"}
+                      </button>
+                    )}
                   </div>
                 </div>
               </aside>
