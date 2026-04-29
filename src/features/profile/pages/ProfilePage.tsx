@@ -193,35 +193,37 @@ export default function ProfilePage() {
           onProfileUpdated={refreshProfile}
         />
 
-        <div data-testid="profile-page-user-info" className="bg-[#0b0b0b] lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-8">
-          <div className="min-w-0">
-            <UserInfoBar
-              displayName={user.displayName ?? undefined}
-              username={user.username}
-              avatarUrl={user.avatarUrl || ""}
-              country={country}
-              city={city}
-              bio={user.bio ?? undefined}
-              role={user.role}
-              visibility={isMeProfile(user) ? user.visibility : undefined}
-              socialAccounts={isMe ? socialAccounts : undefined}
-              isMe={isMe}
-              userId={user.id}
-              onProfileUpdated={refreshProfile}
-              followersCount={followersCount ?? user.followersCount}
-              onFollowersChange={setFollowersCount}
-            />
-
-            <div data-testid="profile-page-content" className="bg-[#0b0b0b] pb-6 lg:pb-28">
-              <Outlet />
+        <div data-testid="profile-page-user-info" className="w-full bg-[#0b0b0b] lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-8">
+            <div className="lg:col-span-2">
+              <UserInfoBar
+                displayName={user.displayName ?? undefined}
+                username={user.username}
+                avatarUrl={user.avatarUrl || ""}
+                country={country}
+                city={city}
+                bio={user.bio ?? undefined}
+                role={user.role}
+                visibility={isMeProfile(user) ? user.visibility : undefined}
+                socialAccounts={isMe ? socialAccounts : undefined}
+                isMe={isMe}
+                userId={user.id}
+                onProfileUpdated={refreshProfile}
+                followersCount={followersCount ?? user.followersCount}
+                onFollowersChange={setFollowersCount}
+              />
             </div>
-          </div>
 
-          <div data-testid="profile-sidebar-desktop" className="hidden lg:block">
-            <div className="sticky top-6 pt-4">
-              <ProfileSideBar {...sidebarProps} />
+            <div className="min-w-0">
+              <div data-testid="profile-page-content" className="bg-[#0b0b0b] pb-6 lg:pb-28">
+                <Outlet />
+              </div>
             </div>
-          </div>
+
+            <div data-testid="profile-sidebar-desktop" className="hidden lg:block">
+              <div className="sticky top-6 pt-4">
+                <ProfileSideBar {...sidebarProps} />
+              </div>
+            </div>
         </div>
 
         <div data-testid="profile-sidebar-mobile" className="mt-1 lg:hidden">

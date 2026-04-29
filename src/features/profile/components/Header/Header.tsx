@@ -25,7 +25,7 @@ export default function Header({
 }) {
   return (
     <div data-testid="profile-header" className="item-center flex w-full justify-center">
-      <div data-testid="profile-header-inner" className="relative w-10/12">
+      <div data-testid="profile-header-inner" className="relative w-full">
         <HeaderImg
           coverUrl={coverUrl}
           isMe={isMe}

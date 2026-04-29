@@ -52,8 +52,9 @@ export default function PopularTracksPage() {
         setTracks([]);
         setError("Could not load popular tracks.");
       } finally {
-        if (!isMounted) return;
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -100,9 +101,7 @@ export default function PopularTracksPage() {
 
   return (
     <div data-testid="popular-tracks-page" className="w-full min-h-screen bg-[#0b0b0b] text-white">
-      <div className="flex w-full justify-center">
-        <div className="w-10/12 pr-0 lg:pr-[360px]">{content}</div>
-      </div>
+      <div className="w-full">{content}</div>
     </div>
   );
 }
