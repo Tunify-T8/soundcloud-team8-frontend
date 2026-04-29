@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import ChatWindow from "../components/ChatWindow";
 import type { Message } from "../types";
@@ -37,7 +37,7 @@ vi.mock("../hooks/useSocket", () => ({
   }),
 }));
 
-const mockBlockUser = vi.fn().mockResolvedValue(undefined);
+const mockBlockUser = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 
 vi.mock("../conversationService", () => ({
   conversationService: {
@@ -98,7 +98,9 @@ describe("ChatWindow", () => {
     fireEvent.click(screen.getByRole("button", { name: /block user/i }));
     expect(screen.getByText("Block this user?")).toBeInTheDocument();
 
-    fireEvent.click(screen.getAllByRole("button", { name: /^block user$/i })[1]);
+    const modal = screen.getByText("Block this user?").closest("div");
+    expect(modal).not.toBeNull();
+    fireEvent.click(within(modal as HTMLElement).getByRole("button", { name: /^block user$/i }));
 
     await waitFor(() => {
       expect(mockBlockUser).toHaveBeenCalledWith("conv1");
