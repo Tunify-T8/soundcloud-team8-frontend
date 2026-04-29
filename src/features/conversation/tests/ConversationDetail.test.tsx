@@ -8,7 +8,14 @@ vi.mock("../hooks/useConversationMessages", () => ({
 	useConversationMessages: vi.fn(),
 }));
 
+vi.mock("react-redux", () => ({
+	useSelector: vi.fn(),
+}));
+
+import { useSelector } from "react-redux";
+
 const mockedUseConversationMessages = vi.mocked(useConversationMessages);
+const mockedUseSelector = vi.mocked(useSelector);
 
 const baseConversation: ConversationSummary = {
 	conversationId: "conv-1",
@@ -20,6 +27,7 @@ const baseConversation: ConversationSummary = {
 	lastMessagePreview: "Last preview",
 	lastMessageAt: "2026-03-14T18:00:00.000Z",
 	unreadCount: 1,
+	status: "ACTIVE",
 };
 
 function makeMessage(overrides: Partial<Message>): Message {
@@ -32,11 +40,10 @@ function makeMessage(overrides: Partial<Message>): Message {
 			displayName: "Omar Tamer",
 			avatarUrl: "",
 		},
-		receiverId: "current-user-uuid",
 		type: "TEXT",
-		text: "Hello",
+		content: "Hello",
+		read: true,
 		createdAt: "2026-03-14T18:00:00.000Z",
-		status: "READ",
 		...overrides,
 	};
 }
@@ -45,6 +52,10 @@ describe("ConversationDetail", () => {
 	beforeEach(() => {
 		vi.useFakeTimers();
 		vi.setSystemTime(new Date("2026-03-18T18:00:00.000Z"));
+		if (!window.HTMLElement.prototype.scrollIntoView) {
+			window.HTMLElement.prototype.scrollIntoView = vi.fn();
+		}
+		mockedUseSelector.mockReturnValue("current-user-uuid");
 	});
 
 	afterEach(() => {
@@ -57,6 +68,15 @@ describe("ConversationDetail", () => {
 			messages: [],
 			isLoading: false,
 			error: null,
+			currentPage: 1,
+			totalPages: 1,
+			hasNextPage: false,
+			loadEarlier: vi.fn(),
+			refetch: vi.fn(),
+			appendMessage: vi.fn(),
+			replaceMessage: vi.fn(),
+			confirmLatestMessage: vi.fn(),
+			markLocalRead: vi.fn(),
 		});
 
 		render(<ConversationDetail conversation={null} />);
@@ -69,6 +89,15 @@ describe("ConversationDetail", () => {
 			messages: [],
 			isLoading: true,
 			error: null,
+			currentPage: 1,
+			totalPages: 1,
+			hasNextPage: false,
+			loadEarlier: vi.fn(),
+			refetch: vi.fn(),
+			appendMessage: vi.fn(),
+			replaceMessage: vi.fn(),
+			confirmLatestMessage: vi.fn(),
+			markLocalRead: vi.fn(),
 		});
 
 		render(<ConversationDetail conversation={baseConversation} />);
@@ -83,26 +112,34 @@ describe("ConversationDetail", () => {
 					id: "msg-other",
 					senderId: "user-1",
 					sender: { id: "user-1", displayName: "Omar Tamer", avatarUrl: "" },
-					text: "vmsp",
+					content: "vmsp",
 					createdAt: "2026-03-14T18:00:00.000Z",
 				}),
 				makeMessage({
 					id: "msg-me",
 					senderId: "current-user-uuid",
 					sender: { id: "current-user-uuid", displayName: "You", avatarUrl: "" },
-					receiverId: "user-1",
-					text: "Imalmg",
+					content: "Imalmg",
 					createdAt: "2026-03-14T17:30:00.000Z",
 				}),
 			],
 			isLoading: false,
 			error: null,
+			currentPage: 1,
+			totalPages: 1,
+			hasNextPage: false,
+			loadEarlier: vi.fn(),
+			refetch: vi.fn(),
+			appendMessage: vi.fn(),
+			replaceMessage: vi.fn(),
+			confirmLatestMessage: vi.fn(),
+			markLocalRead: vi.fn(),
 		});
 
 		render(<ConversationDetail conversation={baseConversation} />);
 
 		expect(screen.getByRole("heading", { name: "Omar Tamer" })).toBeInTheDocument();
-		expect(screen.getByText("Me")).toBeInTheDocument();
+		expect(screen.getAllByText("Omar Tamer")).toHaveLength(2); // header and sender name
 		expect(screen.getByText("vmsp")).toBeInTheDocument();
 		expect(screen.getByText("Imalmg")).toBeInTheDocument();
 		expect(screen.getAllByText("4 days ago")).toHaveLength(2);
