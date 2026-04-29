@@ -37,6 +37,12 @@ export default function OverviewTab() {
     title: entry.title,
     subtitle: "",
     coverUrl: entry.artworkUrl,
+    entityType: entry.entityType ?? ("track" as const),
+    linkTo:
+      entry.linkTo ??
+      ((entry.entityType ?? "track") === "playlist" || (entry.entityType ?? "track") === "album"
+        ? `/collections/${entry.id}`
+        : `/tracks/${entry.id}`),
   }));
 
   const likedTotalSlots = Math.ceil(Math.max(likedTracks.length, 1) / COLS) * COLS;
@@ -46,7 +52,7 @@ export default function OverviewTab() {
   return (
     <div data-testid="overview-tab">
       {recentlyPlayedItems.length > 0 && (
-        <CollectionGrid items={recentlyPlayedItems} title="Recently played" />
+        <CollectionGrid items={recentlyPlayedItems} title="Recently played" hoverVariant="dim" />
       )}
 
       <section className="mb-8" data-testid="overview-likes-section">

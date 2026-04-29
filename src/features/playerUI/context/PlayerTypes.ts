@@ -5,6 +5,10 @@ export interface TrackMeta {
   thumbnailUrl?: string;
   artworkUrl?: string;
   duration: number;
+  recentlyPlayedTitle?: string;
+  recentlyPlayedArtworkUrl?: string;
+  recentlyPlayedEntityType?: "track" | "playlist" | "album";
+  recentlyPlayedLinkTo?: string;
   /**
    * When set, the player skips the stream API and plays this
    * blob URL directly. Used for downloaded/offline tracks.
@@ -28,4 +32,6 @@ export interface RecentlyPlayedEntry {
   id: string;
   title: string;
   artworkUrl?: string;
+  entityType?: "track" | "playlist" | "album";
+  linkTo?: string;
 }

@@ -16,8 +16,10 @@ function pushRecentlyPlayed(track: TrackMeta) {
     const existing: RecentlyPlayedEntry[] = raw ? JSON.parse(raw) : [];
     const entry: RecentlyPlayedEntry = {
       id: track.id,
-      title: track.title,
-      artworkUrl: track.artworkUrl ?? track.thumbnailUrl,
+      title: track.recentlyPlayedTitle ?? track.title,
+      artworkUrl: track.recentlyPlayedArtworkUrl ?? track.artworkUrl ?? track.thumbnailUrl,
+      entityType: track.recentlyPlayedEntityType ?? "track",
+      linkTo: track.recentlyPlayedLinkTo ?? `/tracks/${track.id}`,
     };
     const filtered = existing.filter((t) => t.id !== entry.id);
     const updated = [entry, ...filtered].slice(0, MAX_RECENTLY_PLAYED);
