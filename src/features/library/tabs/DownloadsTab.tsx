@@ -203,12 +203,12 @@ function DownloadsList({ userId }: { userId: string }) {
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 export default function DownloadsTab() {
-  const { hasOfflineListening } = useSubscription();
+  const { isArtistPro } = useSubscription();
   const { me } = useMe();
 
   return (
     <div data-testid="downloads-tab">
-      {hasOfflineListening ? (
+      {isArtistPro ? (
         <DownloadsList userId={me?.id ?? ""} />
       ) : (
         <UpsellPage />

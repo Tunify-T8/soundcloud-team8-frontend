@@ -153,7 +153,7 @@ export default function SideBar() {
             className="mb-6 flex cursor-pointer items-center justify-between border-b border-zinc-800 pb-5"
           >
             <span className="text-[18px] font-bold tracking-tight text-white">
-              YOU NOW HAVE ACCESS TO ARTIST TOOLS
+              {canAccessBasicArtistTools ? "YOU NOW HAVE ACCESS TO ARTIST TOOLS" : "ARTIST TOOLS"}
             </span>
             <IoChevronDown
               size={22}
