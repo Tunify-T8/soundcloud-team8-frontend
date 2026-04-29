@@ -12,6 +12,7 @@ export function usePlayback({
   trackId,
   privateToken,
   autoPlay = false,
+  offlineSrc,
 }: usePlaybackOptions): usePlaybackReturn {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const streamExpiryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -25,13 +26,14 @@ export function usePlayback({
   const [status, setStatus] = useState<playerStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
+  const [mediaDuration, setMediaDuration] = useState(0);
   const [volume, setVolumeState] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [buffered, setBuffered] = useState(0);
 
   const access = usePlaybackAccessibility(bundle);
 
-  const duration = bundle?.durationSeconds ?? 0;
+  const duration = offlineSrc ? mediaDuration : (bundle?.durationSeconds ?? 0);
 
   const previewSecondsRemaining = access.isPreview
     ? Math.max(0, access.previewDurationSeconds - currentTime)
@@ -97,9 +99,22 @@ export function usePlayback({
     setStatus("loading");
     setError(null);
     setCurrentTime(0);
+    setMediaDuration(0);
 
     const load = async () => {
       try {
+        if (offlineSrc) {
+          const audio = audioRef.current;
+          if (!audio) return;
+          audio.src = offlineSrc;
+          audio.load();
+          setBundle(null);
+          setBuffered(0);
+          setStatus("ready");
+          if (autoPlay) audio.play().catch(() => {});
+          return;
+        }
+
         // Step 1: fetch playback bundle
         const b = await playbackService.getPlaybackBundle(
           trackId,
@@ -153,7 +168,7 @@ export function usePlayback({
         audioRef.current.load();
       }
     };
-  }, [trackId, privateToken, autoPlay, attachStream]);
+  }, [trackId, privateToken, autoPlay, attachStream, offlineSrc]);
 
   // ── Audio event listeners ─────────────────────────────────────────────────
   useEffect(() => {
@@ -193,6 +208,10 @@ export function usePlayback({
       }
     };
 
+    const onLoadedMetadata = () => {
+      setMediaDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
+    };
+
     const onPlay = () => setStatus("playing");
     const onPause = () => setStatus("paused");
 
@@ -209,6 +228,8 @@ export function usePlayback({
     };
 
     audio.addEventListener("timeupdate", onTimeUpdate);
+    audio.addEventListener("loadedmetadata", onLoadedMetadata);
+    audio.addEventListener("durationchange", onLoadedMetadata);
     audio.addEventListener("play", onPlay);
     audio.addEventListener("pause", onPause);
     audio.addEventListener("ended", onEnded);
@@ -216,6 +237,8 @@ export function usePlayback({
 
     return () => {
       audio.removeEventListener("timeupdate", onTimeUpdate);
+      audio.removeEventListener("loadedmetadata", onLoadedMetadata);
+      audio.removeEventListener("durationchange", onLoadedMetadata);
       audio.removeEventListener("play", onPlay);
       audio.removeEventListener("pause", onPause);
       audio.removeEventListener("ended", onEnded);
