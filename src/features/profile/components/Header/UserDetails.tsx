@@ -13,10 +13,10 @@ export default function UserDetails({
   isCertified?: boolean;
 }) {
   return (
-    <div className="max-w-[55vw] sm:max-w-none">
+    <div className="min-w-0 max-w-[calc(100vw-7rem)] sm:max-w-[calc(100vw-10rem)] lg:max-w-none">
       <div>
         {displayName && (
-          <span className="inline-flex items-center bg-black px-2 text-sm font-bold text-white sm:text-xl md:text-3xl lg:text-3xl">
+          <span className="inline-flex max-w-full items-center truncate bg-black px-2 text-sm font-bold text-white sm:text-xl md:text-3xl lg:text-3xl">
             {displayName}
             {isCertified && (
               <MdVerified
@@ -29,12 +29,12 @@ export default function UserDetails({
       </div>
       <div>
         {username && (
-          <span className="bg-black px-2 py-1 text-xs font-bold text-gray-400 sm:text-sm md:text-[16px]">
+          <span className="inline-block max-w-full truncate bg-black px-2 py-1 text-xs font-bold text-gray-400 sm:text-sm md:text-[16px]">
             {username}
           </span>
         )}
       </div>
-      <div className="mt-3">
+      <div className="mt-2 flex flex-wrap">
         {country && (
           <span className="bg-black py-1 pl-2 text-xs font-bold text-gray-400 sm:text-sm md:text-[16px]">
             {country},

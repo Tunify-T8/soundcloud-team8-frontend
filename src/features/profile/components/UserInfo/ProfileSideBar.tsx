@@ -85,14 +85,17 @@ export default function ProfileSideBar({
           profileId && me?.id && profileId !== me.id
             ? await feedService.getUserLikes(profileId, 6)
             : await feedService.getMyLikes(6);
-        if (!isMounted) return;
-        setLikedTracks(data);
+        if (isMounted) {
+          setLikedTracks(data);
+        }
       } catch {
-        if (!isMounted) return;
-        setLikedTracks([]);
+        if (isMounted) {
+          setLikedTracks([]);
+        }
       } finally {
-        if (!isMounted) return;
-        setLikesLoading(false);
+        if (isMounted) {
+          setLikesLoading(false);
+        }
       }
     };
 
@@ -164,7 +167,7 @@ export default function ProfileSideBar({
   ];
 
   return (
-    <div className="w-full max-w-none rounded-md px-0 py-3 shadow-sm lg:w-88 lg:px-5">
+    <div className="w-full max-w-none rounded-md px-0 py-3 shadow-sm lg:w-full lg:max-w-[22rem] lg:px-0">
       <div className="grid grid-cols-3 gap-4 sm:gap-6">
         {userInfo.map((item) => (
           <Link

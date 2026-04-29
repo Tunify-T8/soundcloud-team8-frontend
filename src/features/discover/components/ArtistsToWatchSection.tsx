@@ -49,17 +49,17 @@ export function ArtistsToWatchSection({
 
   return (
     <section className="mb-10">
-      <h2 className="mb-5 text-[22px] font-bold tracking-tight text-white">
+      <h2 className="mb-5 text-xl font-bold tracking-tight text-white sm:text-[22px]">
         {title}
       </h2>
 
-      <div className="flex gap-8 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex gap-5 overflow-x-auto pb-2 sm:gap-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {artists.map((artist) => (
           <article
             key={artist.id}
-            className="w-50 shrink-0 flex flex-col items-center"
+            className="flex w-36 shrink-0 flex-col items-center sm:w-44 md:w-50"
           >
-            <div className="relative h-44 w-44 overflow-hidden rounded-full bg-zinc-800">
+            <div className="relative h-36 w-36 overflow-hidden rounded-full bg-zinc-800 sm:h-44 sm:w-44">
               <img
                 src={artist.avatarUrl || imageFallback}
                 alt={artist.name}
@@ -72,12 +72,12 @@ export function ArtistsToWatchSection({
             </div>
 
             <div className="mt-4 flex w-full items-center justify-center gap-1.5">
-              <p className="line-clamp-1 text-center text-[14px] font-semibold leading-tight text-white">
+              <p className="line-clamp-1 text-center text-[13px] font-semibold leading-tight text-white sm:text-[14px]">
                 {artist.name}
               </p>
               {artist.isVerified ? <VerifiedBadge /> : null}
             </div>
-            <p className="mt-1 w-full text-center text-[13px] text-zinc-400">
+            <p className="mt-1 w-full text-center text-[12px] text-zinc-400 sm:text-[13px]">
               {formatFollowers(artist.followersCount)}
             </p>
           </article>

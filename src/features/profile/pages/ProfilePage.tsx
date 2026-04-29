@@ -161,41 +161,47 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-[#0b0b0b] text-white">
-      <Header
-        displayName={user.displayName ?? undefined}
-        username={user.username}
-        country={country}
-        city={city}
-        isCertified={isMeProfile(user) ? user.isCertified : false}
-        avatarUrl={user.avatarUrl || ""}
-        coverUrl={user.coverUrl || ""}
-        isMe={isMe}
-        onProfileUpdated={refreshProfile}
-      />
-      <div className="relative bg-[#0b0b0b]">
-        <UserInfoBar
+      <div className="mx-auto w-full max-w-[1400px] px-3 sm:px-6 xl:px-8">
+        <Header
           displayName={user.displayName ?? undefined}
           username={user.username}
-          avatarUrl={user.avatarUrl || ""}
           country={country}
           city={city}
-          bio={user.bio ?? undefined}
-          role={user.role}
-          visibility={isMeProfile(user) ? user.visibility : undefined}
-          socialAccounts={isMe ? socialAccounts : undefined}
+          isCertified={isMeProfile(user) ? user.isCertified : false}
+          avatarUrl={user.avatarUrl || ""}
+          coverUrl={user.coverUrl || ""}
           isMe={isMe}
-          userId={user.id}
           onProfileUpdated={refreshProfile}
-          followersCount={followersCount ?? user.followersCount}
-          onFollowersChange={setFollowersCount}
         />
-        <div className="absolute right-[8.333333%] top-full mt-4 hidden lg:block">
-          <ProfileSideBar {...sidebarProps} />
+        <div className="bg-[#0b0b0b] lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-8">
+          <div className="min-w-0">
+            <UserInfoBar
+              displayName={user.displayName ?? undefined}
+              username={user.username}
+              avatarUrl={user.avatarUrl || ""}
+              country={country}
+              city={city}
+              bio={user.bio ?? undefined}
+              role={user.role}
+              visibility={isMeProfile(user) ? user.visibility : undefined}
+              socialAccounts={isMe ? socialAccounts : undefined}
+              isMe={isMe}
+              userId={user.id}
+              onProfileUpdated={refreshProfile}
+              followersCount={followersCount ?? user.followersCount}
+              onFollowersChange={setFollowersCount}
+            />
+            <div className="bg-[#0b0b0b] pb-6 lg:pb-28">
+              <Outlet />
+            </div>
+          </div>
+          <div className="hidden lg:block">
+            <div className="sticky top-6 pt-4">
+              <ProfileSideBar {...sidebarProps} />
+            </div>
+          </div>
         </div>
-      </div>
-      <div className="bg-[#0b0b0b] min-h-screen pb-28">
-        <Outlet />
-        <div className="mx-auto mt-4 w-10/12 lg:hidden">
+        <div className="mt-1 lg:hidden">
           <ProfileSideBar {...sidebarProps} />
         </div>
       </div>
