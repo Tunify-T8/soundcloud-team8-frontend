@@ -37,8 +37,12 @@ export default function OverviewTab() {
     title: entry.title,
     subtitle: "",
     coverUrl: entry.artworkUrl,
-    entityType: "track" as const,
-    linkTo: `/tracks/${entry.id}`,
+    entityType: entry.entityType ?? ("track" as const),
+    linkTo:
+      entry.linkTo ??
+      ((entry.entityType ?? "track") === "playlist" || (entry.entityType ?? "track") === "album"
+        ? `/collections/${entry.id}`
+        : `/tracks/${entry.id}`),
   }));
 
   const likedTotalSlots = Math.ceil(Math.max(likedTracks.length, 1) / COLS) * COLS;

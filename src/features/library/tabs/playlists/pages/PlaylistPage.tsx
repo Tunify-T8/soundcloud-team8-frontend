@@ -122,7 +122,11 @@ const PlaylistPage: React.FC = () => {
     thumbnailUrl: ct.track.coverUrl ?? undefined,
     artworkUrl: ct.track.coverUrl ?? undefined,
     duration: ct.track.durationSeconds || 0,
-  }), []);
+    recentlyPlayedTitle: playlist?.title ?? ct.track.title,
+    recentlyPlayedArtworkUrl: playlist?.coverUrl ?? ct.track.coverUrl ?? undefined,
+    recentlyPlayedEntityType: "playlist" as const,
+    recentlyPlayedLinkTo: playlist ? `/collections/${playlist.id}` : `/tracks/${ct.track.id}`,
+  }), [playlist]);
 
   const activePlaylistTrack = currentTrack
     ? tracks.find((item) => item.track.id === currentTrack.id) ?? null

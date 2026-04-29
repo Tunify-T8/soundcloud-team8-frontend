@@ -55,8 +55,9 @@ export default function RepostsPage() {
         setReposts([]);
         setError("Could not load reposts.");
       } finally {
-        if (!isMounted) return;
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -84,6 +85,7 @@ export default function RepostsPage() {
               timeAgo={formatTimeAgo(item.repostedAt)}
               likes={String(item.track.likesCount ?? 0)}
               reposts={String(item.track.repostsCount ?? 0)}
+              plays="0"
               comments={String(item.track.commentsCount ?? 0)}
               waveformSeed={waveformSeedFromId(item.track.id)}
             />
@@ -95,9 +97,7 @@ export default function RepostsPage() {
 
   return (
     <div data-testid="profile-reposts-page" className="w-full min-h-screen bg-[#0b0b0b] text-white">
-      <div className="flex w-full justify-center">
-        <div className="w-10/12 pr-0 lg:pr-[360px]">{content}</div>
-      </div>
+      <div className="w-full">{content}</div>
     </div>
   );
 }

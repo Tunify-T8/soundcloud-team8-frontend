@@ -9,18 +9,17 @@ export default function AllTabPage() {
   const isMeView = !username || username === me?.username;
 
   return (
-    <div data-testid="profile-all-tab-page" className="flex justify-center w-full">
-      <div data-testid="profile-all-tab-content" className="w-10/12">
+    <div data-testid="profile-all-tab-page" className="w-full">
+      <div data-testid="profile-all-tab-content" className="w-full">
         <Spotlight isMe={true} />
         <ProfilePlaylistsSection
           username={username}
           isMeView={isMeView}
           meDisplayName={me?.displayName}
           meUsername={me?.username}
-          className="pr-0 lg:pr-[360px]"
+          className=""
         />
       </div>
     </div>
   );
 }
-

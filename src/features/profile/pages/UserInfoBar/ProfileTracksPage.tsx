@@ -57,8 +57,9 @@ export default function ProfileTracksPage() {
         setTracks([]);
         setError("Could not load tracks.");
       } finally {
-        if (!isMounted) return;
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -105,9 +106,7 @@ export default function ProfileTracksPage() {
 
   return (
     <div data-testid="profile-tracks-page" className="w-full min-h-screen bg-[#0b0b0b] text-white">
-      <div className="flex w-full justify-center">
-        <div className="w-10/12 pr-0 lg:pr-[360px]">{content}</div>
-      </div>
+      <div className="w-full">{content}</div>
     </div>
   );
 }

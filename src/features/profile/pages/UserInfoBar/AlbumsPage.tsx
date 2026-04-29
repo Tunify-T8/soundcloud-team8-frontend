@@ -9,15 +9,13 @@ export default function AlbumsPage() {
 
   return (
     <div data-testid="profile-albums-page" className="w-full min-h-screen bg-[#0b0b0b] text-white">
-      <div className="flex justify-center w-full">
-        <div data-testid="profile-albums-page-content" className="w-10/12 pr-0 lg:pr-[360px]">
-          <ProfileAlbumsSection
-            username={username}
-            isMeView={isMeView}
-            meDisplayName={me?.displayName}
-            meUsername={me?.username}
-          />
-        </div>
+      <div data-testid="profile-albums-page-content" className="w-full">
+        <ProfileAlbumsSection
+          username={username}
+          isMeView={isMeView}
+          meDisplayName={me?.displayName}
+          meUsername={me?.username}
+        />
       </div>
     </div>
   );
