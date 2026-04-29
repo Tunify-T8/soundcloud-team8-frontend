@@ -4,6 +4,7 @@ import { FaApple, FaGooglePlay } from "react-icons/fa";
 import { User } from "lucide-react";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/app/store";
+import { usePlayer } from "@/features/playerUI/context/usePlayer";
 import { playlistService } from "../../../libraryService";
 import type { Collection, CollectionTrack } from "../../../types";
 
@@ -22,6 +23,14 @@ const PlaylistPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [reorderError, setReorderError] = useState<string | null>(null);
+  const {
+    currentTrack,
+    isPlaying,
+    progress,
+    setCurrentTrack,
+    setIsPlaying,
+    requestSeek,
+  } = usePlayer();
 
   const fetchData = useCallback(async () => {
     if (!id) return;
@@ -85,6 +94,47 @@ const PlaylistPage: React.FC = () => {
     [id, tracks],
   );
 
+  const toPlayerTrack = useCallback((ct: CollectionTrack) => ({
+    id: ct.track.id,
+    title: ct.track.title,
+    artist: ct.track.user.displayName || ct.track.user.username,
+    thumbnailUrl: ct.track.coverUrl ?? undefined,
+    artworkUrl: ct.track.coverUrl ?? undefined,
+    duration: ct.track.durationSeconds || 0,
+  }), []);
+
+  const activePlaylistTrack = currentTrack
+    ? tracks.find((item) => item.track.id === currentTrack.id) ?? null
+    : null;
+
+  const handlePlayTrack = useCallback((ct: CollectionTrack) => {
+    if (currentTrack?.id === ct.track.id) {
+      setIsPlaying(!isPlaying);
+      return;
+    }
+
+    setCurrentTrack(toPlayerTrack(ct));
+    setIsPlaying(true);
+  }, [currentTrack?.id, isPlaying, setCurrentTrack, setIsPlaying, toPlayerTrack]);
+
+  const handlePlayPlaylist = useCallback(() => {
+    const targetTrack = activePlaylistTrack ?? tracks[0];
+    if (!targetTrack) return;
+    handlePlayTrack(targetTrack);
+  }, [activePlaylistTrack, tracks, handlePlayTrack]);
+
+  const handleSeek = useCallback((ratio: number) => {
+    const targetTrack = activePlaylistTrack ?? tracks[0];
+    if (!targetTrack) return;
+
+    if (currentTrack?.id !== targetTrack.track.id) {
+      setCurrentTrack(toPlayerTrack(targetTrack));
+      setIsPlaying(true);
+    }
+
+    requestSeek(targetTrack.track.id, ratio);
+  }, [activePlaylistTrack, tracks, currentTrack?.id, requestSeek, setCurrentTrack, setIsPlaying, toPlayerTrack]);
+
   if (loading)
     return (
       <div className="min-h-screen bg-black text-zinc-400 text-center py-20">
@@ -120,6 +170,11 @@ const PlaylistPage: React.FC = () => {
           tracks={tracks}
           onUpdate={() => void fetchData()}
           isMe={isOwner}
+          activeTrack={activePlaylistTrack}
+          isPlaying={Boolean(activePlaylistTrack && isPlaying)}
+          playerProgress={activePlaylistTrack ? progress : 0}
+          onPlayToggle={handlePlayPlaylist}
+          onSeek={handleSeek}
         />
 
         <div className="mt-6 flex flex-col gap-8 lg:flex-row">
@@ -170,6 +225,9 @@ const PlaylistPage: React.FC = () => {
                 <TrackList
                   tracks={tracks}
                   onReorder={isOwner ? handleReorder : undefined}
+                  currentTrackId={currentTrack?.id}
+                  isPlaying={isPlaying}
+                  onPlayTrack={handlePlayTrack}
                 />
               </div>
             </div>

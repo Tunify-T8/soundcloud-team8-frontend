@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useDispatch } from "react-redux";
+import { Link } from "react-router-dom";
 import { SiSoundcloud } from "react-icons/si";
 import { useAppSelector } from "../../../app/hooks";
 import { setAudioSource } from "../../../store/AudioSourceSlice";
@@ -32,19 +33,19 @@ function UploadLimitScreen({
     <div className="min-h-screen bg-[#111111] text-white flex flex-col font-sans">
       <header className="flex items-center justify-between px-8 py-4 border-b border-[#222]">
         <div className="flex items-center gap-3">
-          <a href="/">
+          <Link to="/">
             <SiSoundcloud size={36} color="white" />
-          </a>
+          </Link>
           <span className="text-[15px] font-semibold">Upload</span>
         </div>
-        <a href="/artists">
+        <Link to="/artists">
           <button className="text-[#888] hover:text-white transition">
             <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
-        </a>
+        </Link>
       </header>
 
       <div className="bg-[hsl(0,0%,11%)] border-b border-[hsl(0,0%,18%)] flex items-center justify-between px-8 py-3 shrink-0">
@@ -304,19 +305,19 @@ export default function SoundCloudUpload() {
         data-testid="upload-header"
       >
         <div className="flex items-center gap-3 hover:opacity-80 transition">
-          <a href="/">
+          <Link to="/">
             <SiSoundcloud size={36} color="white" />
-          </a>
+          </Link>
           <span className="text-[15px] font-semibold">Upload</span>
         </div>
-        <a href="/artists">
+        <Link to="/artists">
           <button className="text-[#888] hover:text-white transition" data-testid="upload-close-btn">
             <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
-        </a>
+        </Link>
       </header>
 
       <main className="flex-1 flex justify-center px-6 py-10">
