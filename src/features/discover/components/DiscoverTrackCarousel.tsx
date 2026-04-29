@@ -49,7 +49,7 @@ export function DiscoverTrackCarousel({
         <button
           type="button"
           onClick={() => scroll("left")}
-          className="absolute left-1.5 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-white/10 text-lg text-white backdrop-blur-md transition-all duration-200 hover:scale-110 hover:bg-white/20 active:scale-95"
+          className="absolute left-1 top-1/2 z-10 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-white/10 text-lg text-white backdrop-blur-md transition-all duration-200 hover:scale-110 hover:bg-white/20 active:scale-95 sm:flex"
           aria-label="Scroll left"
           title="Scroll left"
         >
@@ -59,7 +59,7 @@ export function DiscoverTrackCarousel({
 
       <div
         ref={scrollRef}
-        className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-4"
       >
         {tracks.map((track) => (
           <DiscoverCard key={track.id} item={track} />
@@ -70,7 +70,7 @@ export function DiscoverTrackCarousel({
         <button
           type="button"
           onClick={() => scroll("right")}
-          className="absolute right-1.5 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-white/10 text-lg text-white backdrop-blur-md transition-all duration-200 hover:scale-110 hover:bg-white/20 active:scale-95"
+          className="absolute right-1 top-1/2 z-10 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-white/10 text-lg text-white backdrop-blur-md transition-all duration-200 hover:scale-110 hover:bg-white/20 active:scale-95 sm:flex"
           aria-label="Scroll right"
           title="Scroll right"
         >

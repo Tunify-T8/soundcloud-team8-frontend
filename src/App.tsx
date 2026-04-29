@@ -128,7 +128,7 @@ const router = createBrowserRouter([
         element: <LibraryPage />
       },
       {
-        path: '/me/albums',
+        path: '/library/albums',
         element: <LibraryPage />
       },
       {
@@ -153,6 +153,14 @@ const router = createBrowserRouter([
       },
       {
         path: "/collections/:id",
+        element: <PlaylistPage />
+      },
+      {
+        path: "/playlist/:id",
+        element: <PlaylistPage />
+      },
+      {
+        path: "/collections/token/:token",
         element: <PlaylistPage />
       },
       {

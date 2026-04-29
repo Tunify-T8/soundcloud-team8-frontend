@@ -11,6 +11,8 @@ import { useAppSelector } from "../../../app/hooks";
 import { profileService } from "@/features/profile/profileService";
 import albumTemplate from "@/assets/album.png";
 import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
+import CheckoutModal from "@/features/premium/components/CheckoutModal";
+import { usePlayer } from "@/features/playerUI/context/usePlayer";
 
 function Toggle({ enabled, onChange }: ToggleProps) {
   return (
@@ -258,6 +260,7 @@ type UserProfile = {
 }
 
 export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
+  const { currentTrack } = usePlayer();
   const dispatch = useDispatch();
   const source = useAppSelector((s) => s.audioSource.source);
   const [isUploading, setIsUploading] = useState(false);
@@ -918,7 +921,12 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
       </div>
 
       {/* Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 border-t border-[#1a1a1a] bg-[#0e0e0e] px-10 py-3 flex items-center" data-testid="track-info-bottom-bar">
+      <div
+        className={`fixed left-0 right-0 border-t border-[#1a1a1a] bg-[#0e0e0e] px-10 py-3 flex items-center transition-all ${
+          currentTrack ? "bottom-12" : "bottom-0"
+        }`}
+        data-testid="track-info-bottom-bar"
+      >
         <p className="text-xs text-[#555] flex-1 text-center">
           By uploading, you confirm that your sounds comply with our{" "}
           <span className="underline cursor-pointer hover:text-[#888] transition">Terms of Use</span>{" "}
@@ -939,3 +947,4 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
     </div>
   );
 }
+

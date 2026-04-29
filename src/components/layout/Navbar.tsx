@@ -268,10 +268,15 @@ export default function Navbar() {
     <>
       <nav className="w-full bg-black text-white border-b border-zinc-800 sticky top-0 z-50">
         <div className="max-w-[1200px] mx-auto h-12 flex items-center justify-between px-3 md:px-6">
-          <div className="flex items-center gap-4 md:gap-6">
+          <div className="flex items-center gap-2 sm:gap-4 md:gap-6">
             <Link to="/" className="text-white">
-              <SiSoundcloud size={35} />
+              <SiSoundcloud size={28} className="sm:text-[35px]" />
             </Link>
+            <div className="md:hidden flex items-center gap-2 text-[12px] font-bold tracking-tight sm:gap-3 sm:text-[13px]">
+              <Link to="/" className="text-zinc-300 hover:text-white">Home</Link>
+              <Link to="/feed" className="text-zinc-300 hover:text-white">Feed</Link>
+              <Link to="/library" className="text-zinc-300 hover:text-white">Library</Link>
+            </div>
             <div className="hidden md:flex items-center gap-6">
               <Link to="/" className="text-zinc-400 hover:text-white font-bold tracking-tight">Home</Link>
               <Link to="/feed" className="text-zinc-400 hover:text-white font-bold tracking-tight">Feed</Link>
@@ -479,9 +484,9 @@ export default function Navbar() {
             </div>
           </div>
 
-          <div className="md:hidden flex items-center gap-3">
+          <div className="md:hidden flex items-center gap-2">
             <Link to="/messages" className="text-zinc-400 hover:text-white">
-              <Mail size={18} />
+              <Mail size={16} />
             </Link>
             <button
               type="button"
@@ -489,7 +494,7 @@ export default function Navbar() {
               className="text-zinc-300 hover:text-white"
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             >
-              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+              {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
           </div>
         </div>
@@ -498,9 +503,6 @@ export default function Navbar() {
           <div className="md:hidden border-t border-zinc-800 px-3 py-3 space-y-3 bg-black">
             <SearchBar />
             <div className="grid grid-cols-2 gap-2 text-sm font-bold tracking-tight">
-              <Link to="/" className="text-zinc-300 hover:text-white">Home</Link>
-              <Link to="/feed" className="text-zinc-300 hover:text-white">Feed</Link>
-              <Link to="/library" className="text-zinc-300 hover:text-white">Library</Link>
               <Link to="/artists" className="text-zinc-300 hover:text-white">For Artists</Link>
               <Link to="/upload" className="text-zinc-300 hover:text-white">Upload</Link>
               <Link to="/me" className="text-zinc-300 hover:text-white">Profile</Link>

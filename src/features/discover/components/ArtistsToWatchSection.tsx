@@ -1,5 +1,6 @@
 import type { DiscoverArtist } from "@/features/discover/Discover";
 import imageFallback from "@/assets/avatar.png";
+import { Link } from "react-router-dom";
 
 type ArtistsToWatchSectionProps = {
   title: string;
@@ -48,21 +49,24 @@ export function ArtistsToWatchSection({
   }
 
   return (
-    <section className="mb-10">
-      <h2 className="mb-5 text-xl font-bold tracking-tight text-white sm:text-[22px]">
+    <section data-testid="artists-to-watch-section" className="mb-8 sm:mb-10">
+      <h2 data-testid="artists-to-watch-title" className="mb-4 text-[18px] font-bold tracking-tight text-white sm:mb-5 sm:text-[22px]">
         {title}
       </h2>
 
-      <div className="flex gap-5 overflow-x-auto pb-2 sm:gap-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div data-testid="artists-to-watch-list" className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-8">
         {artists.map((artist) => (
-          <article
+          <Link
             key={artist.id}
-            className="flex w-36 shrink-0 flex-col items-center sm:w-44 md:w-50"
+            to={`/${artist.id}`}
+            data-testid={`artists-to-watch-item-${artist.id}`}
+            className="flex w-24 shrink-0 flex-col items-center sm:w-36"
           >
-            <div className="relative h-36 w-36 overflow-hidden rounded-full bg-zinc-800 sm:h-44 sm:w-44">
+            <div className="relative h-16 w-16 overflow-hidden rounded-full bg-zinc-800 sm:h-28 sm:w-28">
               <img
                 src={artist.avatarUrl || imageFallback}
                 alt={artist.name}
+                data-testid={`artists-to-watch-avatar-${artist.id}`}
                 onError={(event) => {
                   event.currentTarget.onerror = null;
                   event.currentTarget.src = imageFallback;
@@ -71,16 +75,16 @@ export function ArtistsToWatchSection({
               />
             </div>
 
-            <div className="mt-4 flex w-full items-center justify-center gap-1.5">
-              <p className="line-clamp-1 text-center text-[13px] font-semibold leading-tight text-white sm:text-[14px]">
+            <div className="mt-3 flex w-full items-center justify-center gap-1.5 sm:mt-4">
+              <p className="line-clamp-1 text-center text-[12px] font-semibold leading-tight text-white sm:text-[14px]">
                 {artist.name}
               </p>
               {artist.isVerified ? <VerifiedBadge /> : null}
             </div>
-            <p className="mt-1 w-full text-center text-[12px] text-zinc-400 sm:text-[13px]">
+            <p className="mt-1 w-full text-center text-[11px] text-zinc-400 sm:text-[13px]">
               {formatFollowers(artist.followersCount)}
             </p>
-          </article>
+          </Link>
         ))}
       </div>
     </section>
