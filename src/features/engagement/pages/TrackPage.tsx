@@ -361,21 +361,24 @@ const TrackPage = () => {
     <div className="min-h-screen bg-[#111] text-white">
       {showShare && <ShareModal title={track.title} onClose={() => setShowShare(false)} />}
 
-      <div className="max-w-6xl mx-auto">
+      <div className="mx-auto max-w-[1360px] px-4 sm:px-6">
 
         {/* ── HERO ── */}
         <div
-          className="relative w-full flex overflow-hidden"
-          style={{ background: 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 60%, #111 100%)', minHeight: '220px' }}
+          className="relative mt-5 flex w-full overflow-hidden rounded-sm"
+          style={{
+            background: "linear-gradient(90deg, #b78885 0%, #9f8594 50%, #697299 100%)",
+            minHeight: "220px",
+          }}
         >
           {/* Left: play + meta + waveform */}
-          <div className="flex-1 flex flex-col px-6 pt-6 pb-4 min-w-0">
+          <div className="flex min-w-0 flex-1 flex-col px-6 pt-6 pb-4 sm:px-8 sm:pt-8">
 
-            <div className="flex items-start gap-4 mb-5">
+            <div className="mb-6 flex items-start gap-4">
               {/* Play/Pause */}
               <button
                 onClick={handlePlayPause}
-                className="w-12 h-12 rounded-full bg-black flex items-center justify-center hover:scale-105 transition-transform shrink-0 shadow-lg"
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-black shadow-lg transition-transform hover:scale-105 sm:h-16 sm:w-16"
                 aria-label={pageIsPlaying ? 'Pause' : 'Play'}
               >
                 {pageIsPlaying ? (
@@ -390,12 +393,12 @@ const TrackPage = () => {
                 )}
               </button>
 
-              <div className="flex-1 min-w-0">
-                <h1 className="text-xl font-bold leading-tight truncate text-white">{track.title}</h1>
-                <p className="text-sm text-zinc-300 truncate mt-0.5">{artistName}</p>
+              <div className="min-w-0 flex-1">
+                <h1 className="inline-block max-w-full truncate bg-black px-3 py-1 text-2xl font-bold leading-tight text-white sm:text-4xl lg:text-[54px] lg:leading-none">{track.title}</h1>
+                <p className="mt-2 inline-block max-w-full truncate bg-black px-3 py-1 text-base font-semibold text-zinc-300 sm:text-xl">{artistName}</p>
               </div>
 
-              <span className="text-xs text-zinc-400 shrink-0 mt-1">
+              <span className="mt-1 shrink-0 text-xs font-semibold text-white sm:text-[13px]">
                 {new Date((track as any).createdAt ?? '')
                   .toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
               </span>
@@ -413,7 +416,7 @@ const TrackPage = () => {
           </div>
 
           {/* Right: artwork flush top */}
-          <div className="w-[220px] h-[220px] shrink-0 self-start">
+          <div className="hidden h-[220px] w-[220px] shrink-0 self-start overflow-hidden rounded-[10px] md:mr-6 md:mt-6 md:block lg:mr-8 lg:mt-8 lg:h-[340px] lg:w-[340px]">
             {artworkSrc ? (
               <img src={artworkSrc} alt={track.title} className="w-full h-full object-cover" />
             ) : (
@@ -425,8 +428,8 @@ const TrackPage = () => {
         </div>
 
         {/* ── ACTION BAR ── */}
-        <div className="bg-[#1a1a1a] border-b border-[hsl(0,0%,13%)]">
-          <div className="flex items-center gap-2 px-6 py-2.5 flex-wrap">
+        <div className="border-b border-[hsl(0,0%,13%)] bg-[#181818]">
+          <div className="flex flex-wrap items-center gap-2 px-6 py-3 sm:px-8">
 
             <button
               onClick={toggleLike}
