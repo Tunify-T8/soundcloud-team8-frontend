@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { adminServices } from '../services/adminServices';
+import { hideCommentId, unhideCommentId } from '../utils/hiddenComments';
 
 type ContentEntity = 'TRACK' | 'COMMENT';
 type ContentAction = 'HIDE' | 'UNHIDE' | 'DELETE';
@@ -71,6 +72,15 @@ const AdminContentPage = () => {
       const fallbackMessage = `${ACTION_LABELS[action]} action completed for ${entity.toLowerCase()} ${trimmedId}.`;
       const finalMessage = message || fallbackMessage;
       setSuccess(finalMessage);
+
+      if (entity === 'COMMENT') {
+        if (action === 'HIDE' || action === 'DELETE') {
+          hideCommentId(trimmedId);
+        }
+        if (action === 'UNHIDE') {
+          unhideCommentId(trimmedId);
+        }
+      }
 
       const entry: ActionLogEntry = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,

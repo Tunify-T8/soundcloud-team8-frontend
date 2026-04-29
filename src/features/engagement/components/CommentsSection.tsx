@@ -3,6 +3,11 @@ import { Heart, Send, Trash2 } from 'lucide-react';
 import { engagementService } from '../services/engagementService';
 import type { ApiComment, ApiReply } from '../types';
 import { AdminIDDisplay } from '@/features/admin/components/AdminIDDisplay';
+import {
+  HIDDEN_COMMENTS_UPDATED_EVENT,
+  getHiddenCommentIds,
+  isCommentHidden,
+} from '@/features/admin/utils/hiddenComments';
 
 export interface CommentsSectionProps {
   trackId: string;
@@ -58,6 +63,19 @@ const CommentsSection = ({
   const [repliesMap, setRepliesMap] = useState<Record<string, ApiReply[]>>({});
   const [loadingReplies, setLoadingReplies] = useState<Set<string>>(new Set());
   const [showReplies, setShowReplies] = useState<Set<string>>(new Set());
+  const [hiddenCommentIds, setHiddenCommentIds] = useState<Set<string>>(() => getHiddenCommentIds());
+
+  useEffect(() => {
+    const syncHiddenCommentIds = () => setHiddenCommentIds(getHiddenCommentIds());
+
+    window.addEventListener(HIDDEN_COMMENTS_UPDATED_EVENT, syncHiddenCommentIds);
+    window.addEventListener('storage', syncHiddenCommentIds);
+
+    return () => {
+      window.removeEventListener(HIDDEN_COMMENTS_UPDATED_EVENT, syncHiddenCommentIds);
+      window.removeEventListener('storage', syncHiddenCommentIds);
+    };
+  }, []);
 
   useEffect(() => {
     if (!trackId) return;
@@ -186,6 +204,10 @@ const CommentsSection = ({
     }
   };
 
+  const visibleComments = comments.filter(
+    (comment) => !hiddenCommentIds.has(comment.commentId) && !isCommentHidden(comment.commentId)
+  );
+
   if (loading) {
     return <div className="p-6 text-zinc-500 text-sm">Loading comments…</div>;
   }
@@ -210,11 +232,11 @@ const CommentsSection = ({
         </button>
       </div>
 
-      {comments.length === 0 && (
+      {visibleComments.length === 0 && (
         <p className="text-zinc-500 text-sm text-center py-8">No comments yet. Be the first!</p>
       )}
 
-      {comments.map((c) => {
+      {visibleComments.map((c) => {
         const isLiked = likedCommentIds.has(c.commentId);
         const isOpen = showReplies.has(c.commentId);
         const isLoadingReplies = loadingReplies.has(c.commentId);
