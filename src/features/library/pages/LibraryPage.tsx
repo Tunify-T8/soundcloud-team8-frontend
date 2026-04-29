@@ -75,7 +75,7 @@ export default function LibraryPage() {
               onClick={() => navigate(TAB_TO_PATH[tab])}
               className="px-5 py-3 transition-colors relative whitespace-nowrap"
               style={{
-                color: activeTab === tab ? "white" : "#71717a",
+                color: activeTab === tab ? "var(--sc-text)" : "var(--sc-text-secondary)",
                 fontWeight: activeTab === tab ? 700 : 600,
                 fontSize: "18px",
                 letterSpacing: "-0.01em",
@@ -85,7 +85,7 @@ export default function LibraryPage() {
               {activeTab === tab && (
                 <div
                   data-testid={`library-tab-${tab.toLowerCase()}-indicator`}
-                  className="absolute bottom-0 left-0 right-0 h-[2px] bg-white"
+                  className="absolute bottom-0 left-0 right-0 h-[2px] bg-[var(--sc-text)]"
                 />
               )}
             </button>
