@@ -55,7 +55,7 @@ export default function ProfilePage() {
         setLoading(false);
       }
     };
-    fetchProfile();
+    void fetchProfile();
   }, [username]);
 
   useEffect(() => {
@@ -114,26 +114,45 @@ export default function ProfilePage() {
   }, [isMe, me?.id, publicUser?.id]);
 
   if (!username && !me) {
-    return <div className="min-h-screen bg-[#0b0b0b] text-white">Loading...</div>;
+    return (
+      <div
+        data-testid="profile-page-loading-me"
+        className="min-h-screen bg-[#0b0b0b] text-white"
+      >
+        Loading...
+      </div>
+    );
   }
 
   if (loading) {
-    return <div className="min-h-screen bg-[#0b0b0b] text-white">Loading...</div>;
+    return (
+      <div
+        data-testid="profile-page-loading"
+        className="min-h-screen bg-[#0b0b0b] text-white"
+      >
+        Loading...
+      </div>
+    );
   }
 
   const user = username ? publicUser : me;
 
   if (error || !user) {
     return (
-      <div className="min-h-screen bg-[#0b0b0b] text-white">
+      <div
+        data-testid="profile-page-error"
+        className="min-h-screen bg-[#0b0b0b] text-white"
+      >
         {error || "User not found."}
       </div>
     );
   }
+
   const userLocation = user.location ?? "";
   const locationParts = userLocation.split(",");
   const city = locationParts[0]?.trim() ?? undefined;
   const country = locationParts[1]?.trim() ?? undefined;
+
   const sidebarProps = {
     profileId: user.id,
     followers: user.followersCount,
@@ -160,42 +179,52 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0b0b0b] text-white">
-      <Header
-        displayName={user.displayName ?? undefined}
-        username={user.username}
-        country={country}
-        city={city}
-        isCertified={isMeProfile(user) ? user.isCertified : false}
-        avatarUrl={user.avatarUrl || ""}
-        coverUrl={user.coverUrl || ""}
-        isMe={isMe}
-        onProfileUpdated={refreshProfile}
-      />
-      <div className="relative bg-[#0b0b0b]">
-        <UserInfoBar
+    <div data-testid="profile-page" className="min-h-screen bg-[#0b0b0b] text-white">
+      <div className="mx-auto w-full max-w-[1400px] px-3 sm:px-6 xl:px-8">
+        <Header
           displayName={user.displayName ?? undefined}
           username={user.username}
-          avatarUrl={user.avatarUrl || ""}
           country={country}
           city={city}
-          bio={user.bio ?? undefined}
-          role={user.role}
-          visibility={isMeProfile(user) ? user.visibility : undefined}
-          socialAccounts={isMe ? socialAccounts : undefined}
+          isCertified={isMeProfile(user) ? user.isCertified : false}
+          avatarUrl={user.avatarUrl || ""}
+          coverUrl={user.coverUrl || ""}
           isMe={isMe}
-          userId={user.id}
           onProfileUpdated={refreshProfile}
-          followersCount={followersCount ?? user.followersCount}
-          onFollowersChange={setFollowersCount}
         />
-        <div className="absolute right-[8.333333%] top-full mt-4 hidden lg:block">
-          <ProfileSideBar {...sidebarProps} />
+
+        <div data-testid="profile-page-user-info" className="bg-[#0b0b0b] lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-8">
+          <div className="min-w-0">
+            <UserInfoBar
+              displayName={user.displayName ?? undefined}
+              username={user.username}
+              avatarUrl={user.avatarUrl || ""}
+              country={country}
+              city={city}
+              bio={user.bio ?? undefined}
+              role={user.role}
+              visibility={isMeProfile(user) ? user.visibility : undefined}
+              socialAccounts={isMe ? socialAccounts : undefined}
+              isMe={isMe}
+              userId={user.id}
+              onProfileUpdated={refreshProfile}
+              followersCount={followersCount ?? user.followersCount}
+              onFollowersChange={setFollowersCount}
+            />
+
+            <div data-testid="profile-page-content" className="bg-[#0b0b0b] pb-6 lg:pb-28">
+              <Outlet />
+            </div>
+          </div>
+
+          <div data-testid="profile-sidebar-desktop" className="hidden lg:block">
+            <div className="sticky top-6 pt-4">
+              <ProfileSideBar {...sidebarProps} />
+            </div>
+          </div>
         </div>
-      </div>
-      <div className="bg-[#0b0b0b] min-h-screen pb-28">
-        <Outlet />
-        <div className="mx-auto mt-4 w-10/12 lg:hidden">
+
+        <div data-testid="profile-sidebar-mobile" className="mt-1 lg:hidden">
           <ProfileSideBar {...sidebarProps} />
         </div>
       </div>

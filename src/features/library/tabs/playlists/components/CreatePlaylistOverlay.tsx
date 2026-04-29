@@ -134,8 +134,9 @@ export default function CreatePlaylistOverlay({
       if (!mounted) return;
 
       const playlists = res?.data ?? [];
-      setExistingPlaylists(playlists);
-      setActiveTab(playlists.length > 0 ? "add" : "create");
+      const ownedPlaylists = playlists.filter((playlist) => !playlist.isLiked);
+      setExistingPlaylists(ownedPlaylists);
+      setActiveTab(ownedPlaylists.length > 0 ? "add" : "create");
       setLoadingPlaylists(false);
     })();
 

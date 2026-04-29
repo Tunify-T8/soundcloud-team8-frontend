@@ -1,10 +1,20 @@
-import type { FeedItem, FeedResponse, SearchResult, LikedTrack } from '@/features/feed/type';
+import type {
+  FeedItem,
+  FeedResponse,
+  SearchResult,
+  LikedTrack,
+  SuggestedArtist,
+} from '@/features/feed/type';
 import { api } from '@/features/auth/services/api';
 interface FeedQueryParams {
   page?: number;
   limit?: number;
   includeReposts?: boolean;
   sinceTimestamp?: string;
+}
+
+interface SuggestedArtistsPayload {
+  items?: unknown;
 }
 
 function normalizeLikedTracksPayload(rawPayload: unknown): LikedTrack[] {
@@ -108,6 +118,37 @@ function normalizeLikedTracksPayload(rawPayload: unknown): LikedTrack[] {
     : [];
 }
 
+function normalizeSuggestedArtistsPayload(rawPayload: unknown): SuggestedArtist[] {
+  const payload =
+    rawPayload && typeof rawPayload === "object"
+      ? (rawPayload as SuggestedArtistsPayload)
+      : {};
+  const rawItems = Array.isArray(payload.items) ? payload.items : [];
+
+  const asRecord = (value: unknown): Record<string, unknown> =>
+    value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+  const asString = (value: unknown): string | null =>
+    typeof value === "string" && value.trim().length > 0 ? value : null;
+  const asNumber = (value: unknown): number => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  return rawItems.map((value) => {
+    const item = asRecord(value);
+
+    return {
+      id: String(item.id ?? ""),
+      username: asString(item.username) ?? "",
+      displayName: asString(item.displayName),
+      avatarUrl: asString(item.avatarUrl),
+      followersCount: asNumber(item.followersCount),
+      isCertified: Boolean(item.isCertified),
+      isFollowing: Boolean(item.isFollowing),
+    };
+  });
+}
+
 export const feedService = {
   // ─── Feed ───────────────────────────────────────────────────────────────────
 
@@ -192,6 +233,17 @@ export const feedService = {
         params: { limit },
       });
       return normalizeLikedTracksPayload(response.data);
+    } catch {
+      return [];
+    }
+  },
+
+  async getSuggestedArtists(page = 1, limit = 12): Promise<SuggestedArtist[]> {
+    try {
+      const response = await api.get("/feed/suggested-artists", {
+        params: { page, limit },
+      });
+      return normalizeSuggestedArtistsPayload(response.data);
     } catch {
       return [];
     }

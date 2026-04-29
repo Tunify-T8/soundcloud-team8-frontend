@@ -150,6 +150,29 @@ export function mapLikedTrackToTrackItem(item: LikedTrackItem) {
 }
 
 export const playlistService = {
+  normalizeShareUrl(rawUrl: string): string {
+    const trimmed = rawUrl.trim();
+    if (trimmed.startsWith("//collections/")) {
+      return trimmed.slice(1);
+    }
+
+    if (typeof window === "undefined") return trimmed;
+
+    try {
+      const parsed = new URL(trimmed, window.location.origin);
+      const normalizedPath = parsed.pathname.startsWith("/playlist/")
+        ? parsed.pathname
+        : parsed.pathname.startsWith("/collections/")
+          ? parsed.pathname
+          : null;
+
+      if (!normalizedPath) return trimmed;
+      return `${window.location.origin}${normalizedPath}${parsed.search}`;
+    } catch {
+      return trimmed;
+    }
+  },
+
   extractShareUrl(payload: unknown): string | null {
     if (!payload || typeof payload !== "object") return null;
 
@@ -163,7 +186,7 @@ export const playlistService = {
       obj.share_link;
 
     if (typeof direct === "string" && direct.trim()) {
-      return direct;
+      return playlistService.normalizeShareUrl(direct);
     }
 
     const nested = obj.data;
@@ -177,7 +200,7 @@ export const playlistService = {
         nestedObj.shareLink ??
         nestedObj.share_link;
       if (typeof nestedUrl === "string" && nestedUrl.trim()) {
-        return nestedUrl;
+        return playlistService.normalizeShareUrl(nestedUrl);
       }
     }
 
@@ -240,6 +263,22 @@ export const playlistService = {
     }
   },
 
+  async getUserAlbums(
+    username: string,
+    page = 1,
+    limit = 20,
+  ): Promise<GetUserCollectionsResponse | null> {
+    try {
+      const response = await api.get<GetUserCollectionsResponse>(
+        `/users/${encodeURIComponent(username)}/albums`,
+        { params: { page, limit } },
+      );
+      return response.data;
+    } catch {
+      return null;
+    }
+  },
+
   async getPlaylistById(id: string): Promise<Collection | null> {
     try {
       const response = await api.get(`/collections/${id}`);
@@ -267,6 +306,9 @@ export const playlistService = {
 
       if (payload.title !== undefined) {
         formData.append("title", payload.title);
+      }
+      if (payload.type !== undefined) {
+        formData.append("type", payload.type);
       }
       if (payload.description !== undefined) {
         formData.append("description", payload.description);

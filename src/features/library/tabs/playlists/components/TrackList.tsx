@@ -17,6 +17,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import trackFallback from "@/assets/track.jpg";
 import type { CollectionTrack } from "@/features/library/types";
 
 function formatCompactNumber(value?: number) {

@@ -342,38 +342,35 @@ export default function FeedPage() {
 
   return (
     <div data-testid="feed-page" className="min-h-screen bg-[#0b0b0b] text-white">
-      <div className="mx-auto flex w-full max-w-340 gap-10 px-8 py-8">
-        <div className="flex-1 flex flex-col py-10 overflow-y-auto overflow-x-visible ml-6">
-          <div className="flex items-center justify-between w-full max-w-220 mb-10">
-            <p className="text-[22px] font-bold text-white text-left">
+      <div className="mx-auto flex w-full max-w-[1400px] gap-4 px-3 py-3 sm:gap-8 sm:px-6 sm:py-6 xl:gap-10 xl:px-8 xl:py-8">
+        <div className="flex min-w-0 flex-1 flex-col overflow-y-auto overflow-x-visible py-1 sm:py-6 xl:ml-6 xl:py-10">
+          <div className="mb-5 flex w-full items-start justify-between gap-3 sm:mb-10 sm:items-center xl:max-w-220">
+            <p className="min-w-0 flex-1 text-[14px] font-bold leading-snug text-white sm:text-[22px]">
               Hear the latest posts from the people you're following:
             </p>
-            <div className="flex items-center gap-2 select-none">
-              <span className="text-zinc-400 text-base">Reposts</span>
+            <div className="flex shrink-0 items-center gap-2 pr-1 select-none">
+              <span className="text-zinc-400 text-[11px] sm:text-base">Reposts</span>
               <button
                 data-testid="show-reposts-toggle"
-                className={`relative w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none border-2 ${
+                className={`relative h-5 w-10 shrink-0 rounded-full border transition-colors duration-200 focus:outline-none sm:h-6 sm:w-12 ${
                   showReposts
-                    ? "bg-orange-500 border-orange-500"
-                    : "bg-gray-400 border-gray-400"
+                    ? "border-orange-500 bg-orange-500"
+                    : "border-gray-500 bg-gray-500"
                 }`}
                 type="button"
                 aria-pressed={showReposts}
                 onClick={() => setShowReposts((v) => !v)}
               >
                 <span
-                  className="absolute w-5 h-5 bg-black rounded-full transition-all duration-200"
-                  style={{
-                    left: showReposts ? "calc(100% - 1.25rem)" : "0.25rem",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                  }}
+                  className={`absolute left-[2px] top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-black transition-transform duration-200 sm:h-5 sm:w-5 ${
+                    showReposts ? "translate-x-[18px] sm:translate-x-[22px]" : "translate-x-0"
+                  }`}
                 />
               </button>
             </div>
           </div>
 
-          <div data-testid="feed-list" className="w-full max-w-220 flex flex-col">
+          <div data-testid="feed-list" className="flex w-full flex-col xl:max-w-220">
             {displayItems.length === 0 && (
               <p data-testid="feed-empty" className="text-gray-500 text-sm mt-10">
                 Nothing to show here yet.
@@ -386,9 +383,9 @@ export default function FeedPage() {
               return <div
                 key={item.trackId}
                 data-testid={`feed-item-${item.trackId}`}
-                className="w-full flex flex-col items-stretch mb-5"
+                className="mb-3 flex w-full flex-col items-stretch sm:mb-4"
               >
-                <div className="flex items-center gap-3 pb-1">
+                <div className="flex items-center gap-1.5 pb-0.5 sm:gap-3 sm:pb-1">
                   <div
                     className="relative flex items-center gap-3"
                     onMouseEnter={() => {
@@ -410,14 +407,14 @@ export default function FeedPage() {
                         src={item.action.avatarUrl || avatarFallback}
                         alt={item.action.username || item.action.username}
                         data-testid={`feed-avatar-${item.trackId}`}
-                        className="w-8 h-8 rounded-full object-cover cursor-pointer"
+                        className="h-7 w-7 rounded-full object-cover cursor-pointer sm:h-8 sm:w-8"
                       />
                     </Link>
 
                     <Link
                       to={`/${encodeURIComponent(itemRouteId)}`}
                       data-testid={`feed-username-link-${item.trackId}`}
-                      className="font-semibold text-white text-base hover:text-zinc-300"
+                      className="text-[13px] font-semibold text-white hover:text-zinc-300 sm:text-base"
                     >
                       {item.action.username || item.action.username}
                     </Link>
@@ -425,7 +422,7 @@ export default function FeedPage() {
                     {hoveredTrackId === item.trackId && (
                       <div
                         data-testid={`feed-hover-card-${item.trackId}`}
-                        className="absolute left-0 top-10 z-30 w-40 rounded-sm border border-zinc-700 bg-[#07090f] p-2 shadow-2xl"
+                        className="absolute left-0 top-10 z-30 w-36 rounded-sm border border-zinc-700 bg-[#07090f] p-2 shadow-2xl sm:w-40"
                       >
                         <div className="absolute left-4 top-0 h-3 w-3 -translate-y-1/2 rotate-45 border-l border-t border-zinc-700 bg-[#07090f]" />
 
@@ -443,7 +440,7 @@ export default function FeedPage() {
                             data-testid={`feed-hover-card-avatar-${item.trackId}`}
                             className="h-16 w-16 rounded-full object-cover"
                           />
-                          <p className="mt-1.5 text-base font-bold text-white">
+                          <p className="mt-1.5 text-sm font-bold text-white sm:text-base">
                             {hoverCardByUserId[item.action.id]?.displayName ||
                               item.action.username}
                           </p>
@@ -458,7 +455,7 @@ export default function FeedPage() {
                           </span>
                         </p>
 
-                        <p className="mt-1 text-center text-xs font-medium leading-snug text-zinc-400 wrap-break-word">
+                        <p className="mt-1 text-center text-[11px] font-medium leading-snug text-zinc-400 wrap-break-word sm:text-xs">
                           {hoverCardByUserId[item.action.id]?.location || "Unknown location"}
                         </p>
 
@@ -483,7 +480,7 @@ export default function FeedPage() {
                   </div>
                   <span
                     data-testid={`feed-action-label-${item.trackId}`}
-                    className="text-xs text-gray-400 flex items-center gap-1"
+                    className="flex items-center gap-1 text-[10px] text-gray-400 sm:text-xs"
                   >
                     {item.action.action === "repost" && (
                       <Repeat2 className="inline w-4 h-4 text-grey-400 mr-1" />
@@ -493,7 +490,7 @@ export default function FeedPage() {
                   </span>
                 </div>
 
-                <div className="flex gap-4 items-start py-2">
+                <div className="flex items-start gap-2 py-1.5 sm:gap-4 sm:py-2">
                   <div className="flex-1 bg-[#181818] rounded-lg">
                     <SongCard
                       trackId={item.trackId}
@@ -538,7 +535,7 @@ export default function FeedPage() {
           </div>
         </div>
 
-        <aside className="sticky top-6 self-start h-[calc(100vh-3rem)] w-90 shrink-0 overflow-y-auto pr-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <aside className="hidden xl:sticky xl:top-6 xl:block xl:h-[calc(100vh-3rem)] xl:w-90 xl:shrink-0 xl:overflow-y-auto xl:pr-2 xl:[scrollbar-width:none] xl:[-ms-overflow-style:none] xl:[&::-webkit-scrollbar]:hidden">
           <SideBar />
         </aside>
       </div>
