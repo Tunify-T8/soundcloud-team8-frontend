@@ -9,6 +9,48 @@ import { useEffect, useState } from "react";
 import { followingService } from "../../../following/followingService";
 import { notifySocialGraphUpdated } from "../../socialGraphEvents";
 
+function isBlockedUserMatch(entry: unknown, userId?: string): boolean {
+  if (!userId || !entry || typeof entry !== "object") return false;
+  const candidate = entry as {
+    id?: string;
+    userId?: string;
+    blockedUserId?: string;
+    username?: string;
+    user?: {
+      id?: string;
+      username?: string;
+    };
+  };
+  return [
+    candidate.id,
+    candidate.userId,
+    candidate.blockedUserId,
+    candidate.username,
+    candidate.user?.id,
+    candidate.user?.username,
+  ]
+    .filter(Boolean)
+    .some((value) => String(value) === String(userId));
+}
+
+function extractBlockedUsers(payload: unknown): unknown[] {
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== "object") return [];
+
+  const maybePayload = payload as {
+    data?: unknown;
+    blockedUsers?: unknown;
+    users?: unknown;
+    items?: unknown;
+  };
+
+  if (Array.isArray(maybePayload.data)) return maybePayload.data;
+  if (Array.isArray(maybePayload.blockedUsers)) return maybePayload.blockedUsers;
+  if (Array.isArray(maybePayload.users)) return maybePayload.users;
+  if (Array.isArray(maybePayload.items)) return maybePayload.items;
+  return [];
+}
+
 function ShareOverlay({ onClose }: { onClose: () => void }) {
   const [activeTab, setActiveTab] = useState<"share" | "message">("share");
   const [shortenLink, setShortenLink] = useState(false);
@@ -137,6 +179,7 @@ export default function UserInfoBar({
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [blockLoading, setBlockLoading] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
   const [showShareOverlay, setShowShareOverlay] = useState(false);
 
   const navigate = useNavigate();
@@ -152,6 +195,24 @@ export default function UserInfoBar({
       .catch(() => {
         setIsFollowing(false);
       });
+  }, [isMe, userId]);
+
+  useEffect(() => {
+    if (isMe || !userId) return;
+    let mounted = true;
+    followingService
+      .getBlockedUsers(1, 200)
+      .then((res) => {
+        if (!mounted) return;
+        const blockedList = extractBlockedUsers(res);
+        setIsBlocked(blockedList.some((entry) => isBlockedUserMatch(entry, userId)));
+      })
+      .catch(() => {})
+      .finally(() => {});
+
+    return () => {
+      mounted = false;
+    };
   }, [isMe, userId]);
 
   const handleFollowToggle = async () => {
@@ -190,10 +251,19 @@ export default function UserInfoBar({
 
     setBlockLoading(true);
     try {
-      await followingService.blockUser(userId);
+      if (isBlocked) {
+        await followingService.unblockUser(userId);
+        setIsBlocked(false);
+      } else {
+        await followingService.blockUser(userId);
+        setIsBlocked(true);
+      }
+
       notifySocialGraphUpdated();
       onProfileUpdated?.();
       setShowMoreActions(false);
+    } catch (err) {
+      // swallow: UI will refresh on next profile fetch
     } finally {
       setBlockLoading(false);
     }
@@ -298,13 +368,17 @@ export default function UserInfoBar({
               <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 flex w-max flex-col rounded-sm border border-zinc-800 bg-zinc-950 shadow-lg z-10">
                 <button
                   type="button"
-                  title="Block"
+                  title={isBlocked ? "Unblock" : "Block"}
                   onClick={handleBlock}
                   disabled={blockLoading || !userId}
                   className="inline-flex items-center gap-2 w-auto whitespace-nowrap text-left text-white font-bold text-[14px] px-3 py-2 hover:text-zinc-500 transition-colors cursor-pointer"
                 >
                   <FiSlash />
-                  {blockLoading ? "Blocking..." : `Block ${displayName}`}
+                  {blockLoading
+                    ? isBlocked
+                      ? "Unblocking..."
+                      : "Blocking..."
+                    : `${isBlocked ? "Unblock" : "Block"} ${displayName ?? "user"}`}
                 </button>
                 <button
                   type="button"

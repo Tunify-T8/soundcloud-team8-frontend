@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import ChatWindow from "../components/ChatWindow";
 import type { Message } from "../types";
@@ -35,6 +35,14 @@ vi.mock("../hooks/useSocket", () => ({
       connected: true,
     }),
   }),
+}));
+
+const mockBlockUser = vi.fn().mockResolvedValue(undefined);
+
+vi.mock("../conversationService", () => ({
+  conversationService: {
+    blockUser: mockBlockUser,
+  },
 }));
 
 /* ---------------- SAFE REDUX MOCK ---------------- */
@@ -82,5 +90,18 @@ describe("ChatWindow", () => {
   it("shows empty state", () => {
     renderWithProviders();
     expect(screen.getByText(/No messages yet\. Start the conversation!/i)).toBeInTheDocument();
+  });
+
+  it("opens the block dialog from the header and blocks the conversation", async () => {
+    renderWithProviders();
+
+    fireEvent.click(screen.getByRole("button", { name: /block user/i }));
+    expect(screen.getByText("Block this user?")).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole("button", { name: /^block user$/i })[1]);
+
+    await waitFor(() => {
+      expect(mockBlockUser).toHaveBeenCalledWith("conv1");
+    });
   });
 });

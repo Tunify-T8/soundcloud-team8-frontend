@@ -78,8 +78,13 @@ function BlockConfirmModal({
 
 // ─── Chat Window ──────────────────────────────────────────────────────────────
 
-export default function ChatWindow() {
-  const { conversationId } = useParams<{ conversationId: string }>();
+type ChatWindowProps = {
+  conversationId?: string | null;
+};
+
+export default function ChatWindow({ conversationId: conversationIdProp }: ChatWindowProps) {
+  const { conversationId: routeConversationId } = useParams<{ conversationId: string }>();
+  const conversationId = conversationIdProp ?? routeConversationId ?? null;
   const currentUser = useSelector((state: RootState) => state.user.currentUser);
   const currentUserId = currentUser?.id ?? "";
 
@@ -337,10 +342,17 @@ export default function ChatWindow() {
       )}
 
       <div className="flex flex-1 flex-col rounded-md border border-zinc-800 bg-zinc-950">
-        <div className="border-b border-zinc-800 px-4 py-3">
+        <div className="flex items-center justify-between gap-3 border-b border-zinc-800 px-4 py-3">
           <h2 className="text-base font-semibold text-white">
             Conversation {conversationId}
           </h2>
+          <button
+            type="button"
+            onClick={() => setBlockTargetConvId(conversationId)}
+            className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-orange-400 transition-colors hover:bg-zinc-800 hover:text-orange-300"
+          >
+            Block user
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-4">

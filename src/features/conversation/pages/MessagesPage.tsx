@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { useConversationSummary } from "../hooks/useConversationSummary";
 import ConversationListPanel from "../components/ConversationListPanel";
@@ -9,11 +9,14 @@ import { conversationService } from "../conversationService";
 import type { RootState } from "../../../app/store";
 
 export default function MessagesPage() {
-  const { conversationId } = useParams<{ conversationId: string }>();
-  const navigate = useNavigate();
+  const { conversationId: routeConversationId } = useParams<{ conversationId: string }>();
   const currentUserId = useSelector(
     (state: RootState) => state.user.currentUser?.id ?? null,
   );
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(
+    routeConversationId ?? null,
+  );
+  const previousRouteConversationId = useRef<string | null>(routeConversationId ?? null);
 
   const {
     conversations,
@@ -21,10 +24,10 @@ export default function MessagesPage() {
     isLoading,
     error,
     refetch,
-  } = useConversationSummary(currentUserId, conversationId ?? null);
+  } = useConversationSummary(currentUserId, selectedConversationId);
 
   const selectedConversation =
-    conversations.find((c) => c.conversationId === conversationId) ?? null;
+    conversations.find((c) => c.conversationId === selectedConversationId) ?? null;
 
   const redirectedForRef = useRef<string | null>(null);
   const markedReadRef = useRef<string | null>(null);
@@ -37,24 +40,30 @@ export default function MessagesPage() {
   }, []);
 
   useEffect(() => {
+    if (routeConversationId === previousRouteConversationId.current) return;
+    previousRouteConversationId.current = routeConversationId ?? null;
+    setSelectedConversationId(routeConversationId ?? null);
+  }, [routeConversationId]);
+
+  useEffect(() => {
     if (
-      conversationId &&
+      routeConversationId &&
       !isLoading &&
       conversations.length > 0 &&
       !selectedConversation &&
-      redirectedForRef.current !== conversationId
+      redirectedForRef.current !== routeConversationId
     ) {
-      redirectedForRef.current = conversationId;
-      navigate("/messages", { replace: true });
+      redirectedForRef.current = routeConversationId;
+      setSelectedConversationId(null);
     }
-  }, [conversationId, isLoading, conversations.length, selectedConversation, navigate]);
+  }, [routeConversationId, isLoading, conversations.length, selectedConversation]);
 
   // Mark as read on initial load or refresh — fires when conversation loads
   useEffect(() => {
-    if (!conversationId || !selectedConversation) return;
-    if (markedReadRef.current === conversationId) return;
+    if (!selectedConversationId || !selectedConversation) return;
+    if (markedReadRef.current === selectedConversationId) return;
 
-    markedReadRef.current = conversationId;
+    markedReadRef.current = selectedConversationId;
 
     const unreadToDeduct = selectedConversation.unreadCount;
 
@@ -62,7 +71,7 @@ export default function MessagesPage() {
       // Update local state
       setConversations((prev) =>
         prev.map((c) =>
-          c.conversationId === conversationId ? { ...c, unreadCount: 0 } : c,
+          c.conversationId === selectedConversationId ? { ...c, unreadCount: 0 } : c,
         ),
       );
 
@@ -72,17 +81,19 @@ export default function MessagesPage() {
       );
 
       // Mark on server
-      conversationService.markConversationAsRead(conversationId).catch(() => {});
+      conversationService.markConversationAsRead(selectedConversationId).catch(() => {});
     }
-  }, [conversationId, selectedConversation, setConversations]);
+  }, [selectedConversationId, selectedConversation, setConversations]);
 
   // Reset markedReadRef when conversation changes so it fires again for new conv
   useEffect(() => {
     markedReadRef.current = null;
-  }, [conversationId]);
+  }, [selectedConversationId]);
 
   function handleSelectConversation(conversation: ConversationSummary) {
     const unreadToDeduct = conversation.unreadCount;
+
+    setSelectedConversationId(conversation.conversationId);
 
     setConversations((prev) =>
       prev.map((c) =>
@@ -91,8 +102,6 @@ export default function MessagesPage() {
           : c,
       ),
     );
-
-    navigate(`/messages/${conversation.conversationId}`);
 
     conversationService
       .markConversationAsRead(conversation.conversationId)
@@ -120,7 +129,7 @@ export default function MessagesPage() {
   return (
     <main className="flex h-screen w-full justify-center gap-4 bg-zinc-950 px-4 py-4">
       <ConversationListPanel
-        selectedConversationId={conversationId ?? null}
+        selectedConversationId={selectedConversationId}
         onSelectConversation={handleSelectConversation}
         onConversationCreated={handleConversationCreated}
         conversations={conversations}
@@ -128,8 +137,8 @@ export default function MessagesPage() {
         error={error}
       />
 
-      {conversationId ? (
-        <ChatWindow />
+      {selectedConversationId ? (
+        <ChatWindow conversationId={selectedConversationId} />
       ) : (
         <div className="flex flex-1 max-w-3xl flex-col items-center justify-center rounded-md border border-zinc-800 bg-zinc-950 text-center">
           <p className="text-sm text-zinc-400">
