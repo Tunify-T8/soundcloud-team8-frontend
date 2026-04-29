@@ -103,8 +103,8 @@ export default function DiscoverPage() {
 
   return (
     <div className="min-h-screen bg-[#0b0b0b] text-white">
-      <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8 xl:flex-row xl:gap-10 xl:px-8">
-        <main className="ml-0 min-w-0 flex-1 overflow-hidden xl:ml-6">
+      <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 px-3 py-4 sm:px-6 sm:py-8 xl:flex-row xl:gap-10 xl:px-8">
+        <main className="min-w-0 flex-1 overflow-hidden">
           {isLoading ? (
             <p className="text-zinc-400">Loading discover tracks...</p>
           ) : error ? (

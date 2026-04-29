@@ -229,13 +229,13 @@ export default function UserInfoBar({
             </NavLink>
           ))}
         </div>
-        <div className="mt-1 flex w-full flex-wrap items-center justify-start gap-2 lg:ml-auto lg:mt-0 lg:w-auto lg:flex-nowrap lg:justify-end">
+        <div className="hide-scrollbar mt-1 flex w-full items-center justify-start gap-2 overflow-x-auto pb-1 pr-1 sm:flex-wrap sm:overflow-visible sm:pb-0 sm:pr-0 sm:gap-2.5">
           {!isMe && (
             <button
               data-testid="profile-station-btn"
               type="button"
               title="Station"
-              className="inline-flex items-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
             >
               <MdPodcasts />
               <span>Station</span>
@@ -248,7 +248,7 @@ export default function UserInfoBar({
               title={isFollowing ? "Following" : "Follow"}
               onClick={handleFollowToggle}
               disabled={followLoading || !userId}
-              className="inline-flex items-center gap-1.5 rounded-sm bg-white px-2 py-1 text-[12px] font-bold text-black hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-sm bg-white px-2 py-1 text-[12px] font-bold text-black hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
             >
               <FaUser />
               <span>{isFollowing ? "Following" : "Follow"}</span>
@@ -260,7 +260,7 @@ export default function UserInfoBar({
               type="button"
               title="Your Insights"
               onClick={() => navigate("/me/insights/overview")}
-              className="inline-flex items-center justify-center gap-1.5 rounded-sm bg-white px-2 py-1 text-[12px] font-bold text-black hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
+              className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-sm bg-white px-2 py-1 text-[12px] font-bold text-black hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
             >
               <BarChart2 size={14} />
               <span>Your Insights</span>
@@ -271,7 +271,7 @@ export default function UserInfoBar({
               data-testid="profile-share-btn"
               type="button"
               title="Station"
-              className="inline-flex items-center justify-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
+              className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
             >
               <MdPodcasts />
               <span>Station</span>
@@ -281,7 +281,7 @@ export default function UserInfoBar({
             type="button"
             title="Share"
             onClick={() => setShowShareOverlay(true)}
-            className="inline-flex items-center justify-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
+            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
           >
             <Upload size={14} />
             <span>Share</span>
@@ -292,7 +292,7 @@ export default function UserInfoBar({
                 data-testid="profile-messages-btn"
                 type="button"
                 title="Messages"
-                className="inline-flex items-center justify-center rounded-sm bg-zinc-800 px-2 py-1.5 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:px-3 sm:py-2.25 sm:text-sm"
+                className="inline-flex shrink-0 items-center justify-center rounded-sm bg-zinc-800 px-2 py-1.5 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:px-3 sm:py-2 sm:text-sm"
               >
                 <FaEnvelope />
               </button>
@@ -305,7 +305,7 @@ export default function UserInfoBar({
                 type="button"
                 title="More"
                 onClick={() => setShowMoreActions((prev) => !prev)}
-                className={`inline-flex items-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold cursor-pointer sm:gap-2 sm:px-3 sm:py-[6.9px] sm:text-sm ${
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold cursor-pointer sm:gap-2 sm:px-3 sm:py-[6.9px] sm:text-sm ${
                   showMoreActions
                     ? "text-orange-500 hover:text-orange-400"
                     : "text-white hover:text-zinc-500"
@@ -315,7 +315,7 @@ export default function UserInfoBar({
               </button>
             )}
             {showMoreActions && (
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 flex w-max flex-col rounded-sm border border-zinc-800 bg-zinc-950 shadow-lg z-10">
+              <div className="absolute left-0 top-full z-10 mt-2 flex w-max min-w-[12rem] flex-col rounded-sm border border-zinc-800 bg-zinc-950 shadow-lg sm:left-1/2 sm:-translate-x-1/2">
                 <button
                   data-testid="profile-block-btn"
                   type="button"
@@ -345,7 +345,7 @@ export default function UserInfoBar({
               type="button"
               title="Edit"
               onClick={toggleModal}
-              className="inline-flex items-center justify-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
+              className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
             >
               <FaPen />
               <span>Edit</span>
@@ -376,3 +376,4 @@ export default function UserInfoBar({
     </div>
   );
 }
+
