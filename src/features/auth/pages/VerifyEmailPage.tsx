@@ -1,37 +1,33 @@
 // ============================================================
 // VerifyEmailPage.tsx
-// Location: src/features/auth/pages/VerifyEmailPage.tsx
 // ============================================================
 
 import React, { useState, useRef } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import AuthNavbar from '../components/AuthNavbar';
 import { ChevronLeft, Loader2 } from 'lucide-react';
 import { verifyEmail, resendVerification } from '../services/index';
-import { storeTokens } from '../utils/token.utils';
+import { storeTokens , storeUser } from '../utils/token.utils';
 import { extractErrorMessage } from '../hooks/useAuth';
-
-const SoundCloudLogo: React.FC = () => (
-  <Link to="/" className="flex items-center gap-2 no-underline">
-    <svg viewBox="0 0 33 15" className="h-6 w-auto sm:h-7" fill="white" aria-hidden="true">
-      <path d="M0 11.5c0 .8.7 1.5 1.5 1.5s1.5-.7 1.5-1.5V6c0-.8-.7-1.5-1.5-1.5S0 5.2 0 6v5.5zm4.5 1.5c.8 0 1.5-.7 1.5-1.5V3.5C6 2.7 5.3 2 4.5 2S3 2.7 3 3.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V1.5C10.5.7 9.8 0 9 0S7.5.7 7.5 1.5V11.5C7.5 12.3 8.2 13 9 13zm4.5 0c.8 0 1.5-.7 1.5-1.5V3.5C15 2.7 14.3 2 13.5 2S12 2.7 12 3.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V2.5C19.5 1.7 18.8 1 18 1s-1.5.7-1.5 1.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V4.5C24 3.7 23.3 3 22.5 3S21 3.7 21 4.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V4.5C27 3.7 26.3 3 25.5 3S24 3.7 24 4.5V11.5c0 .8.7 1.5 1.5 1.5zm4.5 0c.8 0 1.5-.7 1.5-1.5V2.5C33 1.7 32.3 1 31.5 1S30 1.7 30 2.5V11.5c0 .8.7 1.5 1.5 1.5z" />
-    </svg>
-    <span className="text-white font-bold text-sm sm:text-base tracking-widest uppercase">SoundCloud</span>
-  </Link>
-);
+import { useDispatch } from 'react-redux';
+import { setUser } from '../../../store/userSlice';
+import type { AppDispatch } from '../../../app/store';
 
 const VerifyEmailPage: React.FC = () => {
+  
   const navigate = useNavigate();
   const location = useLocation();
   const email = (location.state as { email?: string })?.email ?? '';
 
   const [code, setCode] = useState(['', '', '', '', '', '']);
+  const dispatch = useDispatch<AppDispatch>();
   const [apiError, setApiError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  
 
   const fullCode = code.join('');
   const isReady = fullCode.length === 6;
@@ -71,10 +67,25 @@ const VerifyEmailPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       const res = await verifyEmail(email, fullCode);
-      storeTokens(res.accessToken, res.refreshToken, 3600);
+      storeTokens(res.accessToken, res.refreshToken, 900);
+      if (res.user) {
+        const userPayload = {
+          id: res.user.id,
+          username: res.user.username,
+          email: res.user.email,
+          role: res.user.role,
+          isVerified: res.user.isCertified ?? true,
+          avatarUrl: res.user.avatarUrl ?? null,
+        };
+        storeUser(userPayload);
+        dispatch(setUser(userPayload));
+      }
       navigate('/', { replace: true });
     } catch (error) {
-      setApiError(extractErrorMessage(error));
+      try { await resendVerification(email); } catch { /* silent */ }
+      setCode(['', '', '', '', '', '']);
+      inputRefs.current[0]?.focus();
+      setApiError('That code is incorrect or expired. A new code has been sent to your inbox.');
     } finally {
       setIsSubmitting(false);
     }
@@ -98,22 +109,20 @@ const VerifyEmailPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] flex flex-col">
-
+      <div className="min-h-screen bg-[#0d0d0d] flex flex-col" data-testid="verify-email-page">
       <AuthNavbar />
 
-      {/* ── Main ── */}
       <main className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-[480px]">
 
           <div className="border border-[#3a3a3a] rounded-sm p-[3px] bg-[#111]">
             <div className="border border-[#555] rounded-sm bg-[#181818] min-h-[520px] p-8">
 
-              {/* Back button + title */}
               <div className="flex items-center gap-4 mb-6">
                 <button
                   type="button"
                   onClick={() => navigate('/create-account')}
+                  data-testid="back-btn"
                   className="w-9 h-9 rounded-full bg-[#2a2a2a] hover:bg-[#3a3a3a] flex items-center justify-center transition-colors flex-shrink-0"
                 >
                   <ChevronLeft className="h-5 w-5 text-white" />
@@ -121,7 +130,6 @@ const VerifyEmailPage: React.FC = () => {
                 <h1 className="text-white text-base font-bold">Verify your email</h1>
               </div>
 
-              {/* Instruction */}
               <p className="text-[#ccc] text-sm leading-relaxed mb-2">
                 We sent a 6-character code to
               </p>
@@ -130,26 +138,24 @@ const VerifyEmailPage: React.FC = () => {
                 Enter the code below to verify your account. The code expires after a short time.
               </p>
 
-              {/* Error */}
               {apiError && (
-                <div role="alert" className="mb-4 px-4 py-3 bg-[#2a1a1a] border border-red-500/40 rounded text-red-400 text-sm">
+                <div role="alert" data-testid="api-error" className="mb-4 px-4 py-3 bg-[#2a1a1a] border border-red-500/40 rounded text-red-400 text-sm">
                   {apiError}
                 </div>
               )}
 
-              {/* Resend success */}
               {resendSuccess && (
-                <div className="mb-4 px-4 py-3 bg-[#1a2a1a] border border-green-500/40 rounded text-green-400 text-sm">
+                <div data-testid="resend-success" className="mb-4 px-4 py-3 bg-[#1a2a1a] border border-green-500/40 rounded text-green-400 text-sm">
                   A new code has been sent to your inbox.
                 </div>
               )}
 
-              {/* ── 6-box code input — fixed size, centered ── */}
               <div className="flex justify-center gap-3 mb-6" onPaste={handlePaste}>
                 {code.map((char, i) => (
                   <input
                     key={i}
                     ref={(el) => { inputRefs.current[i] = el; }}
+                    data-testid={`code-input-${i}`}
                     type="text"
                     inputMode="text"
                     maxLength={1}
@@ -163,11 +169,11 @@ const VerifyEmailPage: React.FC = () => {
                 ))}
               </div>
 
-              {/* Verify button */}
               <button
                 type="button"
                 onClick={handleVerify}
                 disabled={!isReady || isSubmitting}
+                data-testid="verify-btn"
                 className={`w-full py-3 rounded-sm text-sm font-semibold transition-all flex items-center justify-center gap-2 mb-5 ${
                   isReady && !isSubmitting
                     ? 'bg-white hover:bg-gray-100 text-black cursor-pointer'
@@ -180,13 +186,13 @@ const VerifyEmailPage: React.FC = () => {
                 }
               </button>
 
-              {/* Resend */}
               <p className="text-[#aaa] text-sm">
                 Didn't receive the code?{' '}
                 <button
                   type="button"
                   onClick={handleResend}
                   disabled={isResending}
+                  data-testid="resend-btn"
                   className="text-[#0066cc] hover:underline disabled:opacity-50"
                 >
                   {isResending ? 'Sending…' : 'Resend code'}

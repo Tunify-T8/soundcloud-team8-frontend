@@ -76,7 +76,7 @@ const ResetPasswordPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] flex flex-col">
+    <div className="min-h-screen bg-[#0d0d0d] flex flex-col" data-testid="resetPasswordPage">
 
       <AuthNavbar />
 
@@ -164,6 +164,7 @@ const ResetPasswordPage: React.FC = () => {
                         placeholder="Choose a password (min. 8 characters)"
                         className="w-full bg-transparent text-white text-sm focus:outline-none placeholder-[#666] pr-8"
                         autoComplete="new-password"
+                        data-testid="newPasswordInput"
                       />
                       <button
                         type="button"
@@ -213,6 +214,7 @@ const ResetPasswordPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword((v) => !v)}
+                        data-testid="confirmPasswordBtn"
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-[#777] hover:text-white"
                       >
                         {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -246,6 +248,7 @@ const ResetPasswordPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => navigate('/signin')}
+                    data-testid="goToSignInBtn"
                     className="w-full bg-white hover:bg-gray-100 text-black py-3 rounded-sm text-sm font-semibold transition-colors cursor-pointer"
                   >
                     Sign in

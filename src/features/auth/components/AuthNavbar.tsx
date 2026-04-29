@@ -1,8 +1,7 @@
 import { Search } from 'lucide-react';
 import { SiSoundcloud } from 'react-icons/si';
 import { Link } from 'react-router-dom';
-
-const AuthNavbar: React.FC = () => (
+  const AuthNavbar: React.FC<{ onCreateAccount?: () => void }> = ({ onCreateAccount }) => (
   <nav className="w-full h-12 bg-black text-white border-b border-zinc-800">
     <div className="max-w-[1200px] mx-auto h-full flex items-center justify-between px-6">
 
@@ -29,12 +28,12 @@ const AuthNavbar: React.FC = () => (
       {/* RIGHT */}
       <div className="flex items-center gap-4 text-sm">
         <Link to="/signin" className="text-white font-bold hover:text-zinc-300">Sign in</Link>
-        <Link
-          to="/create-account"
-          className="bg-white text-black font-bold px-4 py-1.5 rounded-full hover:bg-zinc-200 transition-colors text-sm"
+        <button
+          onClick={onCreateAccount}
+          className="bg-white text-black font-bold px-4 py-1.5 rounded-full hover:bg-zinc-200 transition-colors text-sm cursor-pointer"
         >
           Create account
-        </Link>
+        </button>
         <Link to="/upload" className="text-zinc-400 hover:text-white font-bold tracking-tight">Upload</Link>
         <span className="text-zinc-400 text-lg cursor-default">···</span>
       </div>
