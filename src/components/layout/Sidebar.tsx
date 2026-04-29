@@ -19,6 +19,7 @@ import monetizeImg from "@/assets/monetize.png";
 import spotlightImg from "@/assets/spotlightool.png";
 import topFansImg from "@/assets/top_fans.png";
 import commentsImg from "@/assets/comments.png";
+import { useSubscription } from "@/hooks/useSubscription";
 
 interface SuggestedArtist {
   id: string;
@@ -28,6 +29,7 @@ interface SuggestedArtist {
   avatarUrl: string | null;
   followersCount: number;
   tracksCount: number;
+  isFollowing?: boolean;
 }
 
 type ArtistTool = {
@@ -54,6 +56,7 @@ const artistToolRows: ArtistTool[][] = [
 ];
 
 export default function SideBar() {
+  const { isArtist, isArtistPro } = useSubscription();
   const [open, setOpen] = useState(true);
   const [suggestedUsers, setSuggestedUsers] = useState<SuggestedArtist[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,11 +65,13 @@ export default function SideBar() {
   const [likesLoading, setLikesLoading] = useState(true);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [followStates, setFollowStates] = useState<Record<string, boolean>>({});
-  const [pendingFollowId, setPendingFollowId] = useState<string | null>(null);
+  const [pendingFollowById, setPendingFollowById] = useState<Record<string, boolean>>({});
 
   const handleArtistToolClick = () => {
     setUpgradeOpen(true);
   };
+
+  const canAccessBasicArtistTools = isArtist || isArtistPro;
 
   const fetchArtists = async () => {
     setLoading(true);
@@ -78,27 +83,35 @@ export default function SideBar() {
       const items: SuggestedArtist[] = res.data.items || [];
       setSuggestedUsers(items);
 
-      const statusEntries = await Promise.all(
-        items.map(async (artist) => {
-          try {
-            const status = await followingService.getFollowStatus(artist.id);
-            return [artist.id, status.isFollowing] as const;
-          } catch {
-            return [artist.id, false] as const;
-          }
-        }),
+      const seededStates = Object.fromEntries(
+        items.map((artist) => [artist.id, Boolean(artist.isFollowing)]),
       );
+      setFollowStates((prev) => ({ ...prev, ...seededStates }));
+      setLoading(false);
 
-      setFollowStates(Object.fromEntries(statusEntries));
+      // Resolve precise follow states in background so the list appears immediately.
+      void (async () => {
+        const statusEntries = await Promise.all(
+          items.map(async (artist) => {
+            try {
+              const status = await followingService.getFollowStatus(artist.id);
+              return [artist.id, status.isFollowing] as const;
+            } catch {
+              return [artist.id, seededStates[artist.id] ?? false] as const;
+            }
+          }),
+        );
+
+        setFollowStates((prev) => ({ ...prev, ...Object.fromEntries(statusEntries) }));
+      })();
     } catch {
       setError("Failed to load artists");
-    } finally {
       setLoading(false);
     }
   };
 
   const handleSuggestedArtistFollowToggle = async (artistId: string) => {
-    setPendingFollowId(artistId);
+    setPendingFollowById((prev) => ({ ...prev, [artistId]: true }));
     const wasFollowing = followStates[artistId] ?? false;
     setFollowStates((prev) => ({ ...prev, [artistId]: !wasFollowing }));
 
@@ -114,7 +127,7 @@ export default function SideBar() {
       setFollowStates((prev) => ({ ...prev, [artistId]: wasFollowing }));
       console.error("Failed to toggle suggested artist follow state", err);
     } finally {
-      setPendingFollowId((current) => (current === artistId ? null : current));
+      setPendingFollowById((prev) => ({ ...prev, [artistId]: false }));
     }
   };
 
@@ -140,7 +153,7 @@ export default function SideBar() {
             className="mb-6 flex cursor-pointer items-center justify-between border-b border-zinc-800 pb-5"
           >
             <span className="text-[18px] font-bold tracking-tight text-white">
-              ARTIST TOOLS
+              YOU NOW HAVE ACCESS TO ARTIST TOOLS
             </span>
             <IoChevronDown
               size={22}
@@ -150,31 +163,46 @@ export default function SideBar() {
 
           <div className="mb-4 grid grid-cols-4 gap-3">
             {artistToolRows[0].map((tool) => (
-              <Tool key={tool.id} tool={tool} onClick={handleArtistToolClick} />
+              <Tool
+                key={tool.id}
+                tool={tool}
+                onClick={handleArtistToolClick}
+                showUpgradeHover={!canAccessBasicArtistTools}
+              />
             ))}
           </div>
 
           {open && (
             <div className="mb-4 grid grid-cols-4 gap-3">
               {artistToolRows[1].map((tool) => (
-                <Tool key={tool.id} tool={tool} onClick={handleArtistToolClick} />
+                <Tool
+                  key={tool.id}
+                  tool={tool}
+                  onClick={handleArtistToolClick}
+                  showUpgradeHover={
+                    !canAccessBasicArtistTools ||
+                    (isArtist && tool.badge === "star")
+                  }
+                />
               ))}
             </div>
           )}
 
-          <button
-            type="button"
-            data-testid="artist-tools-upgrade-btn"
-            onClick={handleArtistToolClick}
-            className="flex w-full items-center rounded-[9px] bg-[#433873] px-3 py-3.5 text-left text-white transition-colors hover:bg-[#4b3f80]"
-          >
-            <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#735ef2] text-[22px] font-black leading-none">
-              +
-            </span>
-            <span className="px-1 text-[13px] font-medium tracking-tight leading-snug">
-              Unlock Artist tools from EGP 29.99/month.
-            </span>
-          </button>
+          {!canAccessBasicArtistTools && (
+            <button
+              type="button"
+              data-testid="artist-tools-upgrade-btn"
+              onClick={handleArtistToolClick}
+              className="flex w-full items-center rounded-[9px] bg-[#433873] px-3 py-3.5 text-left text-white transition-colors hover:bg-[#4b3f80]"
+            >
+              <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#735ef2] text-[22px] font-black leading-none">
+                +
+              </span>
+              <span className="px-1 text-[13px] font-medium tracking-tight leading-snug">
+                Unlock Artist tools from EGP 29.99/month.
+              </span>
+            </button>
+          )}
         </div>
 
         <div data-testid="suggested-artists-section" className="mt-8 mb-6">
@@ -237,7 +265,7 @@ export default function SideBar() {
                   <button
                     data-testid={`suggested-artist-follow-btn-${artist.id}`}
                     type="button"
-                    disabled={pendingFollowId === artist.id}
+                    disabled={Boolean(pendingFollowById[artist.id])}
                     onClick={() => handleSuggestedArtistFollowToggle(artist.id)}
                     className={`font-semibold rounded px-5 py-1.5 text-sm transition disabled:opacity-60 ${
                       followStates[artist.id]
@@ -373,9 +401,10 @@ export default function SideBar() {
 type ToolProps = {
   tool: ArtistTool;
   onClick: (tool: ArtistTool) => void;
+  showUpgradeHover: boolean;
 };
 
-function Tool({ tool, onClick }: ToolProps) {
+function Tool({ tool, onClick, showUpgradeHover }: ToolProps) {
   const badgeClasses =
     tool.badge === "star"
       ? "bg-[#f5efd9] text-[#c5a64f]"
@@ -392,8 +421,14 @@ function Tool({ tool, onClick }: ToolProps) {
     <button
       type="button"
       data-testid={`artist-tool-${tool.id}`}
-      onClick={() => onClick(tool)}
-      className="group relative h-[86px] w-full overflow-hidden rounded-2xl border border-zinc-700/60 bg-[#1a1a1a] transition-colors hover:border-zinc-600"
+      onClick={() => {
+        if (showUpgradeHover) {
+          onClick(tool);
+        }
+      }}
+      className={`group relative h-[86px] w-full overflow-hidden rounded-2xl border border-zinc-700/60 bg-[#1a1a1a] transition-colors ${
+        showUpgradeHover ? "hover:border-zinc-600" : ""
+      }`}
     >
       <span
         className={`absolute right-2.5 top-2.5 flex h-6 w-6 items-center justify-center rounded-full text-[13px] font-black ${badgeClasses}`}
@@ -413,16 +448,22 @@ function Tool({ tool, onClick }: ToolProps) {
             <div className="h-full w-full rounded-2xl border border-dashed border-zinc-600/80 bg-zinc-900/40" />
           )}
         </div>
-        <span className="text-center text-[13px] font-semibold leading-tight tracking-tight text-white transition-opacity group-hover:opacity-0">
+        <span
+          className={`text-center text-[13px] font-semibold leading-tight tracking-tight text-white transition-opacity ${
+            showUpgradeHover ? "group-hover:opacity-0" : ""
+          }`}
+        >
           {tool.label}
         </span>
       </div>
 
-      <div className="absolute inset-x-0 bottom-0 translate-y-full transition-transform duration-200 group-hover:translate-y-0">
-        <div className={`flex h-11 items-center justify-center text-[13px] font-black ${hoverBarClasses}`}>
-          Upgrade
+      {showUpgradeHover && (
+        <div className="absolute inset-x-0 bottom-0 translate-y-full transition-transform duration-200 group-hover:translate-y-0">
+          <div className={`flex h-11 items-center justify-center text-[13px] font-black ${hoverBarClasses}`}>
+            Upgrade
+          </div>
         </div>
-      </div>
+      )}
     </button>
   );
 }

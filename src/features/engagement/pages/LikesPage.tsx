@@ -7,6 +7,32 @@ import TrackTabs from '../components/TrackTabs';
 import UserCard from '../components/UserCard';
 import { makeCommentAvatar } from '../components/CommentsSection';
 
+const normalizeUser = (entry: unknown) => {
+  const item = (entry ?? {}) as Record<string, unknown>;
+  const nestedUser =
+    typeof item.user === 'object' && item.user !== null
+      ? (item.user as Record<string, unknown>)
+      : null;
+
+  const userId =
+    (typeof item.userId === 'string' ? item.userId : null) ??
+    (nestedUser && typeof nestedUser.userId === 'string' ? nestedUser.userId : null) ??
+    (nestedUser && typeof nestedUser.id === 'string' ? nestedUser.id : null) ??
+    '';
+
+  const username =
+    (typeof item.username === 'string' ? item.username : null) ??
+    (nestedUser && typeof nestedUser.username === 'string' ? nestedUser.username : null) ??
+    '';
+
+  const avatarUrl =
+    (typeof item.avatarUrl === 'string' ? item.avatarUrl : null) ??
+    (nestedUser && typeof nestedUser.avatarUrl === 'string' ? nestedUser.avatarUrl : null) ??
+    null;
+
+  return { userId, username, avatarUrl };
+};
+
 const LikesPage = () => {
   const { trackId } = useParams<{ trackId: string }>();
   const [data, setData] = useState<PaginatedLikes | null>(null);
@@ -42,17 +68,24 @@ const LikesPage = () => {
           <p className="text-zinc-500 text-center py-12">No likes yet</p>
         ) : (
           <div className="mt-8 flex flex-wrap gap-6">
-            {likes.map((entry: any) => (
-              <UserCard
-                key={entry.user.id}
-                userId={entry.user.id}
-                avatarUrl={
-                  entry.user.avatarUrl ??
-                  makeCommentAvatar((entry.user.username || 'UN').slice(0, 2).toUpperCase())
-                }
-                username={entry.user.username || 'Unknown'}
-              />
-            ))}
+            {likes.map((entry: unknown, index: number) => {
+              const user = normalizeUser(entry);
+              const userId = user.userId;
+              const username = user.username || user.userId || 'user';
+              const cardKey = user.userId || `${username}-${index}`;
+
+              return (
+                <UserCard
+                  key={cardKey}
+                  userId={userId}
+                  avatarUrl={
+                    user.avatarUrl ??
+                    makeCommentAvatar((username || 'UN').slice(0, 2).toUpperCase())
+                  }
+                  username={username}
+                />
+              );
+            })}
           </div>
         )}
       </div>

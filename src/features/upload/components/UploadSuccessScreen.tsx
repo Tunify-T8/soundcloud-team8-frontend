@@ -1,9 +1,7 @@
 import { SiSoundcloud } from "react-icons/si";
-import CheckoutModal from "@/features/premium/components/CheckoutModal";
-import { useState } from "react";
+import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
 
 export default function UploadSuccessScreen() {
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
   return (
     <div className="min-h-screen bg-[#111111] text-white flex flex-col font-sans" data-testid="upload-success-page">
 
@@ -82,14 +80,14 @@ export default function UploadSuccessScreen() {
                 Easily send your SoundCloud tracks to Spotify, Apple Music, TikTok, Instagram and more with a Artist Pro subscription.{" "}
                 <a className="underline cursor-pointer hover:text-white">Learn more.</a>
               </p>
-              <button className="border border-white text-white px-6 py-2 rounded-full text-[14px] font-semibold hover:bg-white hover:text-black transition" data-testid="unlock-artist-pro-btn"
-               onClick={() => setCheckoutOpen(true)}
-               >
+              <ArtistProUpgradeButton
+                className="border border-white text-white px-6 py-2 rounded-full text-[14px] font-semibold hover:bg-white hover:text-black transition"
+                data-testid="unlock-artist-pro-btn"
+              >
                 Unlock with Artist Pro
-              </button>
+              </ArtistProUpgradeButton>
             </div>
           </div>
-          {checkoutOpen && <CheckoutModal plan = "artist-pro" onClose={() => setCheckoutOpen(false)} />}
         </div>
 
       </main>

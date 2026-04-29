@@ -8,6 +8,9 @@ import {
   ListPlus,
   ListMusic,
   Radio,
+  Download,
+  Check,
+  Loader2,
 } from "lucide-react";
 import { SiSoundcloud } from "react-icons/si";
 import { Link } from "react-router-dom";
@@ -15,13 +18,41 @@ import { waveGenerators } from "../Waveforms";
 import { useLike } from "@/features/feed/hooks/useLike";
 import { Genre } from "@/shared/types/Genre";
 import { usePlayer } from "@/features/playerUI/context/usePlayer";
+import { useSubscription } from "@/hooks/useSubscription";
+import { useMe } from "@/features/profile/context/useMe";
+import { playbackService } from "@/features/player-core/Playbackservice";
 import CreatePlaylistOverlay from "@/features/library/tabs/playlists/components/CreatePlaylistOverlay";
-import trackFallback from "@/assets/track.jpg";
+
+// ─── IndexedDB helpers ────────────────────────────────────────────────────────
+
+const DB_NAME = "sc_downloads";
+const STORE = "tracks";
+
+function openDB(): Promise<IDBDatabase> {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(STORE);
+    req.onsuccess = () => res(req.result);
+    req.onerror = () => rej(req.error);
+  });
+}
+
+async function saveDownload(
+  userId: string,
+  trackId: string,
+  meta: { id: string; title: string; artist: string; coverUrl: string },
+  blob: Blob,
+  artwork?: Blob | null
+) {
+  const db = await openDB();
+  const tx = db.transaction(STORE, "readwrite");
+  tx.objectStore(STORE).put({ meta, audio: blob, artwork: artwork ?? null }, `user_${userId}_song_${trackId}`);
+}
+
+// ─── Props ────────────────────────────────────────────────────────────────────
 
 interface PlayerProps {
   trackId?: string;
-  entityLinkTo?: string;
-  smallCoverOnMobile?: boolean;
   isLikedInitial?: boolean;
   isRepostedInitial?: boolean;
   artistName?: string;
@@ -40,21 +71,11 @@ interface PlayerProps {
   onAddToNextUp?: () => void;
   onAddToPlaylist?: () => void;
   onStation?: () => void;
-  contextTag?: string;
-  playlistTracks?: Array<{
-    id: string;
-    number: number;
-    title: string;
-    artist: string;
-    playsCount: number;
-    avatarUrl?: string | null;
-  }>;
+  offlineSrc?: string;
 }
 
 export default function SongCard({
   trackId = "",
-  entityLinkTo,
-  smallCoverOnMobile = false,
   isLikedInitial = false,
   isRepostedInitial = false,
   artistName = "",
@@ -73,21 +94,26 @@ export default function SongCard({
   onAddToNextUp,
   onAddToPlaylist,
   onStation,
-  contextTag,
-  playlistTracks = [],
+  offlineSrc,
 }: PlayerProps) {
   const { currentTrack, isPlaying, progress: playerProgress, setCurrentTrack, setIsPlaying, requestSeek } = usePlayer();
+  const { hasOfflineListening } = useSubscription();
+  const { me } = useMe();
+
   const isThisTrack = currentTrack?.id === trackId;
   const playing = isThisTrack && isPlaying;
 
   const [isWaveHovered, setIsWaveHovered] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showPlaylistOverlay, setShowPlaylistOverlay] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [downloaded, setDownloaded] = useState(false);
+  const [showDownloadTooltip, setShowDownloadTooltip] = useState(false);
   const [randomSeed] = useState(() => Math.random() * 1000000);
 
+  // ── Play toggle ─────────────────────────────────────────────────────────
   const handlePlayToggle = () => {
     if (!trackId) return;
-
     if (isThisTrack) {
       setIsPlaying(!isPlaying);
     } else {
@@ -97,6 +123,7 @@ export default function SongCard({
         artist: artistName,
         thumbnailUrl: coverUrl || undefined,
         duration: 0,
+        offlineSrc: offlineSrc,
       });
       setIsPlaying(true);
     }
@@ -108,6 +135,47 @@ export default function SongCard({
     trackId,
   );
 
+  // ── Download ─────────────────────────────────────────────────────────────
+  async function handleDownload() {
+    if (!hasOfflineListening || !me?.id || downloading || downloaded || !trackId) return;
+    setDownloading(true);
+    try {
+      const streamData = await playbackService.requestStreamUrl(trackId);
+      const audioRes = await fetch(streamData.stream.url);
+      const blob = await audioRes.blob();
+      const artworkBlob =
+        coverUrl
+          ? await fetch(coverUrl)
+              .then((res) => (res.ok ? res.blob() : null))
+              .catch(() => null)
+          : null;
+
+      const estimate = await navigator.storage.estimate();
+      const free = (estimate.quota ?? 0) - (estimate.usage ?? 0);
+      const requiredBytes = blob.size + (artworkBlob?.size ?? 0);
+      if (free < requiredBytes) {
+        alert("Not enough storage space to download this track.");
+        return;
+      }
+
+      await navigator.storage.persist().catch(() => {});
+      await saveDownload(
+        me.id,
+        trackId,
+        { id: trackId, title, artist: artistName, coverUrl },
+        blob,
+        artworkBlob,
+      );
+      setDownloaded(true);
+    } catch (err) {
+      console.error("Download failed", err);
+      alert("Failed to download. Please try again.");
+    } finally {
+      setDownloading(false);
+      setMenuOpen(false);
+    }
+  }
+
   const GAP = 1;
   const effectiveSeed = waveformSeed || randomSeed;
   const generatorIndex = Math.floor(effectiveSeed) % waveGenerators.length;
@@ -118,39 +186,11 @@ export default function SongCard({
   }, [generatorIndex, effectiveSeed]);
 
   const displayProgress = isThisTrack ? playerProgress : progress;
-  const hasPlaylistTracks = playlistTracks.length > 0;
-  const cardPrimaryLink = entityLinkTo || (trackId ? `/tracks/${trackId}` : "");
-  const mobileCoverSizeClass = smallCoverOnMobile ? "h-[84px] w-[84px]" : "h-[110px] w-[110px]";
-
-  const playPlaylistTrack = (track: {
-    id: string;
-    title: string;
-    artist: string;
-  }) => {
-    if (!track.id) return;
-
-    const isCurrent = currentTrack?.id === track.id;
-    if (isCurrent) {
-      setIsPlaying(!isPlaying);
-      return;
-    }
-
-    setCurrentTrack({
-      id: track.id,
-      title: track.title,
-      artist: track.artist,
-      thumbnailUrl: coverUrl || undefined,
-      duration: 0,
-    });
-    setIsPlaying(true);
-  };
 
   const handleWaveformClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!trackId) return;
-
     const rect = e.currentTarget.getBoundingClientRect();
     const pct = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
-
     if (!isThisTrack) {
       setCurrentTrack({
         id: trackId,
@@ -158,10 +198,10 @@ export default function SongCard({
         artist: artistName,
         thumbnailUrl: coverUrl || undefined,
         duration: 0,
+        offlineSrc: offlineSrc,
       });
       setIsPlaying(true);
     }
-
     requestSeek(trackId, pct);
   };
 
@@ -171,22 +211,17 @@ export default function SongCard({
         setMenuOpen(false);
       }
     };
-
-    if (menuOpen) {
-      document.addEventListener("mousedown", onClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", onClickOutside);
-    };
+    if (menuOpen) document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
   }, [menuOpen]);
 
   return (
-    <div className="flex w-full gap-0 overflow-visible rounded-sm bg-[#0b0b0b] font-sans">
+    <div className="bg-[#0b0b0b] rounded-sm flex gap-0 overflow-visible w-full font-sans">
       {/* Cover Art */}
-      {cardPrimaryLink ? (
+      {trackId ? (
         <Link
-          to={cardPrimaryLink}
-          className={`relative block shrink-0 bg-[#111] sm:h-[130px] sm:w-[130px] ${mobileCoverSizeClass}`}
+          to={`/tracks/${trackId}`}
+          className="w-[130px] h-[130px] shrink-0 bg-[#111] relative block"
           aria-label={`Open ${title || "track"}`}
         >
           {coverUrl ? (
@@ -198,7 +233,7 @@ export default function SongCard({
           )}
         </Link>
       ) : (
-        <div className={`relative shrink-0 bg-[#111] sm:h-[130px] sm:w-[130px] ${mobileCoverSizeClass}`}>
+        <div className="w-[130px] h-[130px] shrink-0 bg-[#111] relative">
           {coverUrl ? (
             <img src={coverUrl} alt={title} className="w-full h-full object-cover" />
           ) : (
@@ -208,14 +243,15 @@ export default function SongCard({
           )}
         </div>
       )}
+
       {/* Main Content */}
-      <div className="flex min-w-0 flex-1 flex-col px-2.5 pb-1.5 pt-0.5 sm:px-4 sm:pb-3 sm:pt-0">
-        {/* Top row: play button + artist/title + time/genre */}
-        <div className="mb-1 flex flex-wrap items-start gap-2 sm:mb-1 sm:flex-nowrap sm:gap-3">
+      <div className="flex-1 flex flex-col px-4 pt-0 pb-3 min-w-0">
+        {/* Top row */}
+        <div className="flex items-start gap-3 mb-1">
           <button
             onClick={handlePlayToggle}
             disabled={!trackId}
-            className="h-7 w-7 shrink-0 rounded-full bg-white flex items-center justify-center transition-transform hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed sm:h-9 sm:w-9"
+            className="w-9 h-9 rounded-full bg-white flex items-center justify-center hover:scale-105 transition-transform shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
             aria-label={playing ? "Pause" : "Play"}
           >
             {playing ? (
@@ -231,36 +267,21 @@ export default function SongCard({
           </button>
 
           <div className="flex-1 min-w-0">
-            <div className="mb-0.5 truncate text-[9px] text-[hsl(0,0%,50%)] sm:text-[11px]">
-              {artistName}
-            </div>
-            {cardPrimaryLink ? (
-              <Link
-                to={cardPrimaryLink}
-                className="block line-clamp-2 text-[11px] font-medium leading-snug text-white hover:underline sm:text-[13px]"
-              >
-                {title}
-              </Link>
-            ) : (
-              <p className="line-clamp-2 text-[11px] font-medium leading-snug text-white sm:text-[13px]">
-                {title}
-              </p>
-            )}
+            <div className="text-[11px] text-[hsl(0,0%,50%)] truncate mb-0.5">{artistName}</div>
+            <p className="text-[13px] text-white font-medium leading-snug line-clamp-2">{title}</p>
           </div>
 
-          <div className="flex w-full items-center gap-1 pl-9 sm:w-auto sm:shrink-0 sm:gap-2 sm:pl-0">
-            <span className="whitespace-nowrap text-[9px] text-[hsl(0,0%,40%)] sm:text-[11px]">
-              {timeAgo}
-            </span>
-            <span className="whitespace-nowrap rounded-sm border border-[hsl(0,0%,20%)] bg-[hsl(0,0%,12%)] px-1 py-0.5 text-[8px] text-[hsl(0,0%,55%)] sm:px-2 sm:text-[10px]">
-              {contextTag ?? `# ${genre}`}
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-[11px] text-[hsl(0,0%,40%)] whitespace-nowrap">{timeAgo}</span>
+            <span className="text-[10px] text-[hsl(0,0%,55%)] bg-[hsl(0,0%,12%)] border border-[hsl(0,0%,20%)] px-2 py-0.5 rounded-sm whitespace-nowrap">
+              # {genre}
             </span>
           </div>
         </div>
 
         {/* Waveform */}
         <div
-          className="mb-1 mt-0.5 flex h-[30px] w-full cursor-pointer items-end sm:h-[44px]"
+          className="flex items-end h-[44px] cursor-pointer mt-1 mb-2 w-full"
           style={{ gap: `${GAP}px` }}
           onClick={handleWaveformClick}
           onMouseEnter={() => setIsWaveHovered(true)}
@@ -288,67 +309,16 @@ export default function SongCard({
           })}
         </div>
 
-        {hasPlaylistTracks && (
-          <div className="mb-2 space-y-1.5">
-            {playlistTracks.map((track) => (
-              <button
-                key={track.id}
-                type="button"
-                onClick={() => playPlaylistTrack(track)}
-                className="flex w-full items-center justify-between rounded px-1 py-1 text-left transition-colors hover:bg-[hsl(0,0%,13%)]"
-              >
-                <div className="flex min-w-0 items-center gap-2">
-                  <span className="w-4 shrink-0 text-right text-[13px] text-zinc-400">
-                    {track.number}
-                  </span>
-                  <div className="h-7 w-7 shrink-0 rounded bg-[hsl(0,0%,18%)] flex items-center justify-center">
-                    {track.avatarUrl ? (
-                      <img
-                        src={track.avatarUrl}
-                        alt={track.artist}
-                        className="h-full w-full rounded object-cover"
-                      />
-                    ) : (
-                      <img
-                        src={trackFallback}
-                        alt="Track cover fallback"
-                        className="h-full w-full rounded object-cover"
-                      />
-                    )}
-                  </div>
-                  <p className="truncate text-[13px] text-zinc-200">
-                    <span>{track.artist}</span>
-                    <span className="text-zinc-500"> · </span>
-                    <span className="text-white">{track.title}</span>
-                  </p>
-                </div>
-                <span className="ml-3 hidden shrink-0 items-center gap-1 text-[13px] text-zinc-400 sm:flex">
-                  <svg width="10" height="10" viewBox="0 0 14 14" fill="currentColor">
-                    <polygon points="2,0 14,7 2,14" />
-                  </svg>
-                  {Intl.NumberFormat("en-US", { notation: "compact" }).format(
-                    track.playsCount,
-                  )}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
-
         {/* Controls row */}
-        <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2">
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:flex-none sm:gap-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={toggleLike}
-              className="flex h-7 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f] sm:w-9"
+              className="flex h-7 w-9 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f]"
               aria-label={`Like (${likesCount})`}
             >
-              <Heart
-                size={12}
-                fill={isLiked ? "#fff" : "none"}
-                style={{ color: "#fff" }}
-              />
+              <Heart size={12} fill={isLiked ? "#fff" : "none"} style={{ color: "#fff" }} />
               <span className="sr-only">{likesCount}</span>
             </button>
             <button
@@ -356,81 +326,118 @@ export default function SongCard({
               onClick={onToggleRepost}
               disabled={repostDisabled}
               aria-label={isRepostedInitial ? "Undo repost" : "Repost"}
-              className="flex h-7 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f] disabled:cursor-not-allowed disabled:opacity-60 sm:w-9"
+              className="flex h-7 w-9 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Repeat2 size={12} style={{ color: "#fff" }} />
               <span className="sr-only">{reposts}</span>
             </button>
-            <button className="flex h-7 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f] sm:w-9">
+            <button className="flex h-7 w-9 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f]">
               <Share2 size={12} />
             </button>
-            <button className="flex h-7 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f] sm:w-9">
+            <button className="flex h-7 w-9 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f]">
               <Copy size={12} />
             </button>
+
+            {/* ··· dropdown */}
             <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setMenuOpen((prev) => !prev)}
-                className="flex h-7 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f] sm:w-9"
+                className="flex h-7 w-9 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f]"
                 aria-label="More options"
               >
                 <MoreHorizontal size={12} />
               </button>
 
               {menuOpen && (
-                <div className="absolute left-0 top-full mt-1 z-50 min-w-[156px] overflow-hidden rounded-md border border-[hsl(0,0%,18%)] bg-[#0b0b0b] py-0.5 shadow-2xl">
+                <div className="absolute left-0 top-full mt-1 z-50 min-w-[180px] overflow-visible rounded-md border border-[hsl(0,0%,18%)] bg-[#0b0b0b] py-0.5 shadow-2xl">
+
                   <button
-                    onClick={() => {
-                      onAddToNextUp?.();
-                      setMenuOpen(false);
-                    }}
+                    onClick={() => { onAddToNextUp?.(); setMenuOpen(false); }}
                     className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-[13px] font-semibold text-white hover:text-zinc-500"
                   >
-                    <ListMusic
-                      size={14}
-                      className="text-zinc-300 hover:text-zinc-500"
-                    />
+                    <ListMusic size={14} className="text-zinc-300" />
                     Add to Next up
                   </button>
+
                   <button
-                    onClick={() => {
-                      onAddToPlaylist?.();
-                      setShowPlaylistOverlay(true);
-                      setMenuOpen(false);
-                    }}
+                    onClick={() => { onAddToPlaylist?.(); setShowPlaylistOverlay(true); setMenuOpen(false); }}
                     className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-[13px] font-semibold text-white hover:text-zinc-500"
                   >
-                    <ListPlus
-                      size={14}
-                      className="text-zinc-300 hover:text-zinc-500"
-                    />
+                    <ListPlus size={14} className="text-zinc-300" />
                     Add to Playlist
                   </button>
+
                   <button
-                    onClick={() => {
-                      onStation?.();
-                      setMenuOpen(false);
-                    }}
+                    onClick={() => { onStation?.(); setMenuOpen(false); }}
                     className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-[13px] font-semibold text-white hover:text-zinc-500"
                   >
-                    <Radio
-                      size={14}
-                      className="text-zinc-300 hover:text-zinc-500"
-                    />
+                    <Radio size={14} className="text-zinc-300" />
                     Station
                   </button>
+
+                  <div className="my-0.5 border-t border-[hsl(0,0%,15%)]" />
+
+                  {/* Download — dimmed ONLY when user is not Artist Pro */}
+                  <div
+                    className="relative"
+                    onMouseEnter={() => { if (!hasOfflineListening) setShowDownloadTooltip(true); }}
+                    onMouseLeave={() => setShowDownloadTooltip(false)}
+                  >
+                    <button
+                      onClick={handleDownload}
+                      disabled={!hasOfflineListening || downloading || downloaded}
+                      className={`flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-[13px] font-semibold transition-colors
+                        ${!hasOfflineListening
+                          // Non-pro: fully dimmed, not clickable
+                          ? "opacity-40 cursor-not-allowed text-zinc-400"
+                          : downloaded
+                            // Pro + already downloaded: green success state
+                            ? "text-green-400 cursor-default"
+                            // Pro + not yet downloaded: active, full white
+                            : "text-white hover:text-zinc-400"
+                        }`}
+                    >
+                      {downloading ? (
+                        <Loader2 size={14} className="animate-spin text-zinc-400" />
+                      ) : downloaded ? (
+                        <Check size={14} className="text-green-400" />
+                      ) : (
+                        <Download
+                          size={14}
+                          className={hasOfflineListening ? "text-zinc-300" : "text-zinc-500"}
+                        />
+                      )}
+                      {downloading ? "Downloading…" : downloaded ? "Downloaded" : "Download"}
+                    </button>
+
+                    {/* Tooltip shown only for non-pro users */}
+                    {showDownloadTooltip && !hasOfflineListening && (
+                      <div
+                        className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1.5 rounded-md text-[11px] text-white whitespace-nowrap z-50 pointer-events-none"
+                        style={{ background: "#1a1a1a", border: "1px solid hsl(0,0%,22%)", boxShadow: "0 4px 16px rgba(0,0,0,0.6)" }}
+                      >
+                        Upgrade to Artist Pro to download songs
+                        <div
+                          className="absolute right-full top-1/2 -translate-y-1/2"
+                          style={{
+                            width: 0, height: 0,
+                            borderTop: "5px solid transparent",
+                            borderBottom: "5px solid transparent",
+                            borderRight: "5px solid #1a1a1a",
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+
                 </div>
               )}
             </div>
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center gap-1.5 text-[10px] text-[hsl(0,0%,40%)] sm:ml-0 sm:gap-3 sm:text-[11px]">
+          <div className="flex items-center gap-3 text-[11px] text-[hsl(0,0%,40%)]">
             <span className="flex items-center gap-1">
-              <svg
-                width="10"
-                height="10"
-                viewBox="0 0 14 14"
-                fill="currentColor"
-              >
+              <svg width="10" height="10" viewBox="0 0 14 14" fill="currentColor">
                 <polygon points="2,0 14,7 2,14" />
               </svg>
               {plays}
@@ -445,12 +452,7 @@ export default function SongCard({
       <CreatePlaylistOverlay
         isOpen={showPlaylistOverlay}
         onClose={() => setShowPlaylistOverlay(false)}
-        track={{
-          id: trackId,
-          title,
-          artist: artistName,
-          coverUrl,
-        }}
+        track={{ id: trackId, title, artist: artistName, coverUrl }}
         defaultCoverUrl={coverUrl}
         autoAddTrackId={trackId}
       />
