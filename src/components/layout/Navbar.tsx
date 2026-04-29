@@ -267,7 +267,7 @@ export default function Navbar() {
   return (
     <>
       <nav className="w-full bg-black text-white border-b border-zinc-800 sticky top-0 z-50">
-        <div className="max-w-[1200px] mx-auto h-12 flex items-center justify-between px-3 md:px-6">
+        <div className="max-w-[1400px] mx-auto h-12 flex items-center justify-between px-3 md:px-6">
           <div className="flex items-center gap-2 sm:gap-4 md:gap-6">
             <Link to="/" className="text-white">
               <SiSoundcloud size={28} className="sm:text-[35px]" />

@@ -339,41 +339,41 @@ export default function SongCard({
           })}
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-1 sm:gap-2">
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1 sm:flex-none sm:gap-2">
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-1.5 sm:mt-2 sm:gap-2">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:flex-none tracking-tight sm:gap-2">
             <button
               type="button"
               onClick={toggleLike}
-              className="flex h-6 w-7 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f] sm:h-7 sm:w-9"
+              className="flex h-8 shrink-0 items-center gap-1.5 rounded-[4px] bg-[#2f3033] px-3 text-[13px] font-semibold text-zinc-100 transition-colors hover:bg-[#3a3b3f]"
               aria-label={`Like (${likesCount})`}
             >
-              <Heart size={12} fill={isLiked ? "#fff" : "none"} style={{ color: "#fff" }} />
-              <span className="sr-only">{likesCount}</span>
+              <Heart size={16} fill={isLiked ? "#fff" : "none"} style={{ color: "#fff" }} />
+              <span>{likesCount}</span>
             </button>
             <button
               type="button"
               onClick={onToggleRepost}
               disabled={repostDisabled}
               aria-label={isRepostedInitial ? "Undo repost" : "Repost"}
-              className="flex h-6 w-7 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f] disabled:cursor-not-allowed disabled:opacity-60 sm:h-7 sm:w-9"
+              className="flex h-8 shrink-0 items-center gap-1.5 rounded-[4px] bg-[#2f3033] px-3 text-[13px] font-semibold text-zinc-100 transition-colors hover:bg-[#3a3b3f] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <Repeat2 size={12} style={{ color: "#fff" }} />
-              <span className="sr-only">{reposts}</span>
+              <Repeat2 size={16} style={{ color: "#fff" }} />
+              <span>{reposts}</span>
             </button>
-            <button className="flex h-6 w-7 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f] sm:h-7 sm:w-9">
-              <Share2 size={12} />
+            <button className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f]">
+              <Share2 size={16} />
             </button>
-            <button className="flex h-6 w-7 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f] sm:h-7 sm:w-9">
-              <Copy size={12} />
+            <button className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f]">
+              <Copy size={16} />
             </button>
 
             <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setMenuOpen((prev) => !prev)}
-                className="flex h-6 w-7 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f] sm:h-7 sm:w-9"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f]"
                 aria-label="More options"
               >
-                <MoreHorizontal size={12} />
+                <MoreHorizontal size={16} />
               </button>
 
               {menuOpen && (
@@ -473,15 +473,15 @@ export default function SongCard({
             </div>
           </div>
 
-          <div className="ml-auto hidden shrink-0 items-center gap-1.5 text-[10px] text-[hsl(0,0%,40%)] sm:ml-0 sm:flex sm:gap-3 sm:text-[11px]">
-            <span className="flex items-center gap-1">
-              <svg width="10" height="10" viewBox="0 0 14 14" fill="currentColor">
+          <div className="ml-auto hidden shrink-0 items-center gap-4 text-[13px] font-medium text-[#8f8f8f] sm:flex">
+            <span className="flex items-center gap-1.5">
+              <svg width="12" height="12" viewBox="0 0 14 14" fill="currentColor">
                 <polygon points="2,0 14,7 2,14" />
               </svg>
               {plays}
             </span>
-            <span className="flex items-center gap-1">
-              <SiSoundcloud size={12} /> {comments}
+            <span className="flex items-center gap-1.5">
+              <SiSoundcloud size={14} /> {comments}
             </span>
           </div>
         </div>

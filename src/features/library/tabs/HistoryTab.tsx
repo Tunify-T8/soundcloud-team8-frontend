@@ -175,9 +175,13 @@ export default function HistoryTab() {
         </p>
       )}
 
-      {!loading && !error && !historyCleared && filteredTracks.map((track) => (
-        <TrackRow key={track.id} track={track} />
-      ))}
+      {!loading && !error && !historyCleared && filteredTracks.length > 0 && (
+        <div className="space-y-4">
+          {filteredTracks.map((track) => (
+            <TrackRow key={track.id} track={track} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

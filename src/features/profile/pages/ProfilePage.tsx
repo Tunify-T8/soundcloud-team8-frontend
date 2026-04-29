@@ -193,8 +193,7 @@ export default function ProfilePage() {
           onProfileUpdated={refreshProfile}
         />
 
-        <div className="flex w-full justify-center">
-          <div data-testid="profile-page-user-info" className="w-10/12 bg-[#0b0b0b] lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-8">
+        <div data-testid="profile-page-user-info" className="w-full bg-[#0b0b0b] lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-8">
             <div className="lg:col-span-2">
               <UserInfoBar
                 displayName={user.displayName ?? undefined}
@@ -225,7 +224,6 @@ export default function ProfilePage() {
                 <ProfileSideBar {...sidebarProps} />
               </div>
             </div>
-          </div>
         </div>
 
         <div data-testid="profile-sidebar-mobile" className="mt-1 lg:hidden">
