@@ -8,6 +8,7 @@ import { Upload, BarChart2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { followingService } from "../../../following/followingService";
 import { notifySocialGraphUpdated } from "../../socialGraphEvents";
+import { AdminIDDisplay } from "@/features/admin/components/AdminIDDisplay";
 
 function ShareOverlay({ onClose }: { onClose: () => void }) {
   const [activeTab, setActiveTab] = useState<"share" | "message">("share");
@@ -253,6 +254,14 @@ export default function UserInfoBar({
             <Upload size={14} />
             <span>Share</span>
           </button>
+          {userId && (
+            <AdminIDDisplay
+              id={userId}
+              label="Profile ID"
+              variant="badge"
+              className="ml-3"
+            />
+          )}
           {!isMe && (
             <div className="relative group">
               <button
