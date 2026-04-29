@@ -311,30 +311,51 @@ export default function SongCard({
         </div>
 
         <div
-          className="mb-1 mt-0.5 flex h-[30px] w-full cursor-pointer items-end sm:h-[44px]"
+          className="relative mb-1 mt-0.5 flex h-[34px] w-full cursor-pointer items-center sm:h-[52px]"
           style={{ gap: `${GAP}px` }}
           onClick={handleWaveformClick}
           onMouseEnter={() => setIsWaveHovered(true)}
           onMouseLeave={() => setIsWaveHovered(false)}
         >
+          <div className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-white/20" />
           {bars.map((height, i) => {
             const pos = i / (bars.length - 1);
             const played = pos <= displayProgress;
             const showPlayedProgress = isThisTrack && played;
-            const inactiveColor = isWaveHovered ? "#f5f5f5" : "#d6d6d6";
+            const inactiveColor = isWaveHovered ? "#d8d8d8" : "#c8c8c8";
+            const lowerNoise =
+              (Math.sin(effectiveSeed * 0.017 + i * 1.913) + 1) / 2;
+            const topHeight = 8 + height * 29;
+            const bottomHeight = 2 + height * (4 + lowerNoise * 6);
+            const barColor = showPlayedProgress ? "#ff5500" : inactiveColor;
             return (
               <div
                 key={i}
-                className="flex-1 rounded-[1px]"
+                className="relative flex-1"
                 style={{
-                  minWidth: 0,
-                  maxWidth: "2px",
-                  height: `${(0.28 + height * 0.5) * 100}%`,
-                  backgroundColor: showPlayedProgress ? "#F94C00" : inactiveColor,
-                  opacity: showPlayedProgress ? 1 : isWaveHovered ? 1 : 0.92,
-                  borderRadius: "1px",
+                  minWidth: "1px",
+                  height: "100%",
                 }}
-              />
+              >
+                <div
+                  className="absolute bottom-1/2 left-0 w-full rounded-[1px] transition-colors duration-150"
+                  style={{
+                    height: `${topHeight}px`,
+                    backgroundColor: barColor,
+                    opacity: showPlayedProgress ? 1 : isWaveHovered ? 1 : 0.94,
+                    borderRadius: "1px",
+                  }}
+                />
+                <div
+                  className="absolute left-0 top-1/2 w-full rounded-[1px] transition-colors duration-150"
+                  style={{
+                    height: `${bottomHeight}px`,
+                    backgroundColor: barColor,
+                    opacity: showPlayedProgress ? 0.78 : isWaveHovered ? 0.78 : 0.66,
+                    borderRadius: "1px",
+                  }}
+                />
+              </div>
             );
           })}
         </div>

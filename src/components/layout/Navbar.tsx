@@ -3,7 +3,7 @@ import { Bell, Mail, MoreHorizontal, ChevronDown, Heart, ListMusic, Radio, Users
 import SearchBar from "../ui/SearchBar";
 
 import { SiSoundcloud } from "react-icons/si";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { Outlet } from "react-router-dom";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
@@ -51,6 +51,14 @@ function normaliseSocketPayload(raw: Record<string, unknown>): NotificationObjec
     readAt: null,
     createdAt: raw.createdAt as string,
   };
+}
+
+function topNavLinkClass(isActive: boolean) {
+  return `flex h-12 items-center border-b-2 px-0 text-[15px] font-bold tracking-tight transition-colors ${
+    isActive
+      ? "border-white text-white"
+      : "border-transparent text-zinc-400 hover:text-white"
+  }`;
 }
 
 export default function Navbar() {
@@ -263,32 +271,38 @@ export default function Navbar() {
     : isArtist
       ? "border-[#b8adff] hover:bg-[#b8adff] hover:text-black"
       : "border-orange-500 hover:bg-orange-500";
+  const isHomeActive =
+    location.pathname === "/" || location.pathname.startsWith("/discover");
+  const isFeedActive =
+    location.pathname.startsWith("/feed") || location.pathname.startsWith("/search");
+  const isLibraryActive =
+    location.pathname.startsWith("/library") || location.pathname.startsWith("/me/");
 
   return (
     <>
       <nav className="w-full bg-black text-white border-b border-zinc-800 sticky top-0 z-50">
-        <div className="max-w-[1400px] mx-auto h-12 flex items-center justify-between px-3 md:px-6">
-          <div className="flex items-center gap-2 sm:gap-4 md:gap-6">
-            <Link to="/" className="text-white">
+        <div className="mx-auto flex h-12 max-w-[1510px] items-center gap-4 px-4 md:gap-6 md:pl-16 md:pr-6 xl:pl-24">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-4 md:gap-6">
+            <Link to="/discover" className="text-white">
               <SiSoundcloud size={28} className="sm:text-[35px]" />
             </Link>
             <div className="md:hidden flex items-center gap-2 text-[12px] font-bold tracking-tight sm:gap-3 sm:text-[13px]">
-              <Link to="/" className="text-zinc-300 hover:text-white">Home</Link>
-              <Link to="/feed" className="text-zinc-300 hover:text-white">Feed</Link>
-              <Link to="/library" className="text-zinc-300 hover:text-white">Library</Link>
+              <NavLink to="/discover" className={isHomeActive ? "text-white" : "text-zinc-300 hover:text-white"}>Home</NavLink>
+              <NavLink to="/feed" className={isFeedActive ? "text-white" : "text-zinc-300 hover:text-white"}>Feed</NavLink>
+              <NavLink to="/library" className={isLibraryActive ? "text-white" : "text-zinc-300 hover:text-white"}>Library</NavLink>
             </div>
-            <div className="hidden md:flex items-center gap-6">
-              <Link to="/" className="text-zinc-400 hover:text-white font-bold tracking-tight">Home</Link>
-              <Link to="/feed" className="text-zinc-400 hover:text-white font-bold tracking-tight">Feed</Link>
-              <Link to="/library" className="text-zinc-400 hover:text-white font-bold tracking-tight">Library</Link>
+            <div className="hidden md:flex items-center gap-7 self-stretch">
+              <NavLink to="/discover" className={topNavLinkClass(isHomeActive)}>Home</NavLink>
+              <NavLink to="/feed" className={topNavLinkClass(isFeedActive)}>Feed</NavLink>
+              <NavLink to="/library" className={topNavLinkClass(isLibraryActive)}>Library</NavLink>
             </div>
           </div>
 
-          <div className="hidden md:block relative w-[320px] lg:w-[420px]">
+          <div className="relative hidden min-w-0 flex-1 md:block md:max-w-[590px]">
             <SearchBar />
           </div>
 
-          <div className="hidden md:flex items-center gap-5 text-sm">
+          <div className="hidden shrink-0 items-center gap-4 text-sm md:flex">
             {hasPaidPlan ? (
               <button
                 onClick={() => setPlanModalOpen(true)}
