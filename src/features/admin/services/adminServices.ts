@@ -58,32 +58,32 @@ export const adminServices = {
 
   content: {
     async hideTrack(trackId: string): Promise<string> {
-      const { data } = await api.patch<MessageResponse>(`/admin/tracks/${trackId}/hide`);
+      const { data } = await api.patch<MessageResponse>(`/admin/content/tracks/${trackId}/hide`);
       return data.message;
     },
 
     async unhideTrack(trackId: string): Promise<string> {
-      const { data } = await api.patch<MessageResponse>(`/admin/tracks/${trackId}/unhide`);
+      const { data } = await api.patch<MessageResponse>(`/admin/content/tracks/${trackId}/unhide`);
       return data.message;
     },
 
     async deleteTrack(trackId: string): Promise<string> {
-      const { data } = await api.delete<MessageResponse>(`/admin/tracks/${trackId}`);
+      const { data } = await api.delete<MessageResponse>(`/admin/content/tracks/${trackId}`);
       return data.message;
     },
 
     async hideComment(commentId: string): Promise<string> {
-      const { data } = await api.patch<MessageResponse>(`/admin/comments/${commentId}/hide`);
+      const { data } = await api.patch<MessageResponse>(`/admin/content/comments/${commentId}/hide`);
       return data.message;
     },
 
     async unhideComment(commentId: string): Promise<string> {
-      const { data } = await api.patch<MessageResponse>(`/admin/comments/${commentId}/unhide`);
+      const { data } = await api.patch<MessageResponse>(`/admin/content/comments/${commentId}/unhide`);
       return data.message;
     },
 
     async deleteComment(commentId: string): Promise<string> {
-      const { data } = await api.delete<MessageResponse>(`/admin/comments/${commentId}`);
+      const { data } = await api.delete<MessageResponse>(`/admin/content/comments/${commentId}`);
       return data.message;
     },
   },

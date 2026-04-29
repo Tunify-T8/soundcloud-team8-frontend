@@ -14,6 +14,7 @@ import { makeCommentAvatar, formatTimestamp } from '../components/CommentsSectio
 import { usePlayer }           from '@/features/playerUI/context/usePlayer';
 import { api }                 from '../../auth/services/api';
 import { waveGenerators }      from '@/components/Waveforms';
+import { AdminIDDisplay }      from '@/features/admin/components/AdminIDDisplay';
 
 
 interface WaveformComment {
@@ -423,6 +424,8 @@ const TrackPage = () => {
             <button className="flex items-center gap-1.5 text-[hsl(0,0%,50%)] hover:text-white text-[11px] px-2 py-1 rounded border border-[hsl(0,0%,18%)] hover:border-[hsl(0,0%,35%)] transition">
               <MoreHorizontal size={12} />
             </button>
+
+            {trackId && <AdminIDDisplay id={trackId} label="Track ID" variant="badge" />}
 
             <div className="flex-1" />
 

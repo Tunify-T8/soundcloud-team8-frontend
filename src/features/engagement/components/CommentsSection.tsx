@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Heart, Send, Trash2 } from 'lucide-react';
 import { engagementService } from '../services/engagementService';
 import type { ApiComment, ApiReply } from '../types';
+import { AdminIDDisplay } from '@/features/admin/components/AdminIDDisplay';
 
 export interface CommentsSectionProps {
   trackId: string;
@@ -235,6 +236,7 @@ const CommentsSection = ({
                   <div className="flex items-center gap-2">
                     <p className="text-white text-sm font-medium">{c.user.username}</p>
                     <span className="text-zinc-600 text-[10px]">{timeAgo(c.createdAt)}</span>
+                    <AdminIDDisplay id={c.commentId} label="Comment ID" variant="icon" />
                   </div>
                   <p className="text-zinc-300 text-sm mt-0.5">{c.text}</p>
 
@@ -325,7 +327,10 @@ const CommentsSection = ({
                           alt={r.user.username}
                         />
                         <div>
-                          <p className="text-white text-xs font-medium">{r.user.username}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-white text-xs font-medium">{r.user.username}</p>
+                            <AdminIDDisplay id={r.replyId} label="Reply ID" variant="icon" />
+                          </div>
                           <p className="text-zinc-300 text-xs">{r.text}</p>
                         </div>
                       </div>
