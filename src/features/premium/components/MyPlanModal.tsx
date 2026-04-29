@@ -9,15 +9,21 @@ interface MyPlanModalProps {
   onClose: () => void;
 }
 
-function formatDate(date?: string) {
+function formatDateTime(date?: string) {
   if (!date) return "Unavailable";
   const parsed = new Date(date);
   if (Number.isNaN(parsed.getTime())) return date;
-  return parsed.toLocaleDateString("en-GB", {
+  const time = parsed.toLocaleTimeString("en-GB", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).replace(/\b(am|pm)\b/i, (match) => match.toUpperCase());
+  const datePart = parsed.toLocaleDateString("en-GB", {
     day: "2-digit",
-    month: "short",
+    month: "long",
     year: "numeric",
   });
+  return `${time} on ${datePart}`;
 }
 
 function getPlanCopy(tier: SubscriptionTier) {
@@ -67,7 +73,7 @@ export default function MyPlanModal({ onClose }: MyPlanModalProps) {
   const relevantDateLabel = isCancelled
     ? "Your plan expires on:"
     : "Your plan renews on:";
-  const relevantDate = activeSubscription.data?.expiresAt;
+  const relevantDate = activeSubscription.data?.expiresAt ?? activeSubscription.data?.endedAt;
 
   useEffect(() => {
     const handleKey = (event: KeyboardEvent) => {
@@ -153,7 +159,7 @@ export default function MyPlanModal({ onClose }: MyPlanModalProps) {
         expiresAt: result.expiresAt,
       });
       setFeedback(
-        `Cancellation successful. Your plan will expire on ${formatDate(result.expiresAt)}.`
+        `Cancellation successful. Your plan will expire on ${formatDateTime(result.expiresAt)}.`
       );
     } catch {
       setFeedback("We couldn't cancel your subscription right now. Please try again.");
@@ -245,7 +251,7 @@ export default function MyPlanModal({ onClose }: MyPlanModalProps) {
               {isCancelled ? "Expiry Date" : "Renewal Date"}
             </p>
             <p className="mt-2 text-base font-semibold text-zinc-900">{relevantDateLabel}</p>
-            <p className="mt-1 text-sm text-zinc-600">{formatDate(relevantDate)}</p>
+            <p className="mt-1 text-sm text-zinc-600">{formatDateTime(relevantDate)}</p>
           </div>
 
           <div className="mt-7 flex items-center justify-end gap-3">
