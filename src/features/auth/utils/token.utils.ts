@@ -1,6 +1,7 @@
 // ── Token storage keys ────────────────────────────────────────
 const ACCESS_TOKEN_KEY = 'sc_access_token';
 const REFRESH_TOKEN_KEY = 'sc_refresh_token';
+const PROFILE_CACHE_KEY = 'profile_context_cache_v1';
 
 // ── Store tokens ──────────────────────────────────────────────
 // Called right after a successful login or register.
@@ -29,6 +30,7 @@ export const clearTokens = (): void => {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
   localStorage.removeItem('sc_expires_at');
+  localStorage.removeItem(PROFILE_CACHE_KEY);
 };
 
 // ── Check if user has tokens (is logged in) ───────────────────

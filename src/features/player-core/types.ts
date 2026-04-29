@@ -143,6 +143,7 @@ export interface usePlaybackOptions {
   trackId:       string | null;
   privateToken?: string;
   autoPlay?:     boolean;
+  offlineSrc?:   string;
 }
 
 export interface usePlaybackReturn {

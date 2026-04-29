@@ -177,6 +177,7 @@ export interface UserFollower {
   id: string;
   username: string;
   avatarUrl?: string | null;
+  isFollowing?: boolean | null;
 }
 
 export interface UserFollowersResponse {

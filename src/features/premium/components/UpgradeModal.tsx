@@ -1,13 +1,26 @@
 import { useEffect, useState } from "react";
 import { X, Upload, Zap, Share2, RefreshCw, Plus, Star } from "lucide-react";
 import CheckoutModal from "./CheckoutModal";
+import { subscriptionService } from "@/features/premium/premiumService";
+import type { Plan } from "@/features/premium/premiumService";
+import { useSubscription } from "@/hooks/useSubscription";
 
 interface UpgradeModalProps {
   onClose: () => void;
 }
 
+function formatPrice(amount: number, currency: string) {
+  return `${currency} ${amount.toFixed(2)}`;
+}
+
 export default function UpgradeModal({ onClose }: UpgradeModalProps) {
+  const { isArtist } = useSubscription();
   const [checkoutPlan, setCheckoutPlan] = useState<"artist" | "artist-pro" | null>(null);
+  const [plans, setPlans] = useState<Plan[]>([]);
+
+  useEffect(() => {
+    subscriptionService.getPlans().then(setPlans);
+  }, []);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -21,10 +34,26 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
     };
   }, [onClose]);
 
+  const artistPlan = plans.find((p) => p.name === "artist");
+  const artistProPlan = plans.find((p) => p.name === "artist-pro");
+
+  const artistMonthly = artistPlan ? formatPrice(artistPlan.monthly_price, artistPlan.currency) : "EGP 65.00";
+  const artistYearly = artistPlan ? formatPrice(artistPlan.yearly_price, artistPlan.currency) : "EGP 479.99";
+  const artistYearlyMonthly = artistPlan
+    ? formatPrice(artistPlan.yearly_price / 12, artistPlan.currency)
+    : "EGP 40.00";
+
+  const proMonthly = artistProPlan ? formatPrice(artistProPlan.monthly_price, artistProPlan.currency) : "EGP 164.99";
+  const proYearly = artistProPlan ? formatPrice(artistProPlan.yearly_price, artistProPlan.currency) : "EGP 1149.99";
+  const proYearlyMonthly = artistProPlan
+    ? formatPrice(artistProPlan.yearly_price / 12, artistProPlan.currency)
+    : "EGP 95.83";
+
   if (checkoutPlan) {
     return (
       <CheckoutModal
         plan={checkoutPlan}
+        plans={plans}
         onClose={onClose}
       />
     );
@@ -54,11 +83,12 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
           </div>
 
           {/* Plans Grid */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className={`grid gap-4 ${isArtist ? "grid-cols-1 max-w-[480px] mx-auto" : "grid-cols-2"}`}>
             {/* Artist Plan */}
+            {!isArtist && (
             <div className="border border-zinc-200 rounded-2xl p-6">
               <div className="flex items-center gap-2 mb-3">
-               <h3 className="text-xl font-semibold text-zinc-700 tracking-tight">Artist</h3>
+                <h3 className="text-xl font-semibold text-zinc-700 tracking-tight">Artist</h3>
                 <div className="w-6 h-6 rounded-full bg-[#5b4ff5] flex items-center justify-center">
                   <Plus size={13} className="text-white" strokeWidth={2.5} />
                 </div>
@@ -69,10 +99,10 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
               </p>
 
               <div className="mb-1">
-                <span className="text-xl font-semibold text-[#5b4ff5]">EGP 29.99</span>
+                <span className="text-xl font-semibold text-[#5b4ff5]">{artistYearlyMonthly}</span>
                 <span className="text-sm text-zinc-400 ml-1">/ month</span>
               </div>
-              <p className="text-[11px] text-zinc-400 mb-5">billed yearly for EGP 359.88</p>
+              <p className="text-[11px] text-zinc-400 mb-5">billed yearly for {artistYearly}</p>
 
               <button
                 onClick={() => setCheckoutPlan("artist")}
@@ -103,6 +133,7 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
                 />
               </ul>
             </div>
+            )}
 
             {/* Artist Pro Plan */}
             <div className="border-2 border-[#c9a227] rounded-2xl p-6 relative overflow-hidden">
@@ -123,10 +154,12 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
               </p>
 
               <div className="mb-1">
-              <span className="text-xl font-bold text-[#c9a227]">Free</span>
-              <span className="text-sm text-zinc-700 font-semibold ml-1">for 7 days</span>
-            </div>
-            <p className="text-[11px] text-zinc-400 mb-5">then EGP 74.99/month, billed yearly for EGP 899.88</p>
+                <span className="text-xl font-bold text-[#c9a227]">Free</span>
+                <span className="text-sm text-zinc-700 font-semibold ml-1">for 7 days</span>
+              </div>
+              <p className="text-[11px] text-zinc-400 mb-5">
+                then {proYearlyMonthly}/month, billed yearly for {proYearly}
+              </p>
 
               <button
                 onClick={() => setCheckoutPlan("artist-pro")}

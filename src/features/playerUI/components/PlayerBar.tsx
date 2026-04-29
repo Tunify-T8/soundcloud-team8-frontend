@@ -34,6 +34,7 @@ export default function PlayerBar() {
   const trackTitle   = currentTrack?.title   ?? "";
   const trackArtist  = currentTrack?.artist  ?? "";
   const thumbnailUrl = currentTrack?.thumbnailUrl;
+  const offlineSrc   = currentTrack?.offlineSrc;
 
   const {
     status,
@@ -48,7 +49,7 @@ export default function PlayerBar() {
     setVolume,
     toggleMute,
     audioRef,
-  } = usePlayback({ trackId, autoPlay: false });
+  } = usePlayback({ trackId, autoPlay: false, offlineSrc });
 
   const isPlaying = status === "playing";
   const uiIsPlaying = contextIsPlaying || isPlaying;
