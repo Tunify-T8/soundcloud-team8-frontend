@@ -19,6 +19,8 @@ export interface CollectionItem {
   title: string;
   subtitle?: string;
   coverUrl?: string;
+  entityType?: "track" | "playlist" | "album";
+  linkTo?: string;
 }
 
 export interface FollowingUser {

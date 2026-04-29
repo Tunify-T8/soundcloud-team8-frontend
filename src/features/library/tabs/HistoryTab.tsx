@@ -11,12 +11,22 @@ function loadRecentlyPlayedFromStorage(): CollectionItem[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const entries = JSON.parse(raw);
-    return entries.map((entry: { id: string; title: string; artworkUrl?: string }) => ({
-      id: entry.id,
-      title: entry.title,
-      subtitle: "",
-      coverUrl: entry.artworkUrl,
-    }));
+    return entries.map((entry: { id: string; title: string; artworkUrl?: string; entityType?: "track" | "playlist" | "album"; linkTo?: string }) => {
+      const entityType = entry.entityType ?? "track";
+      const fallbackLink =
+        entityType === "playlist" || entityType === "album"
+          ? `/collections/${entry.id}`
+          : `/tracks/${entry.id}`;
+
+      return {
+        id: entry.id,
+        title: entry.title,
+        subtitle: "",
+        coverUrl: entry.artworkUrl,
+        entityType,
+        linkTo: entry.linkTo ?? fallbackLink,
+      };
+    });
   } catch {
     return [];
   }
@@ -134,7 +144,7 @@ export default function HistoryTab() {
       </div>
 
       {!historyCleared && recentlyPlayed.length > 0 && (
-        <CollectionGrid items={recentlyPlayed} title="" />
+        <CollectionGrid items={recentlyPlayed} title="" hoverVariant="dim" />
       )}
 
       <h2 className="text-white font-bold text-base mt-8 mb-6">
