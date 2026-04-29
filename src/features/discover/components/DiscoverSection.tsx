@@ -9,7 +9,7 @@ type DiscoverSectionProps = {
 export function DiscoverSection({ title, tracks }: DiscoverSectionProps) {
   return (
     <section className="mb-10">
-      <h2 className="mb-3 text-[22px] font-bold tracking-tight text-white">
+      <h2 className="mb-3 text-xl font-bold tracking-tight text-white sm:text-[22px]">
         {title}
       </h2>
       <DiscoverTrackCarousel tracks={tracks} />

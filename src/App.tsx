@@ -35,6 +35,7 @@ import FeedPage from "./features/feed/pages/FeedPage";
 import FollowersPage from "./features/following/pages/FollowersPage";
 import FollowingPage from "./features/following/pages/FollowingPage";
 import WhoToFollowPage from "./features/following/pages/WhoToFollowPage";
+import UserLikesPage from "./features/following/pages/UserLikesPage";
 import DiscoverPage from "./features/discover/pages/DiscoverPage";
 import SearchPage from "./features/feed/pages/SearchPage";
 import LibraryPage from "./features/library/pages/LibraryPage";
@@ -183,6 +184,10 @@ const router = createBrowserRouter([
       {
         path: "/who-to-follow",
         element: <WhoToFollowPage />,
+      },
+      {
+        path: "/:username/likes",
+        element: <UserLikesPage />,
       },
       {
         path: "/:username/followers",
