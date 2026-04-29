@@ -7,6 +7,7 @@ import { setAudioSource } from "../../../store/AudioSourceSlice";
 import { api } from "@/features/auth/services/api";
 import ArtistModal from "@/features/premium/components/ArtistModal";
 import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
+import UploadQuotaBanner from "../components/UploadQuotaBanner";
 import Recorder from "../components/Recorder";
 import TrackInfoPage from "../components/TrackInfo";
 import uploadImg from "@/assets/upload.png";
@@ -205,6 +206,7 @@ export default function SoundCloudUpload() {
   const [quota, setQuota] = useState<UploadQuota | null>(null);
   const [quotaLoading, setQuotaLoading] = useState(true);
   const [limitReached, setLimitReached] = useState(false);
+  const [quotaBlocked, setQuotaBlocked] = useState(false);
 
   const dispatch = useDispatch();
   const readyToNavigate = useAppSelector((s) => s.audioSource.readyToNavigate);
@@ -220,8 +222,23 @@ export default function SoundCloudUpload() {
         ) {
           setLimitReached(true);
         }
-      } catch (err) {
-        console.error("Failed to fetch upload quota:", err);
+        } catch (err) {
+        const status = (err as { response?: { status?: number } })?.response?.status;
+        if (status === 403) {
+          setQuotaBlocked(true);
+          setQuota({
+            tier: "free",
+            uploadMinutesLimit: 180,
+            uploadMinutesUsed: 180,
+            uploadMinutesRemaining: 0,
+            canReplaceFiles: false,
+            canScheduleRelease: false,
+            canAccessAdvancedTab: false,
+          });
+          setLimitReached(false);
+        } else {
+          console.error("Failed to fetch upload quota:", err);
+        }
       } finally {
         setQuotaLoading(false);
       }
@@ -249,6 +266,10 @@ export default function SoundCloudUpload() {
     (e: React.DragEvent) => {
       e.preventDefault();
       setIsDragging(false);
+      if (quotaBlocked) {
+        setLimitReached(true);
+        return;
+      }
       if (limitReached) return;
       const file = e.dataTransfer.files[0];
       if (!file) return;
@@ -267,6 +288,10 @@ export default function SoundCloudUpload() {
 
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (quotaBlocked) {
+        setLimitReached(true);
+        return;
+      }
       if (limitReached) return;
       const file = e.target.files?.[0];
       if (!file) return;
@@ -322,64 +347,16 @@ export default function SoundCloudUpload() {
 
       <main className="flex-1 flex justify-center px-6 py-10">
         <div className="w-full max-w-[1100px]">
-          <div
-            className="bg-[hsl(0,0%,11%)] border-b border-[hsl(0,0%,18%)] flex items-center justify-between px-8 py-3 shrink-0"
-            data-testid="upload-quota-bar"
-          >
-            <div
-              className="flex items-center gap-3 cursor-pointer"
-              onClick={() => setShowArtistModal(true)}
-            >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke={isOverLimit ? "#e74c3c" : "hsl(0,0%,60%)"}
-                strokeWidth="2"
-              >
-                <polyline points="16 16 12 12 8 16" />
-                <line x1="12" y1="12" x2="12" y2="21" />
-                <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
-              </svg>
-
-              {quotaLoading ? (
-                <span className="text-[#555] text-sm animate-pulse">Loading...</span>
-              ) : isUnlimited ? (
-                <>
-                  <span className="text-white text-sm font-medium tracking-tighter">Unlimited uploads</span>
-                  <div className="w-44 h-1.5 bg-[hsl(0,0%,23%)] rounded-full overflow-hidden">
-                    <div className="h-full bg-[hsl(142,69%,36%)] rounded-full" style={{ width: "0%" }} />
-                  </div>
-                  <span className="text-white text-sm font-semibold">Unlimited</span>
-                </>
-              ) : (
-                <>
-                  <span className="text-white text-sm font-medium tracking-tighter">
-                    {percentUsed}% of uploads used
-                  </span>
-                  <div className="w-44 h-1.5 bg-[hsl(0,0%,23%)] rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${percentUsed}%`,
-                        backgroundColor: isOverLimit ? "#e74c3c" : "hsl(0,0%,50%)",
-                      }}
-                    />
-                  </div>
-                  <span className="text-white text-sm font-semibold">
-                    {minutesUsed} of {minutesLimit} minutes
-                  </span>
-                </>
-              )}
-            </div>
-
-            <ArtistProUpgradeButton
-              className="bg-black text-white text-sm font-bold tracking-tighter px-5 py-2 rounded-full hover:bg-[hsl(0,0%,20%)] transition-colors"
-              data-testid="get-unlimited-btn"
-            >
-              Get unlimited uploads
-            </ArtistProUpgradeButton>
+          <div data-testid="upload-quota-bar">
+            <UploadQuotaBanner
+              quota={quota}
+              loading={quotaLoading}
+              onOpenDetails={() => setShowArtistModal(true)}
+              forceOverLimit={quotaBlocked}
+              statusMessage={
+                quotaBlocked ? "You've reached your upload limit for your plan" : undefined
+              }
+            />
           </div>
 
           <h1 className="text-[26px] font-semibold mb-2 mt-8">Upload your audio files.</h1>

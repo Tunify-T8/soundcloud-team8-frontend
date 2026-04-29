@@ -527,11 +527,7 @@ const TrackPage = () => {
             <button
               onClick={handleFollowArtist}
               disabled={followLoading}
-              className={`w-full py-1.5 rounded border text-xs font-medium transition disabled:opacity-50 ${
-                isFollowingArtist
-                  ? 'border-orange-500 text-orange-400 hover:border-red-400 hover:text-red-400'
-                  : 'border-zinc-600 text-white hover:border-white hover:bg-white/5'
-              }`}
+              className="w-full rounded bg-white px-5 py-1.5 text-sm font-semibold text-black transition hover:bg-gray-100 disabled:opacity-60"
             >
               {isFollowingArtist ? 'Following' : 'Follow'}
             </button>

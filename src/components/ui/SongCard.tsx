@@ -15,7 +15,7 @@ import {
 import { SiSoundcloud } from "react-icons/si";
 import { Link } from "react-router-dom";
 import { waveGenerators } from "../Waveforms";
-import { useLike } from "@/features/feed/hooks/useLike";
+import { engagementService } from "@/features/engagement/services/engagementService";
 import { Genre } from "@/shared/types/Genre";
 import { usePlayer } from "@/features/playerUI/context/usePlayer";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -141,11 +141,82 @@ export default function SongCard({
     setIsPlaying(true);
   };
 
-  const { isLiked, likesCount, toggleLike } = useLike(
-    isLikedInitial,
-    Number(likes) || 0,
-    trackId,
-  );
+  const [isLiked, setIsLiked] = useState(isLikedInitial);
+  const [isReposted, setIsReposted] = useState(isRepostedInitial);
+  const [likesCount, setLikesCount] = useState(Number(likes) || 0);
+  const [repostsCount, setRepostsCount] = useState(Number(reposts) || 0);
+  const [isLikePending, setIsLikePending] = useState(false);
+  const [isRepostPending, setIsRepostPending] = useState(false);
+
+  useEffect(() => {
+    setIsLiked(isLikedInitial);
+    setIsReposted(isRepostedInitial);
+    setLikesCount(Number(likes) || 0);
+    setRepostsCount(Number(reposts) || 0);
+  }, [trackId, isLikedInitial, isRepostedInitial, likes, reposts]);
+
+  useEffect(() => {
+    if (!trackId) return;
+    let mounted = true;
+    engagementService
+      .getEngagement(trackId)
+      .then((data) => {
+        if (!mounted) return;
+        setIsLiked(Boolean(data.isLiked));
+        setIsReposted(Boolean(data.isReposted));
+        if (Number.isFinite(data.likesCount)) {
+          setLikesCount(Number(data.likesCount));
+        }
+        if (Number.isFinite(data.repostsCount)) {
+          setRepostsCount(Number(data.repostsCount));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, [trackId]);
+
+  const handleLikeToggle = async () => {
+    if (!trackId || isLikePending) return;
+    const wasLiked = isLiked;
+    setIsLikePending(true);
+    setIsLiked(!wasLiked);
+    setLikesCount((prev) => Math.max(0, prev + (wasLiked ? -1 : 1)));
+    try {
+      if (wasLiked) {
+        await engagementService.unlikeTrack(trackId);
+      } else {
+        await engagementService.likeTrack(trackId);
+      }
+    } catch {
+      setIsLiked(wasLiked);
+      setLikesCount((prev) => Math.max(0, prev + (wasLiked ? 1 : -1)));
+    } finally {
+      setIsLikePending(false);
+    }
+  };
+
+  const handleRepostToggle = async () => {
+    if (!trackId || repostDisabled || isRepostPending) return;
+    const wasReposted = isReposted;
+    setIsRepostPending(true);
+    setIsReposted(!wasReposted);
+    setRepostsCount((prev) => Math.max(0, prev + (wasReposted ? -1 : 1)));
+    try {
+      if (wasReposted) {
+        await engagementService.unrepostTrack(trackId);
+      } else {
+        await engagementService.repostTrack(trackId);
+      }
+      onToggleRepost?.();
+    } catch {
+      setIsReposted(wasReposted);
+      setRepostsCount((prev) => Math.max(0, prev + (wasReposted ? 1 : -1)));
+    } finally {
+      setIsRepostPending(false);
+    }
+  };
 
   async function handleDownload() {
     if (!hasOfflineListening || !me?.id || downloading || downloaded || !trackId)
@@ -364,22 +435,27 @@ export default function SongCard({
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:flex-none tracking-tight sm:gap-2">
             <button
               type="button"
-              onClick={toggleLike}
-              className="flex h-8 shrink-0 items-center gap-1.5 rounded-[4px] bg-[#2f3033] px-3 text-[13px] font-semibold text-zinc-100 transition-colors hover:bg-[#3a3b3f]"
+              onClick={handleLikeToggle}
+              disabled={isLikePending}
+              className={`flex h-8 shrink-0 items-center gap-1.5 rounded-[4px] bg-[#2f3033] px-3 text-[13px] font-semibold transition-colors hover:bg-[#3a3b3f] disabled:opacity-60 ${
+                isLiked ? "text-[#ff5500]" : "text-zinc-100"
+              }`}
               aria-label={`Like (${likesCount})`}
             >
-              <Heart size={16} fill={isLiked ? "#fff" : "none"} style={{ color: "#fff" }} />
+              <Heart size={16} fill={isLiked ? "#ff5500" : "none"} style={{ color: isLiked ? "#ff5500" : "#fff" }} />
               <span>{likesCount}</span>
             </button>
             <button
               type="button"
-              onClick={onToggleRepost}
-              disabled={repostDisabled}
-              aria-label={isRepostedInitial ? "Undo repost" : "Repost"}
-              className="flex h-8 shrink-0 items-center gap-1.5 rounded-[4px] bg-[#2f3033] px-3 text-[13px] font-semibold text-zinc-100 transition-colors hover:bg-[#3a3b3f] disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={handleRepostToggle}
+              disabled={repostDisabled || isRepostPending}
+              aria-label={isReposted ? "Undo repost" : "Repost"}
+              className={`flex h-8 shrink-0 items-center gap-1.5 rounded-[4px] bg-[#2f3033] px-3 text-[13px] font-semibold transition-colors hover:bg-[#3a3b3f] disabled:cursor-not-allowed disabled:opacity-60 ${
+                isReposted ? "text-[#ff5500]" : "text-zinc-100"
+              }`}
             >
-              <Repeat2 size={16} style={{ color: "#fff" }} />
-              <span>{reposts}</span>
+              <Repeat2 size={16} style={{ color: isReposted ? "#ff5500" : "#fff" }} />
+              <span>{repostsCount}</span>
             </button>
             <button className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f]">
               <Share2 size={16} />

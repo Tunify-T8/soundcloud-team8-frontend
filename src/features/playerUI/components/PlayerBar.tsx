@@ -12,6 +12,8 @@ import { usePlayback } from "@/hooks/Useplayback";
 import { useQueue } from "@/hooks/useQueue";
 import { usePlayer } from "@/features/playerUI/context/usePlayer";
 import NextUpPanel from "./NextUpPanel";
+import { Link } from "react-router-dom";
+import { useEngagement } from "@/features/engagement/hooks/useEngagement";
 
 const formatTime = (s: number) => {
   const m = Math.floor(s / 60);
@@ -54,6 +56,8 @@ export default function PlayerBar() {
   const isPlaying = status === "playing";
   const uiIsPlaying = contextIsPlaying || isPlaying;
 
+  const { isLiked, toggleLike, loading: likeLoading } = useEngagement(trackId);
+
   useEffect(() => {
     if (!trackId) return;
     if (contextIsPlaying) {
@@ -74,7 +78,9 @@ export default function PlayerBar() {
       (status === "paused" || status === "idle" || status === "blocked" || status === "error") &&
       prevStatus === "playing" &&
       contextIsPlaying
-    ) {
+    
+    ) 
+    {
       setIsPlaying(false);
     }
     prevStatusRef.current = status;
@@ -310,9 +316,10 @@ export default function PlayerBar() {
           <Heart
             data-testid="player-like-button"
             size={15}
-            fill="#FF5500"
+            fill={isLiked ? "#FF5500" : "none"}
             className="cursor-pointer hover:opacity-80"
-            style={{ color: "#FF5500" }}
+            style={{ color: isLiked ? "#FF5500" : "#71717a" }}
+            onClick={() => { if (trackId && !likeLoading) toggleLike(); }}
           />
           <UserPlus2
             data-testid="player-follow-button"
