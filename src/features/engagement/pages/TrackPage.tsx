@@ -378,7 +378,7 @@ const TrackPage = () => {
               {/* Play/Pause */}
               <button
                 onClick={handlePlayPause}
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-black shadow-lg transition-transform hover:scale-105 sm:h-16 sm:w-16"
+                className="sc-track-hero-play flex h-12 w-12 shrink-0 items-center justify-center rounded-full shadow-lg transition-transform hover:scale-105 sm:h-16 sm:w-16"
                 aria-label={pageIsPlaying ? 'Pause' : 'Play'}
               >
                 {pageIsPlaying ? (
@@ -394,8 +394,8 @@ const TrackPage = () => {
               </button>
 
               <div className="min-w-0 flex-1">
-                <h1 className="inline-block max-w-full truncate bg-black px-3 py-1 text-2xl font-bold leading-tight text-white sm:text-4xl lg:text-[54px] lg:leading-none">{track.title}</h1>
-                <p className="mt-2 inline-block max-w-full truncate bg-black px-3 py-1 text-base font-semibold text-zinc-300 sm:text-xl">{artistName}</p>
+                <h1 className="sc-track-title-chip inline-block max-w-full truncate px-3 py-1 text-2xl font-bold leading-tight sm:text-4xl lg:text-[54px] lg:leading-none">{track.title}</h1>
+                <p className="sc-track-artist-chip mt-2 inline-block max-w-full truncate px-3 py-1 text-base font-semibold sm:text-xl">{artistName}</p>
               </div>
 
               <span className="mt-1 shrink-0 text-xs font-semibold text-white sm:text-[13px]">

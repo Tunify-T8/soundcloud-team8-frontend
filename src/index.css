@@ -229,6 +229,71 @@ body {
   color: #ffffff !important;
 }
 
+.sc-track-hero-play {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+.sc-track-hero-play svg,
+.sc-track-hero-play svg * {
+  fill: #ffffff !important;
+}
+
+.sc-track-title-chip,
+.sc-track-artist-chip {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+.settings-social-facebook {
+  background: #1457d9 !important;
+  color: #ffffff !important;
+}
+
+.settings-social-facebook svg {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+}
+
+.settings-social-google {
+  background: #f2f2f2 !important;
+  color: #111111 !important;
+}
+
+.settings-social-apple {
+  background: #111111 !important;
+  color: #ffffff !important;
+}
+
+.settings-social-apple svg {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+}
+
+.content-checkbox-box {
+  display: flex;
+  height: 16px;
+  width: 16px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--sc-text);
+  border-radius: 2px;
+  background: transparent !important;
+  color: #ffffff !important;
+  flex-shrink: 0;
+}
+
+.content-checkbox-box-checked {
+  border-color: #000000 !important;
+  background: #000000 !important;
+}
+
+.content-checkbox-box svg,
+.content-checkbox-box svg * {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
 @media (max-width: 640px) {
   .soundcloud-auth-page .sc-auth-title {
     font-size: 32px;
