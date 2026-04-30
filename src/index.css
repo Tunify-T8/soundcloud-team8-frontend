@@ -122,6 +122,100 @@ body {
   animation: shake 0.5s ease-in-out;
 }
 
+.soundcloud-auth-page {
+  background: #ffffff !important;
+  color: #111111;
+}
+
+.soundcloud-auth-page .sc-auth-card {
+  width: 100%;
+  min-height: 526px;
+  padding: 0;
+  background: #ffffff !important;
+  border: 1px solid #d9d9d9;
+  box-shadow: none;
+}
+
+.soundcloud-auth-page .sc-auth-title {
+  color: #111111 !important;
+  font-size: 36px;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.soundcloud-auth-page .sc-auth-copy {
+  color: #666666 !important;
+}
+
+.soundcloud-auth-page .sc-auth-button {
+  height: 53px;
+  color: #ffffff !important;
+  border: 0;
+}
+
+.soundcloud-auth-page .sc-auth-facebook {
+  background: #1148c5 !important;
+}
+
+.soundcloud-auth-page .sc-auth-facebook:hover {
+  background: #0e3fae !important;
+}
+
+.soundcloud-auth-page .sc-auth-google {
+  background: #f2f2f2 !important;
+  color: #111111 !important;
+}
+
+.soundcloud-auth-page .sc-auth-google:hover {
+  background: #e9e9e9 !important;
+}
+
+.soundcloud-auth-page .sc-auth-apple {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+.soundcloud-auth-page .sc-auth-apple:hover {
+  background: #111111 !important;
+}
+
+.soundcloud-auth-page .sc-auth-input {
+  height: 66px;
+  background: #f2f2f2 !important;
+  border: 1px solid #f2f2f2 !important;
+  color: #111111 !important;
+}
+
+.soundcloud-auth-page .sc-auth-input::placeholder {
+  color: #8d8d8d;
+  opacity: 1;
+}
+
+.soundcloud-auth-page .sc-auth-input:focus {
+  border-color: #999999 !important;
+}
+
+.soundcloud-auth-page .sc-auth-continue {
+  height: 56px;
+  background: #808080 !important;
+  color: #ffffff !important;
+}
+
+.soundcloud-auth-page .sc-auth-continue:not(:disabled):hover {
+  background: #747474 !important;
+}
+
+@media (max-width: 640px) {
+  .soundcloud-auth-page .sc-auth-title {
+    font-size: 32px;
+  }
+
+  .soundcloud-auth-page .sc-auth-card {
+    border-left: 0;
+    border-right: 0;
+  }
+}
+
 
 .hide-scrollbar {
   -ms-overflow-style: none;
