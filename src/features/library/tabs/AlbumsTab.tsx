@@ -3,7 +3,6 @@ import { ChevronDown } from "lucide-react";
 import { Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { playlistService } from "../libraryService";
-import { useMe } from "@/features/profile/context/useMe";
 import type { CollectionPreview, CollectionPrivacy } from "../types";
 
 const COLS = 6;
@@ -60,7 +59,6 @@ function AlbumCard({
 }
 
 export default function AlbumsTab() {
-  const { me } = useMe();
   const [query, setQuery] = useState("");
   const [filterOption, setFilterOption] = useState<FilterOption>("All");
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -75,10 +73,7 @@ export default function AlbumsTab() {
       setLoading(true);
       setError(null);
 
-      const username = me?.username?.trim();
-      const res = username
-        ? await playlistService.getUserAlbums(username, 1, 50)
-        : await playlistService.getMyCollections(1, 50, "ALBUM");
+      const res = await playlistService.getMyCollections(1, 50, "ALBUM");
 
       if (!mounted) return;
       if (!res?.data) {
@@ -96,7 +91,7 @@ export default function AlbumsTab() {
     return () => {
       mounted = false;
     };
-  }, [me?.username]);
+  }, []);
 
   const filteredItems = useMemo<AlbumGridItem[]>(() => {
     const q = query.trim().toLowerCase();

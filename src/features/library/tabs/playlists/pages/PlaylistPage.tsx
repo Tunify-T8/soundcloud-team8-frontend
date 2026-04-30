@@ -32,6 +32,8 @@ const PlaylistPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [reorderError, setReorderError] = useState<string | null>(null);
+  const [isFollowingOwner, setIsFollowingOwner] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
   const {
     currentTrack,
     isPlaying,
@@ -92,6 +94,27 @@ const PlaylistPage: React.FC = () => {
     const timeout = setTimeout(() => setReorderError(null), 4000);
     return () => clearTimeout(timeout);
   }, [reorderError]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const syncFollowStatus = async () => {
+      if (!playlist?.owner?.id || currentUser?.id === playlist.owner.id) return;
+      try {
+        const status = await profileService.getFollowStatus(playlist.owner.id);
+        if (!mounted) return;
+        setIsFollowingOwner(Boolean(status.isFollowing));
+      } catch {
+        if (!mounted) return;
+        setIsFollowingOwner(false);
+      }
+    };
+
+    void syncFollowStatus();
+    return () => {
+      mounted = false;
+    };
+  }, [playlist?.owner?.id, currentUser?.id]);
 
   const handleReorder = useCallback(
     async (newTracks: CollectionTrack[]) => {
