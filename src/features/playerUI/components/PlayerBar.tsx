@@ -12,6 +12,8 @@ import { usePlayback } from "@/hooks/Useplayback";
 import { useQueue } from "@/hooks/useQueue";
 import { usePlayer } from "@/features/playerUI/context/usePlayer";
 import NextUpPanel from "./NextUpPanel";
+import { Link } from "react-router-dom";
+import { useEngagement } from "@/features/engagement/hooks/useEngagement";
 
 const formatTime = (s: number) => {
   const m = Math.floor(s / 60);
@@ -25,6 +27,7 @@ export default function PlayerBar() {
     isPlaying: contextIsPlaying,
     pendingSeek,
     setIsPlaying,
+    setCurrentTrack,
     setProgress,
     requestSeek,
     clearPendingSeek,
@@ -51,8 +54,10 @@ export default function PlayerBar() {
     audioRef,
   } = usePlayback({ trackId, autoPlay: false, offlineSrc });
 
-  const isPlaying = status === "playing";
+  const isPlaying   = status === "playing";
   const uiIsPlaying = contextIsPlaying || isPlaying;
+
+  const { isLiked, toggleLike, loading: likeLoading } = useEngagement(trackId);
 
   useEffect(() => {
     if (!trackId) return;
@@ -74,7 +79,9 @@ export default function PlayerBar() {
       (status === "paused" || status === "idle" || status === "blocked" || status === "error") &&
       prevStatus === "playing" &&
       contextIsPlaying
-    ) {
+    
+    ) 
+    {
       setIsPlaying(false);
     }
     prevStatusRef.current = status;
@@ -92,20 +99,31 @@ export default function PlayerBar() {
     clearPendingSeek();
   }, [pendingSeek, trackId, duration, status, seek, clearPendingSeek]);
 
-  const [showVolume,  setShowVolume]  = useState(false);
-  const [isDragging,  setIsDragging]  = useState(false);
-  const [showNextUp,  setShowNextUp]  = useState(false);
-  const [hoverQueue,  setHoverQueue]  = useState(false);
+  const [showVolume, setShowVolume] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [showNextUp, setShowNextUp] = useState(false);
+  const [hoverQueue, setHoverQueue] = useState(false);
 
   const hideTimer     = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPlayingRef  = useRef(isPlaying);
   const prevStatusRef = useRef(status);
 
-  const { next, prev, shuffle, repeat, toggleShuffle, toggleRepeat, loadQueue } = useQueue();
+  // No more hardcoded loadQueue here.
+  // Queue is built by playTrack() when the user clicks play on a track.
+  const { next, prev, shuffle, repeat, toggleShuffle, toggleRepeat, currentTrack: queueCurrentTrack, currentTrackId: queueCurrentTrackId } = useQueue();
 
+  // When next/prev/jumpTo changes the queue index, sync PlayerContext
   useEffect(() => {
-    loadQueue({ contextType: "playlist", contextId: "playlist-1", shuffle: false, repeat: "none" });
-  }, []);
+    if (!queueCurrentTrack || !queueCurrentTrackId) return;
+    if (queueCurrentTrackId === currentTrack?.id) return;
+    setCurrentTrack({
+      id:       queueCurrentTrack.trackId,
+      title:    queueCurrentTrack.title,
+      artist:   queueCurrentTrack.artist,
+      duration: queueCurrentTrack.durationSeconds,
+    });
+    setIsPlaying(true);
+  }, [queueCurrentTrackId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     isPlayingRef.current = uiIsPlaying;
@@ -129,8 +147,8 @@ export default function PlayerBar() {
   if (!currentTrack) return null;
 
   const handleVolumeChange = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const pct  = 1 - (e.clientY - rect.top) / rect.height;
+    const rect   = e.currentTarget.getBoundingClientRect();
+    const pct    = 1 - (e.clientY - rect.top) / rect.height;
     const newVol = Math.max(0, Math.min(1, pct));
     setVolume(newVol);
     if (newVol < 0.01 && !isMuted) toggleMute();
@@ -149,9 +167,8 @@ export default function PlayerBar() {
     }, 300);
   };
 
-  const progressPct = Math.min(100, Math.max(0, duration > 0 ? (currentTime / duration) * 100 : 0));
-  const bufferedPct = Math.min(100, Math.max(0, buffered * 100));
-
+  const progressPct  = Math.min(100, Math.max(0, duration > 0 ? (currentTime / duration) * 100 : 0));
+  const bufferedPct  = Math.min(100, Math.max(0, buffered * 100));
   const handlePlayPause = () => setIsPlaying(!uiIsPlaying);
 
   return (
@@ -237,7 +254,7 @@ export default function PlayerBar() {
             }}
           >
             <div data-testid="player-buffered-bar" className="absolute left-0 top-0 h-full bg-zinc-500 rounded-full" style={{ width: `${bufferedPct}%` }} />
-            <div data-testid="player-played-bar" className="absolute left-0 top-0 h-full bg-orange-500 rounded-full" style={{ width: `${progressPct}%` }} />
+            <div data-testid="player-played-bar"   className="absolute left-0 top-0 h-full bg-orange-500 rounded-full" style={{ width: `${progressPct}%` }} />
             <div
               data-testid="player-progress-thumb"
               className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
@@ -301,7 +318,7 @@ export default function PlayerBar() {
           )}
           <div className="flex flex-col leading-tight">
             <span data-testid="player-track-artist" className="text-xs text-zinc-400 leading-none font-bold tracking-tight">{trackArtist}</span>
-            <span data-testid="player-track-title" className="text-xs font-bold text-white leading-none mt-0.5">{trackTitle}</span>
+            <span data-testid="player-track-title"  className="text-xs font-bold text-white leading-none mt-0.5">{trackTitle}</span>
           </div>
         </div>
 
@@ -310,9 +327,10 @@ export default function PlayerBar() {
           <Heart
             data-testid="player-like-button"
             size={15}
-            fill="#FF5500"
+            fill={isLiked ? "#FF5500" : "none"}
             className="cursor-pointer hover:opacity-80"
-            style={{ color: "#FF5500" }}
+            style={{ color: isLiked ? "#FF5500" : "#71717a" }}
+            onClick={() => { if (trackId && !likeLoading) toggleLike(); }}
           />
           <UserPlus2
             data-testid="player-follow-button"

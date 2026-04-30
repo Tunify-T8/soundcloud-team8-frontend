@@ -13,6 +13,8 @@ import {
   getTrendingAlbums,
   getTrendingTracks,
 } from "../discoverService";
+import { usePlayContext } from "@/hooks/usePlayContext";
+import { useMe } from "@/features/profile/context/useMe";
 
 export default function DiscoverPage() {
   const [discoverTracks, setDiscoverTracks] = useState<DiscoverTrack[]>([]);
@@ -23,6 +25,8 @@ export default function DiscoverPage() {
   >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { me } = useMe();
+  usePlayContext({ contextType: "feed", contextId: me?.id ?? "" });
 
   useEffect(() => {
     let isMounted = true;

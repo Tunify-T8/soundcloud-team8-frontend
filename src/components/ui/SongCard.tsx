@@ -13,15 +13,16 @@ import {
   Loader2,
 } from "lucide-react";
 import { SiSoundcloud } from "react-icons/si";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { waveGenerators } from "../Waveforms";
-import { useLike } from "@/features/feed/hooks/useLike";
+import { engagementService } from "@/features/engagement/services/engagementService";
 import { Genre } from "@/shared/types/Genre";
 import { usePlayer } from "@/features/playerUI/context/usePlayer";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useMe } from "@/features/profile/context/useMe";
 import { playbackService } from "@/features/player-core/Playbackservice";
 import CreatePlaylistOverlay from "@/features/library/tabs/playlists/components/CreatePlaylistOverlay";
+import trackFallback from "@/assets/track.jpg";
 
 const DB_NAME = "sc_downloads";
 const STORE = "tracks";
@@ -50,6 +51,17 @@ async function saveDownload(
   );
 }
 
+async function hasDownload(userId: string, trackId: string): Promise<boolean> {
+  const db = await openDB();
+  const tx = db.transaction(STORE, "readonly");
+  const store = tx.objectStore(STORE);
+  return new Promise((res, rej) => {
+    const req = store.get(`user_${userId}_song_${trackId}`);
+    req.onsuccess = () => res(Boolean(req.result));
+    req.onerror = () => rej(req.error);
+  });
+}
+
 interface PlayerProps {
   trackId?: string;
   entityLinkTo?: string;
@@ -74,6 +86,14 @@ interface PlayerProps {
   onStation?: () => void;
   contextTag?: string;
   offlineSrc?: string;
+  playlistTracks?: Array<{
+    id: string;
+    number: number;
+    title: string;
+    artist: string;
+    playsCount?: number;
+    avatarUrl?: string | null;
+  }>;
 }
 
 export default function SongCard({
@@ -100,6 +120,7 @@ export default function SongCard({
   onStation,
   contextTag,
   offlineSrc,
+  playlistTracks = [],
 }: PlayerProps) {
   const {
     currentTrack,
@@ -111,6 +132,7 @@ export default function SongCard({
   } = usePlayer();
   const { hasOfflineListening } = useSubscription();
   const { me } = useMe();
+  const navigate = useNavigate();
 
   const isThisTrack = currentTrack?.id === trackId;
   const playing = isThisTrack && isPlaying;
@@ -121,6 +143,7 @@ export default function SongCard({
   const [downloading, setDownloading] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
   const [showDownloadTooltip, setShowDownloadTooltip] = useState(false);
+  const [showAlreadyDownloaded, setShowAlreadyDownloaded] = useState(false);
   const [randomSeed] = useState(() => Math.random() * 1000000);
 
   const handlePlayToggle = () => {
@@ -141,15 +164,104 @@ export default function SongCard({
     setIsPlaying(true);
   };
 
-  const { isLiked, likesCount, toggleLike } = useLike(
-    isLikedInitial,
-    Number(likes) || 0,
-    trackId,
-  );
+  const [isLiked, setIsLiked] = useState(isLikedInitial);
+  const [isReposted, setIsReposted] = useState(isRepostedInitial);
+  const [likesCount, setLikesCount] = useState(Number(likes) || 0);
+  const [repostsCount, setRepostsCount] = useState(Number(reposts) || 0);
+  const [isLikePending, setIsLikePending] = useState(false);
+  const [isRepostPending, setIsRepostPending] = useState(false);
+
+  useEffect(() => {
+    setIsLiked(isLikedInitial);
+    setIsReposted(isRepostedInitial);
+    setLikesCount(Number(likes) || 0);
+    setRepostsCount(Number(reposts) || 0);
+  }, [trackId, isLikedInitial, isRepostedInitial, likes, reposts]);
+
+  useEffect(() => {
+    if (!trackId) return;
+    let mounted = true;
+    engagementService
+      .getEngagement(trackId)
+      .then((data) => {
+        if (!mounted) return;
+        setIsLiked(Boolean(data.isLiked));
+        setIsReposted(Boolean(data.isReposted));
+        if (Number.isFinite(data.likesCount)) {
+          setLikesCount(Number(data.likesCount));
+        }
+        if (Number.isFinite(data.repostsCount)) {
+          setRepostsCount(Number(data.repostsCount));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, [trackId]);
+
+  useEffect(() => {
+    if (!trackId || !me?.id || !hasOfflineListening) return;
+    let mounted = true;
+    hasDownload(me.id, trackId)
+      .then((exists) => {
+        if (!mounted) return;
+        setDownloaded(exists);
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, [trackId, me?.id, hasOfflineListening]);
+
+  const handleLikeToggle = async () => {
+    if (!trackId || isLikePending) return;
+    const wasLiked = isLiked;
+    setIsLikePending(true);
+    setIsLiked(!wasLiked);
+    setLikesCount((prev) => Math.max(0, prev + (wasLiked ? -1 : 1)));
+    try {
+      if (wasLiked) {
+        await engagementService.unlikeTrack(trackId);
+      } else {
+        await engagementService.likeTrack(trackId);
+      }
+    } catch {
+      setIsLiked(wasLiked);
+      setLikesCount((prev) => Math.max(0, prev + (wasLiked ? 1 : -1)));
+    } finally {
+      setIsLikePending(false);
+    }
+  };
+
+  const handleRepostToggle = async () => {
+    if (!trackId || repostDisabled || isRepostPending) return;
+    const wasReposted = isReposted;
+    setIsRepostPending(true);
+    setIsReposted(!wasReposted);
+    setRepostsCount((prev) => Math.max(0, prev + (wasReposted ? -1 : 1)));
+    try {
+      if (wasReposted) {
+        await engagementService.unrepostTrack(trackId);
+      } else {
+        await engagementService.repostTrack(trackId);
+      }
+      onToggleRepost?.();
+    } catch {
+      setIsReposted(wasReposted);
+      setRepostsCount((prev) => Math.max(0, prev + (wasReposted ? 1 : -1)));
+    } finally {
+      setIsRepostPending(false);
+    }
+  };
 
   async function handleDownload() {
-    if (!hasOfflineListening || !me?.id || downloading || downloaded || !trackId)
+    if (!hasOfflineListening || !me?.id || downloading || !trackId) return;
+
+    if (downloaded) {
+      setShowAlreadyDownloaded(true);
       return;
+    }
 
     setDownloading(true);
     try {
@@ -179,6 +291,7 @@ export default function SongCard({
         artworkBlob,
       );
       setDownloaded(true);
+      setShowAlreadyDownloaded(false);
     } catch (err) {
       console.error("Download failed", err);
       alert("Failed to download. Please try again.");
@@ -199,6 +312,7 @@ export default function SongCard({
 
   const displayProgress = isThisTrack ? playerProgress : progress;
   const cardPrimaryLink = entityLinkTo || (trackId ? `/tracks/${trackId}` : "");
+  const isCollectionCard = contextTag === "Album" || contextTag === "Playlist";
   const mobileCoverSizeClass = smallCoverOnMobile
     ? "h-[72px] w-[72px]"
     : "h-[88px] w-[88px]";
@@ -245,9 +359,7 @@ export default function SongCard({
           {coverUrl ? (
             <img src={coverUrl} alt={title} className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#2a2a2a] to-[#111]">
-              <SiSoundcloud size={40} className="text-[hsl(0,0%,30%)]" />
-            </div>
+            <img src={trackFallback} alt={title || "track"} className="w-full h-full object-cover" />
           )}
         </Link>
       ) : (
@@ -255,9 +367,7 @@ export default function SongCard({
           {coverUrl ? (
             <img src={coverUrl} alt={title} className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#2a2a2a] to-[#111]">
-              <SiSoundcloud size={40} className="text-[hsl(0,0%,30%)]" />
-            </div>
+            <img src={trackFallback} alt={title || "track"} className="w-full h-full object-cover" />
           )}
         </div>
       )}
@@ -304,9 +414,11 @@ export default function SongCard({
             <span className="whitespace-nowrap text-[8px] text-[hsl(0,0%,40%)] sm:text-[11px]">
               {timeAgo}
             </span>
-            <span className="whitespace-nowrap rounded-sm border border-[hsl(0,0%,20%)] bg-[hsl(0,0%,12%)] px-1 py-0.5 text-[7px] text-[hsl(0,0%,55%)] sm:px-2 sm:text-[10px]">
-              {contextTag ?? `# ${genre}`}
-            </span>
+            {!isCollectionCard ? (
+              <span className="whitespace-nowrap rounded-sm border border-[hsl(0,0%,20%)] bg-[hsl(0,0%,12%)] px-1 py-0.5 text-[7px] text-[hsl(0,0%,55%)] sm:px-2 sm:text-[10px]">
+                {contextTag ?? `# ${genre}`}
+              </span>
+            ) : null}
           </div>
         </div>
 
@@ -359,28 +471,54 @@ export default function SongCard({
             );
           })}
         </div>
+        {isCollectionCard && playlistTracks.length > 0 ? (
+          <div className="mb-2 mt-2 space-y-2">
+            {playlistTracks.map((collectionTrack) => (
+              <div key={collectionTrack.id} className="flex items-center gap-2 py-0.5 text-sm text-zinc-300">
+                <img
+                  src={collectionTrack.avatarUrl || trackFallback}
+                  alt={collectionTrack.title}
+                  className="h-7 w-7 rounded-[2px] object-cover"
+                />
+                <span className="text-zinc-400">{collectionTrack.number} ·</span>
+                <span className="truncate">
+                  <span className="font-semibold text-white">{collectionTrack.artist}</span>
+                  {" · "}
+                  <span>{collectionTrack.title}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : null}
 
         <div className="mt-1 flex flex-wrap items-center justify-between gap-1.5 sm:mt-2 sm:gap-2">
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:flex-none tracking-tight sm:gap-2">
             <button
               type="button"
-              onClick={toggleLike}
-              className="flex h-8 shrink-0 items-center gap-1.5 rounded-[4px] bg-[#2f3033] px-3 text-[13px] font-semibold text-zinc-100 transition-colors hover:bg-[#3a3b3f]"
+              onClick={handleLikeToggle}
+              disabled={isLikePending}
+              className={`flex h-8 shrink-0 items-center gap-1.5 rounded-[4px] bg-[#2f3033] ${isCollectionCard ? "w-8 justify-center px-0" : "px-3"} text-[13px] font-semibold transition-colors hover:bg-[#3a3b3f] disabled:opacity-60 ${
+                isLiked ? "text-[#ff5500]" : "text-zinc-100"
+              }`}
               aria-label={`Like (${likesCount})`}
             >
-              <Heart size={16} fill={isLiked ? "#fff" : "none"} style={{ color: "#fff" }} />
-              <span>{likesCount}</span>
+              <Heart size={16} fill={isLiked ? "#ff5500" : "none"} style={{ color: isLiked ? "#ff5500" : "#fff" }} />
+              {!isCollectionCard ? <span>{likesCount}</span> : null}
             </button>
-            <button
-              type="button"
-              onClick={onToggleRepost}
-              disabled={repostDisabled}
-              aria-label={isRepostedInitial ? "Undo repost" : "Repost"}
-              className="flex h-8 shrink-0 items-center gap-1.5 rounded-[4px] bg-[#2f3033] px-3 text-[13px] font-semibold text-zinc-100 transition-colors hover:bg-[#3a3b3f] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <Repeat2 size={16} style={{ color: "#fff" }} />
-              <span>{reposts}</span>
-            </button>
+            {!isCollectionCard ? (
+              <button
+                type="button"
+                onClick={handleRepostToggle}
+                disabled={repostDisabled || isRepostPending}
+                aria-label={isReposted ? "Undo repost" : "Repost"}
+                className={`flex h-8 shrink-0 items-center gap-1.5 rounded-[4px] bg-[#2f3033] px-3 text-[13px] font-semibold transition-colors hover:bg-[#3a3b3f] disabled:cursor-not-allowed disabled:opacity-60 ${
+                  isReposted ? "text-[#ff5500]" : "text-zinc-100"
+                }`}
+              >
+                <Repeat2 size={16} style={{ color: isReposted ? "#ff5500" : "#fff" }} />
+                <span>{repostsCount}</span>
+              </button>
+            ) : null}
             <button className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f]">
               <Share2 size={16} />
             </button>
@@ -444,7 +582,7 @@ export default function SongCard({
                   >
                     <button
                       onClick={handleDownload}
-                      disabled={!hasOfflineListening || downloading || downloaded}
+                      disabled={!hasOfflineListening || downloading}
                       className={`flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-[13px] font-semibold transition-colors ${
                         !hasOfflineListening
                           ? "opacity-40 cursor-not-allowed text-zinc-400"
@@ -465,6 +603,23 @@ export default function SongCard({
                       )}
                       {downloading ? "Downloading…" : downloaded ? "Downloaded" : "Download"}
                     </button>
+
+                    {showAlreadyDownloaded && downloaded && (
+                      <div className="px-2.5 pb-1.5 text-[11px] text-zinc-300">
+                        This song is already downloaded, Check{" "}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            navigate("/me/downloads");
+                          }}
+                          className="text-[#2f7fdc] underline"
+                        >
+                          Downloads
+                        </button>
+                        .
+                      </div>
+                    )}
 
                     {showDownloadTooltip && !hasOfflineListening && (
                       <div

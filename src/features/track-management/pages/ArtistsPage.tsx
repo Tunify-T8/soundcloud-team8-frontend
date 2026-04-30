@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { Search, Upload, Plus, Globe, DollarSign, SlidersHorizontal, ArrowUpDown, BarChart, Users, Gift } from "lucide-react";
+import { Search, Plus, Globe, DollarSign, SlidersHorizontal, ArrowUpDown, BarChart, Users, Gift } from "lucide-react";
 import TrackList from "../components/TrackList";
 import ArtistsNavbar from "../components/ArtistsNavbar";
 import ArtistsSidebar from "../components/ArtistsSidebar";
@@ -19,7 +19,9 @@ import pandoraImg from "@/assets/pandora.png";
 import vinylImg from "@/assets/vinyl.png";
 import commentsImg from "@/assets/comment_bubbles.png";
 import { BenefitsSection } from "../components/BenefitsSection";
-import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
+import UploadQuotaBanner from "@/features/upload/components/UploadQuotaBanner";
+import { api } from "@/features/auth/services/api";
+import { subscriptionService } from "@/features/premium/premiumService";
 
 import insightsImg from "@/assets/insights.png";
 import earningsImg from "@/assets/monetize.png";
@@ -29,23 +31,91 @@ import fansHoverImg from "@/assets/top_fans_hover.png";
 import benefitsHoverImg from "@/assets/benefits_hover.png";
 
 export function UploadBanner() {
+  const [quota, setQuota] = useState<
+    | {
+        tier: string;
+        uploadMinutesLimit: number | null;
+        uploadMinutesUsed: number;
+        uploadMinutesRemaining: number | null;
+        canReplaceFiles: boolean;
+        canScheduleRelease: boolean;
+        canAccessAdvancedTab: boolean;
+      }
+    | null
+  >(null);
+  const [quotaLoading, setQuotaLoading] = useState(true);
+  const [quotaBlocked, setQuotaBlocked] = useState(false);
+  const [planTier, setPlanTier] = useState<"free" | "artist" | "artist-pro">("free");
+
+  useEffect(() => {
+    let mounted = true;
+    api
+      .get("/users/me/upload")
+      .then(({ data }) => {
+        if (!mounted) return;
+        setQuota(data);
+      })
+      .catch((err) => {
+        const status = (err as { response?: { status?: number } })?.response?.status;
+        if (!mounted) return;
+        if (status === 403) {
+          setQuotaBlocked(true);
+          setQuota({
+            tier: "free",
+            uploadMinutesLimit: 180,
+            uploadMinutesUsed: 180,
+            uploadMinutesRemaining: 0,
+            canReplaceFiles: false,
+            canScheduleRelease: false,
+            canAccessAdvancedTab: false,
+          });
+          return;
+        }
+        setQuota({
+          tier: "free",
+          uploadMinutesLimit: 180,
+          uploadMinutesUsed: 0,
+          uploadMinutesRemaining: 180,
+          canReplaceFiles: false,
+          canScheduleRelease: false,
+          canAccessAdvancedTab: false,
+        });
+      })
+      .finally(() => {
+        if (mounted) setQuotaLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    subscriptionService
+      .getMySubscription({ fallbackToFree: true })
+      .then((sub) => {
+        if (!mounted) return;
+        setPlanTier(sub.tier);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setPlanTier("free");
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   return (
-    <div data-testid="upload-banner" className="bg-[hsl(0,0%,11%)] border-b border-[hsl(0,0%,18%)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-4 sm:px-8 py-3 shrink-0">
-      <div className="flex items-center gap-3 flex-wrap">
-        <Upload className="w-4 h-4 text-[hsl(0,0%,60%)] shrink-0" />
-        <span className="text-white text-sm font-medium tracking-tighter">0% of uploads used</span>
-        <div data-testid="upload-banner-progress-bar" className="w-32 sm:w-44 h-1.5 bg-[hsl(0,0%,23%)] rounded-full overflow-hidden">
-          <div className="h-full bg-[hsl(0,0%,50%)] rounded-full" style={{ width: "0%" }} />
-        </div>
-        <span className="text-[hsl(0,100%,99%)] text-sm font-semibold">0 of 180 minutes</span>
-      </div>
-      <ArtistProUpgradeButton
-        data-testid="upload-banner-unlimited-btn"
-        className="self-end sm:self-auto bg-black text-white text-sm font-bold tracking-tighter px-5 py-2 rounded-full hover:bg-[hsl(0,0%,20%)] transition-colors whitespace-nowrap"
-      >
-        Get unlimited uploads
-      </ArtistProUpgradeButton>
-    </div>
+    <UploadQuotaBanner
+      quota={quota}
+      loading={quotaLoading}
+      forceOverLimit={quotaBlocked}
+      statusMessage={
+        quotaBlocked ? "You've reached your upload limit for your plan" : undefined
+      }
+    />
   );
 }
 

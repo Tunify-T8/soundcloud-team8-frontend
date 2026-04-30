@@ -8,9 +8,9 @@ interface SettingsLayoutProps {
 
 export default function SettingsLayout({ children }: SettingsLayoutProps) {
   return (
-    <main className="min-h-screen bg-[var(--sc-bg)] pb-24 text-[var(--sc-text)]" data-testid="settings-page">
+    <main className="min-h-screen bg-[var(--sc-bg)] pb-24 text-white" data-testid="settings-page">
       <div className="mx-auto max-w-[1230px] px-4 pt-6 sm:px-6 sm:pt-8">
-        <div className="mb-9 flex min-h-14 items-center justify-center border border-[var(--sc-border)] bg-[var(--sc-surface)] px-4 text-sm font-bold text-[var(--sc-text)] sm:px-6">
+        <div className="mb-9 flex min-h-14 items-center justify-center border border-[var(--sc-border)] bg-[var(--sc-surface)] px-4 text-sm font-bold text-white sm:px-6">
           <Zap size={20} className="mr-4 fill-purple-700 text-purple-700" aria-hidden="true" />
           <span>
             Now available: Get heard by up to 100 listeners on your next upload with Artist or Artist Pro.{" "}
@@ -28,11 +28,11 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
           </button>
         </div>
 
-        <h1 className="mb-9 text-[1.75rem] font-black text-[var(--sc-text)]" data-testid="settings-heading">
+        <h1 className="mb-9 text-[1.75rem] font-black text-white" data-testid="settings-heading">
           Settings
         </h1>
         <SettingsNav />
-        <div className="max-w-[920px] text-sm sm:text-[15px]">{children}</div>
+        <div className="max-w-[920px] text-sm text-white sm:text-[15px]">{children}</div>
       </div>
     </main>
   );

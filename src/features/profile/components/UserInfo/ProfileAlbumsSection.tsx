@@ -28,12 +28,36 @@ function isUuidLike(value: string): boolean {
   );
 }
 
+function isOwnedCollection(
+  album: CollectionPreview,
+  meUsername?: string,
+): boolean {
+  const raw = album as CollectionPreview & {
+    owner?: { username?: string | null };
+    user?: { username?: string | null };
+    author?: { username?: string | null };
+  };
+
+  const ownerUsername =
+    raw.owner?.username || raw.user?.username || raw.author?.username || "";
+
+  // When owner username is available, rely on it.
+  if (ownerUsername && meUsername) {
+    return ownerUsername.toLowerCase() === meUsername.toLowerCase();
+  }
+
+  // Fallback for inconsistent payloads: liked-only entries are typically marked as liked.
+  return !album.isLiked;
+}
+
 interface ProfileAlbumsSectionProps {
   username?: string;
   isMeView: boolean;
   meDisplayName?: string | null;
   meUsername?: string;
   className?: string;
+  heading?: string;
+  sortOrder?: "asc" | "desc";
 }
 
 export default function ProfileAlbumsSection({
@@ -42,6 +66,8 @@ export default function ProfileAlbumsSection({
   meDisplayName,
   meUsername,
   className = "",
+  heading,
+  sortOrder = "desc",
 }: ProfileAlbumsSectionProps) {
   const [items, setItems] = useState<AlbumWithTrack[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,14 +95,23 @@ export default function ProfileAlbumsSection({
           ? await playlistService.getMyCollections(1, 20, "ALBUM")
           : await playlistService.getUserAlbums(targetUsername, 1, 20);
         const albums = (res?.data ?? []) as CollectionPreview[];
+        const visibleAlbums = isMeView
+          ? albums.filter((album) => isOwnedCollection(album, meUsername || undefined))
+          : albums;
 
         const withTracks = await Promise.all(
-          albums.map(async (album) => {
+          visibleAlbums.map(async (album) => {
             const tracksRes = await playlistService.getPlaylistTracks(album.id, 1, 20);
             const tracks = tracksRes?.data ?? [];
             return { album, tracks };
           }),
         );
+
+        withTracks.sort((a, b) => {
+          const aTime = new Date(a.album.updatedAt || a.album.createdAt || 0).getTime();
+          const bTime = new Date(b.album.updatedAt || b.album.createdAt || 0).getTime();
+          return sortOrder === "asc" ? aTime - bTime : bTime - aTime;
+        });
 
         if (!isMounted) return;
         setItems(withTracks);
@@ -93,7 +128,7 @@ export default function ProfileAlbumsSection({
     return () => {
       isMounted = false;
     };
-  }, [isMeView, username]);
+  }, [isMeView, meUsername, username]);
 
   const content = useMemo(() => {
     if (loading) return <p data-testid="profile-albums-loading" className="py-10 text-sm text-zinc-400">Loading albums...</p>;
@@ -161,5 +196,10 @@ export default function ProfileAlbumsSection({
     );
   }, [error, items, loading, meDisplayName, meUsername, username]);
 
-  return <div data-testid="profile-albums-section" className={className}>{content}</div>;
+  return (
+    <div data-testid="profile-albums-section" className={className}>
+      {heading ? <h2 className="text-white text-2xl font-bold">{heading}</h2> : null}
+      {content}
+    </div>
+  );
 }
