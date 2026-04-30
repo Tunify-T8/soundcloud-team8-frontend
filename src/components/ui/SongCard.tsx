@@ -207,6 +207,7 @@ export default function SongCard({
   const [repostsCount, setRepostsCount] = useState(Number(reposts) || 0);
   const [isLikePending, setIsLikePending] = useState(false);
   const [isRepostPending, setIsRepostPending] = useState(false);
+  const likeMutationVersionRef = useRef(0);
 
   useEffect(() => {
     setIsLiked(isLikedInitial);
@@ -218,10 +219,11 @@ export default function SongCard({
   useEffect(() => {
     if (!trackId) return;
     let mounted = true;
+    const fetchMutationVersion = likeMutationVersionRef.current;
     engagementService
       .getEngagement(trackId)
       .then((data) => {
-        if (!mounted) return;
+        if (!mounted || likeMutationVersionRef.current !== fetchMutationVersion) return;
         setIsLiked(Boolean(data.isLiked));
         setIsReposted(Boolean(data.isReposted));
         if (Number.isFinite(data.likesCount)) {
@@ -272,6 +274,7 @@ export default function SongCard({
 
   const handleLikeToggle = async () => {
     if (!trackId || isLikePending) return;
+    const mutationVersion = ++likeMutationVersionRef.current;
     const wasLiked = isLiked;
     const nextIsLiked = !wasLiked;
     const nextLikesCount = Math.max(0, likesCount + (wasLiked ? -1 : 1));
@@ -290,15 +293,19 @@ export default function SongCard({
         await engagementService.likeTrack(trackId);
       }
     } catch {
-      setIsLiked(wasLiked);
-      setLikesCount(likesCount);
-      notifyTrackLikeChanged({
-        trackId,
-        isLiked: wasLiked,
-        likesCount,
-      });
+      if (likeMutationVersionRef.current === mutationVersion) {
+        setIsLiked(wasLiked);
+        setLikesCount(likesCount);
+        notifyTrackLikeChanged({
+          trackId,
+          isLiked: wasLiked,
+          likesCount,
+        });
+      }
     } finally {
-      setIsLikePending(false);
+      if (likeMutationVersionRef.current === mutationVersion) {
+        setIsLikePending(false);
+      }
     }
   };
 

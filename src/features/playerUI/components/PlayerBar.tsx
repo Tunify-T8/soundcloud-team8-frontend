@@ -93,7 +93,7 @@ export default function PlayerBar() {
   const isPlaying   = status === "playing";
   const uiIsPlaying = contextIsPlaying || isPlaying;
 
-  const { isLiked, toggleLike, loading: likeLoading } = useEngagement(trackId);
+  const { isLiked, toggleLike } = useEngagement(trackId);
   const artistId = bundle?.artist.id ?? null;
   const [isFollowingArtist, setIsFollowingArtist] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
@@ -450,7 +450,14 @@ export default function PlayerBar() {
             >
               {trackArtist}
             </a>
-            <span data-testid="player-track-title"  className="text-xs font-bold text-white leading-none mt-0.5">{trackTitle}</span>
+            <a
+              href={trackLink}
+              data-testid="player-track-title"
+              className="mt-0.5 text-xs font-bold leading-none text-white transition-colors hover:text-zinc-300"
+              onClick={(event) => navigateWithinApp(event, trackLink)}
+            >
+              {trackTitle}
+            </a>
           </div>
         </div>
 
@@ -462,7 +469,7 @@ export default function PlayerBar() {
             fill={isLiked ? "#FF5500" : "none"}
             className="cursor-pointer hover:opacity-80"
             style={{ color: isLiked ? "#FF5500" : "#71717a" }}
-            onClick={() => { if (trackId && !likeLoading) toggleLike(); }}
+            onClick={() => { if (trackId) toggleLike(); }}
           />
           <UserPlus2
             data-testid="player-follow-button"

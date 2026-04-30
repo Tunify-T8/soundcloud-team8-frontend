@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { engagementService } from '../services/engagementService';
 import type { EngagementState } from '../types';
 import {
@@ -13,15 +13,23 @@ import {
      isLiked: false,
      isReposted: false,
    });
-  const [loading, setLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(true);
+  const [isPending, setIsPending] = useState(false);
+  const mutationVersionRef = useRef(0);
 
   useEffect(() => {
-    if (!trackId) return;
-    setLoading(true);
+    if (!trackId) {
+      setIsFetching(false);
+      return;
+    }
+    setIsFetching(true);
+    const fetchMutationVersion = mutationVersionRef.current;
+    let active = true;
 
     engagementService
       .getEngagement(trackId)
       .then((data) => {
+        if (!active || mutationVersionRef.current !== fetchMutationVersion) return;
         setState({
           counts: {
             likes: data.likesCount,
@@ -37,8 +45,12 @@ import {
         console.error('Failed to fetch engagement:', error);
       })
       .finally(() => {
-        setLoading(false);
+        if (!active) return;
+        setIsFetching(false);
       });
+    return () => {
+      active = false;
+    };
   }, [trackId]);
 
   useEffect(() => {
@@ -68,28 +80,44 @@ import {
   }, [trackId]);
 
   const toggleLike = async () => {
+    if (!trackId || isPending) return;
+
+    const mutationVersion = ++mutationVersionRef.current;
+    const previousState = state;
+    const nextIsLiked = !previousState.isLiked;
+    const nextLikes = Math.max(
+      0,
+      previousState.counts.likes + (previousState.isLiked ? -1 : 1),
+    );
+
+    setIsPending(true);
+    setState((prev) => ({
+      ...prev,
+      counts: { ...prev.counts, likes: nextLikes },
+      isLiked: nextIsLiked,
+    }));
+    notifyTrackLikeChanged({ trackId, isLiked: nextIsLiked, likesCount: nextLikes });
+
     try {
-      if (state.isLiked) {
+      if (previousState.isLiked) {
         await engagementService.unlikeTrack(trackId);
-        const nextLikes = Math.max(0, state.counts.likes - 1);
-        setState((prev) => ({
-          ...prev,
-          counts: { ...prev.counts, likes: nextLikes },
-          isLiked: false,
-        }));
-        notifyTrackLikeChanged({ trackId, isLiked: false, likesCount: nextLikes });
       } else {
         await engagementService.likeTrack(trackId);
-        const nextLikes = state.counts.likes + 1;
-        setState((prev) => ({
-          ...prev,
-          counts: { ...prev.counts, likes: nextLikes },
-          isLiked: true,
-        }));
-        notifyTrackLikeChanged({ trackId, isLiked: true, likesCount: nextLikes });
       }
     } catch (error) {
       console.error('Failed to toggle like:', error);
+      if (mutationVersionRef.current === mutationVersion) {
+        setState(previousState);
+        notifyTrackLikeChanged({
+          trackId,
+          isLiked: previousState.isLiked,
+          likesCount: previousState.counts.likes,
+        });
+      }
+    } finally {
+      if (mutationVersionRef.current === mutationVersion) {
+        setIsPending(false);
+      }
     }
   };
 
@@ -117,7 +145,7 @@ import {
 
   return {
     ...state,
-    loading,
+    loading: isFetching || isPending,
     toggleLike,
     toggleRepost,
   };
