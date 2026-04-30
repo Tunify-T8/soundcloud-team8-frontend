@@ -99,8 +99,8 @@
 }
 
 body {
-  background: var(--sc-bg);
-  color: var(--sc-text);
+  margin: 0;
+  background: #0b0b0b;
 }
 
 #root {

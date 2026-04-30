@@ -1,6 +1,13 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import PrivacyTab from "../tabs/PrivacyTab";
+import { profileService } from "../../profile/profileService";
+
+vi.mock("../../profile/profileService", () => ({
+  profileService: {
+    getBlockedUsers: vi.fn(),
+  },
+}));
 
 const toggleIds = [
   "privacy-toggle-receive-messages",
@@ -10,6 +17,13 @@ const toggleIds = [
 ];
 
 describe("PrivacyTab", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(profileService.getBlockedUsers).mockImplementation(
+      () => new Promise(() => undefined),
+    );
+  });
+
   it("renders all toggles in ON state by default", () => {
     render(<PrivacyTab />);
 
@@ -35,5 +49,26 @@ describe("PrivacyTab", () => {
     fireEvent.click(toggle);
 
     expect(toggle).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("maps blocked users in blocked users section", async () => {
+    vi.mocked(profileService.getBlockedUsers).mockResolvedValueOnce({
+      page: 1,
+      limit: 20,
+      total: 1,
+      blockedUsers: [
+        {
+          id: "blocked-user-1",
+          username: "blocked_user",
+          avatarUrl: "https://example.com/avatar.png",
+          blockedAt: "2026-04-29T00:00:00.000Z",
+        },
+      ],
+    });
+
+    render(<PrivacyTab />);
+
+    expect(await screen.findByTestId("settings-blocked-users-list")).toBeInTheDocument();
+    expect(screen.getByText("blocked_user")).toBeInTheDocument();
   });
 });

@@ -218,9 +218,12 @@ export default function UserInfoBar({
       : `${window.location.origin}/${encodeURIComponent(sharePathTarget || "me")}`;
 
   return (
-    <div data-testid="profile-user-info-bar" className="item-center flex justify-center w-full">
-      <div className="relative mt-8 flex w-10/12 flex-col gap-3 sm:mt-5 sm:gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
-        <div data-testid="profile-user-info-tabs" className="hide-scrollbar flex w-full flex-row gap-3 overflow-x-auto whitespace-nowrap pr-1 cursor-pointer sm:gap-4 lg:w-auto lg:flex-1">
+    <div data-testid="profile-user-info-bar" className="w-full">
+      <div className="relative mt-8 flex w-full flex-col gap-3 sm:mt-5 sm:gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
+        <div
+          data-testid="profile-user-info-tabs"
+          className="hide-scrollbar flex w-full flex-row gap-3 overflow-x-auto whitespace-nowrap pr-1 cursor-pointer sm:gap-4 lg:min-w-0 lg:flex-1 lg:pr-4"
+        >
           {tabs.map(({ label, path }) => (
             <NavLink key={label} to={path} end={path === "."}>
               {({ isActive }) => (
@@ -229,7 +232,7 @@ export default function UserInfoBar({
             </NavLink>
           ))}
         </div>
-        <div className="hide-scrollbar mt-1 flex w-full items-center justify-start gap-2 overflow-x-auto pb-1 pr-1 sm:flex-wrap sm:overflow-visible sm:pb-0 sm:pr-0 sm:gap-2.5">
+        <div className="hide-scrollbar mt-1 flex w-full items-center justify-start gap-2 overflow-x-auto pb-1 pr-1 sm:flex-wrap sm:overflow-visible sm:pb-0 sm:pr-0 sm:gap-2.5 lg:mt-0 lg:w-auto lg:flex-none lg:flex-nowrap lg:justify-end">
           {!isMe && (
             <button
               data-testid="profile-station-btn"

@@ -156,7 +156,7 @@ export default function NotificationsTab() {
         onToggle={toggleSoundCloudUpdate}
       />
       <div className="flex max-w-[830px] justify-end gap-8" data-testid="notifications-actions">
-        <button type="button" data-testid="notifications-cancel-button" className="font-black text-[var(--sc-text)]">
+        <button type="button" data-testid="notifications-cancel-button" className="font-black text-white">
           Cancel
         </button>
         <button type="button" data-testid="notifications-save-button" className="rounded-sm bg-zinc-400 px-5 py-3 text-[13px] font-black text-black">

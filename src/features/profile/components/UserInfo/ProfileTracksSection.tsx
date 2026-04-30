@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
 import SongCard from "@/components/ui/SongCard";
 import { profileService } from "@/features/profile/profileService";
-import { useMe } from "@/features/profile/context/useMe";
 import type { UserTrack } from "@/shared/types/User";
 
 function formatTimeAgo(dateStr: string): string {
@@ -25,11 +23,21 @@ function waveformSeedFromId(id: string): number {
   return id.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
 }
 
-export default function PopularTracksPage() {
-  const { username } = useParams<{ username: string }>();
-  const { me } = useMe();
-  const isMeView = !username || username === me?.username;
+interface ProfileTracksSectionProps {
+  username?: string;
+  isMeView: boolean;
+  meDisplayName?: string | null;
+  meUsername?: string;
+  className?: string;
+}
 
+export default function ProfileTracksSection({
+  username,
+  isMeView,
+  meDisplayName,
+  meUsername,
+  className = "",
+}: ProfileTracksSectionProps) {
   const [tracks, setTracks] = useState<UserTrack[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,20 +49,22 @@ export default function PopularTracksPage() {
       setLoading(true);
       setError(null);
       try {
-        const tracksRes = isMeView
-          ? await profileService.getMePopularTracks(1, 20)
-          : await profileService.getUserTracks(username || "", 1, 20);
+        if (isMeView) {
+          const tracksRes = await profileService.getMeTracks(1, 20);
+          if (!isMounted) return;
+          setTracks(tracksRes?.tracks ?? []);
+          return;
+        }
 
+        const tracksRes = await profileService.getUserTracks(username || "", 1, 20);
         if (!isMounted) return;
         setTracks(tracksRes?.tracks ?? []);
       } catch {
         if (!isMounted) return;
         setTracks([]);
-        setError("Could not load popular tracks.");
+        setError("Could not load tracks.");
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        if (isMounted) setLoading(false);
       }
     };
 
@@ -65,21 +75,21 @@ export default function PopularTracksPage() {
   }, [isMeView, username]);
 
   const content = useMemo(() => {
-    if (loading) return <p data-testid="popular-tracks-loading" className="py-10 text-sm text-zinc-400">Loading popular tracks...</p>;
-    if (error) return <p data-testid="popular-tracks-error" className="py-10 text-sm text-red-400">{error}</p>;
-    if (tracks.length === 0) return <p data-testid="popular-tracks-empty" className="py-10 text-sm text-zinc-400">No popular tracks yet.</p>;
+    if (loading) return <p data-testid="profile-tracks-loading" className="py-10 text-sm text-zinc-400">Loading tracks...</p>;
+    if (error) return <p data-testid="profile-tracks-error" className="py-10 text-sm text-red-400">{error}</p>;
+    if (tracks.length === 0) return <p data-testid="profile-tracks-empty" className="py-10 text-sm text-zinc-400">No tracks yet.</p>;
 
     return (
-      <div data-testid="popular-tracks-list" className="mt-8 space-y-8">
+      <div data-testid="profile-tracks-list" className="mt-8 space-y-8">
         {tracks.map((track) => (
-          <div key={track.id} data-testid={`popular-track-item-${track.id}`}>
+          <div key={track.id} data-testid={`profile-track-item-${track.id}`}>
             <SongCard
               trackId={track.id}
               artistName={
                 track.artist?.displayName ||
                 track.artist?.username ||
-                me?.displayName ||
-                me?.username ||
+                meDisplayName ||
+                meUsername ||
                 "Artist"
               }
               title={track.title}
@@ -97,11 +107,7 @@ export default function PopularTracksPage() {
         ))}
       </div>
     );
-  }, [error, loading, me?.displayName, me?.username, tracks]);
+  }, [error, loading, meDisplayName, meUsername, tracks]);
 
-  return (
-    <div data-testid="popular-tracks-page" className="w-full min-h-screen bg-[#0b0b0b] text-white">
-      <div className="w-full">{content}</div>
-    </div>
-  );
+  return <div data-testid="profile-tracks-section" className={className}>{content}</div>;
 }

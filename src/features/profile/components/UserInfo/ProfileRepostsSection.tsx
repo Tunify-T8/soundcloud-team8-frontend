@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
 import SongCard from "@/components/ui/SongCard";
 import { profileService } from "@/features/profile/profileService";
-import { useMe } from "@/features/profile/context/useMe";
 import type { RepostItemDto } from "@/shared/types/User";
 
 function formatTimeAgo(dateStr: string): string {
@@ -25,11 +23,19 @@ function waveformSeedFromId(id: string): number {
   return id.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
 }
 
-export default function RepostsPage() {
-  const { username } = useParams<{ username: string }>();
-  const { me } = useMe();
-  const isMeView = !username || username === me?.username;
+interface ProfileRepostsSectionProps {
+  isMeView: boolean;
+  meDisplayName?: string | null;
+  meUsername?: string;
+  className?: string;
+}
 
+export default function ProfileRepostsSection({
+  isMeView,
+  meDisplayName,
+  meUsername,
+  className = "",
+}: ProfileRepostsSectionProps) {
   const [reposts, setReposts] = useState<RepostItemDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,9 +61,7 @@ export default function RepostsPage() {
         setReposts([]);
         setError("Could not load reposts.");
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        if (isMounted) setLoading(false);
       }
     };
 
@@ -79,7 +83,7 @@ export default function RepostsPage() {
           <div key={item.repostId} data-testid={`profile-repost-item-${item.repostId}`}>
             <SongCard
               trackId={item.track.id}
-              artistName={me?.displayName || me?.username || "Artist"}
+              artistName={meDisplayName || meUsername || "Artist"}
               title={item.track.title}
               coverUrl={item.track.coverUrl ?? undefined}
               timeAgo={formatTimeAgo(item.repostedAt)}
@@ -93,11 +97,7 @@ export default function RepostsPage() {
         ))}
       </div>
     );
-  }, [error, isMeView, loading, me?.displayName, me?.username, reposts]);
+  }, [error, isMeView, loading, meDisplayName, meUsername, reposts]);
 
-  return (
-    <div data-testid="profile-reposts-page" className="w-full min-h-screen bg-[#0b0b0b] text-white">
-      <div className="w-full">{content}</div>
-    </div>
-  );
+  return <div data-testid="profile-reposts-section" className={className}>{content}</div>;
 }

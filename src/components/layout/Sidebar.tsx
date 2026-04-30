@@ -167,7 +167,7 @@ export default function SideBar() {
             className="mb-6 flex cursor-pointer items-center justify-between border-b border-zinc-800 pb-5"
           >
             <span className="text-[18px] font-bold tracking-tight text-white">
-              YOU NOW HAVE ACCESS TO ARTIST TOOLS
+              {canAccessBasicArtistTools ? "YOU NOW HAVE ACCESS TO ARTIST TOOLS" : "ARTIST TOOLS"}
             </span>
             <IoChevronDown
               size={22}
@@ -253,12 +253,12 @@ export default function SideBar() {
                   data-testid={`suggested-artist-${artist.id}`}
                   className="flex items-center justify-between"
                 >
-                  <Link to={`/${artist.id}`} className="flex items-center gap-3">
+                  <Link to={`/${artist.id}`} className="group flex items-center gap-3">
                     <img
                       src={artist.avatarUrl || avatarFallback}
                       alt={artist.username}
                       data-testid={`suggested-artist-avatar-${artist.id}`}
-                      className="w-11 h-11 rounded-full object-cover bg-linear-to-br from-gray-700 to-gray-900"
+                      className="w-11 h-11 rounded-full object-cover bg-linear-to-br from-gray-700 to-gray-900 transition-transform duration-300 group-hover:scale-105"
                     />
                     <div>
                       <div className="font-bold text-white text-[15px] leading-tight hover:text-zinc-500">

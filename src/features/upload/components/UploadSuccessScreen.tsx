@@ -1,7 +1,8 @@
 import { SiSoundcloud } from "react-icons/si";
+import { Link } from "react-router-dom";
 import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
 
-export default function UploadSuccessScreen() {
+export default function UploadSuccessScreen({ trackId }: { trackId: string }) {
   return (
     <div className="min-h-screen bg-[#111111] text-white flex flex-col font-sans" data-testid="upload-success-page">
 
@@ -70,9 +71,14 @@ export default function UploadSuccessScreen() {
           <div className="pt-2">
             <h1 className="text-[36px] font-bold text-white mb-3" data-testid="success-heading">Saved to SoundCloud.</h1>
             <p className="text-[15px] text-[#aaa] mb-6">Congratulations! Your tracks are now on SoundCloud.</p>
-            <button className="border border-white text-white px-6 py-2 rounded-full text-[14px] font-semibold hover:bg-white hover:text-black transition" data-testid="view-track-btn">
+            <Link
+              to={trackId ? `/tracks/${trackId}` : "#"}
+              className="inline-flex border border-white text-white px-6 py-2 rounded-full text-[14px] font-semibold hover:bg-white hover:text-black transition"
+              data-testid="view-track-btn"
+              aria-disabled={!trackId}
+            >
               View track
-            </button>
+            </Link>
 
             <div className="mt-16">
               <h2 className="text-[28px] font-bold text-white mb-3" data-testid="distribute-heading">Distribute to more streaming services?</h2>

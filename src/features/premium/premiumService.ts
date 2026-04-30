@@ -118,6 +118,13 @@ function normalizeSubscriptionResponse(payload: unknown): Subscription {
     };
   }
 
+  const expiresAt =
+    typeof data.expiresAt === "string"
+      ? data.expiresAt
+      : typeof (data as { endedAt?: unknown }).endedAt === "string"
+        ? (data as { endedAt?: string }).endedAt
+        : "";
+
   return {
     tier: parseTier(plan),
     status,
@@ -125,7 +132,7 @@ function normalizeSubscriptionResponse(payload: unknown): Subscription {
       plan,
       status,
       startedAt: typeof data.startedAt === "string" ? data.startedAt : "",
-      expiresAt: typeof data.expiresAt === "string" ? data.expiresAt : "",
+      expiresAt: expiresAt ?? "",
       autoRenew: typeof data.autoRenew === "boolean" ? data.autoRenew : false,
       features: {
         maxUploads:

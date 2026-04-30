@@ -9,8 +9,10 @@ interface UpgradeModalProps {
   onClose: () => void;
 }
 
-function formatPrice(amount: number, currency: string) {
-  return `${currency} ${amount.toFixed(2)}`;
+function formatPrice(amount: number | undefined, currency: string | undefined, fallback: string) {
+  if (!Number.isFinite(amount)) return fallback;
+  const safeCurrency = currency && currency.trim() ? currency : fallback.split(" ")[0] || "EGP";
+  return `${safeCurrency} ${Number(amount).toFixed(2)}`;
 }
 
 export default function UpgradeModal({ onClose }: UpgradeModalProps) {
@@ -37,16 +39,32 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
   const artistPlan = plans.find((p) => p.name === "artist");
   const artistProPlan = plans.find((p) => p.name === "artist-pro");
 
-  const artistMonthly = artistPlan ? formatPrice(artistPlan.monthly_price, artistPlan.currency) : "EGP 65.00";
-  const artistYearly = artistPlan ? formatPrice(artistPlan.yearly_price, artistPlan.currency) : "EGP 479.99";
+  const artistMonthly = artistPlan
+    ? formatPrice(artistPlan.monthly_price, artistPlan.currency, "EGP 65.00")
+    : "EGP 65.00";
+  const artistYearly = artistPlan
+    ? formatPrice(artistPlan.yearly_price, artistPlan.currency, "EGP 479.99")
+    : "EGP 479.99";
   const artistYearlyMonthly = artistPlan
-    ? formatPrice(artistPlan.yearly_price / 12, artistPlan.currency)
+    ? formatPrice(
+        Number.isFinite(artistPlan.yearly_price) ? artistPlan.yearly_price / 12 : undefined,
+        artistPlan.currency,
+        "EGP 40.00",
+      )
     : "EGP 40.00";
 
-  const proMonthly = artistProPlan ? formatPrice(artistProPlan.monthly_price, artistProPlan.currency) : "EGP 164.99";
-  const proYearly = artistProPlan ? formatPrice(artistProPlan.yearly_price, artistProPlan.currency) : "EGP 1149.99";
+  const proMonthly = artistProPlan
+    ? formatPrice(artistProPlan.monthly_price, artistProPlan.currency, "EGP 164.99")
+    : "EGP 164.99";
+  const proYearly = artistProPlan
+    ? formatPrice(artistProPlan.yearly_price, artistProPlan.currency, "EGP 1149.99")
+    : "EGP 1149.99";
   const proYearlyMonthly = artistProPlan
-    ? formatPrice(artistProPlan.yearly_price / 12, artistProPlan.currency)
+    ? formatPrice(
+        Number.isFinite(artistProPlan.yearly_price) ? artistProPlan.yearly_price / 12 : undefined,
+        artistProPlan.currency,
+        "EGP 95.83",
+      )
     : "EGP 95.83";
 
   if (checkoutPlan) {

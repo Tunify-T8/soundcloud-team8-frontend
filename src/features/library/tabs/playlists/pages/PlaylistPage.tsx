@@ -32,6 +32,8 @@ const PlaylistPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [reorderError, setReorderError] = useState<string | null>(null);
+  const [isFollowingOwner, setIsFollowingOwner] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
   const {
     currentTrack,
     isPlaying,
@@ -93,6 +95,27 @@ const PlaylistPage: React.FC = () => {
     return () => clearTimeout(timeout);
   }, [reorderError]);
 
+  useEffect(() => {
+    let mounted = true;
+
+    const syncFollowStatus = async () => {
+      if (!playlist?.owner?.id || currentUser?.id === playlist.owner.id) return;
+      try {
+        const status = await profileService.getFollowStatus(playlist.owner.id);
+        if (!mounted) return;
+        setIsFollowingOwner(Boolean(status.isFollowing));
+      } catch {
+        if (!mounted) return;
+        setIsFollowingOwner(false);
+      }
+    };
+
+    void syncFollowStatus();
+    return () => {
+      mounted = false;
+    };
+  }, [playlist?.owner?.id, currentUser?.id]);
+
   const handleReorder = useCallback(
     async (newTracks: CollectionTrack[]) => {
       if (!id) return;
@@ -122,7 +145,11 @@ const PlaylistPage: React.FC = () => {
     thumbnailUrl: ct.track.coverUrl ?? undefined,
     artworkUrl: ct.track.coverUrl ?? undefined,
     duration: ct.track.durationSeconds || 0,
-  }), []);
+    recentlyPlayedTitle: playlist?.title ?? ct.track.title,
+    recentlyPlayedArtworkUrl: playlist?.coverUrl ?? ct.track.coverUrl ?? undefined,
+    recentlyPlayedEntityType: "playlist" as const,
+    recentlyPlayedLinkTo: playlist ? `/collections/${playlist.id}` : `/tracks/${ct.track.id}`,
+  }), [playlist]);
 
   const activePlaylistTrack = currentTrack
     ? tracks.find((item) => item.track.id === currentTrack.id) ?? null

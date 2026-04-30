@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Heart, UserPlus, MoreHorizontal, Repeat2, Share2, Link, ListEnd, ListPlus, Radio } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface MediaCardProps {
   id: string;
@@ -12,6 +13,8 @@ interface MediaCardProps {
   onLike?: () => void;
   onFollow?: () => void;
   onClick?: () => void;
+  linkTo?: string;
+  hoverVariant?: "play" | "dim";
 }
 
 const MENU_ITEMS = [
@@ -34,11 +37,14 @@ export default function MediaCard({
   onLike,
   onFollow,
   onClick,
+  linkTo,
+  hoverVariant = "play",
 }: MediaCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuAbove, setMenuAbove] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -60,11 +66,22 @@ export default function MediaCard({
     setMenuOpen((v) => !v);
   }
 
+  function handleCardClick() {
+    if (onClick) {
+      onClick();
+      return;
+    }
+
+    if (linkTo) {
+      navigate(linkTo);
+    }
+  }
+
   return (
     <div
       data-testid={`media-card-${id}`}
       className="cursor-pointer group relative"
-      onClick={onClick}
+      onClick={handleCardClick}
     >
       <div className="w-full aspect-square rounded-sm overflow-hidden mb-2 relative bg-[#282828] group-hover:bg-[#1a1a1a] transition-colors duration-300">
         {coverUrl && (
@@ -77,24 +94,26 @@ export default function MediaCard({
 
         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-sm" />
 
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <div
-            data-testid={`media-card-play-${id}`}
-            onClick={(e) => { e.stopPropagation(); onPlay?.(); }}
-            className="w-14 h-14 rounded-full bg-white flex items-center justify-center shadow-2xl hover:scale-105 transition-transform"
-          >
-            {isPlaying ? (
-              <svg width="18" height="18" viewBox="0 0 14 14" fill="black">
-                <rect x="1" y="1" width="4" height="12" />
-                <rect x="9" y="1" width="4" height="12" />
-              </svg>
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 14 14" fill="black">
-                <polygon points="3,1 13,7 3,13" />
-              </svg>
-            )}
+        {hoverVariant === "play" && (
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div
+              data-testid={`media-card-play-${id}`}
+              onClick={(e) => { e.stopPropagation(); onPlay?.(); }}
+              className="w-14 h-14 rounded-full bg-white flex items-center justify-center shadow-2xl hover:scale-105 transition-transform"
+            >
+              {isPlaying ? (
+                <svg width="18" height="18" viewBox="0 0 14 14" fill="black">
+                  <rect x="1" y="1" width="4" height="12" />
+                  <rect x="9" y="1" width="4" height="12" />
+                </svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 14 14" fill="black">
+                  <polygon points="3,1 13,7 3,13" />
+                </svg>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <div className="absolute bottom-8 left-0 right-0 flex items-center justify-end gap-2 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
