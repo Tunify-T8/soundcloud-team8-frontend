@@ -43,6 +43,7 @@ const PlaylistPage: React.FC = () => {
     setIsPlaying,
     requestSeek,
   } = usePlayer();
+  usePlayContext({ contextType: "playlist", contextId: playlist?.id ?? "" });
 
   const fetchData = useCallback(async () => {
     if (!id && !token && !tokenFromQuery) return;
@@ -66,14 +67,18 @@ const PlaylistPage: React.FC = () => {
 
     try {
       const accessToken = token ?? tokenFromQuery;
-      const playlistData = accessToken
-        ? await playlistService.getPlaylistByToken(accessToken)
-        : await playlistService.getPlaylistById(id as string);
+      let playlistData: Collection | null = null;
+      if (accessToken) {
+        playlistData = await playlistService.getPlaylistByToken(accessToken);
+      } else if (id) {
+        playlistData = await playlistService.getPlaylistById(id);
+        if (!playlistData && !isUuidLike(id)) {
+          // Shared/private links can arrive as /collections/:token.
+          playlistData = await playlistService.getPlaylistByToken(id);
+        }
+      }
 
       const playlistId = playlistData?.id;
-      if(playlistId){
-      usePlayContext({contextType:"playlist" , contextId : playlistId});
-    }
       const tracksData = playlistId
         ? await playlistService.getPlaylistTracks(playlistId)
         : null;
@@ -122,7 +127,8 @@ const PlaylistPage: React.FC = () => {
 
   const handleReorder = useCallback(
     async (newTracks: CollectionTrack[]) => {
-      if (!id) return;
+      const collectionId = playlist?.id;
+      if (!collectionId) return;
       const previousTracks = tracks;
       setTracks(newTracks);
       setReorderError(null);
@@ -131,7 +137,7 @@ const PlaylistPage: React.FC = () => {
       //   return;
       // }
 
-      const ok = await playlistService.reorderTracks(id, {
+      const ok = await playlistService.reorderTracks(collectionId, {
         trackIds: newTracks.map((ct) => ct.track.id),
       });
       if (!ok) {
@@ -139,7 +145,7 @@ const PlaylistPage: React.FC = () => {
         setReorderError("Couldn't save the new track order. Please try again.");
       }
     },
-    [id, tracks],
+    [playlist?.id, tracks],
   );
 
   const toPlayerTrack = useCallback((ct: CollectionTrack) => ({
@@ -202,7 +208,7 @@ const PlaylistPage: React.FC = () => {
     );
 
   const isOwner = currentUser?.id === playlist.owner.id;
-  const profileLink = `/${encodeURIComponent(playlist.owner.id)}`;
+  const profileLink = `/${encodeURIComponent(playlist.owner.username || playlist.owner.id)}`;
   const trackCount = playlist.trackCount ?? tracks.length;
 
   const handleToggleFollow = async () => {
