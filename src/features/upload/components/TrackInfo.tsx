@@ -265,6 +265,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
   const source = useAppSelector((s) => s.audioSource.source);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadDone, setUploadDone] = useState(false);
+  const [uploadedTrackId, setUploadedTrackId] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [fileReady, setFileReady] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -430,6 +431,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
       });
 
       const { id } = track;
+      setUploadedTrackId(String(id));
       console.log("Track created:", track);
       await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -478,7 +480,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
     }
   };
 
-  if (uploadDone) return <UploadSuccessScreen />;
+  if (uploadDone) return <UploadSuccessScreen trackId={uploadedTrackId ?? ""} />;
 
   return (
     <div className="min-h-screen bg-[#0e0e0e] text-white font-sans" data-testid="track-info-page">
