@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useConversationSummary } from "../hooks/useConversationSummary";
 import ConversationListItem from "./ConversationListItem";
 import NewMessageDialog from "./NewMessageDialog";
 import type { ConversationSummary } from "../types";
@@ -7,42 +6,35 @@ import type { ConversationSummary } from "../types";
 interface ConversationListPanelProps {
   selectedConversationId: string | null;
   onSelectConversation: (conversation: ConversationSummary) => void;
+  onConversationCreated?: (conversationId: string) => void;
+  conversations: ConversationSummary[];
+  isLoading: boolean;
+  error: string | null;
 }
 
 function formatTime(isoTimestamp: string): string {
   const messageDate = new Date(isoTimestamp);
-
-  if (Number.isNaN(messageDate.getTime())) {
-    return "";
-  }
+  if (Number.isNaN(messageDate.getTime())) return "";
 
   const elapsedMilliseconds = Date.now() - messageDate.getTime();
-  const elapsedMinutes = Math.max(1, Math.floor(elapsedMilliseconds / 60000));
+  const minutes = Math.max(1, Math.floor(elapsedMilliseconds / 60000));
 
-  if (elapsedMinutes < 60) {
-    return `${elapsedMinutes} minutes ago`;
-  }
-
-  const elapsedHours = Math.floor(elapsedMinutes / 60);
-  if (elapsedHours < 24) {
-    return `${elapsedHours} hours ago`;
-  }
-
+  if (minutes < 60) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
+  const elapsedHours = Math.floor(minutes / 60);
+  if (elapsedHours < 24) return `${elapsedHours} hour${elapsedHours > 1 ? "s" : ""} ago`;
   const elapsedDays = Math.floor(elapsedHours / 24);
-  return `${elapsedDays} days ago`;
+  return `${elapsedDays} day${elapsedDays > 1 ? "s" : ""} ago`;
 }
 
 export default function ConversationListPanel({
   selectedConversationId,
   onSelectConversation,
+  onConversationCreated,
+  conversations,
+  isLoading,
+  error,
 }: ConversationListPanelProps) {
   const [isNewMessageDialogOpen, setIsNewMessageDialogOpen] = useState(false);
-
-  const {
-    conversations: conversationList,
-    isLoading: isLoadingConversations,
-    error: conversationsError,
-  } = useConversationSummary();
 
   return (
     <section className="w-96 shrink-0 rounded-md border border-zinc-800 bg-zinc-950 p-4 overflow-y-auto">
@@ -60,37 +52,36 @@ export default function ConversationListPanel({
       <NewMessageDialog
         isOpen={isNewMessageDialogOpen}
         onClose={() => setIsNewMessageDialogOpen(false)}
+        onConversationCreated={onConversationCreated}
       />
 
       <div className="mt-4 flex flex-col gap-2">
-        {isLoadingConversations ? <p className="text-sm text-zinc-400">Loading conversations...</p> : null}
-
-        {conversationsError ? <p className="text-sm text-red-400">{conversationsError}</p> : null}
-
-        {!isLoadingConversations && !conversationsError && conversationList.length === 0 ? (
+        {isLoading && <p className="text-sm text-zinc-400">Loading conversations...</p>}
+        {error && <p className="text-sm text-red-400">{error}</p>}
+        {!isLoading && !error && conversations.length === 0 && (
           <p className="text-sm text-zinc-400">No conversations yet.</p>
-        ) : null}
-
-        {!isLoadingConversations && !conversationsError
-          ? conversationList.map((conversation) => (
-              <div
-                key={conversation.conversationId}
-                className={`rounded-md p-2 cursor-pointer transition ${
-                  selectedConversationId === conversation.conversationId
-                    ? "bg-zinc-800"
-                    : "hover:bg-zinc-900"
-                }`}
-                onClick={() => onSelectConversation(conversation)}
-              >
-                <ConversationListItem
-                  name={conversation.otherUser.displayName}
-                  preview={conversation.lastMessagePreview}
-                  timeLabel={formatTime(conversation.lastMessageAt)}
-                  unreadCount={conversation.unreadCount}
-                />
-              </div>
-            ))
-          : null}
+        )}
+        {!isLoading &&
+          !error &&
+          conversations.map((conversation) => (
+            <div
+              key={conversation.conversationId}
+              className={`rounded-md p-2 cursor-pointer transition ${
+                selectedConversationId === conversation.conversationId
+                  ? "bg-zinc-800"
+                  : "hover:bg-zinc-900"
+              }`}
+              onClick={() => onSelectConversation(conversation)}
+            >
+              <ConversationListItem
+                name={conversation.otherUser.displayName}
+                preview={conversation.lastMessagePreview ?? ""}
+                timeLabel={formatTime(conversation.lastMessageAt ?? "")}
+                unreadCount={conversation.unreadCount}
+                avatarUrl={conversation.otherUser.avatarUrl}
+              />
+            </div>
+          ))}
       </div>
     </section>
   );

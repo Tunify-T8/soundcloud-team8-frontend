@@ -94,6 +94,7 @@ interface PlayerProps {
     playsCount?: number;
     avatarUrl?: string | null;
   }>;
+  profileTrackTextStyle?: "default" | "titleWhiteArtistGray";
 }
 
 export default function SongCard({
@@ -121,6 +122,7 @@ export default function SongCard({
   contextTag,
   offlineSrc,
   playlistTracks = [],
+  profileTrackTextStyle = "default",
 }: PlayerProps) {
   const {
     currentTrack,
@@ -482,9 +484,25 @@ export default function SongCard({
                 />
                 <span className="text-zinc-400">{collectionTrack.number} ·</span>
                 <span className="truncate">
-                  <span className="font-semibold text-white">{collectionTrack.artist}</span>
+                  <span
+                    className={
+                      profileTrackTextStyle === "titleWhiteArtistGray"
+                        ? "font-semibold text-zinc-400"
+                        : "font-semibold text-white"
+                    }
+                  >
+                    {collectionTrack.artist}
+                  </span>
                   {" · "}
-                  <span>{collectionTrack.title}</span>
+                  <span
+                    className={
+                      profileTrackTextStyle === "titleWhiteArtistGray"
+                        ? "text-white"
+                        : ""
+                    }
+                  >
+                    {collectionTrack.title}
+                  </span>
                 </span>
               </div>
             ))}

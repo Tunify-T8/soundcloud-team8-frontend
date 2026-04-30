@@ -30,6 +30,8 @@ import benefitsImg from "@/assets/benefits.png";
 import fansHoverImg from "@/assets/top_fans_hover.png";
 import benefitsHoverImg from "@/assets/benefits_hover.png";
 
+import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
+
 export function UploadBanner() {
   const [quota, setQuota] = useState<
     | {
