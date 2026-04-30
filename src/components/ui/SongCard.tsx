@@ -520,7 +520,7 @@ export default function SongCard({
               }`}
               aria-label={`Like (${likesCount})`}
             >
-              <Heart size={16} fill={isLiked ? "#ff5500" : "none"} style={{ color: isLiked ? "#ff5500" : "#fff" }} />
+              <Heart size={16} fill={isLiked ? "#ff5500" : "none"} style={{ color: isLiked ? "#ff5500" : "currentColor" }} />
               {!isCollectionCard ? <span>{likesCount}</span> : null}
             </button>
             {!isCollectionCard ? (
@@ -533,7 +533,7 @@ export default function SongCard({
                   isReposted ? "text-[#ff5500]" : "text-zinc-100"
                 }`}
               >
-                <Repeat2 size={16} style={{ color: isReposted ? "#ff5500" : "#fff" }} />
+                <Repeat2 size={16} style={{ color: isReposted ? "#ff5500" : "currentColor" }} />
                 <span>{repostsCount}</span>
               </button>
             ) : null}
