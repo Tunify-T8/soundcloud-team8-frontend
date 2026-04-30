@@ -10,7 +10,9 @@ import { useDispatch } from "react-redux";
 import { useAppSelector } from "../../../app/hooks";
 import { profileService } from "@/features/profile/profileService";
 import albumTemplate from "@/assets/album.png";
+import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
 import CheckoutModal from "@/features/premium/components/CheckoutModal";
+import { usePlayer } from "@/features/playerUI/context/usePlayer";
 
 function Toggle({ enabled, onChange }: ToggleProps) {
   return (
@@ -217,10 +219,8 @@ function GenreInput({ genreRef }: { genreRef: React.RefObject<HTMLInputElement |
 // ─── Upload Limit Reached Banner (inline, shown after 403) ───────────────────
 function UploadLimitBanner({
   minutesRemaining,
-  onUpgrade,
 }: {
   minutesRemaining: number;
-  onUpgrade: () => void;
 }) {
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-6">
@@ -239,12 +239,11 @@ function UploadLimitBanner({
             {minutesRemaining} minute{minutesRemaining !== 1 ? "s" : ""} remaining — but this track exceeds that.
           </p>
         )}
-        <button
-          onClick={onUpgrade}
+        <ArtistProUpgradeButton
           className="w-full bg-white text-black font-bold py-3 rounded-full text-sm hover:bg-[#eee] transition mb-3"
         >
           Unlock with Artist Pro
-        </button>
+        </ArtistProUpgradeButton>
         <p className="text-[#555] text-xs">Upgrade for unlimited uploads, distribution & more.</p>
       </div>
     </div>
@@ -261,10 +260,12 @@ type UserProfile = {
 }
 
 export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
+  const { currentTrack } = usePlayer();
   const dispatch = useDispatch();
   const source = useAppSelector((s) => s.audioSource.source);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadDone, setUploadDone] = useState(false);
+  const [uploadedTrackId, setUploadedTrackId] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [fileReady, setFileReady] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -272,8 +273,6 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
   // Limit-reached state
   const [limitReached, setLimitReached] = useState(false);
   const [limitMinutesRemaining, setLimitMinutesRemaining] = useState(0);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
-
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [trackSlug, setTrackSlug] = useState("");
 
@@ -432,6 +431,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
       });
 
       const { id } = track;
+      setUploadedTrackId(String(id));
       console.log("Track created:", track);
       await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -480,7 +480,7 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
     }
   };
 
-  if (uploadDone) return <UploadSuccessScreen />;
+  if (uploadDone) return <UploadSuccessScreen trackId={uploadedTrackId ?? ""} />;
 
   return (
     <div className="min-h-screen bg-[#0e0e0e] text-white font-sans" data-testid="track-info-page">
@@ -489,10 +489,8 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
       {limitReached && (
         <UploadLimitBanner
           minutesRemaining={limitMinutesRemaining}
-          onUpgrade={() => setCheckoutOpen(true)}
         />
       )}
-      {checkoutOpen && <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />}
 
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-3 border-b border-[#1a1a1a]" data-testid="track-info-header">
@@ -925,7 +923,12 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
       </div>
 
       {/* Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 border-t border-[#1a1a1a] bg-[#0e0e0e] px-10 py-3 flex items-center" data-testid="track-info-bottom-bar">
+      <div
+        className={`fixed left-0 right-0 border-t border-[#1a1a1a] bg-[#0e0e0e] px-10 py-3 flex items-center transition-all ${
+          currentTrack ? "bottom-12" : "bottom-0"
+        }`}
+        data-testid="track-info-bottom-bar"
+      >
         <p className="text-xs text-[#555] flex-1 text-center">
           By uploading, you confirm that your sounds comply with our{" "}
           <span className="underline cursor-pointer hover:text-[#888] transition">Terms of Use</span>{" "}
@@ -946,3 +949,4 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
     </div>
   );
 }
+

@@ -32,14 +32,17 @@ export interface GetSuggestedArtistsParams {
 interface SuggestedArtistItem {
   id: string;
   username: string;
-  displayName: string | null;
   avatarUrl: string | null;
   followersCount: number;
-  isCertified?: boolean;
+  isCertified: boolean;
 }
 
 interface SuggestedArtistsResponse {
-  items?: SuggestedArtistItem[];
+  data?: SuggestedArtistItem[];
+  page?: number;
+  limit?: number;
+  total?: number;
+  hasMore?: boolean;
 }
 
 const mapTrendingItemToDiscoverTrack = (item: TrendingItem): DiscoverTrack => ({
@@ -55,7 +58,7 @@ const mapTrendingItemToDiscoverTrack = (item: TrendingItem): DiscoverTrack => ({
 
 const mapSuggestedArtist = (item: SuggestedArtistItem): DiscoverArtist => ({
   id: item.id,
-  name: item.displayName ?? item.username,
+  name: item.username,
   avatarUrl: item.avatarUrl ?? "",
   followersCount: item.followersCount ?? 0,
   isVerified: Boolean(item.isCertified),
@@ -109,18 +112,18 @@ export const getSuggestedArtists = async (
   const { page = 1, limit = 10 } = params;
 
   const response = await api.get<SuggestedArtistsResponse>(
-    "/feed/suggested-artists",
+    "/users/me/suggested/artists",
     {
       params: { page, limit },
     },
   );
 
-  const items = (response.data.items ?? []).map(mapSuggestedArtist);
+  const items = (response.data.data ?? []).map(mapSuggestedArtist);
 
   return {
     items,
-    page,
-    limit,
-    hasMore: false,
+    page: response.data.page ?? page,
+    limit: response.data.limit ?? limit,
+    hasMore: Boolean(response.data.hasMore),
   };
 };

@@ -9,10 +9,15 @@ import { useEffect, useState } from "react";
 import { followingService } from "../../../following/followingService";
 import { notifySocialGraphUpdated } from "../../socialGraphEvents";
 
-function ShareOverlay({ onClose }: { onClose: () => void }) {
+function ShareOverlay({
+  onClose,
+  shareUrl,
+}: {
+  onClose: () => void;
+  shareUrl: string;
+}) {
   const [activeTab, setActiveTab] = useState<"share" | "message">("share");
   const [shortenLink, setShortenLink] = useState(false);
-  const url = typeof window !== "undefined" ? window.location.href : "";
 
   return (
     <div
@@ -60,7 +65,7 @@ function ShareOverlay({ onClose }: { onClose: () => void }) {
             <div className="mb-3 rounded-[3px] bg-[#242424] px-4 py-3">
               <input
                 readOnly
-                value={url}
+                value={shareUrl}
                 className="w-full bg-transparent text-[14px] font-semibold text-zinc-100 outline-none sm:text-[15px]"
               />
             </div>
@@ -87,6 +92,7 @@ function ShareOverlay({ onClose }: { onClose: () => void }) {
 
 export default function UserInfoBar({
   displayName,
+  username,
   avatarUrl,
   country,
   city,
@@ -101,6 +107,7 @@ export default function UserInfoBar({
   onFollowersChange,
 }: {
   displayName?: string;
+  username?: string;
   avatarUrl?: string;
   country?: string;
   city?: string;
@@ -203,10 +210,20 @@ export default function UserInfoBar({
     setModal(!modal);
   };
 
+  const menuTargetName = (username?.trim() || displayName?.trim() || "user");
+  const sharePathTarget = userId?.trim() || username?.trim() || "";
+  const shareUrl =
+    typeof window === "undefined"
+      ? ""
+      : `${window.location.origin}/${encodeURIComponent(sharePathTarget || "me")}`;
+
   return (
-    <div className="item-center flex justify-center w-full">
-      <div className="relative mt-8 flex w-10/12 flex-col gap-3 sm:mt-5 sm:gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
-        <div className="hide-scrollbar flex w-full flex-row gap-3 overflow-x-auto whitespace-nowrap pr-1 cursor-pointer sm:gap-4 lg:w-auto lg:flex-1">
+    <div data-testid="profile-user-info-bar" className="w-full">
+      <div className="relative mt-8 flex w-full flex-col gap-3 sm:mt-5 sm:gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
+        <div
+          data-testid="profile-user-info-tabs"
+          className="hide-scrollbar flex w-full flex-row gap-3 overflow-x-auto whitespace-nowrap pr-1 cursor-pointer sm:gap-4 lg:min-w-0 lg:flex-1 lg:pr-4"
+        >
           {tabs.map(({ label, path }) => (
             <NavLink key={label} to={path} end={path === "."}>
               {({ isActive }) => (
@@ -215,12 +232,13 @@ export default function UserInfoBar({
             </NavLink>
           ))}
         </div>
-        <div className="mt-1 flex w-full flex-wrap items-center justify-start lg:ml-auto lg:mt-0 lg:w-auto lg:flex-nowrap lg:justify-end">
+        <div className="hide-scrollbar mt-1 flex w-full items-center justify-start gap-2 overflow-x-auto pb-1 pr-1 sm:flex-wrap sm:overflow-visible sm:pb-0 sm:pr-0 sm:gap-2.5 lg:mt-0 lg:w-auto lg:flex-none lg:flex-nowrap lg:justify-end">
           {!isMe && (
             <button
+              data-testid="profile-station-btn"
               type="button"
               title="Station"
-              className="inline-flex items-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
             >
               <MdPodcasts />
               <span>Station</span>
@@ -228,11 +246,12 @@ export default function UserInfoBar({
           )}
           {!isMe && (
             <button
+              data-testid="profile-follow-btn"
               type="button"
               title={isFollowing ? "Following" : "Follow"}
               onClick={handleFollowToggle}
               disabled={followLoading || !userId}
-              className="inline-flex items-center gap-1.5 rounded-sm bg-white px-2 py-1 text-[12px] font-bold text-black hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-sm bg-white px-2 py-1 text-[12px] font-bold text-black hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
             >
               <FaUser />
               <span>{isFollowing ? "Following" : "Follow"}</span>
@@ -240,10 +259,11 @@ export default function UserInfoBar({
           )}
           {isMe && (
             <button
+              data-testid="profile-insights-btn"
               type="button"
               title="Your Insights"
               onClick={() => navigate("/me/insights/overview")}
-              className="mr-[12px] inline-flex items-center justify-center gap-1.5 rounded-sm bg-white px-2 py-1 text-[12px] font-bold text-black hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
+              className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-sm bg-white px-2 py-1 text-[12px] font-bold text-black hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
             >
               <BarChart2 size={14} />
               <span>Your Insights</span>
@@ -251,9 +271,10 @@ export default function UserInfoBar({
           )}
           {isMe && (
             <button
+              data-testid="profile-share-btn"
               type="button"
               title="Station"
-              className="mr-[12px] inline-flex items-center justify-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
+              className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
             >
               <MdPodcasts />
               <span>Station</span>
@@ -263,7 +284,7 @@ export default function UserInfoBar({
             type="button"
             title="Share"
             onClick={() => setShowShareOverlay(true)}
-            className={`inline-flex items-center justify-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm ${isMe ? "mr-[12px]" : ""}`}
+            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
           >
             <Upload size={14} />
             <span>Share</span>
@@ -271,9 +292,10 @@ export default function UserInfoBar({
           {!isMe && (
             <div className="relative group">
               <button
+                data-testid="profile-messages-btn"
                 type="button"
                 title="Messages"
-                className="inline-flex items-center justify-center rounded-sm bg-zinc-800 px-2 py-1.5 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:px-3 sm:py-2.25 sm:text-sm"
+                className="inline-flex shrink-0 items-center justify-center rounded-sm bg-zinc-800 px-2 py-1.5 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:px-3 sm:py-2 sm:text-sm"
               >
                 <FaEnvelope />
               </button>
@@ -282,10 +304,11 @@ export default function UserInfoBar({
           <div className="relative">
             {!isMe && (
               <button
+                data-testid="profile-more-actions-btn"
                 type="button"
                 title="More"
                 onClick={() => setShowMoreActions((prev) => !prev)}
-                className={`inline-flex items-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold cursor-pointer sm:gap-2 sm:px-3 sm:py-[6.9px] sm:text-sm ${
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold cursor-pointer sm:gap-2 sm:px-3 sm:py-[6.9px] sm:text-sm ${
                   showMoreActions
                     ? "text-orange-500 hover:text-orange-400"
                     : "text-white hover:text-zinc-500"
@@ -295,8 +318,9 @@ export default function UserInfoBar({
               </button>
             )}
             {showMoreActions && (
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 flex w-max flex-col rounded-sm border border-zinc-800 bg-zinc-950 shadow-lg z-10">
+              <div className="absolute left-0 top-full z-10 mt-2 flex w-max min-w-[12rem] flex-col rounded-sm border border-zinc-800 bg-zinc-950 shadow-lg sm:left-1/2 sm:-translate-x-1/2">
                 <button
+                  data-testid="profile-block-btn"
                   type="button"
                   title="Block"
                   onClick={handleBlock}
@@ -304,25 +328,27 @@ export default function UserInfoBar({
                   className="inline-flex items-center gap-2 w-auto whitespace-nowrap text-left text-white font-bold text-[14px] px-3 py-2 hover:text-zinc-500 transition-colors cursor-pointer"
                 >
                   <FiSlash />
-                  {blockLoading ? "Blocking..." : `Block ${displayName}`}
+                  {blockLoading ? "Blocking..." : `Block ${menuTargetName}`}
                 </button>
                 <button
+                  data-testid="profile-report-btn"
                   type="button"
                   title="Report"
                   className="inline-flex items-center gap-2 w-auto whitespace-nowrap text-left text-white font-bold text-[14px] px-3 py-2 hover:text-zinc-500 transition-colors cursor-pointer"
                 >
                   <FiInfo />
-                  Report {displayName}
+                  Report {menuTargetName}
                 </button>
               </div>
             )}
           </div>
           {isMe && (
             <button
+              data-testid="profile-edit-btn"
               type="button"
               title="Edit"
               onClick={toggleModal}
-              className="inline-flex items-center justify-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
+              className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-sm bg-zinc-800 px-2 py-1 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
             >
               <FaPen />
               <span>Edit</span>
@@ -344,7 +370,13 @@ export default function UserInfoBar({
           socialAccounts={socialAccounts}
         />
       )}
-      {showShareOverlay && <ShareOverlay onClose={() => setShowShareOverlay(false)} />}
+      {showShareOverlay && (
+        <ShareOverlay
+          onClose={() => setShowShareOverlay(false)}
+          shareUrl={shareUrl}
+        />
+      )}
     </div>
   );
 }
+

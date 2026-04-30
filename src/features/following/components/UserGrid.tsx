@@ -19,11 +19,12 @@ export default function UserGrid({ users, renderAction, placeholders = 0 }: User
   return (
     <div data-testid="user-grid" className="mt-8 flex flex-wrap gap-6">
       {users.map((user) => (
-        <UserCard
-          key={user.id}
-          {...user}
-          action={renderAction?.(user)}
-        />
+        <div key={user.id} className="w-44">
+          <UserCard
+            {...user}
+            action={renderAction?.(user)}
+          />
+        </div>
       ))}
       {Array.from({ length: Math.max(0, placeholders - users.length) }).map((_, i) => (
         <div data-testid={`user-grid-placeholder-${i}`} key={i} className="h-44 w-44 rounded-full bg-zinc-800/70" />

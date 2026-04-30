@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { waveGenerators } from "@/components/Waveforms";
 import { playlistService } from "../../../libraryService";
 import type { Collection, CollectionTrack } from "../../../types";
 import trackFallback from "@/assets/track.jpg";
@@ -8,6 +9,24 @@ interface Props {
   tracks?: CollectionTrack[];
   onUpdate?: () => void;
   isMe?: boolean;
+  activeTrack?: CollectionTrack | null;
+  isPlaying?: boolean;
+  playerProgress?: number;
+  onPlayToggle?: () => void;
+  onSeek?: (ratio: number) => void;
+}
+
+function waveformSeedFromId(id: string): number {
+  return Array.from(id).reduce((seed, char, index) => {
+    return seed + char.charCodeAt(0) * (index + 1);
+  }, 0);
+}
+
+function formatTimestamp(seconds: number) {
+  const whole = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(whole / 60);
+  const remaining = whole % 60;
+  return `${minutes}:${remaining.toString().padStart(2, "0")}`;
 }
 
 function formatDuration(seconds: number) {
@@ -53,6 +72,11 @@ const PlaylistHeader: React.FC<Props> = ({
   tracks = [],
   onUpdate,
   isMe,
+  activeTrack = null,
+  isPlaying = false,
+  playerProgress = 0,
+  onPlayToggle,
+  onSeek,
 }) => {
   const fileRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -63,6 +87,11 @@ const PlaylistHeader: React.FC<Props> = ({
     (sum, item) => sum + (item.track.durationSeconds || 0),
     0,
   );
+  const waveformBars = useMemo(() => {
+    if (!activeTrack) return [];
+    const seed = waveformSeedFromId(activeTrack.track.id);
+    return waveGenerators[seed % waveGenerators.length](seed);
+  }, [activeTrack]);
 
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -145,12 +174,20 @@ const PlaylistHeader: React.FC<Props> = ({
           {/* Play button + title */}
           <div className="flex items-start gap-3">
             <button
+              onClick={onPlayToggle}
               className="mt-1 flex h-[48px] w-[48px] shrink-0 items-center justify-center rounded-full bg-[#0a0e14] text-white sm:h-[56px] sm:w-[56px]"
               aria-label="Play playlist"
             >
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M8 5v14l11-7z" />
-              </svg>
+              {isPlaying ? (
+                <svg width="28" height="28" viewBox="0 0 14 14" fill="currentColor">
+                  <rect x="1" y="1" width="4" height="12" />
+                  <rect x="9" y="1" width="4" height="12" />
+                </svg>
+              ) : (
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              )}
             </button>
             <div className="ml-2 sm:ml-6">
               <div>
@@ -165,6 +202,44 @@ const PlaylistHeader: React.FC<Props> = ({
               </div>
             </div>
           </div>
+
+          {activeTrack && waveformBars.length > 0 && (
+            <div className="w-full px-1">
+              <div
+                className="flex h-[100px] w-full cursor-pointer items-end"
+                style={{ gap: "1px" }}
+                onClick={(event) => {
+                  if (!onSeek) return;
+                  const rect = event.currentTarget.getBoundingClientRect();
+                  const ratio = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+                  onSeek(ratio);
+                }}
+              >
+                {waveformBars.map((height, index) => {
+                  const position = index / (waveformBars.length - 1);
+                  const played = isPlaying && position <= playerProgress;
+
+                  return (
+                    <div
+                      key={index}
+                      className="flex-1 rounded-[1px]"
+                      style={{
+                        minWidth: 0,
+                        maxWidth: "3px",
+                        height: `${(0.28 + height * 0.5) * 100}%`,
+                        backgroundColor: played ? "#F94C00" : "#f5f5f5",
+                        opacity: played ? 1 : 0.92,
+                      }}
+                    />
+                  );
+                })}
+              </div>
+              <div className="mt-1 flex justify-between px-0.5 text-[10px] font-mono text-zinc-200">
+                <span>{formatTimestamp((activeTrack.track.durationSeconds || 0) * playerProgress)}</span>
+                <span>{formatTimestamp(activeTrack.track.durationSeconds || 0)}</span>
+              </div>
+            </div>
+          )}
 
           {/* Track count circle */}
           <div className="mx-auto flex h-[80px] w-[80px] flex-col items-center justify-center rounded-full bg-[#0a0e14] text-white md:mx-0 md:h-[94px] md:w-[94px]">

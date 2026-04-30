@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { playlistService } from "../../libraryService";
-import type { CollectionPreview, CollectionPrivacy } from "../../types";
+import { playlistService } from "../../../libraryService";
+import type { CollectionPreview, CollectionPrivacy } from "../../../types";
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
-
 
 const COLS = 6;
 
@@ -19,7 +18,13 @@ type PlaylistGridItem = {
   isLiked: boolean;
 };
 
-function PlaylistCard({ item, forceLiked = false }: { item: PlaylistGridItem; forceLiked?: boolean }) {
+function PlaylistCard({
+  item,
+  forceLiked = false,
+}: {
+  item: PlaylistGridItem;
+  forceLiked?: boolean;
+}) {
   return (
     <Link to={`/collections/${item.id}`} className="block cursor-pointer group">
       <div className="w-full aspect-square rounded-sm overflow-hidden mb-2 relative bg-[#282828]">
@@ -41,7 +46,11 @@ function PlaylistCard({ item, forceLiked = false }: { item: PlaylistGridItem; fo
       </div>
       <p className="flex items-center gap-1 text-white text-xs font-bold truncate">
         {(item.isLiked || forceLiked) && (
-          <Heart size={10} fill="currentColor" className="shrink-0 text-gray-400" />
+          <Heart
+            size={10}
+            fill="currentColor"
+            className="shrink-0 text-gray-400"
+          />
         )}
         <span className="truncate">{item.title}</span>
       </p>
@@ -95,12 +104,18 @@ export default function PlaylistsTab() {
       setError(null);
       const res = await playlistService.getMyCollections(1, 50, "PLAYLIST");
       if (!mounted) return;
-      if (!res?.data) { setError("Failed to load playlists."); setLoading(false); return; }
+      if (!res?.data) {
+        setError("Failed to load playlists.");
+        setLoading(false);
+        return;
+      }
       setPlaylists(res.data);
       setLoading(false);
     };
     void fetch();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const filteredItems = useMemo<PlaylistGridItem[]>(() => {
@@ -126,15 +141,17 @@ export default function PlaylistsTab() {
 
   return (
     <div data-testid="playlists-tab">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-white font-bold text-sm">Hear your own playlists and the playlists you've liked:</h2>
+      <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-white font-bold text-sm">
+          Hear your own playlists and the playlists you've liked:
+        </h2>
         <div className="flex items-center gap-2">
           <input
             data-testid="playlists-filter-input"
             placeholder="Filter"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="bg-[#282828] border border-zinc-700 rounded-sm px-3 py-1.5 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 w-52"
+            className="bg-[#282828] border border-zinc-700 rounded-sm px-3 py-1.5 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 w-full sm:w-52"
           />
           <div className="relative">
             <button
@@ -154,7 +171,10 @@ export default function PlaylistsTab() {
                   <button
                     key={opt}
                     data-testid={`playlists-filter-opt-${opt.toLowerCase()}`}
-                    onClick={() => { setFilterOption(opt); setDropdownOpen(false); }}
+                    onClick={() => {
+                      setFilterOption(opt);
+                      setDropdownOpen(false);
+                    }}
                     className={`w-full text-left px-4 py-2 text-xs transition-colors ${filterOption === opt ? "text-white font-bold" : "text-zinc-400 hover:text-white hover:bg-zinc-800"}`}
                   >
                     {opt}
@@ -167,25 +187,46 @@ export default function PlaylistsTab() {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-6 gap-4" data-testid="playlists-loading">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6" data-testid="playlists-loading">
           {Array.from({ length: COLS }).map((_, i) => (
-            <div key={i} className="w-full aspect-square rounded-sm bg-[#282828] animate-pulse" />
+            <div
+              key={i}
+              className="w-full aspect-square rounded-sm bg-[#282828] animate-pulse"
+            />
           ))}
         </div>
       ) : error ? (
-        <p data-testid="playlists-error" className="text-red-400 text-sm text-center py-20">{error}</p>
+        <p
+          data-testid="playlists-error"
+          className="text-red-400 text-sm text-center py-20"
+        >
+          {error}
+        </p>
       ) : filteredItems.length === 0 ? (
-        <p data-testid="playlists-empty" className="text-white font-bold text-2xl text-center py-20">
-          {filterOption === "Liked" ? "You have not liked any playlists yet" : "You have no playlists yet"}
+        <p
+          data-testid="playlists-empty"
+          className="text-white font-bold text-2xl text-center py-20"
+        >
+          {filterOption === "Liked"
+            ? "You have not liked any playlists yet"
+            : "You have no playlists yet"}
         </p>
       ) : (
-        <div className="grid grid-cols-6 gap-4" data-testid="playlists-grid">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6" data-testid="playlists-grid">
           {Array.from({ length: totalSlots }).map((_, i) => {
             const item = filteredItems[i];
             return item ? (
-              <PlaylistCard key={item.id} item={item} forceLiked={filterOption === "Liked"} />
+              <PlaylistCard
+                key={item.id}
+                item={item}
+                forceLiked={filterOption === "Liked"}
+              />
             ) : (
-              <div key={i} data-testid={`playlist-slot-${i}`} className="w-full aspect-square rounded-sm bg-[#282828]" />
+              <div
+                key={i}
+                data-testid={`playlist-slot-${i}`}
+                className="w-full aspect-square rounded-sm bg-[#282828]"
+              />
             );
           })}
         </div>

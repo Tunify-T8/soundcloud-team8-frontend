@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { X } from "lucide-react";
-import { playlistService } from "../../../../libraryService";
-import type { Collection, CollectionTrack } from "../../../../types";
+import { playlistService } from "../../../libraryService";
+import type { Collection, CollectionTrack, CollectionType } from "../../../types";
+import trackFallback from "@/assets/track.jpg";
 
 interface EditPlaylistOverlayProps {
   isOpen: boolean;
@@ -32,7 +33,8 @@ function formatTrackDuration(totalSeconds?: number) {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
-  if (hours > 0) return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  if (hours > 0)
+    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
@@ -45,10 +47,15 @@ const EditPlaylistOverlay: React.FC<EditPlaylistOverlayProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<EditTab>("basic");
   const [localTracks, setLocalTracks] = useState<CollectionTrack[]>(tracks);
-  const [removingTrackIds, setRemovingTrackIds] = useState<Set<string>>(new Set());
+  const [removingTrackIds, setRemovingTrackIds] = useState<Set<string>>(
+    new Set(),
+  );
   const [title, setTitle] = useState(playlist.title);
   const [description, setDescription] = useState(playlist.description ?? "");
-  const [privacy, setPrivacy] = useState<"public" | "private">(playlist.privacy);
+  const [type, setType] = useState<CollectionType>(playlist.type);
+  const [privacy, setPrivacy] = useState<"public" | "private">(
+    playlist.privacy,
+  );
   const [coverChanged, setCoverChanged] = useState(false);
   const [uploadedCoverUrl, setUploadedCoverUrl] = useState<string | null>(null);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
@@ -64,6 +71,7 @@ const EditPlaylistOverlay: React.FC<EditPlaylistOverlayProps> = ({
     setRemovingTrackIds(new Set());
     setTitle(playlist.title);
     setDescription(playlist.description ?? "");
+    setType(playlist.type);
     setPrivacy(playlist.privacy);
     setCoverChanged(false);
     setUploadedCoverUrl(null);
@@ -82,7 +90,8 @@ const EditPlaylistOverlay: React.FC<EditPlaylistOverlayProps> = ({
   }, [isOpen]);
 
   const permalink = useMemo(
-    () => `soundcloud.com/${playlist.owner.username}/sets/${slugify(title) || slugify(playlist.title)}`,
+    () =>
+      `soundcloud.com/${playlist.owner.username}/sets/${slugify(title) || slugify(playlist.title)}`,
     [playlist.owner.username, playlist.title, title],
   );
 
@@ -91,11 +100,16 @@ const EditPlaylistOverlay: React.FC<EditPlaylistOverlayProps> = ({
   const hasChanges =
     normalizedTitle !== playlist.title ||
     normalizedDescription !== (playlist.description ?? "") ||
+    type !== playlist.type ||
     privacy !== playlist.privacy ||
     coverChanged;
-  const canSave = hasChanges && !saving && !isUploadingCover && (!coverChanged || !!uploadedCoverUrl);
+  const canSave =
+    hasChanges &&
+    !saving &&
+    !isUploadingCover &&
+    (!coverChanged || !!uploadedCoverUrl);
 
-  const imageSrc = previewUrl ?? playlist.coverUrl ?? "/default-cover.png";
+  const imageSrc = previewUrl ?? playlist.coverUrl ?? trackFallback;
 
   const handleSave = async () => {
     if (!canSave) return;
@@ -111,6 +125,7 @@ const EditPlaylistOverlay: React.FC<EditPlaylistOverlayProps> = ({
 
     const payload: {
       title?: string;
+      type?: CollectionType;
       description?: string;
       privacy?: "public" | "private";
       coverUrl?: string;
@@ -120,10 +135,14 @@ const EditPlaylistOverlay: React.FC<EditPlaylistOverlayProps> = ({
     if (normalizedDescription !== (playlist.description ?? "")) {
       payload.description = normalizedDescription;
     }
+    if (type !== playlist.type) payload.type = type;
     if (privacy !== playlist.privacy) payload.privacy = privacy;
     if (uploadedCoverUrl) payload.coverUrl = uploadedCoverUrl;
 
-    const response = await playlistService.updateCollection(playlist.id, payload);
+    const response = await playlistService.updateCollection(
+      playlist.id,
+      payload,
+    );
     setSaving(false);
 
     if (!response) {
@@ -177,9 +196,9 @@ const EditPlaylistOverlay: React.FC<EditPlaylistOverlayProps> = ({
         <X className="h-5 w-5" />
       </button>
 
-      <div className="mx-auto mb-8 mt-10 max-h-[calc(100vh-5rem)] w-[min(760px,92vw)] overflow-y-auto hide-scrollbar rounded-sm border border-zinc-800 bg-[#0a0a0c] p-3 shadow-2xl">
+      <div className="mx-auto mb-0 mt-0 h-full w-full overflow-y-auto hide-scrollbar rounded-none border-0 bg-[#0a0a0c] p-4 shadow-2xl sm:mb-8 sm:mt-10 sm:h-auto sm:max-h-[calc(100vh-5rem)] sm:w-[min(760px,92vw)] sm:rounded-sm sm:border sm:border-zinc-800 sm:p-3">
         <div className="mb-4 flex items-center">
-          <div className="flex items-center gap-6 text-[20px] font-bold">
+          <div className="flex items-center gap-4 text-[16px] font-bold sm:gap-6 sm:text-[20px]">
             <button
               className={`relative pb-2 transition ${
                 activeTab === "basic"
@@ -220,7 +239,11 @@ const EditPlaylistOverlay: React.FC<EditPlaylistOverlayProps> = ({
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-[180px_1fr]">
             <div>
               <div className="relative h-[170px] overflow-hidden rounded-sm bg-gradient-to-b from-[#8f6f86] to-[#8ca9b8]">
-                <img src={imageSrc} alt={playlist.title} className="h-full w-full object-cover" />
+                <img
+                  src={imageSrc}
+                  alt={playlist.title}
+                  className="h-full w-full object-cover"
+                />
                 <button
                   type="button"
                   onClick={() => fileRef.current?.click()}
@@ -244,7 +267,10 @@ const EditPlaylistOverlay: React.FC<EditPlaylistOverlayProps> = ({
                     try {
                       const formData = new FormData();
                       formData.append("file", file);
-                      formData.append("upload_preset", "tunify_avatars_coverImgs");
+                      formData.append(
+                        "upload_preset",
+                        "tunify_avatars_coverImgs",
+                      );
 
                       const cloudRes = await fetch(
                         "https://api.cloudinary.com/v1_1/dcctvg2ay/image/upload",
@@ -271,14 +297,32 @@ const EditPlaylistOverlay: React.FC<EditPlaylistOverlayProps> = ({
             <div className="space-y-3">
               <div>
                 <div className={labelClass}>Title*</div>
-                <input className={fieldClass} value={title} onChange={(e) => setTitle(e.target.value)} />
+                <input
+                  className={fieldClass}
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
               </div>
 
               <div>
                 <div className={labelClass}>Permalink*</div>
-                <div className={`${fieldClass} flex items-center text-zinc-400`}>
+                <div
+                  className={`${fieldClass} flex items-center text-zinc-400`}
+                >
                   <span>{permalink}</span>
                 </div>
+              </div>
+
+              <div>
+                <div className={labelClass}>Type</div>
+                <select
+                  className={fieldClass}
+                  value={type}
+                  onChange={(e) => setType(e.target.value as CollectionType)}
+                >
+                  <option value="PLAYLIST">Playlist</option>
+                  <option value="ALBUM">Album</option>
+                </select>
               </div>
 
               {/* <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -331,7 +375,9 @@ const EditPlaylistOverlay: React.FC<EditPlaylistOverlayProps> = ({
                   />
                   <span>Public</span>
                 </label>
-                <div className="ml-6 text-sm text-zinc-400">Anyone will be able to listen to this playlist.</div>
+                <div className="ml-6 text-sm text-zinc-400">
+                  Anyone will be able to listen to this playlist.
+                </div>
                 <label className="mt-2 flex cursor-pointer items-center gap-2 text-base text-white">
                   <input
                     type="radio"
@@ -350,10 +396,13 @@ const EditPlaylistOverlay: React.FC<EditPlaylistOverlayProps> = ({
             {localTracks.length > 0 ? (
               <ul className="space-y-1">
                 {localTracks.map((ct) => (
-                  <li key={ct.track.id} className="flex items-center justify-between gap-3 px-1 py-1.5">
+                  <li
+                    key={ct.track.id}
+                    className="flex items-center justify-between gap-3 px-1 py-1.5"
+                  >
                     <div className="flex min-w-0 items-center gap-3">
                       <img
-                        src={ct.track.coverUrl || "/default-cover.png"}
+                        src={ct.track.coverUrl || trackFallback}
                         alt={ct.track.title}
                         className="h-9 w-9 shrink-0 object-cover"
                       />
@@ -366,10 +415,14 @@ const EditPlaylistOverlay: React.FC<EditPlaylistOverlayProps> = ({
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-4 text-zinc-300">
-                      <span className="text-[12px] leading-none">{formatTrackDuration(ct.track.durationSeconds)}</span>
+                      <span className="text-[12px] leading-none">
+                        {formatTrackDuration(ct.track.durationSeconds)}
+                      </span>
                       <button
                         type="button"
-                        onClick={() => void handleRemoveTrack(ct.track.id, ct.track.title)}
+                        onClick={() =>
+                          void handleRemoveTrack(ct.track.id, ct.track.title)
+                        }
                         disabled={removingTrackIds.has(ct.track.id)}
                         aria-label={`Remove ${ct.track.title} from playlist`}
                         className="text-zinc-400 transition hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
@@ -381,13 +434,17 @@ const EditPlaylistOverlay: React.FC<EditPlaylistOverlayProps> = ({
                 ))}
               </ul>
             ) : (
-              <div className="py-6 text-sm text-zinc-400">No tracks in this playlist yet.</div>
+              <div className="py-6 text-sm text-zinc-400">
+                No tracks in this playlist yet.
+              </div>
             )}
           </div>
         )}
 
         {activeTab === "metadata" && (
-          <div className="py-6 text-sm text-zinc-400">Metadata settings are not available yet.</div>
+          <div className="py-6 text-sm text-zinc-400">
+            Metadata settings are not available yet.
+          </div>
         )}
 
         <div className="mt-5">
@@ -395,7 +452,11 @@ const EditPlaylistOverlay: React.FC<EditPlaylistOverlayProps> = ({
             <span className="text-pink-500">*</span> Required fields
           </div>
 
-          {error && <div className="mt-3 text-sm font-semibold text-red-400">{error}</div>}
+          {error && (
+            <div className="mt-3 text-sm font-semibold text-red-400">
+              {error}
+            </div>
+          )}
 
           <div className="flex items-center justify-end gap-2 pt-4">
             <button

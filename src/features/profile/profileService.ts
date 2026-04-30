@@ -12,6 +12,7 @@ import type {
   BlockedUsersResponse,
   SuggestedUsersResponse,
   MutualFriendsResponse,
+  UserRepostsDto,
 } from "../../shared/types/User";
 
 type SocialAccountsMap = {
@@ -26,6 +27,34 @@ type SocialAccountsMap = {
 type RawSocialLink = {
   platform?: string | null;
   url?: string | null;
+};
+
+type RawUserTrackResponse =
+  | UserTracksResponse
+  | {
+    data?: unknown[];
+    meta?: {
+      page?: number;
+      limit?: number;
+      total?: number;
+      hasMore?: boolean;
+    };
+  };
+
+type RawUserRepostsResponse =
+  | UserRepostsDto
+  | {
+    data?: unknown[];
+    page?: number;
+    limit?: number;
+    hasMore?: boolean;
+  };
+
+type RawPopularTracksResponse = {
+  tracks?: unknown[];
+  page?: number;
+  limit?: number;
+  hasMore?: boolean;
 };
 
 function normalizeSocialLinksResponse(payload: unknown): SocialAccountsMap {
@@ -51,6 +80,121 @@ function normalizeSocialLinksResponse(payload: unknown): SocialAccountsMap {
   });
 
   return map;
+}
+
+function normalizeTracksResponse(payload: RawUserTrackResponse): UserTracksResponse {
+  const dataPayload = payload as {
+    data?: unknown[];
+    meta?: { page?: number; limit?: number; total?: number };
+  };
+  const tracksPayload = payload as UserTracksResponse;
+
+  const rawTracks = Array.isArray(tracksPayload.tracks)
+    ? tracksPayload.tracks
+    : Array.isArray(dataPayload.data)
+      ? dataPayload.data
+      : [];
+
+  const tracks = rawTracks.map((value) => {
+    const track = (value && typeof value === "object"
+      ? value
+      : {}) as Record<string, unknown>;
+    const engagementRaw = (track.engagement && typeof track.engagement === "object"
+      ? track.engagement
+      : {}) as Record<string, unknown>;
+    const interactionRaw = (track.interaction && typeof track.interaction === "object"
+      ? track.interaction
+      : {}) as Record<string, unknown>;
+
+    return {
+      id: String(track.id ?? ""),
+      title: String(track.title ?? "Untitled Track"),
+      description: typeof track.description === "string" ? track.description : null,
+      coverUrl: typeof track.coverUrl === "string" ? track.coverUrl : null,
+      audioUrl: typeof track.audioUrl === "string" ? track.audioUrl : null,
+      genre: typeof track.genre === "string" ? track.genre : null,
+      createdAt: typeof track.createdAt === "string" ? track.createdAt : new Date().toISOString(),
+      artist:
+        track.artist && typeof track.artist === "object"
+          ? (track.artist as {
+            id: string;
+            username: string;
+            displayName?: string | null;
+            avatarUrl?: string | null;
+            isVerified?: boolean;
+          })
+          : undefined,
+      engagement: {
+        likeCount: Number(engagementRaw.likeCount ?? 0),
+        repostCount: Number(engagementRaw.repostCount ?? 0),
+        commentCount: Number(engagementRaw.commentCount ?? 0),
+        playCount: Number(engagementRaw.playCount ?? 0),
+      },
+      interaction: {
+        isLiked: Boolean(interactionRaw.isLiked),
+        isReposted: Boolean(interactionRaw.isReposted),
+      },
+    };
+  });
+
+  return {
+    page: Number(
+      tracksPayload.page ??
+      dataPayload.meta?.page ??
+      1,
+    ),
+    limit: Number(
+      tracksPayload.limit ??
+      dataPayload.meta?.limit ??
+      tracks.length,
+    ),
+    total: Number(
+      tracksPayload.total ??
+      dataPayload.meta?.total ??
+      tracks.length,
+    ),
+    tracks,
+  };
+}
+
+function normalizeRepostsResponse(payload: RawUserRepostsResponse): UserRepostsDto {
+  const raw = payload as {
+    data?: unknown[];
+    page?: number;
+    limit?: number;
+    hasMore?: boolean;
+  };
+
+  const reposts = (Array.isArray(raw.data) ? raw.data : []).map((value, index) => {
+    const repost = (value && typeof value === "object" ? value : {}) as Record<string, unknown>;
+    const trackRaw = (repost.track && typeof repost.track === "object"
+      ? repost.track
+      : {}) as Record<string, unknown>;
+
+    return {
+      repostId: String(repost.repostId ?? repost.id ?? `repost-${index}`),
+      repostedAt: typeof repost.repostedAt === "string" ? repost.repostedAt : new Date().toISOString(),
+      track: {
+        id: String(trackRaw.id ?? ""),
+        title: String(trackRaw.title ?? "Untitled Track"),
+        description: typeof trackRaw.description === "string" ? trackRaw.description : null,
+        audioUrl: String(trackRaw.audioUrl ?? ""),
+        coverUrl: typeof trackRaw.coverUrl === "string" ? trackRaw.coverUrl : null,
+        duration: Number(trackRaw.duration ?? 0),
+        likesCount: Number(trackRaw.likesCount ?? 0),
+        commentsCount: Number(trackRaw.commentsCount ?? 0),
+        repostsCount: Number(trackRaw.repostsCount ?? 0),
+        createdAt: typeof trackRaw.createdAt === "string" ? trackRaw.createdAt : new Date().toISOString(),
+      },
+    };
+  });
+
+  return {
+    data: reposts,
+    page: Number(raw.page ?? 1),
+    limit: Number(raw.limit ?? reposts.length),
+    hasMore: Boolean(raw.hasMore),
+  };
 }
 
 type FallbackRequest = {
@@ -128,10 +272,67 @@ export const profileService = {
   },
 
   async getMeTracks(page = 1, limit = 20): Promise<UserTracksResponse> {
-    const { data } = await api.get<UserTracksResponse>(
+    const { data } = await api.get<RawUserTrackResponse>(
       `/users/me/tracks?page=${page}&limit=${limit}`,
     );
-    return data;
+    return normalizeTracksResponse(data);
+  },
+
+  async getMePopularTracks(page = 1, limit = 20): Promise<UserTracksResponse> {
+    const { data } = await api.get<RawPopularTracksResponse>(
+      `/users/me/popular-tracks?page=${page}&limit=${limit}`,
+    );
+
+    const tracks = (Array.isArray(data.tracks) ? data.tracks : []).map((value) => {
+      const track = (value && typeof value === "object"
+        ? value
+        : {}) as Record<string, unknown>;
+
+      return {
+        id: String(track.id ?? ""),
+        title: String(track.title ?? "Untitled Track"),
+        description: typeof track.description === "string" ? track.description : null,
+        coverUrl: typeof track.coverUrl === "string" ? track.coverUrl : null,
+        audioUrl: typeof track.audioUrl === "string" ? track.audioUrl : null,
+        genre: null,
+        createdAt: typeof track.createdAt === "string" ? track.createdAt : new Date().toISOString(),
+        engagement: {
+          likeCount: Number(track.likesCount ?? 0),
+          repostCount: Number(track.repostsCount ?? 0),
+          commentCount: Number(track.commentsCount ?? 0),
+          playCount: Number(track.playsCount ?? 0),
+        },
+        interaction: {
+          isLiked: false,
+          isReposted: false,
+        },
+      };
+    });
+
+    return {
+      page: Number(data.page ?? page),
+      limit: Number(data.limit ?? limit),
+      total: tracks.length,
+      tracks,
+    };
+  },
+
+  async getMeReposts(page = 1, limit = 20): Promise<UserRepostsDto> {
+    const { data } = await api.get<RawUserRepostsResponse>(
+      `/users/me/reposts?page=${page}&limit=${limit}`,
+    );
+    return normalizeRepostsResponse(data);
+  },
+
+  async getUserTracks(
+    userIdOrUsername: string,
+    page = 1,
+    limit = 20,
+  ): Promise<UserTracksResponse> {
+    const { data } = await api.get<RawUserTrackResponse>(
+      `/users/${encodeURIComponent(userIdOrUsername)}/tracks?page=${page}&limit=${limit}`,
+    );
+    return normalizeTracksResponse(data);
   },
 
   async getMeFollowing(page = 1, limit = 20): Promise<UserFollowingResponse> {
@@ -192,6 +393,7 @@ export const profileService = {
   async unfollowUser(userId: string): Promise<void> {
     const encodedId = encodeURIComponent(userId);
     await requestWithFallback([
+      { method: "delete", url: `/users/${encodedId}/unfollow` },
       { method: "delete", url: `/users/${encodedId}/follow` },
       { method: "delete", url: `/users/${encodedId}/followers` },
     ]);

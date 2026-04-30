@@ -34,6 +34,7 @@ const useRestoreSession = () => {
         dispatch(setUser({
           id: user.id,
           username: user.username,
+          displayName: user.displayName ?? null,
           email: user.email,
           role: user.role,
           isVerified: user.isVerified ?? user.isCertified ?? false,

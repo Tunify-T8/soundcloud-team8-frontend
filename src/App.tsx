@@ -35,6 +35,7 @@ import FeedPage from "./features/feed/pages/FeedPage";
 import FollowersPage from "./features/following/pages/FollowersPage";
 import FollowingPage from "./features/following/pages/FollowingPage";
 import WhoToFollowPage from "./features/following/pages/WhoToFollowPage";
+import UserLikesPage from "./features/following/pages/UserLikesPage";
 import DiscoverPage from "./features/discover/pages/DiscoverPage";
 import SearchPage from "./features/feed/pages/SearchPage";
 import LibraryPage from "./features/library/pages/LibraryPage";
@@ -44,6 +45,8 @@ import InsightsOverviewPage from "./features/insights/components/InsightsOvervie
 import PlansPage from "./features/premium/pages/PlansPage";
 import AllTabPage from  "./features/profile/pages/UserInfoBar/AllTabPage";
 import { AdPopup } from "./features/premium/components/AdPopUp";
+import SettingsPage from "./features/settings/SettingsPage";
+import VerificationPage from "./features/settings/VerificationPage";
 
 const router = createBrowserRouter([
   {
@@ -95,6 +98,34 @@ const router = createBrowserRouter([
         element: <NotificationsPage />
       },
       {
+        path: "/settings",
+        element: <SettingsPage />,
+      },
+      {
+        path: "/settings/content",
+        element: <SettingsPage />,
+      },
+      {
+        path: "/settings/notifications",
+        element: <SettingsPage />,
+      },
+      {
+        path: "/settings/privacy",
+        element: <SettingsPage />,
+      },
+      {
+        path: "/settings/advertising",
+        element: <SettingsPage />,
+      },
+      {
+        path: "/settings/security",
+        element: <SettingsPage />,
+      },
+      {
+        path: "/settings/verification",
+        element: <VerificationPage />,
+      },
+      {
         path: "/messages",
         element: <MessagesPage />,
       },
@@ -127,7 +158,7 @@ const router = createBrowserRouter([
         element: <LibraryPage />
       },
       {
-        path: '/me/albums',
+        path: '/library/albums',
         element: <LibraryPage />
       },
       {
@@ -147,7 +178,19 @@ const router = createBrowserRouter([
         element: <LibraryPage />
       },
       {
+        path: '/me/downloads',
+        element: <LibraryPage />
+      },
+      {
         path: "/collections/:id",
+        element: <PlaylistPage />
+      },
+      {
+        path: "/playlist/:id",
+        element: <PlaylistPage />
+      },
+      {
+        path: "/collections/token/:token",
         element: <PlaylistPage />
       },
       {
@@ -179,6 +222,10 @@ const router = createBrowserRouter([
       {
         path: "/who-to-follow",
         element: <WhoToFollowPage />,
+      },
+      {
+        path: "/:username/likes",
+        element: <UserLikesPage />,
       },
       {
         path: "/:username/followers",

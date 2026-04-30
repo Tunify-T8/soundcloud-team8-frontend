@@ -12,8 +12,12 @@ export function useAdPopup(loginOnlyMode = false) {
   const dismiss = () => setIsOpen(false);
 
   useEffect(() => {
-    if (!isArtistPro) {
+    if (isArtistPro) {
       setIsOpen(false);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
       return;
     }
 
@@ -25,7 +29,7 @@ export function useAdPopup(loginOnlyMode = false) {
 
     if (loginOnlyMode) return;
 
-    // Re-open every 20 minutes
+    // Re-open every 5 minutes
     intervalRef.current = setInterval(() => setIsOpen(true), INTERVAL_MS);
 
     return () => {
