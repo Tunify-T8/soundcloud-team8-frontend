@@ -4,6 +4,8 @@ import TrackRow from "../components/TrackRow";
 import { getListeningHistory, mapHistoryToTrackItem } from "../libraryService";
 import type { TrackItem, CollectionItem } from "../types";
 import { HISTORY_TRACKS } from "../tests/mockdata";
+import { usePlayContext } from "@/hooks/usePlayContext";
+import { useMe } from "@/features/profile/context/useMe";
 const STORAGE_KEY = "recentlyPlayed";
 
 function loadRecentlyPlayedFromStorage(): CollectionItem[] {
@@ -33,6 +35,8 @@ function loadRecentlyPlayedFromStorage(): CollectionItem[] {
 }
 
 export default function HistoryTab() {
+  const { me } = useMe();
+  usePlayContext({ contextType: "history", contextId: me?.id ?? "" });
   const [recentlyPlayed] = useState<CollectionItem[]>(loadRecentlyPlayedFromStorage);
   const [tracks, setTracks] = useState<TrackItem[]>([]);
   const [loading, setLoading] = useState(true);

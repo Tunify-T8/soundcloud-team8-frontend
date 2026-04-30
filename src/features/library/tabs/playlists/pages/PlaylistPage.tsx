@@ -13,6 +13,7 @@ import PlaylistHeader from "../components/PlaylistHeader";
 import TrackList from "../components/TrackList";
 import ActionBar from "../components/ActionBar";
 import EditPlaylistOverlay from "../components/EditPlaylistOverlay";
+import { usePlayContext } from "@/hooks/usePlayContext";
 
 function isUuidLike(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -70,6 +71,9 @@ const PlaylistPage: React.FC = () => {
         : await playlistService.getPlaylistById(id as string);
 
       const playlistId = playlistData?.id;
+      if(playlistId){
+      usePlayContext({contextType:"playlist" , contextId : playlistId});
+    }
       const tracksData = playlistId
         ? await playlistService.getPlaylistTracks(playlistId)
         : null;
