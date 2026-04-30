@@ -204,6 +204,170 @@
         "previewDurationSeconds": 30
       }
     }
+  ],
+
+  "conversations": [
+    {
+      "id": "conv-uuid-1",
+      "user1Id": "user-uuid-current",
+      "user2Id": "user-uuid-1",
+      "status": "ACTIVE",
+      "unreadCount": 1,
+      "lastMessage": {
+        "id": "msg-1",
+        "senderId": "user-uuid-1",
+        "type": "TEXT",
+        "content": "Hey! How's the new track coming along?",
+        "createdAt": "2026-04-28T10:30:00.000Z"
+      },
+      "updatedAt": "2026-04-28T10:30:00.000Z",
+      "otherUser": {
+        "id": "user-uuid-1",
+        "displayName": "Test User",
+        "avatarUrl": null
+      }
+    },
+    {
+      "id": "conv-uuid-2",
+      "user1Id": "user-uuid-current",
+      "user2Id": "user-uuid-2",
+      "status": "ACTIVE",
+      "unreadCount": 0,
+      "lastMessage": {
+        "id": "msg-2",
+        "senderId": "user-uuid-current",
+        "type": "TEXT",
+        "content": "Can you send the updated track?",
+        "createdAt": "2026-04-28T09:15:00.000Z"
+      },
+      "updatedAt": "2026-04-28T09:15:00.000Z",
+      "otherUser": {
+        "id": "user-uuid-2",
+        "displayName": "Jordan Beats",
+        "avatarUrl": null
+      }
+    },
+    {
+      "id": "conv-uuid-3",
+      "user1Id": "user-uuid-current",
+      "user2Id": "user-uuid-3",
+      "status": "ACTIVE",
+      "unreadCount": 3,
+      "lastMessage": {
+        "id": "msg-3",
+        "senderId": "user-uuid-3",
+        "type": "TEXT",
+        "content": "Nice drop on that chorus!",
+        "createdAt": "2026-04-27T20:45:00.000Z"
+      },
+      "updatedAt": "2026-04-27T20:45:00.000Z",
+      "otherUser": {
+        "id": "user-uuid-3",
+        "displayName": "Ava Mix",
+        "avatarUrl": null
+      }
+    }
+  ],
+
+  "messages": [
+    {
+      "id": "msg-1-1",
+      "conversationId": "conv-uuid-1",
+      "senderId": "user-uuid-1",
+      "sender": {
+        "id": "user-uuid-1",
+        "displayName": "Test User",
+        "avatarUrl": null
+      },
+      "type": "TEXT",
+      "content": "Hey! How's the new track coming along?",
+      "createdAt": "2026-04-28T10:30:00.000Z",
+      "read": false
+    },
+    {
+      "id": "msg-1-2",
+      "conversationId": "conv-uuid-1",
+      "senderId": "user-uuid-current",
+      "sender": {
+        "id": "user-uuid-current",
+        "displayName": "Current User",
+        "avatarUrl": null
+      },
+      "type": "TEXT",
+      "content": "It's going great! Almost done with the mixing.",
+      "createdAt": "2026-04-28T10:35:00.000Z",
+      "read": true
+    },
+    {
+      "id": "msg-2-1",
+      "conversationId": "conv-uuid-2",
+      "senderId": "user-uuid-current",
+      "sender": {
+        "id": "user-uuid-current",
+        "displayName": "Current User",
+        "avatarUrl": null
+      },
+      "type": "TEXT",
+      "content": "Can you send the updated track?",
+      "createdAt": "2026-04-28T09:15:00.000Z",
+      "read": true
+    },
+    {
+      "id": "msg-2-2",
+      "conversationId": "conv-uuid-2",
+      "senderId": "user-uuid-2",
+      "sender": {
+        "id": "user-uuid-2",
+        "displayName": "Jordan Beats",
+        "avatarUrl": null
+      },
+      "type": "TEXT",
+      "content": "Sure, I'll upload it right now!",
+      "createdAt": "2026-04-28T09:20:00.000Z",
+      "read": true
+    },
+    {
+      "id": "msg-3-1",
+      "conversationId": "conv-uuid-3",
+      "senderId": "user-uuid-3",
+      "sender": {
+        "id": "user-uuid-3",
+        "displayName": "Ava Mix",
+        "avatarUrl": null
+      },
+      "type": "TEXT",
+      "content": "Nice drop on that chorus!",
+      "createdAt": "2026-04-27T20:45:00.000Z",
+      "read": false
+    },
+    {
+      "id": "msg-3-2",
+      "conversationId": "conv-uuid-3",
+      "senderId": "user-uuid-current",
+      "sender": {
+        "id": "user-uuid-current",
+        "displayName": "Current User",
+        "avatarUrl": null
+      },
+      "type": "TEXT",
+      "content": "Thanks! Been working on it all week.",
+      "createdAt": "2026-04-27T20:50:00.000Z",
+      "read": true
+    },
+    {
+      "id": "msg-3-3",
+      "conversationId": "conv-uuid-3",
+      "senderId": "user-uuid-3",
+      "sender": {
+        "id": "user-uuid-3",
+        "displayName": "Ava Mix",
+        "avatarUrl": null
+      },
+      "type": "TEXT",
+      "content": "The production quality is insane!",
+      "createdAt": "2026-04-27T20:55:00.000Z",
+      "read": false
+    }
   ]
 }
   

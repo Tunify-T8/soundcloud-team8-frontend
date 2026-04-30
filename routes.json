@@ -3,5 +3,7 @@
   "/users/me": "/users",
   "/tracks/me/listening-history": "/listening-history",
   "/tracks/:id/stream": "/trackStreams/:id",
-  "/tracks/:id/playback": "/trackPlaybacks/:id"
+  "/tracks/:id/playback": "/trackPlaybacks/:id",
+  "/users/me/conversations": "/conversations",
+  "/conversations/:conversationId/messages": "/messages?conversationId=:conversationId"
 }
