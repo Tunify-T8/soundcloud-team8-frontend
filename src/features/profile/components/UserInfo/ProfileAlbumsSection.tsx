@@ -188,6 +188,7 @@ export default function ProfileAlbumsSection({
                 comments={albumTrackCount.toString()}
                 waveformSeed={album.id.length}
                 playlistTracks={mappedTracks}
+                profileTrackTextStyle="titleWhiteArtistGray"
               />
             </div>
           );
