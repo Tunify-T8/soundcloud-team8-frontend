@@ -147,6 +147,7 @@ export default function SongCard({
   const [showDownloadTooltip, setShowDownloadTooltip] = useState(false);
   const [showAlreadyDownloaded, setShowAlreadyDownloaded] = useState(false);
   const [randomSeed] = useState(() => Math.random() * 1000000);
+  const [hoveredSubtrackId, setHoveredSubtrackId] = useState<string | null>(null);
 
   const handlePlayToggle = () => {
     if (!trackId) return;
@@ -162,6 +163,29 @@ export default function SongCard({
       thumbnailUrl: coverUrl || undefined,
       duration: 0,
       offlineSrc,
+    });
+    setIsPlaying(true);
+  };
+
+  const handleSubtrackPlayToggle = (subtrack: {
+    id: string;
+    title: string;
+    artist: string;
+    avatarUrl?: string | null;
+  }) => {
+    const isCurrentSubtrack = currentTrack?.id === subtrack.id;
+    if (isCurrentSubtrack) {
+      setIsPlaying(!isPlaying);
+      return;
+    }
+
+    setCurrentTrack({
+      id: subtrack.id,
+      title: subtrack.title,
+      artist: subtrack.artist,
+      thumbnailUrl: subtrack.avatarUrl || coverUrl || undefined,
+      artworkUrl: subtrack.avatarUrl || coverUrl || undefined,
+      duration: 0,
     });
     setIsPlaying(true);
   };
@@ -477,11 +501,49 @@ export default function SongCard({
           <div className="mb-2 mt-2 space-y-2">
             {playlistTracks.map((collectionTrack) => (
               <div key={collectionTrack.id} className="flex items-center gap-2 py-0.5 text-sm text-zinc-300">
-                <img
-                  src={collectionTrack.avatarUrl || trackFallback}
-                  alt={collectionTrack.title}
-                  className="h-7 w-7 rounded-[2px] object-cover"
-                />
+                <button
+                  type="button"
+                  onClick={() => handleSubtrackPlayToggle(collectionTrack)}
+                  onMouseEnter={() => setHoveredSubtrackId(collectionTrack.id)}
+                  onMouseLeave={() =>
+                    setHoveredSubtrackId((current) =>
+                      current === collectionTrack.id ? null : current,
+                    )
+                  }
+                  className="group relative h-7 w-7 shrink-0 overflow-hidden rounded-[2px]"
+                  aria-label={
+                    currentTrack?.id === collectionTrack.id && isPlaying
+                      ? "Pause track"
+                      : "Play track"
+                  }
+                >
+                  <img
+                    src={collectionTrack.avatarUrl || trackFallback}
+                    alt={collectionTrack.title}
+                    className="h-7 w-7 object-cover"
+                  />
+                  <div
+                    className={`absolute inset-0 flex items-center justify-center bg-black/55 transition-opacity ${
+                      (currentTrack?.id === collectionTrack.id && isPlaying) ||
+                      hoveredSubtrackId === collectionTrack.id
+                        ? "opacity-100"
+                        : "opacity-0"
+                    }`}
+                  >
+                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-black">
+                      {currentTrack?.id === collectionTrack.id && isPlaying ? (
+                        <svg width="11" height="11" viewBox="0 0 14 14" fill="currentColor">
+                          <rect x="1" y="1" width="4" height="12" />
+                          <rect x="9" y="1" width="4" height="12" />
+                        </svg>
+                      ) : (
+                        <svg width="11" height="11" viewBox="0 0 14 14" fill="currentColor">
+                          <polygon points="2,0 14,7 2,14" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                </button>
                 <span className="text-zinc-400">{collectionTrack.number} ·</span>
                 <span className="truncate">
                   <span
