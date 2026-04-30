@@ -62,6 +62,7 @@ export default function PlayerBar() {
     pendingSeek,
     setIsPlaying,
     setCurrentTrack,
+    syncCurrentTrack,
     setProgress,
     requestSeek,
     clearPendingSeek,
@@ -153,7 +154,7 @@ export default function PlayerBar() {
   useEffect(() => {
     if (!queueCurrentTrack || !queueCurrentTrackId) return;
     if (queueCurrentTrackId === currentTrack?.id) return;
-    setCurrentTrack({
+    syncCurrentTrack({
       id:       queueCurrentTrack.trackId,
       title:    queueCurrentTrack.title,
       artist:   queueCurrentTrack.artist,

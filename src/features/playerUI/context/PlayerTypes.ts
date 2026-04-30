@@ -22,6 +22,7 @@ export interface PlayerContextValue {
   progress: number;
   pendingSeek: { trackId: string; progress: number } | null;
   setCurrentTrack: (track: TrackMeta) => void;
+  syncCurrentTrack: (track: TrackMeta) => void;
   setIsPlaying: (v: boolean) => void;
   setProgress: (v: number) => void;
   requestSeek: (trackId: string, progress: number) => void;
