@@ -15,9 +15,9 @@ export default function SettingsSection({
   "data-testid": dataTestId,
 }: SettingsSectionProps) {
   return (
-    <section className="mb-12" data-testid={dataTestId}>
+    <section className="mb-12 text-white" data-testid={dataTestId}>
       <h2
-        className="mb-5 flex items-center gap-2 text-base font-black text-[var(--sc-text)]"
+        className="mb-5 flex items-center gap-2 text-base font-black text-white"
         data-testid={dataTestId ? `${dataTestId}-heading` : undefined}
       >
         {title}
