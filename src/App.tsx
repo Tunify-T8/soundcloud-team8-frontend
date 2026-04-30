@@ -19,6 +19,7 @@ import PlaylistsPage from "./features/profile/pages/UserInfoBar/PlaylistsPage";
 import ProfileRepostsPage from "./features/profile/pages/UserInfoBar/RepostsPage";
 import SignInPage from "./features/auth/pages/SignInPage";
 import SignUpPage from "./features/auth/pages/SignUpPage";
+import SignedOutPage from "./features/auth/pages/SignedOutPage";
 import PublicOnlyRoute from "./routes/PublicOnlyRoute";
 import ForgotPasswordPage from "./features/auth/pages/ForgotPasswordPage";
 import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage";
@@ -67,6 +68,14 @@ const router = createBrowserRouter([
     element: (
       <PublicOnlyRoute>
         <SignUpPage />
+      </PublicOnlyRoute>
+    ),
+  },
+  {
+    path: "/signed-out",
+    element: (
+      <PublicOnlyRoute>
+        <SignedOutPage />
       </PublicOnlyRoute>
     ),
   },

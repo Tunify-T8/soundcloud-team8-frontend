@@ -4,6 +4,8 @@ import PlayerBar from "../components/PlayerBar";
 import * as usePlaybackModule from "@/hooks/Useplayback";
 import * as useQueueModule from "@/hooks/useQueue";
 import * as usePlayerModule from "@/features/playerUI/context/usePlayer";
+import * as useEngagementModule from "@/features/engagement/hooks/useEngagement";
+import { followingService } from "@/features/following/followingService";
 import type { useQueueReturn, usePlaybackReturn } from "@/features/player-core/types";
 import type { PlayerContextValue } from "@/features/playerUI/context/PlayerTypes";
 
@@ -21,6 +23,7 @@ const mockRequestSeek     = vi.fn();
 const mockClearPendingSeek = vi.fn();
 const mockToggleShuffle   = vi.fn();
 const mockToggleRepeat    = vi.fn();
+const mockSetRepeatMode   = vi.fn();
 const mockNext            = vi.fn();
 const mockPrev            = vi.fn();
 const mockLoadQueue       = vi.fn();
@@ -40,6 +43,7 @@ const basePlayback: usePlaybackReturn = {
   volume:                  0.8,
   isMuted:                 false,
   buffered:                0.5,
+  endedCount:              0,
   previewSecondsRemaining: null,
   play:                    mockPlay,
   pause:                   mockPause,
@@ -61,6 +65,7 @@ const baseQueue: useQueueReturn = {
   totalCount:     0,
   hasNext:        false,
   hasPrev:        false,
+  activeContext:  null,
   loadQueue:      mockLoadQueue,
   next:           mockNext,
   prev:           mockPrev,
@@ -69,6 +74,7 @@ const baseQueue: useQueueReturn = {
   jumpTo:         mockJumpTo,
   toggleShuffle:  mockToggleShuffle,
   toggleRepeat:   mockToggleRepeat,
+  setRepeatMode:  mockSetRepeatMode,
   clearQueue:     mockClearQueue,
 };
 
@@ -97,6 +103,14 @@ const basePlayer: PlayerContextValue = {
 vi.mock("@/hooks/Useplayback", () => ({ usePlayback: vi.fn() }));
 vi.mock("@/hooks/useQueue",    () => ({ useQueue:    vi.fn() }));
 vi.mock("@/features/playerUI/context/usePlayer", () => ({ usePlayer: vi.fn() }));
+vi.mock("@/features/engagement/hooks/useEngagement", () => ({ useEngagement: vi.fn() }));
+vi.mock("@/features/following/followingService", () => ({
+  followingService: {
+    getFollowStatus: vi.fn(),
+    followUser: vi.fn(),
+    unfollowUser: vi.fn(),
+  },
+}));
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
@@ -106,6 +120,19 @@ describe("PlayerBar", () => {
     vi.mocked(usePlaybackModule.usePlayback).mockReturnValue(basePlayback);
     vi.mocked(useQueueModule.useQueue).mockReturnValue(baseQueue);
     vi.mocked(usePlayerModule.usePlayer).mockReturnValue(basePlayer);
+    vi.mocked(useEngagementModule.useEngagement).mockReturnValue({
+      counts: { likes: 0, reposts: 0, plays: 0, comments: 0 },
+      isLiked: false,
+      isReposted: false,
+      loading: false,
+      toggleLike: vi.fn(),
+      toggleRepost: vi.fn(),
+    });
+    vi.mocked(followingService.getFollowStatus).mockResolvedValue({
+      isFollowing: false,
+      isFollowedBy: false,
+      isMutual: false,
+    });
   });
 
   it("renders nothing when currentTrack is null", () => {
@@ -173,10 +200,10 @@ describe("PlayerBar", () => {
     expect(mockToggleShuffle).toHaveBeenCalled();
   });
 
-  it("calls toggleRepeat when repeat icon is clicked", () => {
+  it("sets repeat mode to one when repeat icon is clicked", () => {
     render(<PlayerBar />);
     fireEvent.click(document.querySelector(".lucide-repeat-2") as SVGElement);
-    expect(mockToggleRepeat).toHaveBeenCalled();
+    expect(mockSetRepeatMode).toHaveBeenCalledWith("one");
   });
 
   it("displays formatted current time and duration", () => {
@@ -213,14 +240,35 @@ describe("PlayerBar", () => {
     expect(screen.getByLabelText("Unmute")).toBeInTheDocument();
   });
 
-  it("calls loadQueue on mount", () => {
-    render(<PlayerBar />);
-    expect(mockLoadQueue).toHaveBeenCalledWith({
-      contextType: "playlist",
-      contextId:   "playlist-1",
-      shuffle:     false,
-      repeat:      "none",
+  it("moves to the next queued track when playback ends", () => {
+    vi.mocked(useQueueModule.useQueue).mockReturnValueOnce({
+      ...baseQueue,
+      hasNext: true,
     });
+    vi.mocked(usePlaybackModule.usePlayback).mockReturnValueOnce({
+      ...basePlayback,
+      endedCount: 1,
+    });
+
+    render(<PlayerBar />);
+    expect(mockNext).toHaveBeenCalled();
+    expect(mockSetIsPlaying).toHaveBeenCalledWith(true);
+  });
+
+  it("restarts the same track when repeat-one is active and playback ends", () => {
+    vi.mocked(useQueueModule.useQueue).mockReturnValueOnce({
+      ...baseQueue,
+      repeat: "one",
+      hasNext: true,
+    });
+    vi.mocked(usePlaybackModule.usePlayback).mockReturnValueOnce({
+      ...basePlayback,
+      endedCount: 1,
+    });
+
+    render(<PlayerBar />);
+    expect(mockSeek).toHaveBeenCalledWith(0);
+    expect(mockPlay).toHaveBeenCalled();
   });
 
   it("space bar triggers play when not playing", () => {

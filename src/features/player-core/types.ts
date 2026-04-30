@@ -143,6 +143,7 @@ export interface useQueueReturn {
   jumpTo:         (index: number) => void;
   toggleShuffle:  () => void;
   toggleRepeat:   () => void;
+  setRepeatMode:  (mode: repeatMode) => void;
   clearQueue:     () => void;
 }
 
@@ -175,6 +176,7 @@ export interface usePlaybackReturn {
   volume:                  number;
   isMuted:                 boolean;
   buffered:                number;
+  endedCount:              number;
   previewSecondsRemaining: number | null;
   play:                    () => void;
   pause:                   () => void;

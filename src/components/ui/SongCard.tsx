@@ -21,8 +21,14 @@ import { usePlayer } from "@/features/playerUI/context/usePlayer";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useMe } from "@/features/profile/context/useMe";
 import { playbackService } from "@/features/player-core/Playbackservice";
+import { useQueue } from "@/hooks/useQueue";
 import CreatePlaylistOverlay from "@/features/library/tabs/playlists/components/CreatePlaylistOverlay";
 import trackFallback from "@/assets/track.jpg";
+import {
+  notifyTrackLikeChanged,
+  TRACK_LIKE_CHANGED_EVENT,
+  type TrackLikeChangedDetail,
+} from "@/features/engagement/engagementEvents";
 
 const DB_NAME = "sc_downloads";
 const STORE = "tracks";
@@ -65,6 +71,8 @@ async function hasDownload(userId: string, trackId: string): Promise<boolean> {
 interface PlayerProps {
   trackId?: string;
   entityLinkTo?: string;
+  artistLinkTo?: string;
+  artistRouteState?: { userId?: string };
   smallCoverOnMobile?: boolean;
   isLikedInitial?: boolean;
   isRepostedInitial?: boolean;
@@ -100,6 +108,8 @@ interface PlayerProps {
 export default function SongCard({
   trackId = "",
   entityLinkTo,
+  artistLinkTo,
+  artistRouteState,
   smallCoverOnMobile = false,
   isLikedInitial = false,
   isRepostedInitial = false,
@@ -135,6 +145,7 @@ export default function SongCard({
   const { hasOfflineListening } = useSubscription();
   const { me } = useMe();
   const navigate = useNavigate();
+  const { addTrack, currentIndex, currentTrackId } = useQueue();
 
   const isThisTrack = currentTrack?.id === trackId;
   const playing = isThisTrack && isPlaying;
@@ -227,6 +238,25 @@ export default function SongCard({
   }, [trackId]);
 
   useEffect(() => {
+    if (!trackId) return;
+
+    const handleTrackLikeChanged = (event: Event) => {
+      const detail = (event as CustomEvent<TrackLikeChangedDetail>).detail;
+      if (!detail || detail.trackId !== trackId) return;
+
+      setIsLiked(detail.isLiked);
+      if (typeof detail.likesCount === "number") {
+        setLikesCount(detail.likesCount);
+      }
+    };
+
+    window.addEventListener(TRACK_LIKE_CHANGED_EVENT, handleTrackLikeChanged);
+    return () => {
+      window.removeEventListener(TRACK_LIKE_CHANGED_EVENT, handleTrackLikeChanged);
+    };
+  }, [trackId]);
+
+  useEffect(() => {
     if (!trackId || !me?.id || !hasOfflineListening) return;
     let mounted = true;
     hasDownload(me.id, trackId)
@@ -243,9 +273,16 @@ export default function SongCard({
   const handleLikeToggle = async () => {
     if (!trackId || isLikePending) return;
     const wasLiked = isLiked;
+    const nextIsLiked = !wasLiked;
+    const nextLikesCount = Math.max(0, likesCount + (wasLiked ? -1 : 1));
     setIsLikePending(true);
-    setIsLiked(!wasLiked);
-    setLikesCount((prev) => Math.max(0, prev + (wasLiked ? -1 : 1)));
+    setIsLiked(nextIsLiked);
+    setLikesCount(nextLikesCount);
+    notifyTrackLikeChanged({
+      trackId,
+      isLiked: nextIsLiked,
+      likesCount: nextLikesCount,
+    });
     try {
       if (wasLiked) {
         await engagementService.unlikeTrack(trackId);
@@ -254,7 +291,12 @@ export default function SongCard({
       }
     } catch {
       setIsLiked(wasLiked);
-      setLikesCount((prev) => Math.max(0, prev + (wasLiked ? 1 : -1)));
+      setLikesCount(likesCount);
+      notifyTrackLikeChanged({
+        trackId,
+        isLiked: wasLiked,
+        likesCount,
+      });
     } finally {
       setIsLikePending(false);
     }
@@ -363,6 +405,25 @@ export default function SongCard({
     requestSeek(trackId, pct);
   };
 
+  const handleAddToNextUp = () => {
+    if (!trackId) return;
+
+    if (onAddToNextUp) {
+      onAddToNextUp();
+      return;
+    }
+
+    addTrack(
+      {
+        trackId,
+        title,
+        artist: artistName,
+        durationSeconds: 0,
+      },
+      currentTrackId ? currentIndex + 1 : 0,
+    );
+  };
+
   useEffect(() => {
     const onClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -419,9 +480,19 @@ export default function SongCard({
           </button>
 
           <div className="flex-1 min-w-0">
-            <div className="mb-0.5 truncate text-[8px] text-[hsl(0,0%,50%)] sm:text-[11px]">
-              {artistName}
-            </div>
+            {artistLinkTo ? (
+              <Link
+                to={artistLinkTo}
+                state={artistRouteState}
+                className="mb-0.5 block truncate text-[8px] text-[hsl(0,0%,50%)] transition-colors hover:text-[hsl(0,0%,35%)] sm:text-[11px]"
+              >
+                {artistName}
+              </Link>
+            ) : (
+              <div className="mb-0.5 truncate text-[8px] text-[hsl(0,0%,50%)] transition-colors hover:text-[hsl(0,0%,35%)] sm:text-[11px]">
+                {artistName}
+              </div>
+            )}
             {cardPrimaryLink ? (
               <Link
                 to={cardPrimaryLink}
@@ -619,7 +690,7 @@ export default function SongCard({
                 <div className="absolute left-0 top-full mt-1 z-50 min-w-[180px] overflow-visible rounded-md border border-[hsl(0,0%,18%)] bg-[#0b0b0b] py-0.5 shadow-2xl">
                   <button
                     onClick={() => {
-                      onAddToNextUp?.();
+                      handleAddToNextUp();
                       setMenuOpen(false);
                     }}
                     className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-[13px] font-semibold text-white hover:text-zinc-500"

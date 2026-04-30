@@ -148,10 +148,13 @@ const mockLogout = async (): Promise<void> => {
 
 const realLogout = async (): Promise<void> => {
   const refreshToken = getRefreshToken();
-  if (refreshToken) {
-    await api.post('/auth/signout', { refreshToken });
+  try {
+    if (refreshToken) {
+      await api.post('/auth/signout', { refreshToken });
+    }
+  } finally {
+    clearTokens();
   }
-  clearTokens();
 };
 
 export const logout = IS_MOCK ? mockLogout : realLogout;

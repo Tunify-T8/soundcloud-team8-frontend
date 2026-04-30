@@ -124,6 +124,10 @@ const queueSlice = createSlice({
       state.repeat = repeatCycle[(currentIdx + 1) % repeatCycle.length];
     },
 
+    setRepeatMode(state, action: PayloadAction<repeatMode>) {
+      state.repeat = action.payload;
+    },
+
     clearQueue(state) {
       state.tracks        = [];
       state.currentIndex  = 0;
@@ -148,6 +152,7 @@ export const {
   removeTrack,
   toggleShuffle,
   toggleRepeat,
+  setRepeatMode,
   clearQueue,
 } = queueSlice.actions;
 

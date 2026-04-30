@@ -22,12 +22,14 @@ import { getAccessToken } from "@/features/auth/utils/token.utils";
 import CheckoutModal from "../../features/premium/components/CheckoutModal";
 import { socketSingleton } from "../../features/conversation/hooks/useSocket";
 import { useUnreadMessages } from "../../features/conversation/hooks/useUnreadMessages";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../../app/store";
 import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
 import { useSubscription } from "@/hooks/useSubscription";
 import SubscriptionBadge from "@/features/premium/components/SubscriptionBadge";
 import MyPlanModal from "@/features/premium/components/MyPlanModal";
+import { clearUser } from "@/store/userSlice";
+import { usePlayer } from "@/features/playerUI/context/usePlayer";
 
 
 function timeAgo(dateStr: string): string {
@@ -66,8 +68,10 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { me } = useMe();
+  const dispatch = useDispatch();
   const currentUserId = useSelector((state: RootState) => state.user.currentUser?.id ?? null);
   const { unreadMessages } = useUnreadMessages(currentUserId);
+  const { setIsPlaying } = usePlayer();
 
   const { tier, isArtist, isArtistPro } = useSubscription();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -218,8 +222,15 @@ export default function Navbar() {
   }, [location.pathname]);
 
   const handleSignOut = async () => {
+    setIsPlaying(false);
     try { await logout(); } catch { }
-    navigate("/signin");
+    dispatch(clearUser());
+    try {
+      window.localStorage.removeItem("profile_context_cache_v1");
+    } catch {
+      // Ignore storage failures during logout cleanup.
+    }
+    navigate("/signed-out", { replace: true });
   };
 
   const profileMenuItems = [

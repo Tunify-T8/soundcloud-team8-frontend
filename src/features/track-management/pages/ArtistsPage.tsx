@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from "react";
-import { Search, Plus, Globe, DollarSign, SlidersHorizontal, ArrowUpDown, BarChart, Users, Gift } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Search, Plus, Globe, DollarSign, SlidersHorizontal, ArrowUpDown } from "lucide-react";
 import TrackList from "../components/TrackList";
 import ArtistsNavbar from "../components/ArtistsNavbar";
 import ArtistsSidebar from "../components/ArtistsSidebar";
@@ -22,6 +22,7 @@ import { BenefitsSection } from "../components/BenefitsSection";
 import UploadQuotaBanner from "@/features/upload/components/UploadQuotaBanner";
 import { api } from "@/features/auth/services/api";
 import { subscriptionService } from "@/features/premium/premiumService";
+import SubscriptionBadge from "@/features/premium/components/SubscriptionBadge";
 
 import insightsImg from "@/assets/insights.png";
 import earningsImg from "@/assets/monetize.png";
@@ -110,14 +111,32 @@ export function UploadBanner() {
   }, []);
 
   return (
-    <UploadQuotaBanner
-      quota={quota}
-      loading={quotaLoading}
-      forceOverLimit={quotaBlocked}
-      statusMessage={
-        quotaBlocked ? "You've reached your upload limit for your plan" : undefined
-      }
-    />
+    planTier === "artist-pro" && !quotaLoading ? (
+      <div className="px-3 sm:px-6 pt-5">
+        <div className="bg-gradient-to-r from-[#f6e9b1] via-[#f2d57a] to-[#f6e9b1] border-b border-[#e2c76b] px-4 sm:px-8 py-3 rounded-sm">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <SubscriptionBadge tier="artist-pro" size={24} />
+              <span className="text-[#5b4210] text-sm sm:text-base font-black tracking-tight">
+                Enjoy Uploading Freely. Unlimitedly.
+              </span>
+            </div>
+            <span className="text-[#7a5b16] text-xs sm:text-sm font-semibold">
+              Total Uploaded Minutes: {quota?.uploadMinutesUsed ?? 0}
+            </span>
+          </div>
+        </div>
+      </div>
+    ) : (
+      <UploadQuotaBanner
+        quota={quota}
+        loading={quotaLoading}
+        forceOverLimit={quotaBlocked}
+        statusMessage={
+          quotaBlocked ? "You've reached your upload limit for your plan" : undefined
+        }
+      />
+    )
   );
 }
 

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SideBar from "@/components/layout/Sidebar";
 import type {
   DiscoverArtist,
@@ -7,6 +7,7 @@ import type {
 } from "@/features/discover/Discover";
 import { ArtistsToWatchSection } from "../components/ArtistsToWatchSection";
 import { DiscoverSection } from "../components/DiscoverSection";
+import { LatestUploadSection } from "../components/LatestUploadSection";
 import {
   getDiscoverTracks,
   getSuggestedArtists,
@@ -15,11 +16,14 @@ import {
 } from "../discoverService";
 import { usePlayContext } from "@/hooks/usePlayContext";
 import { useMe } from "@/features/profile/context/useMe";
+import { trackService } from "@/features/track-management/trackService";
+import type { Track } from "@/shared/types/Track";
 
 export default function DiscoverPage() {
   const [discoverTracks, setDiscoverTracks] = useState<DiscoverTrack[]>([]);
   const [albumTracks, setAlbumTracks] = useState<DiscoverTrack[]>([]);
   const [madeForYouTracks, setMadeForYouTracks] = useState<DiscoverTrack[]>([]);
+  const [uploadedTracks, setUploadedTracks] = useState<Track[]>([]);
   const [artistsToWatchTracks, setArtistsToWatchTracks] = useState<
     DiscoverArtist[]
   >([]);
@@ -85,6 +89,33 @@ export default function DiscoverPage() {
     };
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    trackService
+      .getUploadedTracks()
+      .then((tracks) => {
+        if (!isMounted) return;
+        setUploadedTracks(Array.isArray(tracks) ? tracks : []);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setUploadedTracks([]);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const latestUploadedTrack = useMemo(() => {
+    if (uploadedTracks.length === 0) return null;
+
+    return [...uploadedTracks].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    )[0] ?? null;
+  }, [uploadedTracks]);
+
   const discoverSections = [
     { title: "More of what you like", tracks: discoverTracks },
     // {
@@ -102,6 +133,7 @@ export default function DiscoverPage() {
   ];
 
   const hasAnyTracks =
+    latestUploadedTrack !== null ||
     discoverSections.some((section) => section.tracks.length > 0) ||
     artistsToWatchTracks.length > 0;
 
@@ -117,6 +149,24 @@ export default function DiscoverPage() {
             <p className="text-zinc-400">No discover tracks yet.</p>
           ) : (
             <>
+              {latestUploadedTrack ? (
+                <LatestUploadSection
+                  track={latestUploadedTrack}
+                  artistName={me?.displayName || me?.username || latestUploadedTrack.artist}
+                  onTrackUpdated={(updatedTrack) => {
+                    setUploadedTracks((prev) =>
+                      prev.map((track) =>
+                        track.id === updatedTrack.id ? updatedTrack : track,
+                      ),
+                    );
+                  }}
+                  onTrackDeleted={(trackId) => {
+                    setUploadedTracks((prev) =>
+                      prev.filter((track) => track.id !== trackId),
+                    );
+                  }}
+                />
+              ) : null}
               {discoverSections.map((section) => (
                 <DiscoverSection
                   key={section.title}

@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 import { engagementService } from '../services/engagementService';
 import type { EngagementState } from '../types';
+import {
+  notifyTrackLikeChanged,
+  TRACK_LIKE_CHANGED_EVENT,
+  type TrackLikeChangedDetail,
+} from '../engagementEvents';
 
  export const useEngagement = (trackId: string) => {
    const [state, setState] = useState<EngagementState>({
@@ -36,22 +41,52 @@ import type { EngagementState } from '../types';
       });
   }, [trackId]);
 
+  useEffect(() => {
+    if (!trackId) return;
+
+    const handleTrackLikeChanged = (event: Event) => {
+      const detail = (event as CustomEvent<TrackLikeChangedDetail>).detail;
+      if (!detail || detail.trackId !== trackId) return;
+
+      setState((prev) => ({
+        ...prev,
+        isLiked: detail.isLiked,
+        counts: {
+          ...prev.counts,
+          likes:
+            typeof detail.likesCount === "number"
+              ? detail.likesCount
+              : Math.max(0, prev.counts.likes + (detail.isLiked ? 1 : -1)),
+        },
+      }));
+    };
+
+    window.addEventListener(TRACK_LIKE_CHANGED_EVENT, handleTrackLikeChanged);
+    return () => {
+      window.removeEventListener(TRACK_LIKE_CHANGED_EVENT, handleTrackLikeChanged);
+    };
+  }, [trackId]);
+
   const toggleLike = async () => {
     try {
       if (state.isLiked) {
         await engagementService.unlikeTrack(trackId);
+        const nextLikes = Math.max(0, state.counts.likes - 1);
         setState((prev) => ({
           ...prev,
-          counts: { ...prev.counts, likes: Math.max(0, prev.counts.likes - 1) },
+          counts: { ...prev.counts, likes: nextLikes },
           isLiked: false,
         }));
+        notifyTrackLikeChanged({ trackId, isLiked: false, likesCount: nextLikes });
       } else {
         await engagementService.likeTrack(trackId);
+        const nextLikes = state.counts.likes + 1;
         setState((prev) => ({
           ...prev,
-          counts: { ...prev.counts, likes: prev.counts.likes + 1 },
+          counts: { ...prev.counts, likes: nextLikes },
           isLiked: true,
         }));
+        notifyTrackLikeChanged({ trackId, isLiked: true, likesCount: nextLikes });
       }
     } catch (error) {
       console.error('Failed to toggle like:', error);

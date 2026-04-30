@@ -494,6 +494,8 @@ export default function FeedPage() {
                   <div className="flex-1 bg-[#181818] rounded-lg">
                     <SongCard
                       trackId={item.trackId}
+                      artistLinkTo={item.artistId ? `/${encodeURIComponent(item.artistId)}` : undefined}
+                      artistRouteState={item.artistId ? { userId: item.artistId } : undefined}
                       isLikedInitial={item.isLiked}
                       isRepostedInitial={item.isReposted}
                       onToggleRepost={() => handleRepostToggle(item)}

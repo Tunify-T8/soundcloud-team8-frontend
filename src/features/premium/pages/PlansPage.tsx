@@ -6,6 +6,9 @@ import { useLocation, useNavigate } from "react-router-dom";
 import soundcloudImg from "@/assets/graysound.png";
 import CheckoutModal from "../components/CheckoutModal";
 import { logout } from "@/features/auth/services";
+import { usePlayer } from "@/features/playerUI/context/usePlayer";
+import { useDispatch } from "react-redux";
+import { clearUser } from "@/store/userSlice";
 
 const sections = [
   {
@@ -149,12 +152,14 @@ function MobileComparison({ onCheckout }: { onCheckout: (plan: "artist" | "artis
 }
 
 export default function PlansPage() {
+  const dispatch = useDispatch();
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { me } = useMe();
   const location = useLocation();
   const navigate = useNavigate();
+  const { setIsPlaying } = usePlayer();
   const plansRef = useRef<HTMLElement>(null);
   const comparisonRef = useRef<HTMLElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
@@ -194,8 +199,15 @@ export default function PlansPage() {
   const scrollToPlans = () => plansRef.current?.scrollIntoView({ behavior: "smooth" });
 
   const handleSignOut = async () => {
+    setIsPlaying(false);
     try { await logout(); } catch {}
-    navigate("/signin");
+    dispatch(clearUser());
+    try {
+      window.localStorage.removeItem("profile_context_cache_v1");
+    } catch {
+      // Ignore storage failures during logout cleanup.
+    }
+    navigate("/signed-out", { replace: true });
   };
 
   return (
