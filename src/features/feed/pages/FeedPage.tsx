@@ -38,6 +38,35 @@ type HoverCardState = {
   isLoading: boolean;
 };
 
+const FEED_CACHE_KEY = "feed_page_cache_v1";
+
+type FeedPageCache = {
+  feedItems: FeedItem[];
+  page: number;
+  hasMore: boolean;
+};
+
+function readFeedCache(): FeedPageCache | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.sessionStorage.getItem(FEED_CACHE_KEY);
+    return raw ? (JSON.parse(raw) as FeedPageCache) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeFeedCache(cache: FeedPageCache) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.sessionStorage.setItem(FEED_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // Ignore cache write failures.
+  }
+}
+
 const dedupeFeedByTrackId = (items: FeedItem[]): FeedItem[] => {
   const byTrackId = new Map<string, FeedItem>();
 
@@ -69,15 +98,18 @@ const dedupeFeedByTrackId = (items: FeedItem[]): FeedItem[] => {
 };
 
 export default function FeedPage() {
+  const initialCache = readFeedCache();
   const { me } = useMe();
-  const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [feedItems, setFeedItems] = useState<FeedItem[]>(
+    () => initialCache?.feedItems ?? [],
+  );
+  const [loading, setLoading] = useState(!initialCache);
   const [error, setError] = useState<string | null>(null);
   const [showReposts, setShowReposts] = useState(true);
 
   const FEED_PAGE_LIMIT = 20;
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(() => initialCache?.page ?? 1);
+  const [hasMore, setHasMore] = useState(() => initialCache?.hasMore ?? true);
   const [loadingMore, setLoadingMore] = useState(false);
   const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
   const lastRequestedPageRef = useRef(1);
@@ -89,7 +121,7 @@ export default function FeedPage() {
   const requestedUserIdsRef = useRef<Set<string>>(new Set());
 
   const refreshFeed = useCallback(async () => {
-    setLoading(true);
+    setLoading(feedItems.length === 0);
     setError(null);
     setPage(1);
     setHasMore(true);
@@ -104,19 +136,32 @@ export default function FeedPage() {
             ? Boolean((data as any).hasMore)
             : data.items.length === (data.limit ?? FEED_PAGE_LIMIT);
 
-        setFeedItems(dedupeFeedByTrackId(data.items));
+        const nextItems = dedupeFeedByTrackId(data.items);
+        setFeedItems(nextItems);
         setPage(data.page ?? 1);
         setHasMore(nextHasMore);
+        writeFeedCache({
+          feedItems: nextItems,
+          page: data.page ?? 1,
+          hasMore: nextHasMore,
+        });
       } else {
         setFeedItems([]);
         setHasMore(false);
+        writeFeedCache({
+          feedItems: [],
+          page: 1,
+          hasMore: false,
+        });
       }
     } catch {
-      setError("Failed to load feed");
+      if (feedItems.length === 0) {
+        setError("Failed to load feed");
+      }
     } finally {
       setLoading(false);
     }
-  }, [FEED_PAGE_LIMIT]);
+  }, [FEED_PAGE_LIMIT, feedItems.length]);
 
   const ensureHoverCardData = async (item: FeedItem) => {
     const userId = item.action.id;
@@ -234,7 +279,15 @@ export default function FeedPage() {
           ? Boolean((data as any).hasMore)
           : data.items.length === (data.limit ?? FEED_PAGE_LIMIT);
 
-      setFeedItems((prev) => dedupeFeedByTrackId([...prev, ...data.items]));
+      setFeedItems((prev) => {
+        const nextItems = dedupeFeedByTrackId([...prev, ...data.items]);
+        writeFeedCache({
+          feedItems: nextItems,
+          page: data.page ?? nextPage,
+          hasMore: nextHasMore,
+        });
+        return nextItems;
+      });
       setPage(data.page ?? nextPage);
       setHasMore(nextHasMore);
     } finally {
@@ -311,7 +364,7 @@ export default function FeedPage() {
     return () => observer.disconnect();
   }, [hasMore, loading, loadingMore, page]);
 
-  if (loading) {
+  if (loading && feedItems.length === 0) {
     return (
       <div
         data-testid="feed-loading"
@@ -322,7 +375,7 @@ export default function FeedPage() {
     );
   }
 
-  if (error) {
+  if (error && feedItems.length === 0) {
     return (
       <div
         data-testid="feed-error"

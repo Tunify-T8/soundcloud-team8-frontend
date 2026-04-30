@@ -5,7 +5,7 @@ import { useMe } from "@/features/profile/context/useMe";
 import { useLocation, useNavigate } from "react-router-dom";
 import soundcloudImg from "@/assets/graysound.png";
 import CheckoutModal from "../components/CheckoutModal";
-import { logout } from "@/features/auth/services";
+import { clearClientSessionData, logout } from "@/features/auth/services";
 import { usePlayer } from "@/features/playerUI/context/usePlayer";
 import { useDispatch } from "react-redux";
 import { clearUser } from "@/store/userSlice";
@@ -210,11 +210,7 @@ export default function PlansPage() {
     setIsPlaying(false);
     try { await logout(); } catch {}
     dispatch(clearUser());
-    try {
-      window.localStorage.removeItem("profile_context_cache_v1");
-    } catch {
-      // Ignore storage failures during logout cleanup.
-    }
+    clearClientSessionData();
     navigate("/signed-out", { replace: true });
   };
 

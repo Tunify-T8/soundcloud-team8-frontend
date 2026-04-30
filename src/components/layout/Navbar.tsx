@@ -8,7 +8,7 @@ import { Outlet } from "react-router-dom";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { useMe } from "../../features/profile/context/useMe";
-import { logout } from "../../features/auth/services/index";
+import { clearClientSessionData, logout } from "../../features/auth/services/index";
 import { io, Socket } from "socket.io-client";
 import {
   getNotifications,
@@ -225,11 +225,7 @@ export default function Navbar() {
     setIsPlaying(false);
     try { await logout(); } catch { }
     dispatch(clearUser());
-    try {
-      window.localStorage.removeItem("profile_context_cache_v1");
-    } catch {
-      // Ignore storage failures during logout cleanup.
-    }
+    clearClientSessionData();
     navigate("/signed-out", { replace: true });
   };
 
