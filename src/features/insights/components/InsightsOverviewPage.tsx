@@ -6,6 +6,7 @@ import { ChevronDown, X } from "lucide-react";
 import { MdPlayArrow } from "react-icons/md";
 import { FaHeart, FaComment, FaDownload } from "react-icons/fa";
 import { BiRepost } from "react-icons/bi";
+import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
 
 type TimeRange = "Today" | "Last 7 days" | "Last 30 days" | "Last 12 months" | "All time" | "Custom range";
 type StatKey = "plays" | "likes" | "comments" | "reposts" | "downloads";
@@ -206,13 +207,12 @@ export default function InsightsOverviewPage() {
               <p className="text-sm text-zinc-300 mb-8 leading-relaxed">
                 Upgrade your account, upload and distribute your track to get started.
               </p>
-              <button
+              <ArtistProUpgradeButton
                 type="button"
                 className="border border-white px-6 py-3 text-sm font-bold text-white hover:bg-white hover:text-black transition-colors cursor-pointer"
-                onClick={() => window.open("/plans", "_blank")}
               >
                 Upgrade to Artist Pro
-              </button>
+              </ArtistProUpgradeButton>
             </div>
             <div className="shrink-0 hidden md:block">
               <img src={allPlatformsImg} alt="All platforms illustration" className="w-56 h-auto object-contain" />
@@ -238,13 +238,12 @@ export default function InsightsOverviewPage() {
               <p className="text-sm font-bold text-white mb-6">
                 Available to Artist Pro subscribers.
               </p>
-              <button
+              <ArtistProUpgradeButton
                 type="button"
                 className="border border-white px-6 py-3 text-sm font-bold text-white hover:bg-white hover:text-black transition-colors cursor-pointer"
-                onClick={() => window.open("/plans", "_blank")}
               >
                 Upgrade to Artist Pro
-              </button>
+              </ArtistProUpgradeButton>
             </div>
             <div className="shrink-0 hidden md:block">
               <img src={fansImg} alt="Fans illustration" className="w-56 h-auto object-contain" />

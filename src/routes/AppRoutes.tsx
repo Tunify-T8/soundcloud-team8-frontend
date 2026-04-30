@@ -14,7 +14,7 @@ const AppRoutes = () => {
         <Route path="/library"      element={<LibraryPage />} />
         <Route path="/me/sets"      element={<LibraryPage />} />
         <Route path="/me/likes"     element={<LibraryPage />} />
-        <Route path="/me/albums"    element={<LibraryPage />} />
+        <Route path="/library/albums"    element={<LibraryPage />} />
         <Route path="/me/stations"  element={<LibraryPage />} />
         <Route path="/me/following" element={<LibraryPage />} />
         <Route path="/me/history"   element={<LibraryPage />} />

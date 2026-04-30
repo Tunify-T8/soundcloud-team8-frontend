@@ -1,33 +1,28 @@
-import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+// @/features/premium/components/CheckoutModal.tsx
+import { useEffect, useState, useContext, useMemo } from "react";
+import { X, Loader2 } from "lucide-react";
 import soundcloudImg from "@/assets/silhouette.png";
 import lockImg from "@/assets/lock.png";
+import PaymentSuccessModal from "./PaymentSuccessModal";
+import PaymentFailedBanner from "./PaymentFailedBanner";
+import { ProfileContext } from "@/features/profile/context/ProfileContext";
+import {
+  subscriptionService,
+  detectCardBrand,
+} from "@/features/premium/premiumService";
+import type { Plan, SubscribeErrorResponse } from "@/features/premium/premiumService";
 
 interface CheckoutModalProps {
   plan: "artist" | "artist-pro";
+  /** Plans array passed down from UpgradeModal (already fetched). Optional — fetched internally if omitted. */
+  plans?: Plan[];
   onClose: () => void;
 }
 
-const PLAN_CONFIG = {
-  artist: {
-    title: "Get Artist",
-    name: "Artist",
-    yearlyTotal: "EGP 359.88",
-    yearlyMonthly: "EGP 29.99/month",
-    monthlyPrice: "EGP 59.99/month",
-    renewAmount: "EGP 359.88",
-  },
-  "artist-pro": {
-    title: "Get Artist Pro",
-    name: "Artist Pro",
-    yearlyTotal: "EGP 899.88",
-    yearlyMonthly: "EGP 74.99/month",
-    monthlyPrice: "EGP 149.99/month",
-    renewAmount: "EGP 899.88",
-  },
-};
+function fmt(amount: number, currency: string) {
+  return `${currency} ${amount.toFixed(2)}`;
+}
 
-// Luhn algorithm 3shan ne validate el card number
 function luhn(value: string): boolean {
   const digits = value.replace(/\D/g, "");
   if (digits.length < 13 || digits.length > 19) return false;
@@ -35,10 +30,7 @@ function luhn(value: string): boolean {
   let shouldDouble = false;
   for (let i = digits.length - 1; i >= 0; i--) {
     let d = parseInt(digits[i], 10);
-    if (shouldDouble) {
-      d *= 2;
-      if (d > 9) d -= 9;
-    }
+    if (shouldDouble) { d *= 2; if (d > 9) d -= 9; }
     sum += d;
     shouldDouble = !shouldDouble;
   }
@@ -58,12 +50,41 @@ interface CardErrors {
   cvv?: string;
 }
 
-export default function CheckoutModal({ plan, onClose }: CheckoutModalProps) {
+export default function CheckoutModal({ plan, plans: plansProp = [], onClose }: CheckoutModalProps) {
   const [billing, setBilling] = useState<"yearly" | "monthly">("yearly");
   const [payment, setPayment] = useState<"card" | "paypal" | "apple" | null>(null);
-  const config = PLAN_CONFIG[plan];
 
-  // Card fields
+  const [fetchedPlans, setFetchedPlans] = useState<Plan[]>([]);
+
+  // Fetch plans internally if not passed from parent (standalone usage)
+  useEffect(() => {
+    if (plansProp.length === 0) {
+      subscriptionService.getPlans().then(setFetchedPlans);
+    }
+  }, []); 
+
+  const plans = plansProp.length > 0 ? plansProp : fetchedPlans;
+  const planData = plans.find((p) => p.name === plan);
+  const currency = planData?.currency ?? "EGP";
+
+  // Derived pricing from API data
+  const config = useMemo(() => {
+    const monthly = planData?.monthly_price ?? (plan === "artist" ? 65 : 164.99);
+    const yearly = planData?.yearly_price ?? (plan === "artist" ? 479.99 : 1149.99);
+    const yearlyPerMonth = yearly / 12;
+
+    return {
+      title: plan === "artist" ? "Get Artist" : "Get Artist Pro",
+      name: plan === "artist" ? "Artist" : "Artist Pro",
+      isArtistPro: plan === "artist-pro",
+      yearlyTotal: fmt(yearly, currency),
+      yearlyMonthly: fmt(yearlyPerMonth, currency) + "/month",
+      monthlyPrice: fmt(monthly, currency) + "/month",
+      renewAmount: (billing: "yearly" | "monthly") =>
+        billing === "yearly" ? fmt(yearly, currency) : fmt(monthly, currency),
+    };
+  }, [planData, plan, currency]);
+
   const [firstName, setFirstName] = useState("");
   const [surname, setSurname] = useState("");
   const [cardNumber, setCardNumber] = useState("");
@@ -73,10 +94,14 @@ export default function CheckoutModal({ plan, onClose }: CheckoutModalProps) {
   const [errors, setErrors] = useState<CardErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  const { setSubscription } = useContext(ProfileContext);
+
   useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
+    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", handleKey);
     document.body.style.overflow = "hidden";
     return () => {
@@ -91,11 +116,10 @@ export default function CheckoutModal({ plan, onClose }: CheckoutModalProps) {
   const renewDate = new Date();
   renewDate.setFullYear(renewDate.getFullYear() + 1);
   const renewDateStr = renewDate.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
+    day: "2-digit", month: "short", year: "numeric",
   });
 
+  
   function validate(): CardErrors {
     const e: CardErrors = {};
     const currentYear = new Date().getFullYear();
@@ -132,13 +156,71 @@ export default function CheckoutModal({ plan, onClose }: CheckoutModalProps) {
     setErrors(validate());
   }
 
-  function handleSubmit() {
-    const allTouched = { firstName: true, surname: true, cardNumber: true, expMonth: true, expYear: true, cvv: true };
-    setTouched(allTouched);
-    const errs = validate();
-    setErrors(errs);
-    if (Object.keys(errs).length === 0) {
-      // proceed with payment
+  /**
+   * Whether the payment button should be enabled (not dimmed).
+   * - No payment selected → dimmed
+   * - Card selected → all required card fields must be valid
+   * - PayPal / Apple → ready immediately once selected
+   */
+  const isReady = useMemo(() => {
+    if (!payment) return false;
+    if (payment === "card") {
+      const errs = validate();
+      return Object.keys(errs).length === 0;
+    }
+    return true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [payment, firstName, surname, cardNumber, expMonth, expYear, cvv]);
+
+  async function handleSubmit() {
+    setPaymentError(null);
+
+    if (payment === "card") {
+      const allTouched = {
+        firstName: true, surname: true, cardNumber: true,
+        expMonth: true, expYear: true, cvv: true,
+      };
+      setTouched(allTouched);
+      const errs = validate();
+      setErrors(errs);
+      if (Object.keys(errs).length > 0) return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const rawCard = cardNumber.replace(/\s/g, "");
+      await subscriptionService.subscribe({
+        plan,
+        billingCycle: billing,
+        paymentMethod: payment!,
+        ...(payment === "card" && {
+          card: {
+            last4: rawCard.slice(-4),
+            brand: detectCardBrand(rawCard),
+            expiryMonth: parseInt(expMonth, 10),
+            expiryYear: parseInt(expYear, 10),
+          },
+        }),
+        trialDays: 7,
+      });
+
+      try {
+        const latestSubscription = await subscriptionService.getMySubscription({
+          fallbackToFree: false,
+        });
+        setSubscription(latestSubscription);
+      } catch {
+        // Keep the purchase success flow moving even if subscription sync lags briefly.
+      }
+      setShowSuccess(true);
+    } catch (err: unknown) {
+      const apiErr = err as Partial<SubscribeErrorResponse>;
+      setPaymentError(
+        apiErr?.message ??
+          "Your payment could not be processed. Please check your card details and try again."
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -149,13 +231,38 @@ export default function CheckoutModal({ plan, onClose }: CheckoutModalProps) {
         : "focus:ring-orange-400"
     }`;
 
+  if (showSuccess) {
+    return (
+      <PaymentSuccessModal
+        plan={plan}
+        onClose={() => {
+          setShowSuccess(false);
+          onClose();
+        }}
+      />
+    );
+  }
+
+  // ── Button rendering helpers ─────────────────────────────────────────────────
+
+  const dimmedClass = "bg-zinc-400 cursor-not-allowed text-white opacity-70";
+  const appleReadyClass = "bg-black hover:bg-zinc-800 text-white";
+  const paypalReadyClass = "bg-[#0070ba] hover:bg-[#005ea6] text-white";
+  const defaultReadyClass = "bg-zinc-900 hover:bg-zinc-700 text-white";
+
+  function getButtonClass() {
+    if (!isReady) return dimmedClass;
+    if (payment === "apple") return appleReadyClass;
+    if (payment === "paypal") return paypalReadyClass;
+    return defaultReadyClass;
+  }
+
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="relative bg-white rounded-2xl w-full max-w-[820px] max-h-[90vh] overflow-y-auto shadow-2xl animate-in">
-        {/* Close button */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 w-8 h-8 rounded-full bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center transition-colors z-10"
@@ -164,7 +271,6 @@ export default function CheckoutModal({ plan, onClose }: CheckoutModalProps) {
         </button>
 
         <div className="px-8 pt-10 pb-8">
-          {/* Title */}
           <div className="flex items-center gap-3 mb-8">
             <h2 className="text-2xl font-semibold text-zinc-700">{config.title}</h2>
           </div>
@@ -176,11 +282,7 @@ export default function CheckoutModal({ plan, onClose }: CheckoutModalProps) {
               <section>
                 <h3 className="text-base font-bold text-zinc-700 mb-4">1. Billing cycle</h3>
                 <div className="space-y-3">
-                  <label
-                    className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
-                      billing === "yearly" ? "border-orange-500" : "border-zinc-200 hover:border-zinc-300"
-                    }`}
-                  >
+                  <label className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${billing === "yearly" ? "border-orange-500" : "border-zinc-200 hover:border-zinc-300"}`}>
                     <input type="radio" name="billing" className="mt-0.5 accent-orange-500" checked={billing === "yearly"} onChange={() => setBilling("yearly")} />
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
@@ -190,12 +292,7 @@ export default function CheckoutModal({ plan, onClose }: CheckoutModalProps) {
                       <p className="text-[12px] text-zinc-500 mt-0.5">{config.yearlyTotal}, that's {config.yearlyMonthly}</p>
                     </div>
                   </label>
-
-                  <label
-                    className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
-                      billing === "monthly" ? "border-orange-500" : "border-zinc-200 hover:border-zinc-300"
-                    }`}
-                  >
+                  <label className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${billing === "monthly" ? "border-orange-500" : "border-zinc-200 hover:border-zinc-300"}`}>
                     <input type="radio" name="billing" className="mt-0.5 accent-orange-500" checked={billing === "monthly"} onChange={() => setBilling("monthly")} />
                     <div className="flex-1">
                       <span className="text-sm font-bold text-zinc-700">Monthly billing</span>
@@ -220,7 +317,7 @@ export default function CheckoutModal({ plan, onClose }: CheckoutModalProps) {
                     <span className="text-sm font-medium text-zinc-700 flex-1">Apple Pay</span>
                     <span className="border border-zinc-300 rounded px-2 py-0.5 flex items-center gap-1">
                       <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" className="text-zinc-800">
-                        <path d="M11.05 7.38c-.02-1.96 1.6-2.9 1.67-2.95-.91-1.33-2.33-1.51-2.84-1.53-1.21-.12-2.36.71-2.97.71-.61 0-1.56-.69-2.56-.67-1.32.02-2.54.77-3.22 1.95-1.37 2.38-.35 5.9 .98 7.83.65.94 1.42 2 2.44 1.96.98-.04 1.35-.63 2.54-.63 1.18 0 1.52.63 2.56.61 1.05-.02 1.72-.96 2.36-1.91.75-1.09 1.05-2.15 1.07-2.2-.02-.01-2.04-.79-2.03-3.17zM9.07 1.9C9.58 1.28 9.93.42 9.83-.5c-.76.03-1.68.51-2.22 1.12-.49.55-.91 1.43-.8 2.27.85.07 1.72-.43 2.26-1z"/>
+                        <path d="M11.05 7.38c-.02-1.96 1.6-2.9 1.67-2.95-.91-1.33-2.33-1.51-2.84-1.53-1.21-.12-2.36.71-2.97.71-.61 0-1.56-.69-2.56-.67-1.32.02-2.54.77-3.22 1.95-1.37 2.38-.35 5.9 .98 7.83.65.94 1.42 2 2.44 1.96.98-.04 1.35-.63 2.54-.63 1.18 0 1.52.63 2.56.61 1.05-.02 1.72-.96 2.36-1.91.75-1.09 1.05-2.15 1.07-2.2-.02-.01-2.04-.79-2.03-3.17zM9.07 1.9C9.58 1.28 9.93.42 9.83-.5c-.76.03-1.68.51-2.22 1.12-.49.55-.91 1.43-.8 2.27.85.07 1.72-.43 2.26-1z" />
                       </svg>
                       <span className="text-xs font-semibold text-zinc-800">Pay</span>
                     </span>
@@ -238,152 +335,60 @@ export default function CheckoutModal({ plan, onClose }: CheckoutModalProps) {
                     </div>
                   </label>
 
-                  {/* Card fields with validation */}
                   {payment === "card" && (
                     <div className="space-y-3 px-1">
-                      {/* First name */}
                       <div>
-                        <input
-                          type="text"
-                          placeholder="First name"
-                          value={firstName}
-                          onChange={(e) => setFirstName(e.target.value)}
-                          onBlur={() => handleBlur("firstName")}
-                          className={inputClass("firstName")}
-                        />
-                        {touched.firstName && errors.firstName && (
-                          <p className="text-red-500 text-[12px] mt-1">{errors.firstName}</p>
-                        )}
+                        <input type="text" placeholder="First name" value={firstName} onChange={(e) => setFirstName(e.target.value)} onBlur={() => handleBlur("firstName")} className={inputClass("firstName")} />
+                        {touched.firstName && errors.firstName && <p className="text-red-500 text-[12px] mt-1">{errors.firstName}</p>}
                       </div>
-
-                      {/* Surname */}
                       <div>
-                        <input
-                          type="text"
-                          placeholder="Surname"
-                          value={surname}
-                          onChange={(e) => setSurname(e.target.value)}
-                          onBlur={() => handleBlur("surname")}
-                          className={inputClass("surname")}
-                        />
-                        {touched.surname && errors.surname && (
-                          <p className="text-red-500 text-[12px] mt-1">{errors.surname}</p>
-                        )}
+                        <input type="text" placeholder="Surname" value={surname} onChange={(e) => setSurname(e.target.value)} onBlur={() => handleBlur("surname")} className={inputClass("surname")} />
+                        {touched.surname && errors.surname && <p className="text-red-500 text-[12px] mt-1">{errors.surname}</p>}
                       </div>
-
-                      {/* Card number */}
                       <div>
                         <div className="relative">
-                          <input
-                            type="text"
-                            placeholder="Card number"
-                            value={cardNumber}
-                            onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
-                            onBlur={() => handleBlur("cardNumber")}
-                            className={`${inputClass("cardNumber")} pr-10`}
-                            maxLength={19}
-                          />
+                          <input type="text" placeholder="Card number" value={cardNumber} onChange={(e) => setCardNumber(formatCardNumber(e.target.value))} onBlur={() => handleBlur("cardNumber")} className={`${inputClass("cardNumber")} pr-10`} maxLength={19} />
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400">
                             {touched.cardNumber && errors.cardNumber ? (
-                              <svg width="18" height="18" viewBox="0 0 20 20" fill="#ef4444">
-                                <circle cx="10" cy="10" r="9" />
-                                <text x="10" y="15" textAnchor="middle" fill="white" fontSize="13" fontWeight="bold">!</text>
-                              </svg>
+                              <svg width="18" height="18" viewBox="0 0 20 20" fill="#ef4444"><circle cx="10" cy="10" r="9" /><text x="10" y="15" textAnchor="middle" fill="white" fontSize="13" fontWeight="bold">!</text></svg>
                             ) : (
-                              <svg width="20" height="14" viewBox="0 0 20 14" fill="none">
-                                <rect width="20" height="14" rx="2" fill="#E5E7EB"/>
-                                <rect y="3" width="20" height="3" fill="#9CA3AF"/>
-                              </svg>
+                              <svg width="20" height="14" viewBox="0 0 20 14" fill="none"><rect width="20" height="14" rx="2" fill="#E5E7EB" /><rect y="3" width="20" height="3" fill="#9CA3AF" /></svg>
                             )}
                           </span>
                         </div>
-                        {touched.cardNumber && errors.cardNumber && (
-                          <p className="text-red-500 text-[12px] mt-1">{errors.cardNumber}</p>
-                        )}
+                        {touched.cardNumber && errors.cardNumber && <p className="text-red-500 text-[12px] mt-1">{errors.cardNumber}</p>}
                       </div>
 
-                      {/* Exp month / year / CVV */}
                       <div className="grid grid-cols-3 gap-2">
+                        {/* Exp month */}
                         <div>
                           <div className="relative">
-                            <input
-                              type="text"
-                              placeholder="Exp. month"
-                              value={expMonth}
-                              onChange={(e) => setExpMonth(e.target.value.replace(/\D/g, "").slice(0, 2))}
-                              onBlur={() => handleBlur("expMonth")}
-                              className={`px-3 py-3 rounded-xl bg-zinc-100 text-sm text-zinc-700 placeholder-zinc-400 outline-none focus:ring-2 w-full transition-all ${
-                                touched.expMonth && errors.expMonth ? "ring-2 ring-red-400" : "focus:ring-orange-400"
-                              }`}
-                            />
-                            {touched.expMonth && errors.expMonth && (
-                              <span className="absolute right-2 top-1/2 -translate-y-1/2">
-                                <svg width="16" height="16" viewBox="0 0 20 20" fill="#ef4444">
-                                  <circle cx="10" cy="10" r="9" />
-                                  <text x="10" y="15" textAnchor="middle" fill="white" fontSize="13" fontWeight="bold">!</text>
-                                </svg>
-                              </span>
-                            )}
+                            <input type="text" placeholder="Exp. month" value={expMonth} onChange={(e) => setExpMonth(e.target.value.replace(/\D/g, "").slice(0, 2))} onBlur={() => handleBlur("expMonth")}
+                              className={`px-3 py-3 rounded-xl bg-zinc-100 text-sm text-zinc-700 placeholder-zinc-400 outline-none focus:ring-2 w-full transition-all ${touched.expMonth && errors.expMonth ? "ring-2 ring-red-400" : "focus:ring-orange-400"}`} />
+                            {touched.expMonth && errors.expMonth && <span className="absolute right-2 top-1/2 -translate-y-1/2"><svg width="16" height="16" viewBox="0 0 20 20" fill="#ef4444"><circle cx="10" cy="10" r="9" /><text x="10" y="15" textAnchor="middle" fill="white" fontSize="13" fontWeight="bold">!</text></svg></span>}
                           </div>
-                          {touched.expMonth && errors.expMonth && (
-                            <p className="text-red-500 text-[11px] mt-1 leading-tight">{errors.expMonth}</p>
-                          )}
+                          {touched.expMonth && errors.expMonth && <p className="text-red-500 text-[11px] mt-1 leading-tight">{errors.expMonth}</p>}
                         </div>
-
+                        {/* Exp year */}
                         <div>
                           <div className="relative">
-                            <input
-                              type="text"
-                              placeholder="Exp. year"
-                              value={expYear}
-                              onChange={(e) => setExpYear(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                              onBlur={() => handleBlur("expYear")}
-                              className={`px-3 py-3 rounded-xl bg-zinc-100 text-sm text-zinc-700 placeholder-zinc-400 outline-none focus:ring-2 w-full transition-all ${
-                                touched.expYear && errors.expYear ? "ring-2 ring-red-400" : "focus:ring-orange-400"
-                              }`}
-                            />
-                            {touched.expYear && errors.expYear && (
-                              <span className="absolute right-2 top-1/2 -translate-y-1/2">
-                                <svg width="16" height="16" viewBox="0 0 20 20" fill="#ef4444">
-                                  <circle cx="10" cy="10" r="9" />
-                                  <text x="10" y="15" textAnchor="middle" fill="white" fontSize="13" fontWeight="bold">!</text>
-                                </svg>
-                              </span>
-                            )}
+                            <input type="text" placeholder="Exp. year" value={expYear} onChange={(e) => setExpYear(e.target.value.replace(/\D/g, "").slice(0, 4))} onBlur={() => handleBlur("expYear")}
+                              className={`px-3 py-3 rounded-xl bg-zinc-100 text-sm text-zinc-700 placeholder-zinc-400 outline-none focus:ring-2 w-full transition-all ${touched.expYear && errors.expYear ? "ring-2 ring-red-400" : "focus:ring-orange-400"}`} />
+                            {touched.expYear && errors.expYear && <span className="absolute right-2 top-1/2 -translate-y-1/2"><svg width="16" height="16" viewBox="0 0 20 20" fill="#ef4444"><circle cx="10" cy="10" r="9" /><text x="10" y="15" textAnchor="middle" fill="white" fontSize="13" fontWeight="bold">!</text></svg></span>}
                           </div>
-                          {touched.expYear && errors.expYear && (
-                            <p className="text-red-500 text-[11px] mt-1 leading-tight">{errors.expYear}</p>
-                          )}
+                          {touched.expYear && errors.expYear && <p className="text-red-500 text-[11px] mt-1 leading-tight">{errors.expYear}</p>}
                         </div>
-
+                        {/* CVV */}
                         <div>
                           <div className="relative">
-                            <input
-                              type="text"
-                              placeholder="CVV"
-                              value={cvv}
-                              onChange={(e) => setCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                              onBlur={() => handleBlur("cvv")}
-                              className={`px-3 py-3 rounded-xl bg-zinc-100 text-sm text-zinc-700 placeholder-zinc-400 outline-none focus:ring-2 w-full transition-all ${
-                                touched.cvv && errors.cvv ? "ring-2 ring-red-400" : "focus:ring-orange-400"
-                              }`}
-                            />
-                            {touched.cvv && errors.cvv && (
-                              <span className="absolute right-2 top-1/2 -translate-y-1/2">
-                                <svg width="16" height="16" viewBox="0 0 20 20" fill="#ef4444">
-                                  <circle cx="10" cy="10" r="9" />
-                                  <text x="10" y="15" textAnchor="middle" fill="white" fontSize="13" fontWeight="bold">!</text>
-                                </svg>
-                              </span>
-                            )}
+                            <input type="text" placeholder="CVV" value={cvv} onChange={(e) => setCvv(e.target.value.replace(/\D/g, "").slice(0, 4))} onBlur={() => handleBlur("cvv")}
+                              className={`px-3 py-3 rounded-xl bg-zinc-100 text-sm text-zinc-700 placeholder-zinc-400 outline-none focus:ring-2 w-full transition-all ${touched.cvv && errors.cvv ? "ring-2 ring-red-400" : "focus:ring-orange-400"}`} />
+                            {touched.cvv && errors.cvv && <span className="absolute right-2 top-1/2 -translate-y-1/2"><svg width="16" height="16" viewBox="0 0 20 20" fill="#ef4444"><circle cx="10" cy="10" r="9" /><text x="10" y="15" textAnchor="middle" fill="white" fontSize="13" fontWeight="bold">!</text></svg></span>}
                           </div>
-                          {touched.cvv && errors.cvv && (
-                            <p className="text-red-500 text-[11px] mt-1 leading-tight">{errors.cvv}</p>
-                          )}
+                          {touched.cvv && errors.cvv && <p className="text-red-500 text-[11px] mt-1 leading-tight">{errors.cvv}</p>}
                         </div>
                       </div>
 
-                      {/* Country */}
                       <select className="w-full px-4 py-3 rounded-xl bg-zinc-100 text-sm text-zinc-700 outline-none focus:ring-2 focus:ring-orange-400 appearance-none">
                         <option value="">Billing Country</option>
                         <option value="EG">Egypt</option>
@@ -392,11 +397,7 @@ export default function CheckoutModal({ plan, onClose }: CheckoutModalProps) {
                         <option value="SA">Saudi Arabia</option>
                         <option value="AE">UAE</option>
                       </select>
-
-                      {/* Postcode */}
                       <input type="text" placeholder="Postcode (optional)" className="w-full px-4 py-3 rounded-xl bg-zinc-100 text-sm text-zinc-700 placeholder-zinc-400 outline-none focus:ring-2 focus:ring-orange-400" />
-
-                      {/* Billing address checkbox */}
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" className="accent-orange-500 w-4 h-4" />
                         <span className="text-[13px] text-zinc-600">Add billing address (visible on invoice)</span>
@@ -408,9 +409,7 @@ export default function CheckoutModal({ plan, onClose }: CheckoutModalProps) {
                   <label className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${payment === "paypal" ? "border-orange-500" : "border-zinc-200 hover:border-zinc-300"}`}>
                     <input type="radio" name="payment" className="accent-orange-500" checked={payment === "paypal"} onChange={() => setPayment("paypal")} />
                     <span className="text-sm font-medium text-zinc-700 flex-1">PayPal</span>
-                    <span className="text-[#003087] font-black text-base italic">
-                      Pay<span className="text-[#009cde]">Pal</span>
-                    </span>
+                    <span className="text-[#003087] font-black text-base italic">Pay<span className="text-[#009cde]">Pal</span></span>
                   </label>
 
                   {payment === "paypal" && (
@@ -437,7 +436,6 @@ export default function CheckoutModal({ plan, onClose }: CheckoutModalProps) {
             {/* RIGHT: Review purchase */}
             <div>
               <h3 className="text-base font-bold text-zinc-700 mb-4">3. Review your purchase</h3>
-
               <div className="flex items-center gap-3 mb-4">
                 <img src={soundcloudImg} alt="Artist" className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
                 <span className="text-base font-bold text-zinc-700">{config.name}</span>
@@ -457,45 +455,56 @@ export default function CheckoutModal({ plan, onClose }: CheckoutModalProps) {
                   <span className="text-[13px] text-zinc-700 font-semibold">{billingLabel}</span>
                 </div>
                 <p className="text-xs text-zinc-500 leading-relaxed pt-3 mt-3 border-zinc-200">
-                  Subscription will automatically renew at {config.renewAmount} every{" "}
+                  Subscription will automatically renew at {config.renewAmount(billing)} every{" "}
                   {billing === "yearly" ? "year" : "month"}, starting {renewDateStr}, unless you cancel before the day of your next renewal in your subscription settings.
                 </p>
-                <p className="text-[11px] text-zinc-400">All prices in EGP</p>
+                <p className="text-[11px] text-zinc-400">All prices in {currency}</p>
               </div>
 
-              {payment === "apple" ? (
-                <button className="w-full py-3.5 bg-black hover:bg-zinc-800 text-white text-sm font-semibold rounded-lg transition-colors mb-3 flex items-center justify-center gap-1 tracking-tight">
-                  Continue with
-                  <span className="flex items-center gap-0.5">
-                    <svg width="16" height="16" viewBox="1 1 14 14" fill="white">
-                      <path d="M11.05 7.38c-.02-1.96 1.6-2.9 1.67-2.95-.91-1.33-2.33-1.51-2.84-1.53-1.21-.12-2.36.71-2.97.71-.61 0-1.56-.69-2.56-.67-1.32.02-2.54.77-3.22 1.95-1.37 2.38-.35 5.9.98 7.83.65.94 1.42 2 2.44 1.96.98-.04 1.35-.63 2.54-.63 1.18 0 1.52.63 2.56.61 1.05-.02 1.72-.96 2.36-1.91.75-1.09 1.05-2.15 1.07-2.2-.02-.01-2.04-.79-2.03-3.17zM9.07 1.9C9.58 1.28 9.93.42 9.83-.5c-.76.03-1.68.51-2.22 1.12-.49.55-.91 1.43-.8 2.27.85.07 1.72-.43 2.26-1z"/>
-                    </svg>
-                    Pay
-                  </span>
-                </button>
-              ) : payment === "paypal" ? (
-                <button className="w-full py-3.5 bg-[#0070ba] hover:bg-[#005ea6] text-white text-sm font-bold rounded-lg transition-colors mb-3 flex items-center justify-center gap-2">
-                  <span className="font-black italic text-base">
-                    <span className="text-white">Pay</span><span className="text-[#70d0f6]">Pal</span>
-                  </span>
-                  Continue with PayPal
-                </button>
-              ) : (
-                <button
-                  onClick={payment === "card" ? handleSubmit : undefined}
-                  className="w-full py-3.5 bg-zinc-500 hover:bg-zinc-600 text-white text-sm font-bold rounded-lg transition-colors mb-3"
-                >
-                  Buy subscription
-                </button>
+              {paymentError && (
+                <PaymentFailedBanner
+                  onDismiss={() => setPaymentError(null)}
+                  onRetry={() => { setPaymentError(null); setPayment("card"); }}
+                />
               )}
+
+              {/* ── Primary CTA button ──────────────────────────────────── */}
+              <button
+                onClick={handleSubmit}
+                disabled={!isReady || isSubmitting}
+                className={`w-full py-3.5 text-sm font-bold rounded-lg transition-colors mb-3 flex items-center justify-center gap-2 ${getButtonClass()}`}
+              >
+                {isSubmitting ? (
+                  <><Loader2 size={16} className="animate-spin" /> Processing…</>
+                ) : payment === "apple" ? (
+                  <>Continue with{" "}
+                    <span className="flex items-center gap-0.5">
+                      <svg width="16" height="16" viewBox="1 1 14 14" fill="white">
+                        <path d="M11.05 7.38c-.02-1.96 1.6-2.9 1.67-2.95-.91-1.33-2.33-1.51-2.84-1.53-1.21-.12-2.36.71-2.97.71-.61 0-1.56-.69-2.56-.67-1.32.02-2.54.77-3.22 1.95-1.37 2.38-.35 5.9.98 7.83.65.94 1.42 2 2.44 1.96.98-.04 1.35-.63 2.54-.63 1.18 0 1.52.63 2.56.61 1.05-.02 1.72-.96 2.36-1.91.75-1.09 1.05-2.15 1.07-2.2-.02-.01-2.04-.79-2.03-3.17zM9.07 1.9C9.58 1.28 9.93.42 9.83-.5c-.76.03-1.68.51-2.22 1.12-.49.55-.91 1.43-.8 2.27.85.07 1.72-.43 2.26-1z"/>
+                      </svg>
+                      Pay
+                    </span>
+                  </>
+                ) : payment === "paypal" ? (
+                  <>
+                    <span className="font-black italic text-base">
+                      <span className="text-white">Pay</span><span className="text-[#70d0f6]">Pal</span>
+                    </span>
+                    Continue with PayPal
+                  </>
+                ) : config.isArtistPro ? (
+                  "Start free trial"
+                ) : (
+                  "Buy subscription"
+                )}
+              </button>
 
               <p className="text-[11px] text-zinc-400 leading-relaxed">
                 By submitting your payment information and clicking{" "}
-                {payment === "apple" ? "Continue with Apple Pay" : payment === "paypal" ? "Continue with PayPal" : "Buy subscription"}{" "}
+                {payment === "apple" ? "Continue with Apple Pay" : payment === "paypal" ? "Continue with PayPal" : config.isArtistPro ? "Start free trial" : "Buy subscription"}{" "}
                 you agree to the{" "}
                 <a href="#" className="underline text-zinc-600">Terms of Use for Artist Subscriptions</a>{" "}
-                and{" "}
-                <a href="#" className="underline text-zinc-600">Privacy Policy</a>.
+                and <a href="#" className="underline text-zinc-600">Privacy Policy</a>.
               </p>
             </div>
           </div>

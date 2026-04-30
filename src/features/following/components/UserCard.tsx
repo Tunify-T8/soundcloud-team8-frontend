@@ -21,9 +21,9 @@ export default function UserCard({
   action,
 }: UserCardProps) {
   return (
-    <div data-testid={`user-card-${id}`} className="flex flex-col items-center w-44 group">
-      <Link to={`/${id}`} className="flex flex-col items-center">
-        <div data-testid={`user-card-avatar-container-${id}`} className="w-44 h-44 rounded-full overflow-hidden relative bg-zinc-800">
+    <div data-testid={`user-card-${id}`} className="flex flex-col items-center w-full group">
+      <Link to={`/${id}`} className="flex flex-col items-center w-full">
+        <div data-testid={`user-card-avatar-container-${id}`} className="w-full aspect-square rounded-full overflow-hidden relative bg-zinc-800">
           {avatarUrl ? (
             <img
               data-testid={`user-card-avatar-${id}`}

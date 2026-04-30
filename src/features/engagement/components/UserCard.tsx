@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../auth/services/api';
+import { followingService } from '../../following/followingService';
 
 interface Props {
   userId: string;
@@ -28,24 +29,24 @@ const UserCard = ({ userId, avatarUrl, username }: Props) => {
 }, [userId, hasFetched]);
 
   const handleFollow = async () => {
+  if (!userId) return;
+  const wasFollowing = isFollowing;
+  setIsFollowing(!wasFollowing);
+  setFollowersCount(prev => wasFollowing ? Math.max(0, prev - 1) : prev + 1);
   setLoading(true);
   try {
-    if (isFollowing) {
-      await api.delete(`/users/${userId}/follow`);
-      setIsFollowing(false);
-      setFollowersCount(prev => Math.max(0, prev - 1));
+    if (wasFollowing) {
+      await followingService.unfollowUser(userId);
     } else {
-      await api.post(`/users/${userId}/follow`);
-      setIsFollowing(true);
-      setFollowersCount(prev => prev + 1);
+      await followingService.followUser(userId);
     }
   } catch (err: any) {
     if (err?.response?.status === 409) {
-     
       setIsFollowing(true);
-    } else if (err?.response?.status === 404) {
-      
-      setIsFollowing(false);
+      setFollowersCount(prev => wasFollowing ? prev + 1 : prev);
+    } else {
+      setIsFollowing(wasFollowing);
+      setFollowersCount(prev => wasFollowing ? prev + 1 : Math.max(0, prev - 1));
     }
   } finally {
     setLoading(false);
@@ -55,7 +56,7 @@ const UserCard = ({ userId, avatarUrl, username }: Props) => {
   return (
   <div className="flex flex-col items-center w-44 group">
     <div className="w-44 h-44 rounded-full overflow-hidden relative bg-zinc-800 cursor-pointer"
-      onClick={() => navigate(`/${userId}`)}>
+      onClick={() => navigate(`/${userId || username}`)}>
       <img
         src={avatarUrl}
         alt={username}
@@ -64,7 +65,7 @@ const UserCard = ({ userId, avatarUrl, username }: Props) => {
       <div className="absolute inset-0 rounded-full bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
     </div>
     <p
-      onClick={() => navigate(`/${userId}`)}
+      onClick={() => navigate(`/${userId || username}`)}
       className="mt-3 text-white font-semibold text-sm truncate w-full text-center cursor-pointer hover:text-zinc-300 transition"
     >
       {username}
@@ -74,14 +75,14 @@ const UserCard = ({ userId, avatarUrl, username }: Props) => {
     </p>
     <button
       onClick={handleFollow}
-      disabled={loading}
+      disabled={loading || !userId}
       className={`mt-2 text-xs border rounded px-3 py-0.5 transition disabled:opacity-50 ${
         isFollowing
           ? 'border-orange-500 text-orange-400 hover:border-red-400 hover:text-red-400'
           : 'border-zinc-500 text-white hover:border-white'
       }`}
     >
-      {loading ? '...' : isFollowing ? 'Following' : 'Follow'}
+      {isFollowing ? 'Following' : 'Follow'}
     </button>
   </div>
 );

@@ -3,7 +3,7 @@ import { Bell, Mail, MoreHorizontal, ChevronDown, Heart, ListMusic, Radio, Users
 import SearchBar from "../ui/SearchBar";
 
 import { SiSoundcloud } from "react-icons/si";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { Outlet } from "react-router-dom";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
@@ -15,15 +15,18 @@ import {
   getUnreadCount,
   markAllAsRead,
   followUser,
-  
+  unfollowUser,
 } from "@/features/notifications/service/service"; 
 import type {NotificationObject} from "@/features/notifications/types"
 import { getAccessToken, getStoredUser } from "@/features/auth/utils/token.utils";
-import CheckoutModal from "../../features/premium/components/CheckoutModal";
+import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
+import { useSubscription } from "@/hooks/useSubscription";
+import SubscriptionBadge from "@/features/premium/components/SubscriptionBadge";
+import MyPlanModal from "@/features/premium/components/MyPlanModal";
 
 
 function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
+  const diff = Math.max( 0 ,Date.now() - new Date(dateStr).getTime());
   const seconds = Math.floor(diff / 1000);
   if (seconds < 60) return `${seconds}s ago`;
   const minutes = Math.floor(seconds / 60);
@@ -50,37 +53,47 @@ function normaliseSocketPayload(raw: Record<string, unknown>): NotificationObjec
   };
 }
 
+function topNavLinkClass(isActive: boolean) {
+  return `flex h-12 items-center border-b-2 px-0 text-[15px] font-bold tracking-tight transition-colors ${
+    isActive
+      ? "border-white text-white"
+      : "border-transparent text-zinc-400 hover:text-white"
+  }`;
+}
+
 export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { me } = useMe();
+  const { tier, isArtist, isArtistPro } = useSubscription();
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
+  const [planModalOpen, setPlanModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   const adminMenuRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
+
+  // Admin
+  const storedUser = getStoredUser();
+  const isAdmin = storedUser?.role?.toLowerCase() === "admin";
+
+  const adminPageLinks = [
+    { to: "/admin",         label: "Dashboard" },
+    { to: "/admin/reports", label: "Reports" },
+    { to: "/admin/content", label: "Content" },
+    { to: "/admin/users",   label: "Users" },
+  ];
 
   // Notification state
   const [notifications, setNotifications] = useState<NotificationObject[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifLoading, setNotifLoading] = useState(false);
   const [followedBack, setFollowedBack] = useState<Set<string>>(new Set());
-
-  const storedUser = getStoredUser();
-  const isAdmin = storedUser?.role?.toLowerCase() === "admin";
-
-  const adminPageLinks = [
-    { to: "/admin", label: "Dashboard" },
-    { to: "/admin/reports", label: "Reports" },
-    { to: "/admin/content", label: "Content" },
-    { to: "/admin/users", label: "Users" },
-  ];
 
   // ── REST: initial unread count ────────────────────────────────────────────
   const fetchUnreadCount = useCallback(async () => {
@@ -90,18 +103,11 @@ export default function Navbar() {
     } catch { /* ignore */ }
   }, []);
 
-  useEffect(() => {
-    fetchUnreadCount();
-    // Fallback polling every 60 s in case the socket is disconnected
-    const interval = setInterval(fetchUnreadCount, 60_000);
-    return () => clearInterval(interval);
-  }, [fetchUnreadCount]);
+  
 
   // ── Socket.IO ─────────────────────────────────────────────────────────────
   useEffect(() => {
-    // Grab the JWT however your app stores it (adjust if needed)
     const token = getAccessToken() ?? "";
-
 
     if (!token) return; // Not logged in — skip socket
     
@@ -117,22 +123,17 @@ export default function Navbar() {
     socket.on("connect", () => console.log("socket connected ✅"));
     socket.on("connect_error", (e) => console.log("connect_error:", e.message));
 
-    // Any notification event the server emits
     const handleNewNotification = (raw: Record<string, unknown>) => {
       try {
         console.log(raw);
         const notif = normaliseSocketPayload(raw);
-        // Prepend to the dropdown list (keep max 20)
         setNotifications((prev) => [notif, ...prev].slice(0, 20));
-        // Bump the badge
         setUnreadCount((prev) => prev + 1);
       } catch {
         // Malformed payload — ignore
       }
     };
 
-    // The server emits a generic "notification" event — listen to it.
-    // Also listen to the specific event names as a fallback.
     socket.on("notification", handleNewNotification);
     socket.on("user_followed", handleNewNotification);
     socket.on("track_liked", handleNewNotification);
@@ -143,7 +144,7 @@ export default function Navbar() {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [me?.id]); // Re-connect if the logged-in user changes
+  }, [me?.id]);
 
   // ── Bell click ────────────────────────────────────────────────────────────
   const fetchNotifications = useCallback(async () => {
@@ -169,11 +170,33 @@ export default function Navbar() {
     }
   };
 
-  const handleFollowBack = async (actorId: string) => {
+  const handleFollowBack = async (actorId: string, isFollowed?: boolean) => {
+    if (!actorId) return;
+
+    setNotifications((prev) =>
+      prev.map((notif) =>
+        notif.actor?.id === actorId
+          ? { ...notif, isFollowed: !isFollowed }
+          : notif
+      )
+    );
+
     try {
-      await followUser(actorId);
+      if (isFollowed) {
+        await unfollowUser(actorId);
+      } else {
+        await followUser(actorId);
+      }
       setFollowedBack((prev) => new Set([...prev, actorId]));
-    } catch { /* ignore */ }
+    } catch {
+      setNotifications((prev) =>
+        prev.map((notif) =>
+          notif.actor?.id === actorId
+            ? { ...notif, isFollowed }
+            : notif
+        )
+      );
+    }
   };
 
   // ── Outside-click handler ─────────────────────────────────────────────────
@@ -249,26 +272,47 @@ export default function Navbar() {
     ]},
   ];
 
+  const hasPaidPlan = isArtist || isArtistPro;
+  const avatarBadge = tier !== "free";
+  const planButtonClass = isArtistPro
+    ? "border-[#c9a227] hover:bg-[#c9a227] hover:text-black"
+    : isArtist
+      ? "border-[#b8adff] hover:bg-[#b8adff] hover:text-black"
+      : "border-orange-500 hover:bg-orange-500";
+  const isHomeActive =
+    location.pathname === "/" || location.pathname.startsWith("/discover");
+  const isFeedActive =
+    location.pathname.startsWith("/feed") || location.pathname.startsWith("/search");
+  const isLibraryActive =
+    location.pathname.startsWith("/library") || location.pathname.startsWith("/me/");
+
   return (
     <>
       <nav className="w-full bg-black text-white border-b border-zinc-800 sticky top-0 z-50">
-        <div className="max-w-[1200px] mx-auto h-12 flex items-center justify-between px-3 md:px-6">
-          <div className="flex items-center gap-4 md:gap-6">
-            <Link to="/" className="text-white">
-              <SiSoundcloud size={35} />
+        <div className="mx-auto flex h-12 max-w-[1510px] items-center gap-4 px-4 md:gap-6 md:pl-16 md:pr-6 xl:pl-24">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-4 md:gap-6">
+            <Link to="/discover" className="text-white">
+              <SiSoundcloud size={28} className="sm:text-[35px]" />
             </Link>
-            <div className="hidden md:flex items-center gap-6">
-              <Link to="/" className="text-zinc-400 hover:text-white font-bold tracking-tight">Home</Link>
-              <Link to="/feed" className="text-zinc-400 hover:text-white font-bold tracking-tight">Feed</Link>
-              <Link to="/library" className="text-zinc-400 hover:text-white font-bold tracking-tight">Library</Link>
+            <div className="md:hidden flex items-center gap-2 text-[12px] font-bold tracking-tight sm:gap-3 sm:text-[13px]">
+              <NavLink to="/discover" className={isHomeActive ? "text-white" : "text-zinc-300 hover:text-white"}>Home</NavLink>
+              <NavLink to="/feed" className={isFeedActive ? "text-white" : "text-zinc-300 hover:text-white"}>Feed</NavLink>
+              <NavLink to="/library" className={isLibraryActive ? "text-white" : "text-zinc-300 hover:text-white"}>Library</NavLink>
+            </div>
+            <div className="hidden md:flex items-center gap-7 self-stretch">
+              <NavLink to="/discover" className={topNavLinkClass(isHomeActive)}>Home</NavLink>
+              <NavLink to="/feed" className={topNavLinkClass(isFeedActive)}>Feed</NavLink>
+              <NavLink to="/library" className={topNavLinkClass(isLibraryActive)}>Library</NavLink>
             </div>
           </div>
 
-          <div className="hidden md:block relative w-[320px] lg:w-[420px]">
+          <div className="relative hidden min-w-0 flex-1 md:block md:max-w-[590px]">
             <SearchBar />
           </div>
 
-          <div className="hidden md:flex items-center gap-5 text-sm">
+          <div className="hidden shrink-0 items-center gap-4 text-sm md:flex">
+
+            {/* ── Try Free / View My Plan / Admin Pages ── */}
             {isAdmin ? (
               <div className="relative" ref={adminMenuRef}>
                 <button
@@ -294,14 +338,21 @@ export default function Navbar() {
                   </div>
                 )}
               </div>
-            ) : (
+            ) : hasPaidPlan ? (
               <button
-                onClick={() => setCheckoutOpen(true)}
+                onClick={() => setPlanModalOpen(true)}
+                className={`border text-white font-bold tracking-tight px-3 py-1 rounded-sm transition-colors duration-150 text-xs ${planButtonClass}`}
+              >
+                View My Plan
+              </button>
+            ) : (
+              <ArtistProUpgradeButton
                 className="border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-1 rounded-sm transition-colors duration-150 text-xs"
               >
                 Try Free
-              </button>
+              </ArtistProUpgradeButton>
             )}
+
             <Link to="/artists" className="text-zinc-400 hover:text-white font-bold tracking-tight">For Artists</Link>
             <Link to="/upload" className="text-zinc-400 hover:text-white font-bold tracking-tight ml-1">Upload</Link>
 
@@ -309,14 +360,21 @@ export default function Navbar() {
             <div className="relative flex items-center gap-0" ref={profileMenuRef}>
               <Link
                 to="/me"
-                className="w-7 h-7 bg-zinc-600 rounded-full cursor-pointer flex items-center justify-center overflow-hidden"
+                className="relative w-7 h-7 bg-zinc-600 rounded-full cursor-pointer flex items-center justify-center overflow-visible"
                 title="My Profile"
               >
-                {me?.avatarUrl ? (
-                  <img src={me.avatarUrl} alt="My Profile" className="w-full h-full object-cover rounded-full" />
-                ) : (
-                  <span className="text-xs text-white font-bold">
-                    {me?.username?.charAt(0).toUpperCase()}
+                <span className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
+                  {me?.avatarUrl ? (
+                    <img src={me.avatarUrl} alt="My Profile" className="w-full h-full object-cover rounded-full" />
+                  ) : (
+                    <span className="text-xs text-white font-bold">
+                      {me?.username?.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                </span>
+                {avatarBadge && (
+                  <span className="pointer-events-none absolute right-0 top-0 z-10 translate-x-[28%] -translate-y-[18%]">
+                    <SubscriptionBadge tier={tier} size={16} />
                   </span>
                 )}
               </Link>
@@ -412,7 +470,7 @@ export default function Navbar() {
                           key={notif.id}
                           notif={notif}
                           followedBack={followedBack.has(notif.actor?.id)}
-                          onFollowBack={() => handleFollowBack(notif.actor?.id)}
+                          onFollowBack={() => handleFollowBack(notif.actor?.id, notif.isFollowed)}
                           onClose={() => setNotifOpen(false)}
                         />
                       ))
@@ -476,9 +534,9 @@ export default function Navbar() {
             </div>
           </div>
 
-          <div className="md:hidden flex items-center gap-3">
+          <div className="md:hidden flex items-center gap-2">
             <Link to="/messages" className="text-zinc-400 hover:text-white">
-              <Mail size={18} />
+              <Mail size={16} />
             </Link>
             <button
               type="button"
@@ -486,7 +544,7 @@ export default function Navbar() {
               className="text-zinc-300 hover:text-white"
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             >
-              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+              {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
           </div>
         </div>
@@ -495,54 +553,29 @@ export default function Navbar() {
           <div className="md:hidden border-t border-zinc-800 px-3 py-3 space-y-3 bg-black">
             <SearchBar />
             <div className="grid grid-cols-2 gap-2 text-sm font-bold tracking-tight">
-              <Link to="/" className="text-zinc-300 hover:text-white">Home</Link>
-              <Link to="/feed" className="text-zinc-300 hover:text-white">Feed</Link>
-              <Link to="/library" className="text-zinc-300 hover:text-white">Library</Link>
               <Link to="/artists" className="text-zinc-300 hover:text-white">For Artists</Link>
               <Link to="/upload" className="text-zinc-300 hover:text-white">Upload</Link>
               <Link to="/me" className="text-zinc-300 hover:text-white">Profile</Link>
             </div>
-            {isAdmin ? (
-              <div className="space-y-1">
-                <button
-                  type="button"
-                  onClick={() => setAdminMenuOpen((v) => !v)}
-                  className="w-full border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-2 rounded-sm transition-colors duration-150 text-xs flex items-center justify-center gap-1"
-                >
-                  Admin Pages
-                  <ChevronDown size={14} className={`${adminMenuOpen ? "rotate-180" : ""} transition-transform duration-150`} />
-                </button>
-                {adminMenuOpen && (
-                  <div className="border border-zinc-800 rounded-sm overflow-hidden">
-                    {adminPageLinks.map((item) => (
-                      <Link
-                        key={item.to}
-                        to={item.to}
-                        onClick={() => {
-                          setAdminMenuOpen(false);
-                          setMobileMenuOpen(false);
-                        }}
-                        className="block px-3 py-2 text-sm font-bold text-zinc-300 hover:text-white border-b last:border-b-0 border-zinc-800"
-                      >
-                        {item.label}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
+            {hasPaidPlan ? (
               <button
-                onClick={() => setCheckoutOpen(true)}
+                onClick={() => setPlanModalOpen(true)}
+                className={`w-full border text-white font-bold tracking-tight px-3 py-2 rounded-sm transition-colors duration-150 text-xs ${planButtonClass}`}
+              >
+                View My Plan
+              </button>
+            ) : (
+              <ArtistProUpgradeButton
                 className="w-full border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-2 rounded-sm transition-colors duration-150 text-xs"
               >
                 Try Free
-              </button>
+              </ArtistProUpgradeButton>
             )}
           </div>
         )}
       </nav>
       <Outlet />
-      {checkoutOpen && <CheckoutModal plan = "artist-pro" onClose={() => setCheckoutOpen(false)} />}
+      {planModalOpen && <MyPlanModal onClose={() => setPlanModalOpen(false)} />}
     </>
   );
 }
@@ -567,7 +600,7 @@ function DropdownNotifRow({
       }`}
     >
       <Link
-        to={`/users/${notif.actor?.id}`}
+        to={`/${notif.actor?.id}`}
         onClick={onClose}
         className="w-12 h-12 rounded-full bg-zinc-600 flex-shrink-0 overflow-hidden"
       >
@@ -587,7 +620,7 @@ function DropdownNotifRow({
       <div className="flex-1 min-w-0">
         <p className="text-sm text-white leading-snug">
           <Link
-            to={`/users/${notif.actor?.id}`}
+            to={`/${notif.actor?.id}`}
             onClick={onClose}
             className="font-bold hover:underline"
           >
@@ -606,14 +639,13 @@ function DropdownNotifRow({
       {notif.type === "user_followed" && (
         <button
           onClick={(e) => { e.stopPropagation(); onFollowBack(); }}
-          disabled={followedBack}
           className={`px-4 py-2 text-sm font-bold rounded-lg flex-shrink-0 transition-colors ${
-            followedBack
+            notif.isFollowed
               ? "bg-zinc-700 text-zinc-400 cursor-default"
               : "bg-white text-black hover:bg-zinc-200"
           }`}
         >
-          {followedBack ? "Following" : "Follow back"}
+          {notif.isFollowed ? "Following" : "Follow back"}
         </button>
       )}
     </div>

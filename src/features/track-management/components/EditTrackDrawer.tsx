@@ -3,6 +3,7 @@ import { X, Download, RefreshCw, ChevronDown } from "lucide-react";
 import type { Track } from "../../../shared/types/Track";
 import storefrontImg from "@/assets/storefront.png";
 import { trackService } from "../trackService";
+import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
 
 interface EditTrackDrawerProps {
   track: Track;
@@ -444,9 +445,9 @@ export default function EditTrackDrawer({ track, onClose, onUpdate }: EditTrackD
           <p className="text-white font-bold text-base tracking-tighter">Showcase your products</p>
           <p className="text-[#888] text-sm mt-1">Link merch, event tickets, music and more to your track page</p>
         </div>
-        <button className="bg-white text-black text-sm font-semibold px-5 py-2 rounded-full hover:bg-[#eee] transition flex-shrink-0">
+        <ArtistProUpgradeButton className="bg-white text-black text-sm font-semibold px-5 py-2 rounded-full hover:bg-[#eee] transition flex-shrink-0">
           Get Artist Pro
-        </button>
+        </ArtistProUpgradeButton>
       </div>
     </div>
   );

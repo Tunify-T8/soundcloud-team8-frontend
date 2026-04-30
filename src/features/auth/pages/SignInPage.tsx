@@ -192,8 +192,20 @@ useEffect(() => {
     setApiError(null);
     try {
       const res = await googleLink(linkingToken, linkPassword);
-      storeTokens(res.accessToken, res.refreshToken, 3600);
-      navigate(from); 
+      storeTokens(res.accessToken, res.refreshToken, res.expiresIn ?? 900);
+      if (res.user) {
+        const userPayload = {
+          id: res.user.id,
+          username: res.user.username,
+          email: res.user.email,
+          role: res.user.role,
+          isVerified: res.user.isVerified ?? res.user.isCertified ?? true,
+          avatarUrl: res.user.avatarUrl ?? res.user.avatar_url ?? null,
+        };
+        storeUser(userPayload);
+        dispatch(setUser(userPayload));
+      }
+      navigate(from);
     } catch (error) {
       setApiError(extractErrorMessage(error));
     } finally {

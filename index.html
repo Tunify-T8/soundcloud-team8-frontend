@@ -4,6 +4,13 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/soundcloud-logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (function () {
+        var theme = localStorage.getItem("sc-theme") || localStorage.getItem("tunify-theme") || "dark";
+        if (!["light", "dark"].includes(theme)) theme = "dark";
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
     <title>SoundCloud</title>
   </head>
   <body>

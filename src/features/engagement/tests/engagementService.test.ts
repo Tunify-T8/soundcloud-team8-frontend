@@ -1,14 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { engagementService } from '../services/engagementService';
-import { api } from '../../auth/services/api';
 
-vi.mock('../../auth/services/api', () => ({
+vi.mock('@/features/auth/services/api', () => ({
   api: {
     get: vi.fn(),
     post: vi.fn(),
     delete: vi.fn(),
   },
 }));
+
+import { engagementService } from '@/features/engagement/services/engagementService';
+import { api } from '@/features/auth/services/api';
 
 const mockApi = api as unknown as {
   get: ReturnType<typeof vi.fn>;
@@ -18,8 +19,6 @@ const mockApi = api as unknown as {
 
 const TRACK_ID = 'some-track-uuid';
 const COMMENT_ID = 'some-comment-uuid';
-
-
 
 const mockTrack = {
   id: TRACK_ID,
@@ -54,78 +53,42 @@ const mockPaginatedLikes = {
   likes: [
     { userId: 'u1', username: 'alice', displayName: 'Alice', avatarUrl: null, isCertified: false },
   ],
-  total: 1,
-  page: 1,
-  limit: 20,
-  totalPages: 1,
-  hasNextPage: false,
-  hasPreviousPage: false,
+  total: 1, page: 1, limit: 20, totalPages: 1, hasNextPage: false, hasPreviousPage: false,
 };
 
 const mockPaginatedReposts = {
   reposts: [
     {
-      repostId: 'r1',
-      userId: 'u2',
-      username: 'bob',
-      displayName: 'Bob',
-      avatarUrl: null,
-      isCertified: false,
-      repostedAt: '2024-01-01T00:00:00Z',
+      repostId: 'r1', userId: 'u2', username: 'bob', displayName: 'Bob',
+      avatarUrl: null, isCertified: false, repostedAt: '2024-01-01T00:00:00Z',
     },
   ],
-  total: 1,
-  page: 1,
-  limit: 20,
-  totalPages: 1,
-  hasNextPage: false,
-  hasPreviousPage: false,
+  total: 1, page: 1, limit: 20, totalPages: 1, hasNextPage: false, hasPreviousPage: false,
 };
 
 const mockPaginatedComments = {
   comments: [
     {
-      commentId: COMMENT_ID,
-      trackId: TRACK_ID,
-      text: 'Great track!',
-      timestamp: 18,
-      likesCount: 2,
-      repliesCount: 1,
-      isLiked: false,
+      commentId: COMMENT_ID, trackId: TRACK_ID, text: 'Great track!',
+      timestamp: 18, likesCount: 2, repliesCount: 1, isLiked: false,
       createdAt: '2024-01-01T00:00:00Z',
       user: { userId: 'u1', username: 'alice', avatarUrl: null },
     },
   ],
-  total: 1,
-  page: 1,
-  limit: 20,
-  totalPages: 1,
-  hasNextPage: false,
-  hasPreviousPage: false,
+  total: 1, page: 1, limit: 20, totalPages: 1, hasNextPage: false, hasPreviousPage: false,
 };
 
 const mockPaginatedReplies = {
   replies: [
     {
-      replyId: 'rep1',
-      parentId: COMMENT_ID,
-      parentUsername: 'alice',
-      text: 'Thanks!',
-      likesCount: 0,
-      isLiked: false,
+      replyId: 'rep1', parentId: COMMENT_ID, parentUsername: 'alice',
+      text: 'Thanks!', likesCount: 0, isLiked: false,
       createdAt: '2024-01-01T00:00:00Z',
       user: { userId: 'u2', username: 'bob', avatarUrl: null },
     },
   ],
-  total: 1,
-  page: 1,
-  limit: 20,
-  totalPages: 1,
-  hasNextPage: false,
-  hasPreviousPage: false,
+  total: 1, page: 1, limit: 20, totalPages: 1, hasNextPage: false, hasPreviousPage: false,
 };
-
-
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -133,11 +96,9 @@ beforeEach(() => {
 
 describe('engagementService', () => {
 
-  
-
   describe('getTrackDetails', () => {
     it('calls GET /tracks/:trackId and returns track data', async () => {
-      mockApi.get.mockResolvedValueOnce({ data: mockTrack });
+      mockApi.get.mockResolvedValueOnce({ data: { track: mockTrack } });
       const result = await engagementService.getTrackDetails(TRACK_ID);
       expect(mockApi.get).toHaveBeenCalledWith(`/tracks/${TRACK_ID}`);
       expect(result).toEqual(mockTrack);
@@ -148,8 +109,6 @@ describe('engagementService', () => {
       await expect(engagementService.getTrackDetails(TRACK_ID)).rejects.toThrow('Network error');
     });
   });
-
-  
 
   describe('getEngagement', () => {
     it('calls GET /tracks/:trackId/engagement and returns engagement data', async () => {
@@ -176,9 +135,8 @@ describe('engagementService', () => {
     });
   });
 
-  
   describe('likeTrack', () => {
-    it('calls POST /tracks/:trackId/like with only trackId', async () => {
+    it('calls POST /tracks/:trackId/like', async () => {
       mockApi.post.mockResolvedValueOnce({ data: undefined });
       await engagementService.likeTrack(TRACK_ID);
       expect(mockApi.post).toHaveBeenCalledWith(`/tracks/${TRACK_ID}/like`);
@@ -190,10 +148,8 @@ describe('engagementService', () => {
     });
   });
 
-  
-
   describe('unlikeTrack', () => {
-    it('calls DELETE /tracks/:trackId/like with only trackId', async () => {
+    it('calls DELETE /tracks/:trackId/like', async () => {
       mockApi.delete.mockResolvedValueOnce({ data: undefined });
       await engagementService.unlikeTrack(TRACK_ID);
       expect(mockApi.delete).toHaveBeenCalledWith(`/tracks/${TRACK_ID}/like`);
@@ -205,10 +161,8 @@ describe('engagementService', () => {
     });
   });
 
-  
-
   describe('repostTrack', () => {
-    it('calls POST /tracks/:trackId/repost with only trackId', async () => {
+    it('calls POST /tracks/:trackId/repost', async () => {
       mockApi.post.mockResolvedValueOnce({ data: undefined });
       await engagementService.repostTrack(TRACK_ID);
       expect(mockApi.post).toHaveBeenCalledWith(`/tracks/${TRACK_ID}/repost`);
@@ -220,10 +174,8 @@ describe('engagementService', () => {
     });
   });
 
-  
-
   describe('unrepostTrack', () => {
-    it('calls DELETE /tracks/:trackId/repost with only trackId', async () => {
+    it('calls DELETE /tracks/:trackId/repost', async () => {
       mockApi.delete.mockResolvedValueOnce({ data: undefined });
       await engagementService.unrepostTrack(TRACK_ID);
       expect(mockApi.delete).toHaveBeenCalledWith(`/tracks/${TRACK_ID}/repost`);
@@ -235,7 +187,6 @@ describe('engagementService', () => {
     });
   });
 
-  
   describe('getTrackLikes', () => {
     it('calls GET /tracks/:trackId/likes with default pagination', async () => {
       mockApi.get.mockResolvedValueOnce({ data: mockPaginatedLikes });
@@ -265,8 +216,6 @@ describe('engagementService', () => {
     });
   });
 
-  
-
   describe('getTrackReposts', () => {
     it('calls GET /tracks/:trackId/reposts with default pagination', async () => {
       mockApi.get.mockResolvedValueOnce({ data: mockPaginatedReposts });
@@ -294,8 +243,6 @@ describe('engagementService', () => {
     });
   });
 
-  
-
   describe('getTrackComments', () => {
     it('calls GET /tracks/:trackId/comments with default pagination', async () => {
       mockApi.get.mockResolvedValueOnce({ data: mockPaginatedComments });
@@ -321,8 +268,6 @@ describe('engagementService', () => {
     });
   });
 
-  
-
   describe('postComment', () => {
     it('calls POST /tracks/:trackId/comments with text and timestamp', async () => {
       mockApi.post.mockResolvedValueOnce({ data: undefined });
@@ -339,8 +284,6 @@ describe('engagementService', () => {
     });
   });
 
-
-
   describe('deleteComment', () => {
     it('calls DELETE /comments/:commentId', async () => {
       mockApi.delete.mockResolvedValueOnce({ data: undefined });
@@ -354,13 +297,16 @@ describe('engagementService', () => {
     });
   });
 
-  
-
   describe('likeComment', () => {
     it('calls POST /comments/:commentId/like', async () => {
       mockApi.post.mockResolvedValueOnce({ data: undefined });
       await engagementService.likeComment(COMMENT_ID);
       expect(mockApi.post).toHaveBeenCalledWith(`/comments/${COMMENT_ID}/like`);
+    });
+
+    it('throws when API fails', async () => {
+      mockApi.post.mockRejectedValueOnce(new Error('Unauthorized'));
+      await expect(engagementService.likeComment(COMMENT_ID)).rejects.toThrow('Unauthorized');
     });
   });
 
@@ -370,9 +316,12 @@ describe('engagementService', () => {
       await engagementService.unlikeComment(COMMENT_ID);
       expect(mockApi.delete).toHaveBeenCalledWith(`/comments/${COMMENT_ID}/like`);
     });
-  });
 
-  
+    it('throws when API fails', async () => {
+      mockApi.delete.mockRejectedValueOnce(new Error('Unauthorized'));
+      await expect(engagementService.unlikeComment(COMMENT_ID)).rejects.toThrow('Unauthorized');
+    });
+  });
 
   describe('getReplies', () => {
     it('calls GET /comments/:commentId/replies with default pagination', async () => {
@@ -396,8 +345,6 @@ describe('engagementService', () => {
       await expect(engagementService.getReplies(COMMENT_ID)).rejects.toThrow('Not found');
     });
   });
-
-  
 
   describe('postReply', () => {
     it('calls POST /comments/:commentId/replies with text', async () => {

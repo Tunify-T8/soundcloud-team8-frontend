@@ -19,6 +19,8 @@ export interface CollectionItem {
   title: string;
   subtitle?: string;
   coverUrl?: string;
+  entityType?: "track" | "playlist" | "album";
+  linkTo?: string;
 }
 
 export interface FollowingUser {
@@ -133,6 +135,7 @@ export interface CreateCollectionPayload {
 // Update Collection (multipart/form-data)
 export interface UpdateCollectionPayload {
   title?: string;
+  type?: CollectionType;
   description?: string;
   privacy?: CollectionPrivacy;
   coverUrl?: File | string;
@@ -215,6 +218,13 @@ export interface UnlikeCollectionResponse {
 // Embed
 export interface EmbedResponse {
   embedCode: string;
+}
+
+export interface PlaylistShareResponse {
+  shareUrl?: string;
+  url?: string;
+  deepLink?: string;
+  appDeepLink?: string;
 }
 
 // ==============================

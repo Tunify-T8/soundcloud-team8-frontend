@@ -25,8 +25,7 @@ export default function SocialInfoBar({
       <div className="mt-6 flex items-center gap-8 border-b border-zinc-800">
         <NavLink
           data-testid="nav-likes"
-          to={basePath}
-          end
+          to={`${basePath}/likes`}
           className={({ isActive }) =>
             `pb-3 text-xl font-semibold transition-colors ${
               isActive ? "text-white border-b-2 border-white" : "text-zinc-400 hover:text-white"

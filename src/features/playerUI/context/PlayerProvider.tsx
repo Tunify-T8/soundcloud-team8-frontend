@@ -12,8 +12,10 @@ function pushRecentlyPlayed(track: TrackMeta) {
 
     const entry: RecentlyPlayedEntry = {
       id: track.id,
-      title: track.title,
-      artworkUrl: track.artworkUrl ?? track.thumbnailUrl,
+      title: track.recentlyPlayedTitle ?? track.title,
+      artworkUrl: track.recentlyPlayedArtworkUrl ?? track.artworkUrl ?? track.thumbnailUrl,
+      entityType: track.recentlyPlayedEntityType ?? "track",
+      linkTo: track.recentlyPlayedLinkTo ?? `/tracks/${track.id}`,
     };
 
     // Remove any existing entry for this track so it moves to the front

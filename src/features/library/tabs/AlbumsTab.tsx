@@ -1,20 +1,33 @@
-//working with mock data so far!!!
-//**********************************************//
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import type { CollectionItem } from "../types";
-import { ALBUMS } from "../tests/mockdata";
-import MediaCard from "../components/MediaCard";
-
+import { Heart } from "lucide-react";
+import { Link } from "react-router-dom";
+import { playlistService } from "../libraryService";
+import { useMe } from "@/features/profile/context/useMe";
+import type { CollectionPreview, CollectionPrivacy } from "../types";
 
 const COLS = 6;
-const albums = ALBUMS;
 type FilterOption = "All" | "Created" | "Liked";
 
-function AlbumCard({ item }: { item: CollectionItem }) {
+type AlbumGridItem = {
+  id: string;
+  title: string;
+  subtitle: string;
+  coverUrl: string | null;
+  privacy: CollectionPrivacy;
+  isLiked: boolean;
+};
+
+function AlbumCard({
+  item,
+  forceLiked = false,
+}: {
+  item: AlbumGridItem;
+  forceLiked?: boolean;
+}) {
   return (
-    <div data-testid={`album-card-${item.id}`} className="cursor-pointer group relative">
-      <div className="w-full aspect-square rounded-sm overflow-hidden mb-2 relative bg-[#282828] group-hover:bg-[#1a1a1a] transition-colors duration-300">
+    <Link to={`/collections/${item.id}`} className="block cursor-pointer group">
+      <div className="w-full aspect-square rounded-sm overflow-hidden mb-2 relative bg-[#282828]">
         {item.coverUrl && (
           <img
             src={item.coverUrl}
@@ -22,41 +35,103 @@ function AlbumCard({ item }: { item: CollectionItem }) {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         )}
-        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-sm" />
+        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center shadow-2xl">
-            <svg width="18" height="18" viewBox="0 0 14 14" fill="black">
-              <polygon points="3,1 13,7 3,13" />
+          <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-lg">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="black">
+              <polygon points="2,0 16,7 2,14" />
             </svg>
           </div>
         </div>
       </div>
-      <p data-testid={`album-title-${item.id}`} className="text-white text-xs font-bold truncate">{item.title}</p>
-      <p data-testid={`album-subtitle-${item.id}`} className="text-zinc-400 text-xs truncate">{item.subtitle}</p>
-    </div>
+      <p className="flex items-center gap-1 text-white text-xs font-bold truncate">
+        {(item.isLiked || forceLiked) && (
+          <Heart
+            size={10}
+            fill="currentColor"
+            className="shrink-0 text-gray-400"
+          />
+        )}
+        <span className="truncate">{item.title}</span>
+      </p>
+      <p className="text-zinc-400 text-xs truncate">{item.subtitle}</p>
+    </Link>
   );
 }
 
 export default function AlbumsTab() {
+  const { me } = useMe();
   const [query, setQuery] = useState("");
   const [filterOption, setFilterOption] = useState<FilterOption>("All");
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [source] = useState(() => [...albums]);
+  const [albums, setAlbums] = useState<CollectionPreview[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredItems = useMemo(() => {
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchAlbums = async () => {
+      setLoading(true);
+      setError(null);
+
+      const username = me?.username?.trim();
+      const res = username
+        ? await playlistService.getUserAlbums(username, 1, 50)
+        : await playlistService.getMyCollections(1, 50, "ALBUM");
+
+      if (!mounted) return;
+      if (!res?.data) {
+        setError("Failed to load albums.");
+        setLoading(false);
+        return;
+      }
+
+      setAlbums(res.data);
+      setLoading(false);
+    };
+
+    void fetchAlbums();
+
+    return () => {
+      mounted = false;
+    };
+  }, [me?.username]);
+
+  const filteredItems = useMemo<AlbumGridItem[]>(() => {
     const q = query.trim().toLowerCase();
-    return source.filter((item) => {
-      if (filterOption === "Created") return false;
-      if (filterOption === "Liked") return false;
-      return q ? item.title.toLowerCase().includes(q) || item.subtitle?.toLowerCase().includes(q) : true;
-    });
-  }, [source, query, filterOption]);
+    return albums
+      .filter((a) => {
+        if (filterOption === "Created" && a.isLiked) return false;
+        if (filterOption === "Liked" && !a.isLiked) return false;
+        if (q && !a.title.toLowerCase().includes(q)) return false;
+        return true;
+      })
+      .map((a) => {
+        // Some user album endpoints return a different count key than trackCount.
+        const album = a as CollectionPreview & {
+          tracksCount?: number;
+          totalTracks?: number;
+        };
+        const trackCount =
+          album.trackCount ?? album.tracksCount ?? album.totalTracks ?? 0;
+
+        return {
+          id: a.id,
+          title: a.title,
+          subtitle: `${trackCount} track${trackCount === 1 ? "" : "s"}`,
+          coverUrl: a.coverUrl,
+          privacy: a.privacy,
+          isLiked: a.isLiked,
+        };
+      });
+  }, [albums, query, filterOption]);
 
   const totalSlots = Math.ceil(Math.max(filteredItems.length, 1) / COLS) * COLS;
 
   return (
     <div data-testid="albums-tab">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-white font-bold text-sm">Hear your own albums and the albums you've liked:</h2>
         <div className="flex items-center gap-2">
           <input
@@ -64,7 +139,7 @@ export default function AlbumsTab() {
             placeholder="Filter"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="bg-[#282828] border border-zinc-700 rounded-sm px-3 py-1.5 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 w-52"
+            className="bg-[#282828] border border-zinc-700 rounded-sm px-3 py-1.5 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 w-full sm:w-52"
           />
           <div className="relative">
             <button
@@ -96,26 +171,38 @@ export default function AlbumsTab() {
         </div>
       </div>
 
-      {source.length === 0 ? (
-        <p data-testid="albums-empty" className="text-white font-bold text-2xl text-center py-20">
-          You haven't liked any albums yet
+      {loading ? (
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6" data-testid="albums-loading">
+          {Array.from({ length: COLS }).map((_, i) => (
+            <div
+              key={i}
+              className="w-full aspect-square rounded-sm bg-[#282828] animate-pulse"
+            />
+          ))}
+        </div>
+      ) : error ? (
+        <p
+          data-testid="albums-error"
+          className="text-red-400 text-sm text-center py-20"
+        >
+          {error}
         </p>
       ) : filteredItems.length === 0 ? (
-        <p data-testid="albums-no-results" className="text-white font-bold text-lg text-center py-20">
-          No albums match your filter
+        <p data-testid="albums-empty" className="text-white font-bold text-2xl text-center py-20">
+          {filterOption === "Liked"
+            ? "You haven't liked any albums yet"
+            : "You have no albums yet"}
         </p>
       ) : (
-        <div className="grid grid-cols-6 gap-4" data-testid="albums-grid">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6" data-testid="albums-grid">
           {Array.from({ length: totalSlots }).map((_, i) => {
             const item = filteredItems[i];
             return item ? (
-                <MediaCard
-                  key={item.id}
-                  id={item.id}
-                  title={item.title}
-                  subtitle={item.subtitle ?? ""}
-                  coverUrl={item.coverUrl}
-                />
+              <AlbumCard
+                key={item.id}
+                item={item}
+                forceLiked={filterOption === "Liked"}
+              />
             ) : (
               <div key={i} data-testid={`album-slot-${i}`} className="w-full aspect-square rounded-sm bg-[#282828]" />
             );
