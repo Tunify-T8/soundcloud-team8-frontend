@@ -7,9 +7,11 @@ export default function ArtistsNavbar() {
   
   return (
     <div data-testid="artists-navbar" className="bg-black border-b border-[hsl(0,0%,15%)] flex items-center justify-end gap-2 px-6 h-[52px] shrink-0">
-      <button data-testid="navbar-search-btn" className="flex items-center gap-2 border border-[hsl(0,0%,32%)] rounded-full px-4 py-1.5 text-white text-sm font-bold tracking-tighter hover:border-white transition-colors">
-        <Search className="w-3.5 h-3.5"/> Search
-      </button>
+      <Link to="/search">
+        <button data-testid="navbar-search-btn" className="flex items-center gap-2 border border-[hsl(0,0%,32%)] rounded-full px-4 py-1.5 text-white text-sm font-bold tracking-tighter hover:border-white transition-colors">
+          <Search className="w-3.5 h-3.5"/> Search
+        </button>
+      </Link>
      
      <Link to="/upload">
         <button data-testid="navbar-upload-btn" className="flex items-center gap-2 border border-[hsl(0,0%,32%)] rounded-full px-4 py-1.5 text-white text-sm font-bold tracking-tighter hover:border-white transition-colors">
