@@ -375,8 +375,8 @@ useEffect(() => {
                         data-testid="linkGoogleBtn"
                         className={`w-full py-3 rounded-sm text-sm font-semibold transition-all ${
                           linkPassword && !isLinking
-                            ? 'bg-white text-black hover:bg-gray-100 cursor-pointer'
-                            : 'bg-[#333] text-[#888] cursor-not-allowed border border-[#444]'
+                            ? 'sc-auth-primary-action cursor-pointer'
+                            : 'sc-auth-primary-action cursor-not-allowed'
                         }`}
                       >
                         {isLinking ? 'Linking...' : 'Link Google account'}
@@ -453,7 +453,7 @@ useEffect(() => {
                   <button type="button" onClick={handleEmailContinue}
                     disabled={!emailInput.trim() || isCheckingEmail}
                     data-testid="email-continue-btn"
-                    className="w-full bg-[#808080] hover:bg-[#747474] text-white py-3 rounded-sm text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2 mb-4"
+                    className="sc-auth-primary-action w-full py-3 rounded-sm text-sm font-medium disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2 mb-4"
                   >
                     {isCheckingEmail ? <><Loader2 className="h-4 w-4 animate-spin" /> Checking…</> : 'Continue'}
                   </button>
@@ -507,7 +507,7 @@ useEffect(() => {
 
                     <button type="submit" disabled={isSubmitting}
                       data-testid="submit-btn"
-                      className="w-full bg-[#808080] hover:bg-[#747474] text-white py-3 rounded-sm text-sm font-semibold transition-colors disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer mb-4"
+                      className="sc-auth-primary-action w-full py-3 rounded-sm text-sm font-semibold transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer mb-4"
                     >
                       {isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin text-white" />Signing in…</> : 'Continue'}
                     </button>

@@ -197,12 +197,36 @@ body {
 
 .soundcloud-auth-page .sc-auth-continue {
   height: 56px;
-  background: #808080 !important;
+  background: #3f3f3f !important;
   color: #ffffff !important;
 }
 
 .soundcloud-auth-page .sc-auth-continue:not(:disabled):hover {
-  background: #747474 !important;
+  background: #000000 !important;
+}
+
+.soundcloud-auth-page .sc-auth-continue:not(:disabled) {
+  background: #111111 !important;
+}
+
+.soundcloud-auth-page .sc-auth-continue:disabled {
+  background: #3f3f3f !important;
+  color: #ffffff !important;
+}
+
+.soundcloud-auth-page .sc-auth-primary-action {
+  background: #111111 !important;
+  color: #ffffff !important;
+}
+
+.soundcloud-auth-page .sc-auth-primary-action:hover:not(:disabled) {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+.soundcloud-auth-page .sc-auth-primary-action:disabled {
+  background: #3f3f3f !important;
+  color: #ffffff !important;
 }
 
 @media (max-width: 640px) {

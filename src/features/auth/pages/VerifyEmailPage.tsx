@@ -109,43 +109,43 @@ const VerifyEmailPage: React.FC = () => {
   };
 
   return (
-      <div className="min-h-screen bg-[#0d0d0d] flex flex-col" data-testid="verify-email-page">
+      <div className="soundcloud-auth-page min-h-screen flex flex-col" data-testid="verify-email-page">
       <AuthNavbar />
 
-      <main className="flex-1 flex items-center justify-center px-4 py-10">
-        <div className="w-full max-w-[480px]">
+      <main className="flex-1 flex items-start justify-center px-4 py-14">
+        <div className="w-full max-w-[562px]">
 
-          <div className="border border-[#3a3a3a] rounded-sm p-[3px] bg-[#111]">
-            <div className="border border-[#555] rounded-sm bg-[#181818] min-h-[520px] p-8">
+          <div className="sc-auth-card rounded-sm bg-white">
+            <div className="px-7 py-8 sm:p-8">
 
               <div className="flex items-center gap-4 mb-6">
                 <button
                   type="button"
                   onClick={() => navigate('/create-account')}
                   data-testid="back-btn"
-                  className="w-9 h-9 rounded-full bg-[#2a2a2a] hover:bg-[#3a3a3a] flex items-center justify-center transition-colors flex-shrink-0"
+                  className="w-9 h-9 rounded-full bg-[#f2f2f2] hover:bg-[#e5e5e5] flex items-center justify-center transition-colors flex-shrink-0"
                 >
-                  <ChevronLeft className="h-5 w-5 text-white" />
+                  <ChevronLeft className="h-5 w-5 text-[#111]" />
                 </button>
-                <h1 className="text-white text-base font-bold">Verify your email</h1>
+                <h1 className="text-[#111] text-base font-bold">Verify your email</h1>
               </div>
 
-              <p className="text-[#ccc] text-sm leading-relaxed mb-2">
+              <p className="text-[#666] text-sm leading-relaxed mb-2">
                 We sent a 6-character code to
               </p>
-              <p className="text-white text-sm font-semibold mb-6 break-all">{email}</p>
-              <p className="text-[#aaa] text-xs mb-6 leading-relaxed">
+              <p className="text-[#111] text-sm font-semibold mb-6 break-all">{email}</p>
+              <p className="text-[#777] text-xs mb-6 leading-relaxed">
                 Enter the code below to verify your account. The code expires after a short time.
               </p>
 
               {apiError && (
-                <div role="alert" data-testid="api-error" className="mb-4 px-4 py-3 bg-[#2a1a1a] border border-red-500/40 rounded text-red-400 text-sm">
+                <div role="alert" data-testid="api-error" className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
                   {apiError}
                 </div>
               )}
 
               {resendSuccess && (
-                <div data-testid="resend-success" className="mb-4 px-4 py-3 bg-[#1a2a1a] border border-green-500/40 rounded text-green-400 text-sm">
+                <div data-testid="resend-success" className="mb-4 px-4 py-3 bg-green-50 border border-green-200 rounded text-green-700 text-sm">
                   A new code has been sent to your inbox.
                 </div>
               )}
@@ -162,8 +162,8 @@ const VerifyEmailPage: React.FC = () => {
                     value={char}
                     onChange={(e) => handleChange(i, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(i, e)}
-                    className={`w-10 h-10 sm:w-11 sm:h-11 text-center text-white text-base font-bold bg-[#2a2a2a] border rounded-sm focus:outline-none transition-colors uppercase flex-shrink-0 ${
-                      char ? 'border-white' : 'border-[#444] focus:border-[#888]'
+                    className={`w-10 h-10 sm:w-11 sm:h-11 text-center text-[#111] text-base font-bold bg-[#f2f2f2] border rounded-sm focus:outline-none transition-colors uppercase flex-shrink-0 ${
+                      char ? 'border-[#111]' : 'border-[#e5e5e5] focus:border-[#999]'
                     }`}
                   />
                 ))}
@@ -176,8 +176,8 @@ const VerifyEmailPage: React.FC = () => {
                 data-testid="verify-btn"
                 className={`w-full py-3 rounded-sm text-sm font-semibold transition-all flex items-center justify-center gap-2 mb-5 ${
                   isReady && !isSubmitting
-                    ? 'bg-white hover:bg-gray-100 text-black cursor-pointer'
-                    : 'bg-[#333] text-[#888] cursor-not-allowed border border-[#444]'
+                    ? 'sc-auth-primary-action cursor-pointer'
+                    : 'sc-auth-primary-action cursor-not-allowed'
                 }`}
               >
                 {isSubmitting
@@ -186,7 +186,7 @@ const VerifyEmailPage: React.FC = () => {
                 }
               </button>
 
-              <p className="text-[#aaa] text-sm">
+              <p className="text-[#666] text-sm">
                 Didn't receive the code?{' '}
                 <button
                   type="button"
