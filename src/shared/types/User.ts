@@ -117,9 +117,26 @@ export interface UserTrack {
   title: string;
   description?: string | null;
   coverUrl?: string | null;
-  audioUrl: string;
-  genre: string;
+  audioUrl?: string | null;
+  genre?: string | null;
   createdAt: string;
+  artist?: {
+    id: string;
+    username: string;
+    displayName?: string | null;
+    avatarUrl?: string | null;
+    isVerified?: boolean;
+  };
+  engagement?: {
+    likeCount: number;
+    repostCount: number;
+    commentCount: number;
+    playCount: number;
+  };
+  interaction?: {
+    isLiked: boolean;
+    isReposted: boolean;
+  };
 }
 
 export interface UserTracksResponse {
@@ -129,11 +146,38 @@ export interface UserTracksResponse {
   tracks: UserTrack[];
 }
 
+export interface RepostedTrackDto {
+  id: string;
+  title: string;
+  description: string | null;
+  audioUrl: string;
+  coverUrl: string | null;
+  duration: number;
+  likesCount: number;
+  commentsCount: number;
+  repostsCount: number;
+  createdAt: string;
+}
+
+export interface RepostItemDto {
+  repostId: string;
+  repostedAt: string;
+  track: RepostedTrackDto;
+}
+
+export interface UserRepostsDto {
+  data: RepostItemDto[];
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
+
 // Followers (GET /users/{userId}/followers)
 export interface UserFollower {
   id: string;
   username: string;
   avatarUrl?: string | null;
+  isFollowing?: boolean | null;
 }
 
 export interface UserFollowersResponse {

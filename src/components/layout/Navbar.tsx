@@ -3,7 +3,7 @@ import { Bell, Mail, MoreHorizontal, ChevronDown, Heart, ListMusic, Radio, Users
 import SearchBar from "../ui/SearchBar";
 
 import { SiSoundcloud } from "react-icons/si";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { Outlet } from "react-router-dom";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
@@ -15,6 +15,7 @@ import {
   getUnreadCount,
   markAllAsRead,
   followUser,
+  unfollowUser,
 } from "@/features/notifications/service/service"; 
 import type { NotificationObject } from "@/features/notifications/types";
 import { getAccessToken } from "@/features/auth/utils/token.utils";
@@ -23,10 +24,14 @@ import { socketSingleton } from "../../features/conversation/hooks/useSocket";
 import { useUnreadMessages } from "../../features/conversation/hooks/useUnreadMessages";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../app/store";
+import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
+import { useSubscription } from "@/hooks/useSubscription";
+import SubscriptionBadge from "@/features/premium/components/SubscriptionBadge";
+import MyPlanModal from "@/features/premium/components/MyPlanModal";
 
 
 function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
+  const diff = Math.max( 0 ,Date.now() - new Date(dateStr).getTime());
   const seconds = Math.floor(diff / 1000);
   if (seconds < 60) return `${seconds}s ago`;
   const minutes = Math.floor(seconds / 60);
@@ -49,6 +54,14 @@ function normaliseSocketPayload(raw: Record<string, unknown>): NotificationObjec
   };
 }
 
+function topNavLinkClass(isActive: boolean) {
+  return `flex h-12 items-center border-b-2 px-0 text-[15px] font-bold tracking-tight transition-colors ${
+    isActive
+      ? "border-white text-white"
+      : "border-transparent text-zinc-400 hover:text-white"
+  }`;
+}
+
 export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -56,16 +69,19 @@ export default function Navbar() {
   const currentUserId = useSelector((state: RootState) => state.user.currentUser?.id ?? null);
   const { unreadMessages } = useUnreadMessages(currentUserId);
 
+  const { tier, isArtist, isArtistPro } = useSubscription();
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [planModalOpen, setPlanModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
+  // Notification state
   const [notifications, setNotifications] = useState<NotificationObject[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifLoading, setNotifLoading] = useState(false);
@@ -153,11 +169,36 @@ export default function Navbar() {
     }
   };
 
-  const handleFollowBack = async (actorId: string) => {
+  const handleFollowBack = async (actorId: string, isFollowed?: boolean) => {
+    if (!actorId) return;
+
+    // Step 1: Optimistic update - update UI immediately
+    setNotifications((prev) =>
+      prev.map((notif) =>
+        notif.actor?.id === actorId
+          ? { ...notif, isFollowed: !isFollowed }
+          : notif
+      )
+    );
+
     try {
-      await followUser(actorId);
+      // Step 2: Sync with backend
+      if (isFollowed) {
+        await unfollowUser(actorId);
+      } else {
+        await followUser(actorId);
+      }
       setFollowedBack((prev) => new Set([...prev, actorId]));
-    } catch { }
+    } catch {
+      // Step 3: If API call fails, revert the changes
+      setNotifications((prev) =>
+        prev.map((notif) =>
+          notif.actor?.id === actorId
+            ? { ...notif, isFollowed }
+            : notif
+        )
+      );
+    }
   };
 
   // ── Outside-click handler ─────────────────────────────────────────────────
@@ -220,46 +261,80 @@ export default function Navbar() {
     ]},
   ];
 
+  const hasPaidPlan = isArtist || isArtistPro;
+  const avatarBadge = tier !== "free";
+  const planButtonClass = isArtistPro
+    ? "border-[#c9a227] hover:bg-[#c9a227] hover:text-black"
+    : isArtist
+      ? "border-[#b8adff] hover:bg-[#b8adff] hover:text-black"
+      : "border-orange-500 hover:bg-orange-500";
+  const isHomeActive =
+    location.pathname === "/" || location.pathname.startsWith("/discover");
+  const isFeedActive =
+    location.pathname.startsWith("/feed") || location.pathname.startsWith("/search");
+  const isLibraryActive =
+    location.pathname.startsWith("/library") || location.pathname.startsWith("/me/");
+
   return (
     <>
       <nav className="w-full bg-black text-white border-b border-zinc-800 sticky top-0 z-50">
-        <div className="max-w-[1200px] mx-auto h-12 flex items-center justify-between px-3 md:px-6">
-          <div className="flex items-center gap-4 md:gap-6">
-            <Link to="/" className="text-white">
-              <SiSoundcloud size={35} />
+        <div className="mx-auto flex h-12 max-w-[1510px] items-center gap-4 px-4 md:gap-6 md:pl-16 md:pr-6 xl:pl-24">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-4 md:gap-6">
+            <Link to="/discover" className="text-white">
+              <SiSoundcloud size={28} className="sm:text-[35px]" />
             </Link>
-            <div className="hidden md:flex items-center gap-6">
-              <Link to="/" className="text-zinc-400 hover:text-white font-bold tracking-tight">Home</Link>
-              <Link to="/feed" className="text-zinc-400 hover:text-white font-bold tracking-tight">Feed</Link>
-              <Link to="/library" className="text-zinc-400 hover:text-white font-bold tracking-tight">Library</Link>
+            <div className="md:hidden flex items-center gap-2 text-[12px] font-bold tracking-tight sm:gap-3 sm:text-[13px]">
+              <NavLink to="/discover" className={isHomeActive ? "text-white" : "text-zinc-300 hover:text-white"}>Home</NavLink>
+              <NavLink to="/feed" className={isFeedActive ? "text-white" : "text-zinc-300 hover:text-white"}>Feed</NavLink>
+              <NavLink to="/library" className={isLibraryActive ? "text-white" : "text-zinc-300 hover:text-white"}>Library</NavLink>
+            </div>
+            <div className="hidden md:flex items-center gap-7 self-stretch">
+              <NavLink to="/discover" className={topNavLinkClass(isHomeActive)}>Home</NavLink>
+              <NavLink to="/feed" className={topNavLinkClass(isFeedActive)}>Feed</NavLink>
+              <NavLink to="/library" className={topNavLinkClass(isLibraryActive)}>Library</NavLink>
             </div>
           </div>
 
-          <div className="hidden md:block relative w-[320px] lg:w-[420px]">
+          <div className="relative hidden min-w-0 flex-1 md:block md:max-w-[590px]">
             <SearchBar />
           </div>
 
-          <div className="hidden md:flex items-center gap-5 text-sm">
-            <button
-              onClick={() => setCheckoutOpen(true)}
-              className="border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-1 rounded-sm transition-colors duration-150 text-xs"
-            >
-              Try Free
-            </button>
+          <div className="hidden shrink-0 items-center gap-4 text-sm md:flex">
+            {hasPaidPlan ? (
+              <button
+                onClick={() => setPlanModalOpen(true)}
+                className={`border text-white font-bold tracking-tight px-3 py-1 rounded-sm transition-colors duration-150 text-xs ${planButtonClass}`}
+              >
+                View My Plan
+              </button>
+            ) : (
+              <ArtistProUpgradeButton
+                className="border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-1 rounded-sm transition-colors duration-150 text-xs"
+              >
+                Try Free
+              </ArtistProUpgradeButton>
+            )}
             <Link to="/artists" className="text-zinc-400 hover:text-white font-bold tracking-tight">For Artists</Link>
             <Link to="/upload" className="text-zinc-400 hover:text-white font-bold tracking-tight ml-1">Upload</Link>
 
             <div className="relative flex items-center gap-0" ref={profileMenuRef}>
               <Link
                 to="/me"
-                className="w-7 h-7 bg-zinc-600 rounded-full cursor-pointer flex items-center justify-center overflow-hidden"
+                className="relative w-7 h-7 bg-zinc-600 rounded-full cursor-pointer flex items-center justify-center overflow-visible"
                 title="My Profile"
               >
-                {me?.avatarUrl ? (
-                  <img src={me.avatarUrl} alt="My Profile" className="w-full h-full object-cover rounded-full" />
-                ) : (
-                  <span className="text-xs text-white font-bold">
-                    {me?.username?.charAt(0).toUpperCase()}
+                <span className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
+                  {me?.avatarUrl ? (
+                    <img src={me.avatarUrl} alt="My Profile" className="w-full h-full object-cover rounded-full" />
+                  ) : (
+                    <span className="text-xs text-white font-bold">
+                      {me?.username?.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                </span>
+                {avatarBadge && (
+                  <span className="pointer-events-none absolute right-0 top-0 z-10 translate-x-[28%] -translate-y-[18%]">
+                    <SubscriptionBadge tier={tier} size={16} />
                   </span>
                 )}
               </Link>
@@ -337,7 +412,7 @@ export default function Navbar() {
                           key={notif.id}
                           notif={notif}
                           followedBack={followedBack.has(notif.actor?.id)}
-                          onFollowBack={() => handleFollowBack(notif.actor?.id)}
+                          onFollowBack={() => handleFollowBack(notif.actor?.id, notif.isFollowed)}
                           onClose={() => setNotifOpen(false)}
                         />
                       ))
@@ -422,7 +497,7 @@ export default function Navbar() {
               className="text-zinc-300 hover:text-white"
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             >
-              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+              {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
           </div>
         </div>
@@ -431,24 +506,30 @@ export default function Navbar() {
           <div className="md:hidden border-t border-zinc-800 px-3 py-3 space-y-3 bg-black">
             <SearchBar />
             <div className="grid grid-cols-2 gap-2 text-sm font-bold tracking-tight">
-              <Link to="/" className="text-zinc-300 hover:text-white">Home</Link>
-              <Link to="/feed" className="text-zinc-300 hover:text-white">Feed</Link>
-              <Link to="/library" className="text-zinc-300 hover:text-white">Library</Link>
               <Link to="/artists" className="text-zinc-300 hover:text-white">For Artists</Link>
               <Link to="/upload" className="text-zinc-300 hover:text-white">Upload</Link>
               <Link to="/me" className="text-zinc-300 hover:text-white">Profile</Link>
             </div>
-            <button
-              onClick={() => setCheckoutOpen(true)}
-              className="w-full border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-2 rounded-sm transition-colors duration-150 text-xs"
-            >
-              Try Free
-            </button>
+            {hasPaidPlan ? (
+              <button
+                onClick={() => setPlanModalOpen(true)}
+                className={`w-full border text-white font-bold tracking-tight px-3 py-2 rounded-sm transition-colors duration-150 text-xs ${planButtonClass}`}
+              >
+                View My Plan
+              </button>
+            ) : (
+              <ArtistProUpgradeButton
+                className="w-full border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-2 rounded-sm transition-colors duration-150 text-xs"
+              >
+                Try Free
+              </ArtistProUpgradeButton>
+            )}
           </div>
         )}
       </nav>
       <Outlet />
       {checkoutOpen && <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />}
+      {planModalOpen && <MyPlanModal onClose={() => setPlanModalOpen(false)} />}
     </>
   );
 }
@@ -499,7 +580,7 @@ function DropdownNotifRow({
           disabled={followedBack}
           className={`px-4 py-2 text-sm font-bold rounded-lg flex-shrink-0 transition-colors ${followedBack ? "bg-zinc-700 text-zinc-400 cursor-default" : "bg-white text-black hover:bg-zinc-200"}`}
         >
-          {followedBack ? "Following" : "Follow back"}
+          {notif.isFollowed ? "Following" : "Follow back"}
         </button>
       )}
     </div>

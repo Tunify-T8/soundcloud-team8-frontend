@@ -134,8 +134,9 @@ export default function CreatePlaylistOverlay({
       if (!mounted) return;
 
       const playlists = res?.data ?? [];
-      setExistingPlaylists(playlists);
-      setActiveTab(playlists.length > 0 ? "add" : "create");
+      const ownedPlaylists = playlists.filter((playlist) => !playlist.isLiked);
+      setExistingPlaylists(ownedPlaylists);
+      setActiveTab(ownedPlaylists.length > 0 ? "add" : "create");
       setLoadingPlaylists(false);
     })();
 
@@ -161,9 +162,9 @@ export default function CreatePlaylistOverlay({
         className="fixed inset-0 z-71 overflow-y-auto hide-scrollbar"
         onClick={onClose}
       >
-        <div className="flex min-h-full items-start justify-center px-4 py-24">
+        <div className="flex min-h-full items-start justify-center px-0 py-0 sm:px-4 sm:py-24">
           <div
-            className="w-full max-w-2xl rounded-sm border border-zinc-700 bg-[#0b0b0b] p-4 text-white shadow-2xl"
+            className="w-full max-w-2xl rounded-none border-0 bg-[#0b0b0b] p-4 text-white shadow-2xl sm:rounded-sm sm:border sm:border-zinc-700"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-6 text-[20px] font-bold">
@@ -261,8 +262,8 @@ export default function CreatePlaylistOverlay({
                   )}
                 </div>
 
-                <div className="mt-4 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-4 text-[15px]">
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap items-center gap-4 text-[15px]">
                     <span className="font-semibold text-zinc-200">
                       Privacy:
                     </span>
@@ -286,20 +287,22 @@ export default function CreatePlaylistOverlay({
                     </label>
                   </div>
 
-                  <button
-                    type="button"
-                    disabled={!canSave}
-                    className="rounded-sm bg-white px-2 py-1 text-[13px] font-bold text-black disabled:cursor-not-allowed disabled:opacity-60"
-                    onClick={handleCreatePlaylist}
-                  >
-                    {creating ? "Saving..." : "Save"}
-                  </button>
-                  {error && (
-                    <div className="mt-2 text-red-400 text-sm">{error}</div>
-                  )}
-                  {success && (
-                    <div className="mt-2 text-green-400 text-sm">{success}</div>
-                  )}
+                  <div className="flex flex-col gap-1">
+                    <button
+                      type="button"
+                      disabled={!canSave}
+                      className="min-h-[44px] rounded-sm bg-white px-4 py-2 text-[13px] font-bold text-black disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-0 sm:px-2 sm:py-1"
+                      onClick={handleCreatePlaylist}
+                    >
+                      {creating ? "Saving..." : "Save"}
+                    </button>
+                    {error && (
+                      <div className="text-red-400 text-sm">{error}</div>
+                    )}
+                    {success && (
+                      <div className="text-green-400 text-sm">{success}</div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="mt-6 flex items-start justify-between gap-3">

@@ -1,14 +1,45 @@
-import { useState, useMemo } from "react";
-import { LayoutGrid, List } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
 import TrackRow from "../components/TrackRow";
-import { LIKED_TRACKS } from "../tests/mockdata";
+import { getLikedTracks, mapLikedTrackToTrackItem } from "../libraryService";
+import { feedService } from "@/features/feed/feedservice";
+import type { TrackItem } from "../types";
 
 const COLS = 6;
 
 export default function LikesTab() {
   const [view, setView] = useState<"grid" | "list">("grid");
   const [query, setQuery] = useState("");
-  const [tracks] = useState(() => [...LIKED_TRACKS]);
+  const [tracks, setTracks] = useState<TrackItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchLikedTracks = async () => {
+      setLoading(true);
+      setError(null);
+      const response = await getLikedTracks(1, 100);
+      
+      if (!mounted) return;
+      
+      if (!response) {
+        setError("Failed to load liked tracks.");
+        setTracks([]);
+        setLoading(false);
+        return;
+      }
+
+      const mappedTracks = response.data.map(mapLikedTrackToTrackItem);
+      setTracks(mappedTracks);
+      setLoading(false);
+    };
+
+    void fetchLikedTracks();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const filteredTracks = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -19,6 +50,11 @@ export default function LikesTab() {
         t.artist.toLowerCase().includes(q)
     );
   }, [tracks, query]);
+
+  const handleUnlike = async (trackId: string) => {
+    await feedService.unlikeTrack(trackId);
+    setTracks((prev) => prev.filter((t) => t.id !== trackId));
+  };
 
   const totalSlots = Math.ceil(Math.max(filteredTracks.length, 1) / COLS) * COLS;
   return (
@@ -55,12 +91,20 @@ export default function LikesTab() {
             placeholder="Filter"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="bg-[#282828] border border-zinc-700 rounded-sm px-3 py-1 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 w-64"
+            className="bg-[#282828] border border-zinc-700 rounded-sm px-3 py-1.5 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 w-64"
           />
         </div>
       </div>
 
-      {tracks.length === 0 ? (
+      {loading ? (
+        <p data-testid="likes-loading" className="text-white font-bold text-lg text-center py-20">
+          Loading your liked tracks...
+        </p>
+      ) : error ? (
+        <p data-testid="likes-error" className="text-red-400 font-bold text-lg text-center py-20">
+          {error}
+        </p>
+      ) : tracks.length === 0 ? (
         <p data-testid="likes-empty-msg" className="text-white font-bold text-lg text-center py-20">
           You have not liked any tracks yet
         </p>
@@ -69,7 +113,7 @@ export default function LikesTab() {
           {Array.from({ length: totalSlots }).map((_, i) => {
             const track = filteredTracks[i];
             return track ? (
-              <TrackRow key={track.id} track={track} view="grid" isLiked={true} />
+              <TrackRow key={track.id} track={track} view="grid" isLiked={true} onUnlike={handleUnlike} />
             ) : (
               <div key={i} data-testid={`likes-slot-${i}`} className="w-full aspect-square rounded-sm bg-[#282828]" />
             );
@@ -78,7 +122,7 @@ export default function LikesTab() {
       ) : (
         <div className="flex flex-col gap-4" data-testid="likes-list">
           {filteredTracks.map((track) => (
-            <TrackRow key={track.id} track={track} view="list" isLiked={true} />
+            <TrackRow key={track.id} track={track} view="list" isLiked={true} onUnlike={handleUnlike} />
           ))}
         </div>
       )}

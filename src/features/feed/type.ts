@@ -96,3 +96,13 @@ export interface LikedTrack {
   commentsCount: number;
   playsCount: number;
 }
+
+export interface SuggestedArtist {
+  id: string;
+  username: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  followersCount: number;
+  isCertified: boolean;
+  isFollowing: boolean;
+}

@@ -8,6 +8,7 @@ export interface CommentsSectionProps {
   commentCount: number;
   currentTime?: number;
   currentUserId?: string;
+  onCommentsChange?: (comments: ApiComment[]) => void;
 }
 
 export const makeCommentAvatar = (text: string, size = 38): string =>
@@ -42,6 +43,7 @@ const CommentsSection = ({
   trackId,
   currentTime = 0,
   currentUserId = '',
+  onCommentsChange,
 }: CommentsSectionProps) => {
   const [comments, setComments] = useState<ApiComment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,10 +71,11 @@ const CommentsSection = ({
           data.comments.filter((c) => c.isLiked).map((c) => c.commentId)
         );
         setLikedCommentIds(initialLiked);
+        onCommentsChange?.(data.comments);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [trackId]);
+  }, [trackId, onCommentsChange]);
 
   const handlePost = async () => {
     if (!inputBody.trim()) return;
@@ -81,6 +84,7 @@ const CommentsSection = ({
       await engagementService.postComment(trackId, inputBody.trim(), currentTime);
       const data = await engagementService.getTrackComments(trackId);
       setComments(data.comments);
+      onCommentsChange?.(data.comments);
       setInputBody('');
     } catch (error) {
       console.error('Failed to post comment:', error);
@@ -92,7 +96,11 @@ const CommentsSection = ({
   const handleDelete = async (commentId: string) => {
     try {
       await engagementService.deleteComment(commentId);
-      setComments((prev) => prev.filter((c) => c.commentId !== commentId));
+      setComments((prev) => {
+        const next = prev.filter((c) => c.commentId !== commentId);
+        onCommentsChange?.(next);
+        return next;
+      });
     } catch (error) {
       console.error('Failed to delete comment:', error);
     }
@@ -198,7 +206,7 @@ const CommentsSection = ({
           onKeyDown={(e) => e.key === 'Enter' && handlePost()}
           placeholder="Write a comment"
           disabled={posting}
-          className="flex-1 bg-zinc-800 px-3 py-2 text-white rounded outline-none focus:ring-1 focus:ring-orange-500 tracking-tight"
+          className="flex-1 bg-zinc-800 px-3 py-2 text-white rounded outline-none focus:ring-1 focus:ring-orange-500"
         />
         <button
           onClick={handlePost}
@@ -218,7 +226,7 @@ const CommentsSection = ({
         const isOpen = showReplies.has(c.commentId);
         const isLoadingReplies = loadingReplies.has(c.commentId);
         const replies = repliesMap[c.commentId] ?? [];
-        const isOwner = c.user.userId === currentUserId;
+        const isOwner = (c.user.userId ?? (c.user as any).id) === currentUserId;
         const initials = c.user.username.slice(0, 2).toUpperCase();
         const avatarUrl = c.user.avatarUrl ?? makeCommentAvatar(initials);
 
@@ -315,22 +323,63 @@ const CommentsSection = ({
                   <p className="text-zinc-500 text-xs">Loading replies…</p>
                 ) : (
                   replies.map((r) => {
-                    const rInitials = r.user.username.slice(0, 2).toUpperCase();
-                    const rAvatar = r.user.avatarUrl ?? makeCommentAvatar(rInitials, 28);
-                    return (
-                      <div key={r.replyId} className="flex gap-2">
-                        <img
-                          src={rAvatar}
-                          className="w-7 h-7 rounded-full object-cover shrink-0"
-                          alt={r.user.username}
-                        />
-                        <div>
-                          <p className="text-white text-xs font-medium">{r.user.username}</p>
-                          <p className="text-zinc-300 text-xs">{r.text}</p>
-                        </div>
-                      </div>
-                    );
-                  })
+  const rInitials = r.user.username.slice(0, 2).toUpperCase();
+  const rAvatar = r.user.avatarUrl ?? makeCommentAvatar(rInitials, 28);
+  const isReplyOwner = (r.user.userId ?? (r.user as any).id) === currentUserId;
+  return (
+    <div key={r.replyId} className="flex gap-2 justify-between items-start">
+      <div className="flex gap-2">
+        <img
+          src={rAvatar}
+          className="w-7 h-7 rounded-full object-cover shrink-0"
+          alt={r.user.username}
+        />
+        <div>
+          <p className="text-white text-xs font-medium">{r.user.username}</p>
+          <p className="text-zinc-300 text-xs">{r.text}</p>
+        </div>
+      </div>
+      {isReplyOwner && (
+        <button
+          onClick={async () => {
+            try {
+              await engagementService.deleteComment(r.replyId);
+              setRepliesMap((prev) => {
+                const updatedReplies = (prev[c.commentId] ?? []).filter(
+                  (reply) => reply.replyId !== r.replyId,
+                );
+                return {
+                  ...prev,
+                  [c.commentId]: updatedReplies,
+                };
+              });
+              setComments((prev) =>
+                prev.map((comment) =>
+                  comment.commentId === c.commentId
+                    ? {
+                        ...comment,
+                        repliesCount: Math.max(0, comment.repliesCount - 1),
+                      }
+                    : comment,
+                ),
+              );
+              setShowReplies((prev) => {
+                const next = new Set(prev);
+                if ((replies.length - 1) <= 0) {
+                  next.delete(c.commentId);
+                }
+                return next;
+              });
+            } catch {}
+          }}
+          className="hover:text-red-400 transition flex items-center gap-1 text-zinc-500 text-[10px] shrink-0"
+        >
+          <Trash2 className="w-3 h-3" />
+        </button>
+      )}
+    </div>
+  );
+})
                 )}
               </div>
             )}
