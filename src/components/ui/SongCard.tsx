@@ -22,6 +22,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { useMe } from "@/features/profile/context/useMe";
 import { playbackService } from "@/features/player-core/Playbackservice";
 import CreatePlaylistOverlay from "@/features/library/tabs/playlists/components/CreatePlaylistOverlay";
+import trackFallback from "@/assets/track.jpg";
 
 const DB_NAME = "sc_downloads";
 const STORE = "tracks";
@@ -85,6 +86,14 @@ interface PlayerProps {
   onStation?: () => void;
   contextTag?: string;
   offlineSrc?: string;
+  playlistTracks?: Array<{
+    id: string;
+    number: number;
+    title: string;
+    artist: string;
+    playsCount?: number;
+    avatarUrl?: string | null;
+  }>;
 }
 
 export default function SongCard({
@@ -111,6 +120,7 @@ export default function SongCard({
   onStation,
   contextTag,
   offlineSrc,
+  playlistTracks = [],
 }: PlayerProps) {
   const {
     currentTrack,
@@ -302,6 +312,7 @@ export default function SongCard({
 
   const displayProgress = isThisTrack ? playerProgress : progress;
   const cardPrimaryLink = entityLinkTo || (trackId ? `/tracks/${trackId}` : "");
+  const isCollectionCard = contextTag === "Album" || contextTag === "Playlist";
   const mobileCoverSizeClass = smallCoverOnMobile
     ? "h-[72px] w-[72px]"
     : "h-[88px] w-[88px]";
@@ -348,9 +359,7 @@ export default function SongCard({
           {coverUrl ? (
             <img src={coverUrl} alt={title} className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#2a2a2a] to-[#111]">
-              <SiSoundcloud size={40} className="text-[hsl(0,0%,30%)]" />
-            </div>
+            <img src={trackFallback} alt={title || "track"} className="w-full h-full object-cover" />
           )}
         </Link>
       ) : (
@@ -358,9 +367,7 @@ export default function SongCard({
           {coverUrl ? (
             <img src={coverUrl} alt={title} className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#2a2a2a] to-[#111]">
-              <SiSoundcloud size={40} className="text-[hsl(0,0%,30%)]" />
-            </div>
+            <img src={trackFallback} alt={title || "track"} className="w-full h-full object-cover" />
           )}
         </div>
       )}
@@ -407,9 +414,11 @@ export default function SongCard({
             <span className="whitespace-nowrap text-[8px] text-[hsl(0,0%,40%)] sm:text-[11px]">
               {timeAgo}
             </span>
-            <span className="whitespace-nowrap rounded-sm border border-[hsl(0,0%,20%)] bg-[hsl(0,0%,12%)] px-1 py-0.5 text-[7px] text-[hsl(0,0%,55%)] sm:px-2 sm:text-[10px]">
-              {contextTag ?? `# ${genre}`}
-            </span>
+            {!isCollectionCard ? (
+              <span className="whitespace-nowrap rounded-sm border border-[hsl(0,0%,20%)] bg-[hsl(0,0%,12%)] px-1 py-0.5 text-[7px] text-[hsl(0,0%,55%)] sm:px-2 sm:text-[10px]">
+                {contextTag ?? `# ${genre}`}
+              </span>
+            ) : null}
           </div>
         </div>
 
@@ -462,6 +471,25 @@ export default function SongCard({
             );
           })}
         </div>
+        {isCollectionCard && playlistTracks.length > 0 ? (
+          <div className="mb-2 mt-2 space-y-2">
+            {playlistTracks.map((collectionTrack) => (
+              <div key={collectionTrack.id} className="flex items-center gap-2 py-0.5 text-sm text-zinc-300">
+                <img
+                  src={collectionTrack.avatarUrl || trackFallback}
+                  alt={collectionTrack.title}
+                  className="h-7 w-7 rounded-[2px] object-cover"
+                />
+                <span className="text-zinc-400">{collectionTrack.number} ·</span>
+                <span className="truncate">
+                  <span className="font-semibold text-white">{collectionTrack.artist}</span>
+                  {" · "}
+                  <span>{collectionTrack.title}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : null}
 
         <div className="mt-1 flex flex-wrap items-center justify-between gap-1.5 sm:mt-2 sm:gap-2">
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:flex-none tracking-tight sm:gap-2">
@@ -469,26 +497,28 @@ export default function SongCard({
               type="button"
               onClick={handleLikeToggle}
               disabled={isLikePending}
-              className={`flex h-8 shrink-0 items-center gap-1.5 rounded-[4px] bg-[#2f3033] px-3 text-[13px] font-semibold transition-colors hover:bg-[#3a3b3f] disabled:opacity-60 ${
+              className={`flex h-8 shrink-0 items-center gap-1.5 rounded-[4px] bg-[#2f3033] ${isCollectionCard ? "w-8 justify-center px-0" : "px-3"} text-[13px] font-semibold transition-colors hover:bg-[#3a3b3f] disabled:opacity-60 ${
                 isLiked ? "text-[#ff5500]" : "text-zinc-100"
               }`}
               aria-label={`Like (${likesCount})`}
             >
               <Heart size={16} fill={isLiked ? "#ff5500" : "none"} style={{ color: isLiked ? "#ff5500" : "#fff" }} />
-              <span>{likesCount}</span>
+              {!isCollectionCard ? <span>{likesCount}</span> : null}
             </button>
-            <button
-              type="button"
-              onClick={handleRepostToggle}
-              disabled={repostDisabled || isRepostPending}
-              aria-label={isReposted ? "Undo repost" : "Repost"}
-              className={`flex h-8 shrink-0 items-center gap-1.5 rounded-[4px] bg-[#2f3033] px-3 text-[13px] font-semibold transition-colors hover:bg-[#3a3b3f] disabled:cursor-not-allowed disabled:opacity-60 ${
-                isReposted ? "text-[#ff5500]" : "text-zinc-100"
-              }`}
-            >
-              <Repeat2 size={16} style={{ color: isReposted ? "#ff5500" : "#fff" }} />
-              <span>{repostsCount}</span>
-            </button>
+            {!isCollectionCard ? (
+              <button
+                type="button"
+                onClick={handleRepostToggle}
+                disabled={repostDisabled || isRepostPending}
+                aria-label={isReposted ? "Undo repost" : "Repost"}
+                className={`flex h-8 shrink-0 items-center gap-1.5 rounded-[4px] bg-[#2f3033] px-3 text-[13px] font-semibold transition-colors hover:bg-[#3a3b3f] disabled:cursor-not-allowed disabled:opacity-60 ${
+                  isReposted ? "text-[#ff5500]" : "text-zinc-100"
+                }`}
+              >
+                <Repeat2 size={16} style={{ color: isReposted ? "#ff5500" : "#fff" }} />
+                <span>{repostsCount}</span>
+              </button>
+            ) : null}
             <button className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f]">
               <Share2 size={16} />
             </button>
