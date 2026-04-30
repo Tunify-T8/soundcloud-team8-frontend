@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Heart, Repeat2,
   Users, Flag, Info,
@@ -204,6 +204,7 @@ const ShareModal = ({ title, onClose }: { title: string; onClose: () => void }) 
 
 const TrackPage = () => {
   const { trackId } = useParams<{ trackId: string }>();
+  const navigate = useNavigate();
   const [waveformComments, setWaveformComments] = useState<WaveformComment[]>([]);
   const [track, setTrack]                         = useState<Track | null>(null);
   const [trackLoading, setLoading]                = useState(true);
@@ -212,6 +213,8 @@ const TrackPage = () => {
   const [fansTab, setFansTab]                     = useState<'top' | 'first'>('top');
   const [isFollowingArtist, setIsFollowingArtist] = useState(false);
   const [artistFollowers, setArtistFollowers]     = useState(0);
+  const [artistTracksCount, setArtistTracksCount] = useState(0);
+  const [artistUsername, setArtistUsername]       = useState('');
   const [followLoading, setFollowLoading]         = useState(false);
 
   const {
@@ -239,15 +242,26 @@ const TrackPage = () => {
   const artistId = (track as any)?.artists?.[0]?.id ?? null;
 
   useEffect(() => {
-    if (!artistId) return;
-    api.get(`/users/${artistId}`)
-      .then(res => {
-        setIsFollowingArtist(res.data.isFollowing ?? false);
-        setArtistFollowers(res.data.followersCount ?? 0);
-      })
-      .catch(() => {});
-  }, [artistId]);
-
+  if (!artistId) return;
+  api.get(`/users/${artistId}`)
+    .then(res => {
+      setIsFollowingArtist(res.data.isFollowing ?? false);
+      setArtistFollowers(res.data.followersCount ?? 0);
+      setArtistUsername(res.data.username ?? '');
+      // If tracksCount is 0 or missing, fetch separately
+      if (res.data.tracksCount) {
+        setArtistTracksCount(res.data.tracksCount);
+      } else {
+        return api.get(`/users/${artistId}/tracks?page=1&limit=1`);
+      }
+    })
+    .then(res => {
+      if (res?.data?.total) setArtistTracksCount(res.data.total);
+      else if (res?.data?.totalCount) setArtistTracksCount(res.data.totalCount);
+      else if (res?.data?.tracksCount) setArtistTracksCount(res.data.tracksCount);
+    })
+    .catch(() => {});
+}, [artistId]);
 
   useEffect(() => {
     if (!trackId) return;
@@ -261,6 +275,7 @@ const TrackPage = () => {
   const handleCommentsUpdate = useCallback((comments: ApiComment[]) => {
     setWaveformComments(mapTrackCommentsToWaveform(comments));
   }, []);
+
   if (trackLoading) return <div className="p-8 text-white">Loading...</div>;
   if (error || !track) return <div className="p-8 text-red-400">{error ?? 'Track not found'}</div>;
 
@@ -269,21 +284,17 @@ const TrackPage = () => {
   const artworkSrc    = (track as any).artworkUrl ?? '';
   const ownerInit     = artistName.slice(0, 2).toUpperCase();
   const currentUserId = (() => {
-  try {
-    const token = localStorage.getItem('sc_access_token') ?? '';
-    return token ? JSON.parse(atob(token.split('.')[1]))?.sub ?? '' : '';
-  } catch { return ''; }
-})();
+    try {
+      const token = localStorage.getItem('sc_access_token') ?? '';
+      return token ? JSON.parse(atob(token.split('.')[1]))?.sub ?? '' : '';
+    } catch { return ''; }
+  })();
   const waveformSeed  = 3;
 
-  // FIX 1: Compare against trackId (URL string) not track.id (API may return number).
-  // Same pattern SongCard uses: currentTrack?.id === trackId (both strings).
   const isThisTrack   = currentTrack != null && String(currentTrack.id) === String(trackId);
   const currentTime   = isThisTrack ? playerProgress * duration : 0;
   const pageIsPlaying = isThisTrack && isPlaying;
 
-  // FIX 2: Use trackId (string from useParams) as the id, not track.id (API number).
-  // Also include audioUrl so the player actually has something to load.
   const trackObj = {
     id:           trackId!,
     title:        track.title,
@@ -294,7 +305,6 @@ const TrackPage = () => {
     duration,
   };
 
-  // FIX 3: Guard on trackId (not track.id) — consistent with trackObj.id above.
   const handlePlayPause = () => {
     if (!trackId) return;
     if (isThisTrack) {
@@ -305,7 +315,6 @@ const TrackPage = () => {
     }
   };
 
-  // FIX 4: requestSeek must use the same id that was passed to setCurrentTrack (trackId).
   const handleSeek = (ratio: number) => {
     if (!trackId) return;
     if (!isThisTrack) {
@@ -330,6 +339,12 @@ const TrackPage = () => {
       if (err?.response?.status === 409) setIsFollowingArtist(true);
     } finally {
       setFollowLoading(false);
+    }
+  };
+
+  const handleArtistTracksClick = () => {
+    if (artistId && artistUsername) {
+      navigate(`/${artistUsername}`, { state: { userId: artistId } });
     }
   };
 
@@ -466,18 +481,31 @@ const TrackPage = () => {
 
           {/* Artist sidebar */}
           <aside className="w-44 shrink-0 px-5 py-6 border-r border-[hsl(0,0%,13%)] flex flex-col items-center gap-3">
-            <div className="w-[88px] h-[88px] rounded-full overflow-hidden ring-2 ring-zinc-700">
+            <div
+              className="w-[88px] h-[88px] rounded-full overflow-hidden ring-2 ring-zinc-700 cursor-pointer hover:ring-orange-500 transition"
+              onClick={handleArtistTracksClick}
+            >
               <img src={makeOwnerAvatar(ownerInit, 88)} alt={artistName} className="w-full h-full object-cover" />
             </div>
             <div className="text-center">
-              <p className="text-sm font-semibold text-white leading-tight">{artistName}</p>
+              <p
+                className="text-sm font-semibold text-white leading-tight cursor-pointer hover:text-zinc-300 transition"
+                onClick={handleArtistTracksClick}
+              >
+                {artistName}
+              </p>
               <p className="text-[11px] text-zinc-500 mt-1 flex items-center justify-center gap-2">
                 <span className="flex items-center gap-0.5">
                   <Users className="w-2.5 h-2.5" />
                   {artistFollowers.toLocaleString()}
                 </span>
                 <span className="text-zinc-700">·</span>
-                <span>28</span>
+                <button
+                  onClick={handleArtistTracksClick}
+                  className="hover:text-white transition"
+                >
+                  {artistTracksCount} 
+                </button>
               </p>
             </div>
             <button
