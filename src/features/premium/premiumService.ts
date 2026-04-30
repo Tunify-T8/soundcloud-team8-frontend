@@ -132,7 +132,7 @@ function normalizeSubscriptionResponse(payload: unknown): Subscription {
       plan,
       status,
       startedAt: typeof data.startedAt === "string" ? data.startedAt : "",
-      expiresAt,
+      expiresAt: expiresAt ?? "",
       autoRenew: typeof data.autoRenew === "boolean" ? data.autoRenew : false,
       features: {
         maxUploads:

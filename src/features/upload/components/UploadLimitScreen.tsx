@@ -84,7 +84,7 @@ const FEATURES = [
   },
 ];
 
-export default function UploadLimitScreen({ quota }: UploadLimitScreenProps) {
+export default function UploadLimitScreen({ quota: _quota }: UploadLimitScreenProps) {
   return (
     <>
       <main className="relative flex-1 flex px-8 py-12 max-w-[1100px] mx-auto w-full gap-16 items-start">

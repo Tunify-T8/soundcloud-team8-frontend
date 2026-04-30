@@ -13,7 +13,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { SiSoundcloud } from "react-icons/si";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { waveGenerators } from "../Waveforms";
 import { engagementService } from "@/features/engagement/services/engagementService";
 import { Genre } from "@/shared/types/Genre";
@@ -48,6 +48,17 @@ async function saveDownload(
     { meta, audio: blob, artwork: artwork ?? null },
     `user_${userId}_song_${trackId}`,
   );
+}
+
+async function hasDownload(userId: string, trackId: string): Promise<boolean> {
+  const db = await openDB();
+  const tx = db.transaction(STORE, "readonly");
+  const store = tx.objectStore(STORE);
+  return new Promise((res, rej) => {
+    const req = store.get(`user_${userId}_song_${trackId}`);
+    req.onsuccess = () => res(Boolean(req.result));
+    req.onerror = () => rej(req.error);
+  });
 }
 
 interface PlayerProps {
@@ -111,6 +122,7 @@ export default function SongCard({
   } = usePlayer();
   const { hasOfflineListening } = useSubscription();
   const { me } = useMe();
+  const navigate = useNavigate();
 
   const isThisTrack = currentTrack?.id === trackId;
   const playing = isThisTrack && isPlaying;
@@ -121,6 +133,7 @@ export default function SongCard({
   const [downloading, setDownloading] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
   const [showDownloadTooltip, setShowDownloadTooltip] = useState(false);
+  const [showAlreadyDownloaded, setShowAlreadyDownloaded] = useState(false);
   const [randomSeed] = useState(() => Math.random() * 1000000);
 
   const handlePlayToggle = () => {
@@ -177,6 +190,20 @@ export default function SongCard({
     };
   }, [trackId]);
 
+  useEffect(() => {
+    if (!trackId || !me?.id || !hasOfflineListening) return;
+    let mounted = true;
+    hasDownload(me.id, trackId)
+      .then((exists) => {
+        if (!mounted) return;
+        setDownloaded(exists);
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, [trackId, me?.id, hasOfflineListening]);
+
   const handleLikeToggle = async () => {
     if (!trackId || isLikePending) return;
     const wasLiked = isLiked;
@@ -219,8 +246,12 @@ export default function SongCard({
   };
 
   async function handleDownload() {
-    if (!hasOfflineListening || !me?.id || downloading || downloaded || !trackId)
+    if (!hasOfflineListening || !me?.id || downloading || !trackId) return;
+
+    if (downloaded) {
+      setShowAlreadyDownloaded(true);
       return;
+    }
 
     setDownloading(true);
     try {
@@ -250,6 +281,7 @@ export default function SongCard({
         artworkBlob,
       );
       setDownloaded(true);
+      setShowAlreadyDownloaded(false);
     } catch (err) {
       console.error("Download failed", err);
       alert("Failed to download. Please try again.");
@@ -520,7 +552,7 @@ export default function SongCard({
                   >
                     <button
                       onClick={handleDownload}
-                      disabled={!hasOfflineListening || downloading || downloaded}
+                      disabled={!hasOfflineListening || downloading}
                       className={`flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-[13px] font-semibold transition-colors ${
                         !hasOfflineListening
                           ? "opacity-40 cursor-not-allowed text-zinc-400"
@@ -541,6 +573,23 @@ export default function SongCard({
                       )}
                       {downloading ? "Downloading…" : downloaded ? "Downloaded" : "Download"}
                     </button>
+
+                    {showAlreadyDownloaded && downloaded && (
+                      <div className="px-2.5 pb-1.5 text-[11px] text-zinc-300">
+                        This song is already downloaded, Check{" "}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            navigate("/me/downloads");
+                          }}
+                          className="text-[#2f7fdc] underline"
+                        >
+                          Downloads
+                        </button>
+                        .
+                      </div>
+                    )}
 
                     {showDownloadTooltip && !hasOfflineListening && (
                       <div
