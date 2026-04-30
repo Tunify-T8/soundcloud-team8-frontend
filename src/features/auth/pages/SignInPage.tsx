@@ -242,11 +242,7 @@ useEffect(() => {
     }
   };
 
-  const onSubmit = async (
-    
-    
-    
-    : SignInFormData) => {
+  const onSubmit = async (data: SignInFormData) => {
     setApiError(null);
     setIsSubmitting(true);
     try {
