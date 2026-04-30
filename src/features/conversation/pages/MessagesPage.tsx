@@ -127,7 +127,7 @@ export default function MessagesPage() {
   }
 
   return (
-    <main className="flex h-screen w-full justify-center gap-4 bg-zinc-950 px-4 py-4">
+    <main className="flex h-[calc(100vh-4rem)] w-full justify-center gap-4 overflow-hidden bg-zinc-950 px-4 py-4">
       <ConversationListPanel
         selectedConversationId={selectedConversationId}
         onSelectConversation={handleSelectConversation}
