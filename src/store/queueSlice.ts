@@ -1,16 +1,22 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { queueState, queueTrack, repeatMode } from "@/features/player-core/types";
+import type {
+  queueState,
+  queueTrack,
+  repeatMode,
+  activeQueueContext,
+} from "@/features/player-core/types";
 
 const repeatCycle: repeatMode[] = ["none", "all", "one"];
 
 const initialState: queueState = {
-  tracks:       [],
-  currentIndex: 0,
-  shuffle:      false,
-  repeat:       "none",
-  isLoading:    false,
-  error:        null,
-  totalCount:   0,
+  tracks:        [],
+  currentIndex:  0,
+  shuffle:       false,
+  repeat:        "none",
+  isLoading:     false,
+  error:         null,
+  totalCount:    0,
+  activeContext: null,
 };
 
 const queueSlice = createSlice({
@@ -30,20 +36,22 @@ const queueSlice = createSlice({
     setQueue(
       state,
       action: PayloadAction<{
-        tracks:       queueTrack[];
-        currentIndex: number;
-        shuffle:      boolean;
-        repeat:       repeatMode;
-        totalCount:   number;
+        tracks:        queueTrack[];
+        currentIndex:  number;
+        shuffle:       boolean;
+        repeat:        repeatMode;
+        totalCount:    number;
+        activeContext: activeQueueContext;
       }>
     ) {
-      state.tracks       = action.payload.tracks;
-      state.currentIndex = action.payload.currentIndex;
-      state.shuffle      = action.payload.shuffle;
-      state.repeat       = action.payload.repeat;
-      state.totalCount   = action.payload.totalCount;
-      state.isLoading    = false;
-      state.error        = null;
+      state.tracks        = action.payload.tracks;
+      state.currentIndex  = action.payload.currentIndex;
+      state.shuffle       = action.payload.shuffle;
+      state.repeat        = action.payload.repeat;
+      state.totalCount    = action.payload.totalCount;
+      state.activeContext = action.payload.activeContext;
+      state.isLoading     = false;
+      state.error         = null;
     },
 
     nextTrack(state) {
@@ -51,14 +59,11 @@ const queueSlice = createSlice({
       if (!tracks.length) return;
 
       const isLast = currentIndex === tracks.length - 1;
-
       if (repeat === "one") return;
-
       if (isLast) {
         if (repeat === "all") state.currentIndex = 0;
         return;
       }
-
       state.currentIndex = currentIndex + 1;
     },
 
@@ -67,14 +72,11 @@ const queueSlice = createSlice({
       if (!tracks.length) return;
 
       const isFirst = currentIndex === 0;
-
       if (repeat === "one") return;
-
       if (isFirst) {
         if (repeat === "all") state.currentIndex = tracks.length - 1;
         return;
       }
-
       state.currentIndex = currentIndex - 1;
     },
 
@@ -90,7 +92,6 @@ const queueSlice = createSlice({
       action: PayloadAction<{ track: queueTrack; atIndex?: number }>
     ) {
       const { track, atIndex } = action.payload;
-
       if (atIndex !== undefined && atIndex >= 0 && atIndex <= state.tracks.length) {
         state.tracks.splice(atIndex, 0, track);
         if (atIndex <= state.currentIndex) state.currentIndex += 1;
@@ -124,13 +125,14 @@ const queueSlice = createSlice({
     },
 
     clearQueue(state) {
-      state.tracks       = [];
-      state.currentIndex = 0;
-      state.shuffle      = false;
-      state.repeat       = "none";
-      state.isLoading    = false;
-      state.error        = null;
-      state.totalCount   = 0;
+      state.tracks        = [];
+      state.currentIndex  = 0;
+      state.shuffle       = false;
+      state.repeat        = "none";
+      state.isLoading     = false;
+      state.error         = null;
+      state.totalCount    = 0;
+      state.activeContext = null;
     },
   },
 });
@@ -155,6 +157,7 @@ export default queueSlice.reducer;
 
 export const selectQueueTracks    = (state: { queue: queueState }) => state.queue.tracks;
 export const selectCurrentIndex   = (state: { queue: queueState }) => state.queue.currentIndex;
+export const selectActiveContext  = (state: { queue: queueState }) => state.queue.activeContext;
 export const selectCurrentTrackId = (state: { queue: queueState }) =>
   state.queue.tracks[state.queue.currentIndex]?.trackId ?? null;
 export const selectCurrentTrack   = (state: { queue: queueState }) =>

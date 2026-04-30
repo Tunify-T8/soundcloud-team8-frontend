@@ -5,9 +5,11 @@ import { Outlet, useParams, useLocation } from "react-router-dom";
 import { profileService } from "../profileService";
 import { useEffect, useState, useCallback } from "react";
 import { useMe } from "../context/useMe";
+import { usePlayContext } from "@/hooks/usePlayContext";
 import type {
   MeUserProfile,
   PublicUserProfile,
+  UserFollower,
   UserFollowing,
 } from "../../../shared/types/User";
 
@@ -25,6 +27,7 @@ export default function ProfilePage() {
   const { me, socialAccounts, following, refresh: refreshMe } = useMe();
   const isMe = !username;
   const [publicUser, setPublicUser] = useState<PublicUserProfile | null>(null);
+  const [openedFollowers, setOpenedFollowers] = useState<UserFollower[]>([]);
   const [openedFollowing, setOpenedFollowing] = useState<UserFollowing[]>([]);
   const [loading, setLoading] = useState(!!username);
   const [error, setError] = useState<string | null>(null);
@@ -94,19 +97,67 @@ export default function ProfilePage() {
     };
   }, [isMe, publicUser?.id, following]);
 
-  if (!username && !me) {
-    return <div className="min-h-screen text-white">Loading...</div>;
-  }
+  useEffect(() => {
+    let isMounted = true;
+    const targetUserId = isMe ? me?.id : publicUser?.id;
 
-  if (loading) {
-    return <div className="min-h-screen text-white">Loading...</div>;
-  }
+    if (!targetUserId) {
+      setOpenedFollowers([]);
+      return;
+    }
+
+    profileService
+      .getUserFollowers(targetUserId)
+      .then((res) => {
+        if (!isMounted) return;
+        setOpenedFollowers(res.followers ?? []);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setOpenedFollowers([]);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isMe, me?.id, publicUser?.id]);
 
   const user = username ? publicUser : me;
 
+  // Register profile context — uses the profile owner's UUID
+  usePlayContext({
+    contextType: "profile",
+    contextId: user?.id ?? "",
+  });
+
+  if (!username && !me) {
+    return (
+      <div
+        data-testid="profile-page-loading-me"
+        className="min-h-screen bg-[#0b0b0b] text-white"
+      >
+        Loading...
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div
+        data-testid="profile-page-loading"
+        className="min-h-screen bg-[#0b0b0b] text-white"
+      >
+        Loading...
+      </div>
+    );
+  }
+
   if (error || !user) {
     return (
-      <div className="min-h-screen text-white">
+      <div
+        data-testid="profile-page-error"
+        className="min-h-screen bg-[#0b0b0b] text-white"
+      >
         {error || "User not found."}
       </div>
     );
@@ -117,56 +168,83 @@ export default function ProfilePage() {
   const city = locationParts[0]?.trim() ?? undefined;
   const country = locationParts[1]?.trim() ?? undefined;
 
+  const sidebarProps = {
+    profileId: user.id,
+    followers: user.followersCount,
+    following: user.followingCount,
+    tracks: "tracksCount" in user ? (user as any).tracksCount : 0,
+    bio: user.bio ?? undefined,
+    socialAccounts: isMe ? socialAccounts : undefined,
+    followerUsers: openedFollowers.map((u) => ({
+      id: u.id,
+      username: u.username,
+      displayName: u.username,
+      avatarUrl: u.avatarUrl ?? "",
+      isCertified: false,
+    })),
+    followingUsers: openedFollowing.map((u) => ({
+      id: u.id,
+      username: u.username,
+      displayName: u.displayName ?? undefined,
+      avatarUrl: u.avatarUrl ?? "",
+      isCertified: u.isCertified ?? false,
+      followersCount: u.followersCount ?? 0,
+    })),
+    onUnfollowUser: refreshProfile,
+  };
+
   return (
-    <div className="min-h-screen text-white">
-      <Header
-        displayName={user.displayName ?? undefined}
-        username={user.username}
-        country={country}
-        city={city}
-        isCertified={isMeProfile(user) ? user.isCertified : false}
-        avatarUrl={user.avatarUrl || ""}
-        coverUrl={user.coverUrl || ""}
-        isMe={isMe}
-        onProfileUpdated={refreshProfile}
-      />
-      <div className="relative">
-        <UserInfoBar
+    <div data-testid="profile-page" className="min-h-screen bg-[#0b0b0b] text-white">
+      <div className="mx-auto w-full max-w-[1400px] px-3 sm:px-6 xl:px-8">
+        <Header
           displayName={user.displayName ?? undefined}
-          avatarUrl={user.avatarUrl || ""}
+          username={user.username}
           country={country}
           city={city}
-          bio={user.bio ?? undefined}
-          role={user.role}
-          visibility={isMeProfile(user) ? user.visibility : undefined}
-          socialAccounts={isMe ? socialAccounts : undefined}
+          isCertified={isMeProfile(user) ? user.isCertified : false}
+          avatarUrl={user.avatarUrl || ""}
+          coverUrl={user.coverUrl || ""}
           isMe={isMe}
-          userId={user.id}
           onProfileUpdated={refreshProfile}
-          followersCount={followersCount ?? user.followersCount}
-          onFollowersChange={setFollowersCount}
         />
-        <div className="absolute right-[8.333333%] top-full mt-4">
-          <ProfileSideBar
-            profileId={user.id}
-            followers={followersCount ?? user.followersCount}
-            following={user.followingCount}
-            tracks={"tracksCount" in user ? (user as any).tracksCount : 0}
-            bio={user.bio ?? undefined}
-            socialAccounts={isMe ? socialAccounts : undefined}
-            followingUsers={openedFollowing.map((u) => ({
-              id: u.id,
-              username: u.username,
-              displayName: u.displayName ?? undefined,
-              avatarUrl: u.avatarUrl ?? "",
-              isCertified: u.isCertified ?? false,
-              followersCount: u.followersCount ?? 0,
-            }))}
-            onUnfollowUser={refreshProfile}
-          />
+
+        <div data-testid="profile-page-user-info" className="w-full bg-[#0b0b0b] lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-8">
+            <div className="lg:col-span-2">
+              <UserInfoBar
+                displayName={user.displayName ?? undefined}
+                username={user.username}
+                avatarUrl={user.avatarUrl || ""}
+                country={country}
+                city={city}
+                bio={user.bio ?? undefined}
+                role={user.role}
+                visibility={isMeProfile(user) ? user.visibility : undefined}
+                socialAccounts={isMe ? socialAccounts : undefined}
+                isMe={isMe}
+                userId={user.id}
+                onProfileUpdated={refreshProfile}
+                followersCount={followersCount ?? user.followersCount}
+                onFollowersChange={setFollowersCount}
+              />
+            </div>
+
+            <div className="min-w-0">
+              <div data-testid="profile-page-content" className="bg-[#0b0b0b] pb-6 lg:pb-28">
+                <Outlet />
+              </div>
+            </div>
+
+            <div data-testid="profile-sidebar-desktop" className="hidden lg:block">
+              <div className="sticky top-6 pt-4">
+                <ProfileSideBar {...sidebarProps} />
+              </div>
+            </div>
+        </div>
+
+        <div data-testid="profile-sidebar-mobile" className="mt-1 lg:hidden">
+          <ProfileSideBar {...sidebarProps} />
         </div>
       </div>
-      <Outlet />
     </div>
   );
 }

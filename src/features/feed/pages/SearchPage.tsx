@@ -143,7 +143,7 @@ export default function SearchPage() {
   ].filter(Boolean) as string[];
 
   return (
-    <div className="min-h-screen bg-[#181818] flex">
+    <div className="min-h-screen bg-[#0b0b0b] flex">
       <FilterSidebar active={activeFilter} onChange={setActiveFilter} />
 
       <div className="flex-1 pt-10 px-8 max-w-[860px]">

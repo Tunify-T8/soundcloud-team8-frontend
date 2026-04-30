@@ -13,6 +13,8 @@ import {
   getTrendingAlbums,
   getTrendingTracks,
 } from "../discoverService";
+import { usePlayContext } from "@/hooks/usePlayContext";
+import { useMe } from "@/features/profile/context/useMe";
 
 export default function DiscoverPage() {
   const [discoverTracks, setDiscoverTracks] = useState<DiscoverTrack[]>([]);
@@ -23,6 +25,8 @@ export default function DiscoverPage() {
   >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { me } = useMe();
+  usePlayContext({ contextType: "feed", contextId: me?.id ?? "" });
 
   useEffect(() => {
     let isMounted = true;
@@ -103,8 +107,8 @@ export default function DiscoverPage() {
 
   return (
     <div className="min-h-screen bg-[#0b0b0b] text-white">
-      <div className="mx-auto flex w-full max-w-340 gap-10 px-8 py-8">
-        <main className="flex-1 overflow-hidden ml-6">
+      <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 px-3 py-4 sm:px-6 sm:py-8 xl:flex-row xl:gap-10 xl:px-8">
+        <main className="min-w-0 flex-1 overflow-hidden">
           {isLoading ? (
             <p className="text-zinc-400">Loading discover tracks...</p>
           ) : error ? (
@@ -128,7 +132,7 @@ export default function DiscoverPage() {
           )}
         </main>
 
-        <aside className="sticky top-6 self-start h-[calc(100vh-3rem)] w-90 shrink-0 overflow-y-auto pr-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <aside className="hidden xl:sticky xl:top-6 xl:block xl:h-[calc(100vh-3rem)] xl:w-90 xl:shrink-0 xl:overflow-y-auto xl:pr-2 xl:[scrollbar-width:none] xl:[-ms-overflow-style:none] xl:[&::-webkit-scrollbar]:hidden">
           <SideBar />
         </aside>
       </div>

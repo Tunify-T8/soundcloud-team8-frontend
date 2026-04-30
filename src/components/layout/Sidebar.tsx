@@ -2,13 +2,15 @@ import { useState, useEffect } from "react";
 import { FaUser, FaMusic, FaGooglePlay, FaApple } from "react-icons/fa";
 import { Heart, Play } from "lucide-react";
 import { SiSoundcloud } from "react-icons/si";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { IoChevronDown } from "react-icons/io5";
 import { feedService } from "../../features/feed/feedservice";
+import { followingService } from "../../features/following/followingService";
 import type { LikedTrack } from "@/features/feed/type";
 import UpgradeModal from "@/features/premium/components/UpgradeModal";
 import { api } from "../../features/auth/services/api";
 import avatarFallback from "@/assets/avatar.png";
+import { notifySocialGraphUpdated } from "../../features/profile/socialGraphEvents";
 import amplifyImg from "@/assets/amplifytool.png";
 import replaceImg from "@/assets/replace.png";
 import distributeImg from "@/assets/distribute.png";
@@ -17,15 +19,18 @@ import monetizeImg from "@/assets/monetize.png";
 import spotlightImg from "@/assets/spotlightool.png";
 import topFansImg from "@/assets/top_fans.png";
 import commentsImg from "@/assets/comments.png";
+import { useSubscription } from "@/hooks/useSubscription";
 
 interface SuggestedArtist {
   id: string;
   username: string;
-  displayName: string | null;
-  isCertified: boolean;
   avatarUrl: string | null;
+  coverUrl: string | null;
+  role: "ARTIST";
+  isCertified: boolean;
   followersCount: number;
-  tracksCount: number;
+  isFollowing: boolean;
+  tracksUploadedCount: number;
 }
 
 type ArtistTool = {
@@ -52,6 +57,7 @@ const artistToolRows: ArtistTool[][] = [
 ];
 
 export default function SideBar() {
+  const { isArtist, isArtistPro } = useSubscription();
   const [open, setOpen] = useState(true);
   const [suggestedUsers, setSuggestedUsers] = useState<SuggestedArtist[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,23 +65,83 @@ export default function SideBar() {
   const [likedTracks, setLikedTracks] = useState<LikedTrack[]>([]);
   const [likesLoading, setLikesLoading] = useState(true);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [pendingFollowId, setPendingFollowId] = useState<string | null>(null);
 
   const handleArtistToolClick = () => {
     setUpgradeOpen(true);
   };
 
+  const canAccessBasicArtistTools = isArtist || isArtistPro;
+
   const fetchArtists = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get("/feed/suggested-artists", {
+      const res = await api.get("/users/me/suggested/artists", {
         params: { page: 1, limit: 20 },
       });
-      setSuggestedUsers(res.data.items || []);
+      const rawItems: SuggestedArtist[] = res.data?.data || [];
+      const items: SuggestedArtist[] = await Promise.all(
+        rawItems.map(async (artist) => {
+          try {
+            const profileRes = await api.get(`/users/${encodeURIComponent(artist.id)}`);
+            return {
+              ...artist,
+              tracksUploadedCount: Number(
+                profileRes?.data?.tracksUploadedCount ?? 0,
+              ),
+            };
+          } catch {
+            return {
+              ...artist,
+              tracksUploadedCount: 0,
+            };
+          }
+        }),
+      );
+
+      // Fallback: if artist-only suggestions are empty, use legacy feed endpoint
+      // so the sidebar section does not disappear for users with sparse signals.
+      if (items.length === 0) {
+        const fallbackRes = await api.get("/feed/suggested-artists", {
+          params: { page: 1, limit: 20 },
+        });
+        const fallbackItems = (fallbackRes.data?.items ?? []).map(
+          (artist: Record<string, unknown>) =>
+            ({
+              id: String(artist.id ?? ""),
+              username: String(artist.username ?? ""),
+              avatarUrl: (artist.avatarUrl as string | null) ?? null,
+              coverUrl: null,
+              role: "ARTIST" as const,
+              isCertified: Boolean(artist.isCertified),
+              followersCount: Number(artist.followersCount ?? 0),
+              isFollowing: false,
+              tracksUploadedCount: Number(artist.tracksCount ?? 0),
+                }),
+        );
+        setSuggestedUsers(fallbackItems);
+      } else {
+        setSuggestedUsers(items);
+      }
+      setLoading(false);
     } catch {
       setError("Failed to load artists");
-    } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSuggestedArtistFollow = async (artistId: string) => {
+    setPendingFollowId(artistId);
+
+    try {
+      await followingService.followUser(artistId);
+      setSuggestedUsers((prev) => prev.filter((artist) => artist.id !== artistId));
+      notifySocialGraphUpdated();
+    } catch (err) {
+      console.error("Failed to follow suggested artist", err);
+    } finally {
+      setPendingFollowId((current) => (current === artistId ? null : current));
     }
   };
 
@@ -101,7 +167,7 @@ export default function SideBar() {
             className="mb-6 flex cursor-pointer items-center justify-between border-b border-zinc-800 pb-5"
           >
             <span className="text-[18px] font-bold tracking-tight text-white">
-              ARTIST TOOLS
+              {canAccessBasicArtistTools ? "YOU NOW HAVE ACCESS TO ARTIST TOOLS" : "ARTIST TOOLS"}
             </span>
             <IoChevronDown
               size={22}
@@ -111,31 +177,46 @@ export default function SideBar() {
 
           <div className="mb-4 grid grid-cols-4 gap-3">
             {artistToolRows[0].map((tool) => (
-              <Tool key={tool.id} tool={tool} onClick={handleArtistToolClick} />
+              <Tool
+                key={tool.id}
+                tool={tool}
+                onClick={handleArtistToolClick}
+                showUpgradeHover={!canAccessBasicArtistTools}
+              />
             ))}
           </div>
 
           {open && (
             <div className="mb-4 grid grid-cols-4 gap-3">
               {artistToolRows[1].map((tool) => (
-                <Tool key={tool.id} tool={tool} onClick={handleArtistToolClick} />
+                <Tool
+                  key={tool.id}
+                  tool={tool}
+                  onClick={handleArtistToolClick}
+                  showUpgradeHover={
+                    !canAccessBasicArtistTools ||
+                    (isArtist && tool.badge === "star")
+                  }
+                />
               ))}
             </div>
           )}
 
-          <button
-            type="button"
-            data-testid="artist-tools-upgrade-btn"
-            onClick={handleArtistToolClick}
-            className="flex w-full items-center rounded-[9px] bg-[#433873] px-3 py-3.5 text-left text-white transition-colors hover:bg-[#4b3f80]"
-          >
-            <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#735ef2] text-[22px] font-black leading-none">
-              +
-            </span>
-            <span className="px-1 text-[13px] font-medium tracking-tight leading-snug">
-              Unlock Artist tools from EGP 29.99/month.
-            </span>
-          </button>
+          {!canAccessBasicArtistTools && (
+            <button
+              type="button"
+              data-testid="artist-tools-upgrade-btn"
+              onClick={handleArtistToolClick}
+              className="flex w-full items-center rounded-[9px] bg-[#433873] px-3 py-3.5 text-left text-white transition-colors hover:bg-[#4b3f80]"
+            >
+              <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#735ef2] text-[22px] font-black leading-none">
+                +
+              </span>
+              <span className="px-1 text-[13px] font-medium tracking-tight leading-snug">
+                Unlock Artist tools from EGP 29.99/month.
+              </span>
+            </button>
+          )}
         </div>
 
         <div data-testid="suggested-artists-section" className="mt-8 mb-6">
@@ -172,34 +253,43 @@ export default function SideBar() {
                   data-testid={`suggested-artist-${artist.id}`}
                   className="flex items-center justify-between"
                 >
-                  <Link to={`/${artist.id}`} className="flex items-center gap-3">
+                  <Link to={`/${artist.id}`} className="group flex items-center gap-3">
                     <img
                       src={artist.avatarUrl || avatarFallback}
-                      alt={artist.displayName || artist.username}
+                      alt={artist.username}
                       data-testid={`suggested-artist-avatar-${artist.id}`}
-                      className="w-11 h-11 rounded-full object-cover bg-linear-to-br from-gray-700 to-gray-900"
+                      className="w-11 h-11 rounded-full object-cover bg-linear-to-br from-gray-700 to-gray-900 transition-transform duration-300 group-hover:scale-105"
                     />
                     <div>
                       <div className="font-bold text-white text-[15px] leading-tight hover:text-zinc-500">
-                        {artist.displayName || artist.username}
+                        {artist.username}
                       </div>
                       <div className="flex items-center gap-3 text-xs text-gray-400 mt-0.5">
-                        <span className="flex items-center gap-1 hover:text-zinc-600">
+                        <Link
+                          to={`/${artist.id}/followers`}
+                          className="flex items-center gap-1 hover:text-zinc-200"
+                        >
                           <FaUser size={12} />
                           {artist.followersCount}
-                        </span>
-                        <span className="flex items-center gap-1 hover:text-zinc-600">
+                        </Link>
+                        <Link
+                          to={`/${artist.id}/tracks`}
+                          className="flex items-center gap-1 hover:text-zinc-200"
+                        >
                           <FaMusic size={12} />
-                          {artist.tracksCount}
-                        </span>
+                          {artist.tracksUploadedCount}
+                        </Link>
                       </div>
                     </div>
                   </Link>
                   <button
                     data-testid={`suggested-artist-follow-btn-${artist.id}`}
-                    className="bg-white text-black font-semibold rounded px-5 py-1.5 text-sm hover:bg-gray-100 transition"
+                    type="button"
+                    disabled={pendingFollowId === artist.id}
+                    onClick={() => handleSuggestedArtistFollow(artist.id)}
+                    className="font-semibold rounded px-5 py-1.5 text-sm transition disabled:opacity-60 bg-white text-black hover:bg-gray-100"
                   >
-                    Follow
+                    {pendingFollowId === artist.id ? "Following..." : "Follow"}
                   </button>
                 </div>
               ))
@@ -327,9 +417,10 @@ export default function SideBar() {
 type ToolProps = {
   tool: ArtistTool;
   onClick: (tool: ArtistTool) => void;
+  showUpgradeHover: boolean;
 };
 
-function Tool({ tool, onClick }: ToolProps) {
+function Tool({ tool, onClick, showUpgradeHover }: ToolProps) {
   const badgeClasses =
     tool.badge === "star"
       ? "bg-[#f5efd9] text-[#c5a64f]"
@@ -346,8 +437,14 @@ function Tool({ tool, onClick }: ToolProps) {
     <button
       type="button"
       data-testid={`artist-tool-${tool.id}`}
-      onClick={() => onClick(tool)}
-      className="group relative h-[86px] w-full overflow-hidden rounded-2xl border border-zinc-700/60 bg-[#1a1a1a] transition-colors hover:border-zinc-600"
+      onClick={() => {
+        if (showUpgradeHover) {
+          onClick(tool);
+        }
+      }}
+      className={`group relative h-[86px] w-full overflow-hidden rounded-2xl border border-zinc-700/60 bg-[#1a1a1a] transition-colors ${
+        showUpgradeHover ? "hover:border-zinc-600" : ""
+      }`}
     >
       <span
         className={`absolute right-2.5 top-2.5 flex h-6 w-6 items-center justify-center rounded-full text-[13px] font-black ${badgeClasses}`}
@@ -367,16 +464,22 @@ function Tool({ tool, onClick }: ToolProps) {
             <div className="h-full w-full rounded-2xl border border-dashed border-zinc-600/80 bg-zinc-900/40" />
           )}
         </div>
-        <span className="text-center text-[13px] font-semibold leading-tight tracking-tight text-white transition-opacity group-hover:opacity-0">
+        <span
+          className={`text-center text-[13px] font-semibold leading-tight tracking-tight text-white transition-opacity ${
+            showUpgradeHover ? "group-hover:opacity-0" : ""
+          }`}
+        >
           {tool.label}
         </span>
       </div>
 
-      <div className="absolute inset-x-0 bottom-0 translate-y-full transition-transform duration-200 group-hover:translate-y-0">
-        <div className={`flex h-11 items-center justify-center text-[13px] font-black ${hoverBarClasses}`}>
-          Upgrade
+      {showUpgradeHover && (
+        <div className="absolute inset-x-0 bottom-0 translate-y-full transition-transform duration-200 group-hover:translate-y-0">
+          <div className={`flex h-11 items-center justify-center text-[13px] font-black ${hoverBarClasses}`}>
+            Upgrade
+          </div>
         </div>
-      </div>
+      )}
     </button>
   );
 }
@@ -390,10 +493,12 @@ function LikedTrackRow({
   onUnlike: (id: string) => void;
   onReLike: (id: string) => void;
 }) {
+  const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
   const [isLiked, setIsLiked] = useState(true);
 
-  const handleToggle = async () => {
+  const handleToggle = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
     if (isLiked) {
       setIsLiked(false);
       onUnlike(track.id);
@@ -418,9 +523,12 @@ function LikedTrackRow({
   return (
     <div
       data-testid={`liked-track-${track.id}`}
-      className="flex items-center gap-2 group"
+      className="flex cursor-pointer items-center gap-2 group"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={() => {
+        if (track.id) navigate(`/tracks/${track.id}`);
+      }}
     >
       <div className="relative w-11 h-11 shrink-0 rounded overflow-hidden bg-[hsl(0,0%,15%)]">
         {track.coverUrl ? (

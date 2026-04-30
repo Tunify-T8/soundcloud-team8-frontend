@@ -4,6 +4,8 @@ import TrackRow from "../components/TrackRow";
 import { getListeningHistory, mapHistoryToTrackItem } from "../libraryService";
 import type { TrackItem, CollectionItem } from "../types";
 import { HISTORY_TRACKS } from "../tests/mockdata";
+import { usePlayContext } from "@/hooks/usePlayContext";
+import { useMe } from "@/features/profile/context/useMe";
 const STORAGE_KEY = "recentlyPlayed";
 
 function loadRecentlyPlayedFromStorage(): CollectionItem[] {
@@ -11,18 +13,30 @@ function loadRecentlyPlayedFromStorage(): CollectionItem[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const entries = JSON.parse(raw);
-    return entries.map((entry: { id: string; title: string; artworkUrl?: string }) => ({
-      id: entry.id,
-      title: entry.title,
-      subtitle: "",
-      coverUrl: entry.artworkUrl,
-    }));
+    return entries.map((entry: { id: string; title: string; artworkUrl?: string; entityType?: "track" | "playlist" | "album"; linkTo?: string }) => {
+      const entityType = entry.entityType ?? "track";
+      const fallbackLink =
+        entityType === "playlist" || entityType === "album"
+          ? `/collections/${entry.id}`
+          : `/tracks/${entry.id}`;
+
+      return {
+        id: entry.id,
+        title: entry.title,
+        subtitle: "",
+        coverUrl: entry.artworkUrl,
+        entityType,
+        linkTo: entry.linkTo ?? fallbackLink,
+      };
+    });
   } catch {
     return [];
   }
 }
 
 export default function HistoryTab() {
+  const { me } = useMe();
+  usePlayContext({ contextType: "history", contextId: me?.id ?? "" });
   const [recentlyPlayed] = useState<CollectionItem[]>(loadRecentlyPlayedFromStorage);
   const [tracks, setTracks] = useState<TrackItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -127,14 +141,14 @@ export default function HistoryTab() {
               placeholder="Filter"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="bg-zinc-800 border border-zinc-700 rounded-sm px-3 py-1 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 w-36"
+              className="bg-[#282828] border border-zinc-700 rounded-sm px-3 py-1.5 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 w-64"
             />
           </div>
         )}
       </div>
 
       {!historyCleared && recentlyPlayed.length > 0 && (
-        <CollectionGrid items={recentlyPlayed} title="" />
+        <CollectionGrid items={recentlyPlayed} title="" hoverVariant="dim" />
       )}
 
       <h2 className="text-white font-bold text-base mt-8 mb-6">
@@ -165,9 +179,13 @@ export default function HistoryTab() {
         </p>
       )}
 
-      {!loading && !error && !historyCleared && filteredTracks.map((track) => (
-        <TrackRow key={track.id} track={track} />
-      ))}
+      {!loading && !error && !historyCleared && filteredTracks.length > 0 && (
+        <div className="space-y-4">
+          {filteredTracks.map((track) => (
+            <TrackRow key={track.id} track={track} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

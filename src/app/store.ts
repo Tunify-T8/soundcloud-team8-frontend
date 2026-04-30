@@ -1,14 +1,19 @@
 import { configureStore } from "@reduxjs/toolkit";
 import audioSourceReducer from "../store/AudioSourceSlice";
 import userReducer from "../store/userSlice";
-import queueReducer from "@/store/queueSlice";
-import collectionsReducer from "../store/collectionsSlice";
+import queueReducer from "@/store/queueSlice"; // adjust path as needed
+import playContextReducer from "@/store/playContextSlice";
+
+
+
 export const store = configureStore({
   reducer: {
     audioSource: audioSourceReducer,
     user: userReducer,
-    queue: queueReducer,
-    collections: collectionsReducer,
+    queue:queueReducer,
+    playContext: playContextReducer,
+
+
   },
 });
 

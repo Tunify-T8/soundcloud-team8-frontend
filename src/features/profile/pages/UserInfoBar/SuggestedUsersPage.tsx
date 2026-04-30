@@ -30,22 +30,23 @@ export default function SuggestedUsersPage() {
   };
 
   if (loading) {
-    return <div className="w-10/12 mx-auto mt-8 text-zinc-400">Loading suggestions...</div>;
+    return <div data-testid="profile-suggested-users-loading" className="w-10/12 mx-auto mt-8 text-zinc-400">Loading suggestions...</div>;
   }
 
   return (
-    <div className="w-10/12 mx-auto mt-8 text-white">
+    <div data-testid="profile-suggested-users-page" className="w-10/12 mx-auto mt-8 text-white">
       <h2 className="text-xl font-bold mb-4">Suggested Users</h2>
       {users.length === 0 ? (
-        <p className="text-zinc-400">No suggestions available right now.</p>
+        <p data-testid="profile-suggested-users-empty" className="text-zinc-400">No suggestions available right now.</p>
       ) : (
-        <div className="space-y-3">
+        <div data-testid="profile-suggested-users-list" className="space-y-3">
           {users.map((user) => (
             <div
               key={user.id}
+              data-testid={`profile-suggested-user-item-${user.id}`}
               className="flex items-center justify-between rounded border border-zinc-800 bg-zinc-900/50 px-4 py-3"
             >
-              <Link to={`/${user.username}`} className="flex items-center gap-3">
+              <Link data-testid={`profile-suggested-user-link-${user.id}`} to={`/${user.username}`} className="flex items-center gap-3">
                 <img
                   src={user.avatarUrl ?? "https://i.pravatar.cc/100"}
                   alt={user.username}
@@ -59,6 +60,7 @@ export default function SuggestedUsersPage() {
                 </div>
               </Link>
               <button
+                data-testid={`profile-suggested-user-follow-btn-${user.id}`}
                 type="button"
                 onClick={() => handleFollow(user.id)}
                 disabled={pendingUserId === user.id}

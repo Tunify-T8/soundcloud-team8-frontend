@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../auth/services/api';
+import { followingService } from '../../following/followingService';
 
 interface Props {
   userId: string;

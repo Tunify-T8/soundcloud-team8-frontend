@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { useFollowingSuggestions } from "../hooks/useFollowingSuggestions";
 import { conversationService } from "../conversationService";
 import type { User } from "../types";
@@ -7,24 +8,47 @@ import type { User } from "../types";
 type NewMessageDialogProps = {
   isOpen: boolean;
   onClose: () => void;
+  onConversationCreated?: (conversationId: string) => void;
 };
 
-export default function NewMessageDialog({ isOpen, onClose }: NewMessageDialogProps) {
+/**
+ * Creates a new conversation via REST, then navigates to it.
+ *
+ * The first message is intentionally NOT sent here any more. The previous
+ * approach created a second useSocket instance which raced against the
+ * ChatWindow socket — the pending message often never flushed because
+ * the ad-hoc socket hadn't authenticated yet.
+ *
+ * Instead we:
+ *  1. Create the conversation via REST (POST /users/me/conversations)
+ *  2. Navigate to /messages/:conversationId
+ *  3. ChatWindow mounts, its shared socket joins the room, user types there
+ *
+ * If you want to pre-fill the input you can pass initialText through
+ * router state and let ChatWindow read location.state.
+ */
+export default function NewMessageDialog({
+  isOpen,
+  onClose,
+  onConversationCreated,
+}: NewMessageDialogProps) {
+  const navigate = useNavigate();
   const [toQuery, setToQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [messageText, setMessageText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const { suggestions, isLoading } = useFollowingSuggestions(selectedUser ? "" : toQuery);
+
+  const { suggestions, isLoading: suggestionsLoading } =
+    useFollowingSuggestions(selectedUser ? "" : toQuery);
 
   function handleSelect(user: User) {
     setSelectedUser(user);
     setToQuery("");
   }
 
-  async function handleSendMessage() {
-    if (!selectedUser || !messageText.trim()) {
-      setSubmitError("Please select a recipient and write a message");
+  async function handleStart() {
+    if (!selectedUser) {
+      setSubmitError("Please select a recipient");
       return;
     }
 
@@ -32,20 +56,17 @@ export default function NewMessageDialog({ isOpen, onClose }: NewMessageDialogPr
     setSubmitError(null);
 
     try {
-      // Step 1: Create or get conversation with the selected user
-      const conversationId = await conversationService.createOrGetConversation(selectedUser.id);
+      const conversationId = await conversationService.createOrGetConversation(
+        selectedUser.id,
+      );
 
-      // Step 2: Send the message
-      await conversationService.sendMessage(conversationId, {
-        type: "TEXT",
-        text: messageText,
-      });
-
-      // Step 3: Close dialog and reset
+      onConversationCreated?.(conversationId);
+      navigate(`/messages/${conversationId}`);
       handleDialogClose();
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to send message";
-      setSubmitError(errorMessage);
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Failed to open conversation";
+      setSubmitError(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -54,7 +75,6 @@ export default function NewMessageDialog({ isOpen, onClose }: NewMessageDialogPr
   function handleDialogClose() {
     setToQuery("");
     setSelectedUser(null);
-    setMessageText("");
     setSubmitError(null);
     onClose();
   }
@@ -67,8 +87,8 @@ export default function NewMessageDialog({ isOpen, onClose }: NewMessageDialogPr
           onClick={handleDialogClose}
         >
           <motion.div
-            className="min-h-[340px] w-full max-w-2xl rounded-md bg-zinc-900 p-3 text-white"
-            onClick={(event) => event.stopPropagation()}
+            className="min-h-[220px] w-full max-w-2xl rounded-md bg-zinc-900 p-3 text-white"
+            onClick={(e) => e.stopPropagation()}
             initial={{ y: -40, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -40, opacity: 0 }}
@@ -76,6 +96,7 @@ export default function NewMessageDialog({ isOpen, onClose }: NewMessageDialogPr
           >
             <h2 className="text-xl font-bold tracking-tight">New message</h2>
 
+            {/* Recipient picker */}
             <div className="relative mt-3">
               <label className="block text-base font-semibold text-zinc-100">
                 To <span className="text-red-500">*</span>
@@ -106,7 +127,7 @@ export default function NewMessageDialog({ isOpen, onClose }: NewMessageDialogPr
                 )}
               </div>
 
-              {!selectedUser && isLoading && toQuery.trim().length > 0 && (
+              {!selectedUser && suggestionsLoading && toQuery.trim().length > 1 && (
                 <p className="mt-1 text-xs text-zinc-400">Searching…</p>
               )}
 
@@ -119,7 +140,7 @@ export default function NewMessageDialog({ isOpen, onClose }: NewMessageDialogPr
                         className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm text-zinc-100 hover:bg-zinc-700"
                         onClick={() => handleSelect(user)}
                       >
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-500 text-xs font-semibold uppercase">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-500 text-xs font-semibold uppercase overflow-hidden">
                           {user.avatarUrl ? (
                             <img
                               src={user.avatarUrl}
@@ -138,39 +159,29 @@ export default function NewMessageDialog({ isOpen, onClose }: NewMessageDialogPr
               )}
             </div>
 
-            <div className="mt-4">
-              <label className="block text-base font-semibold text-zinc-100">
-                Write your message and add tracks or playlists <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                rows={3}
-                value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-                disabled={isSubmitting}
-                className="mt-2 w-full rounded-md border border-zinc-500 bg-zinc-700 px-3 py-1.5 text-sm text-zinc-100 outline-none disabled:opacity-50"
-              />
-            </div>
+            <p className="mt-3 text-sm text-zinc-400">
+              A conversation will be created and you can type your first message there.
+            </p>
 
             {submitError && (
               <p className="mt-2 text-sm text-red-400">{submitError}</p>
             )}
 
-            <div className="mt-3 flex items-center justify-between">
+            <div className="mt-4 flex items-center justify-end gap-2">
               <button
                 type="button"
-                className="rounded-md bg-zinc-700 px-3.5 py-1.5 text-sm font-semibold text-zinc-100 hover:bg-zinc-600 disabled:opacity-50"
-                disabled={isSubmitting}
+                onClick={handleDialogClose}
+                className="rounded-md px-3.5 py-1.5 text-sm font-semibold text-zinc-400 hover:text-zinc-100"
               >
-                Add track or playlist
+                Cancel
               </button>
-
               <button
                 type="button"
-                onClick={handleSendMessage}
+                onClick={handleStart}
                 disabled={isSubmitting || !selectedUser}
                 className="rounded-md bg-zinc-100 px-3.5 py-1.5 text-sm font-semibold text-zinc-900 hover:bg-zinc-200 disabled:opacity-50"
               >
-                {isSubmitting ? "Sending..." : "Send"}
+                {isSubmitting ? "Opening…" : "Open conversation"}
               </button>
             </div>
           </motion.div>
