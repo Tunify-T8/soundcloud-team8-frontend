@@ -16,7 +16,7 @@ const TAB_TO_PATH: Record<Tab, string> = {
   Overview: "/library",
   Likes: "/me/likes",
   Playlists: "/me/sets",
-  Albums: "/me/albums",
+  Albums: "/library/albums",
   Stations: "/me/stations",
   Following: "/me/following",
   History:   "/me/history",

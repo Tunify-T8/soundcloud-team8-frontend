@@ -34,22 +34,23 @@ export default function BlockedUsersPage() {
   };
 
   if (loading) {
-    return <div className="w-10/12 mx-auto mt-8 text-zinc-400">Loading blocked users...</div>;
+    return <div data-testid="profile-blocked-users-loading" className="w-10/12 mx-auto mt-8 text-zinc-400">Loading blocked users...</div>;
   }
 
   return (
-    <div className="w-10/12 mx-auto mt-8 text-white">
+    <div data-testid="profile-blocked-users-page" className="w-10/12 mx-auto mt-8 text-white">
       <h2 className="text-xl font-bold mb-4">Blocked Users</h2>
       {blockedUsers.length === 0 ? (
-        <p className="text-zinc-400">No blocked users.</p>
+        <p data-testid="profile-blocked-users-empty" className="text-zinc-400">No blocked users.</p>
       ) : (
-        <div className="space-y-3">
+        <div data-testid="profile-blocked-users-list" className="space-y-3">
           {blockedUsers.map((user) => (
             <div
               key={user.id}
+              data-testid={`profile-blocked-user-item-${user.id}`}
               className="flex items-center justify-between rounded border border-zinc-800 bg-zinc-900/50 px-4 py-3"
             >
-              <Link to={`/${user.username}`} className="flex items-center gap-3">
+              <Link data-testid={`profile-blocked-user-link-${user.id}`} to={`/${user.username}`} className="flex items-center gap-3">
                 <img
                   src={user.avatarUrl ?? "https://i.pravatar.cc/100"}
                   alt={user.username}
@@ -61,6 +62,7 @@ export default function BlockedUsersPage() {
                 </div>
               </Link>
               <button
+                data-testid={`profile-unblock-btn-${user.id}`}
                 type="button"
                 onClick={() => handleUnblock(user.id)}
                 disabled={pendingUserId === user.id}
