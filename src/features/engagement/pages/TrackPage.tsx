@@ -285,7 +285,13 @@ const TrackPage = () => {
   const duration      = (track as any).durationSeconds ?? 184;
   const artworkSrc    = (track as any).artworkUrl ?? '';
   const ownerInit     = artistName.slice(0, 2).toUpperCase();
-  const artistAvatar  = trackUser?.avatarUrl ?? makeOwnerAvatar(ownerInit, 88);
+  const artistAvatarSrc =
+    trackUser?.avatarUrl ??
+    (track as any)?.artistAvatarUrl ??
+    (track as any)?.owner?.avatarUrl ??
+    (track as any)?.artists?.[0]?.avatarUrl ??
+    null;
+  const artistAvatar  = artistAvatarSrc || makeOwnerAvatar(ownerInit, 88);
   const artistRouteId = artistId || artistUsername || trackUser?.username || '';
   const tracksCount   = trackUser?.tracksUploadedCount ?? 28;
   //const currentUserId = localStorage.getItem('userId') ?? '';
@@ -395,8 +401,14 @@ const TrackPage = () => {
               </button>
 
               <div className="min-w-0 flex-1">
-                <h1 className="inline-block max-w-full truncate bg-black px-3 py-1 text-2xl font-bold leading-tight text-white sm:text-4xl lg:text-[54px] lg:leading-none">{track.title}</h1>
-                <p className="mt-2 inline-block max-w-full truncate bg-black px-3 py-1 text-base font-semibold text-zinc-300 sm:text-xl">{artistName}</p>
+                <div className="flex flex-col items-start gap-2">
+                  <h1 className="block max-w-full truncate bg-black px-3 py-1 text-2xl font-bold leading-tight text-white sm:text-4xl lg:text-[54px] lg:leading-none">
+                    {track.title}
+                  </h1>
+                  <p className="block max-w-full truncate bg-black px-3 py-1 text-base font-semibold text-zinc-300 sm:text-xl">
+                    {artistName}
+                  </p>
+                </div>
               </div>
 
               <span className="mt-1 shrink-0 text-xs font-semibold text-white sm:text-[13px]">
@@ -498,10 +510,7 @@ const TrackPage = () => {
               className="w-[88px] h-[88px] rounded-full overflow-hidden ring-2 ring-zinc-700 cursor-pointer hover:ring-orange-500 transition"
               onClick={handleArtistTracksClick}
             >
-              <img src={makeOwnerAvatar(ownerInit, 88)} alt={artistName} className="w-full h-full object-cover" />
-               <div className="w-[88px] h-[88px] rounded-full overflow-hidden ring-2 ring-zinc-700">
               <img src={artistAvatar} alt={artistName} className="w-full h-full object-cover" />
-              </div>
             </div>
             <div className="text-center">
               <p
