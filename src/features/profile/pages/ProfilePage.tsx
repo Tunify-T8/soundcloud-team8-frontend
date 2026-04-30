@@ -5,6 +5,7 @@ import { Outlet, useParams } from "react-router-dom";
 import { profileService } from "../profileService";
 import { useEffect, useState, useCallback } from "react";
 import { useMe } from "../context/useMe";
+import { usePlayContext } from "@/hooks/usePlayContext";
 import type {
   MeUserProfile,
   PublicUserProfile,
@@ -113,6 +114,14 @@ export default function ProfilePage() {
     };
   }, [isMe, me?.id, publicUser?.id]);
 
+  const user = username ? publicUser : me;
+
+  // Register profile context — uses the profile owner's UUID
+  usePlayContext({
+    contextType: "profile",
+    contextId: user?.id ?? "",
+  });
+
   if (!username && !me) {
     return (
       <div
@@ -134,8 +143,6 @@ export default function ProfilePage() {
       </div>
     );
   }
-
-  const user = username ? publicUser : me;
 
   if (error || !user) {
     return (
