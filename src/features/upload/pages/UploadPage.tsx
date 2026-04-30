@@ -11,6 +11,8 @@ import UploadLimitScreen from "../components/UploadLimitScreen";
 import Recorder from "../components/Recorder";
 import TrackInfoPage from "../components/TrackInfo";
 import uploadImg from "@/assets/upload.png";
+import SubscriptionBadge from "@/features/premium/components/SubscriptionBadge";
+import { subscriptionService } from "@/features/premium/premiumService";
 
 export default function SoundCloudUpload() {
   const [isDragging, setIsDragging] = useState(false);
@@ -22,6 +24,7 @@ export default function SoundCloudUpload() {
   const [quotaLoading, setQuotaLoading] = useState(true);
   const [limitReached, setLimitReached] = useState(false);
   const [quotaBlocked, setQuotaBlocked] = useState(false);
+  const [planTier, setPlanTier] = useState<"free" | "artist" | "artist-pro">("free");
 
   const dispatch = useDispatch();
   const readyToNavigate = useAppSelector((s) => s.audioSource.readyToNavigate);
@@ -59,6 +62,23 @@ export default function SoundCloudUpload() {
       }
     };
     fetchQuota();
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    subscriptionService
+      .getMySubscription({ fallbackToFree: true })
+      .then((sub) => {
+        if (!mounted) return;
+        setPlanTier(sub.tier);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setPlanTier("free");
+      });
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const isUnlimited = quota?.uploadMinutesLimit === null;
@@ -163,15 +183,31 @@ export default function SoundCloudUpload() {
       <main className="flex-1 flex justify-center px-6 py-10">
         <div className="w-full max-w-[1100px]">
           <div data-testid="upload-quota-bar">
-            <UploadQuotaBanner
-              quota={quota}
-              loading={quotaLoading}
-              onOpenDetails={() => setShowArtistModal(true)}
-              forceOverLimit={quotaBlocked}
-              statusMessage={
-                quotaBlocked ? "You've reached your upload limit for your plan" : undefined
-              }
-            />
+            {planTier === "artist-pro" && !quotaLoading ? (
+              <div className="bg-gradient-to-r from-[#f6e9b1] via-[#f2d57a] to-[#f6e9b1] border-b border-[#e2c76b] px-4 sm:px-8 py-3 rounded-sm">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-3">
+                    <SubscriptionBadge tier="artist-pro" size={24} />
+                    <span className="text-[#5b4210] text-sm sm:text-base font-black tracking-tight">
+                      Enjoy Uploading Freely. Unlimitedly.
+                    </span>
+                  </div>
+                  <span className="text-[#7a5b16] text-xs sm:text-sm font-semibold">
+                    Total Uploaded Minutes: {quota?.uploadMinutesUsed ?? 0}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <UploadQuotaBanner
+                quota={quota}
+                loading={quotaLoading}
+                onOpenDetails={() => setShowArtistModal(true)}
+                forceOverLimit={quotaBlocked}
+                statusMessage={
+                  quotaBlocked ? "You've reached your upload limit for your plan" : undefined
+                }
+              />
+            )}
           </div>
 
           <h1 className="text-[26px] font-semibold mb-2 mt-8">Upload your audio files.</h1>

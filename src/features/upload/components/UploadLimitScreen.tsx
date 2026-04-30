@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
 import hourglassImg from "@/assets/broken_clock.png"; 
 
@@ -86,7 +87,17 @@ const FEATURES = [
 export default function UploadLimitScreen({ quota }: UploadLimitScreenProps) {
   return (
     <>
-      <main className="flex-1 flex px-8 py-12 max-w-[1100px] mx-auto w-full gap-16 items-start">
+      <main className="relative flex-1 flex px-8 py-12 max-w-[1100px] mx-auto w-full gap-16 items-start">
+        <Link
+          to="/artists"
+          aria-label="Exit upload limit"
+          className="absolute right-6 top-6 text-[#888] hover:text-white transition"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </Link>
         {/* Left: text */}
         <div className="flex-1 pt-4">
           <h1 className="text-[28px] font-bold mb-3">You've reached your upload limit.</h1>

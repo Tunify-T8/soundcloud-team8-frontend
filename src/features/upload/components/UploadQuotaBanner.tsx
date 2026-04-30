@@ -17,6 +17,7 @@ interface UploadQuotaBannerProps {
   onOpenDetails?: () => void;
   forceOverLimit?: boolean;
   statusMessage?: string;
+  "data-plan-tier"?: "free" | "artist" | "artist-pro";
 }
 
 export default function UploadQuotaBanner({

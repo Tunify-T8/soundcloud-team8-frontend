@@ -21,6 +21,7 @@ import commentsImg from "@/assets/comment_bubbles.png";
 import { BenefitsSection } from "../components/BenefitsSection";
 import UploadQuotaBanner from "@/features/upload/components/UploadQuotaBanner";
 import { api } from "@/features/auth/services/api";
+import { subscriptionService } from "@/features/premium/premiumService";
 
 import insightsImg from "@/assets/insights.png";
 import earningsImg from "@/assets/monetize.png";
@@ -44,6 +45,7 @@ export function UploadBanner() {
   >(null);
   const [quotaLoading, setQuotaLoading] = useState(true);
   const [quotaBlocked, setQuotaBlocked] = useState(false);
+  const [planTier, setPlanTier] = useState<"free" | "artist" | "artist-pro">("free");
 
   useEffect(() => {
     let mounted = true;
@@ -83,6 +85,23 @@ export function UploadBanner() {
         if (mounted) setQuotaLoading(false);
       });
 
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    subscriptionService
+      .getMySubscription({ fallbackToFree: true })
+      .then((sub) => {
+        if (!mounted) return;
+        setPlanTier(sub.tier);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setPlanTier("free");
+      });
     return () => {
       mounted = false;
     };

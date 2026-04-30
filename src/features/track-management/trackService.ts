@@ -49,6 +49,8 @@ async updateTrack(id: string, payload: UpdateTrackPayload): Promise<Track> {
     headers: { "Content-Type": "multipart/form-data" },
   });
 
+  const isPrivate = data.privacy === "private";
+
    return {
     id: data.trackId,
     title: data.title,
@@ -66,6 +68,7 @@ async updateTrack(id: string, payload: UpdateTrackPayload): Promise<Track> {
     reposts: null,
     downloads: null,
     plays: null,
+    isPrivate,
     thumbnailUrl: data.artworkUrl || null,
   };
 }
