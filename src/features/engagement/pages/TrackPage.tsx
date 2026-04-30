@@ -385,7 +385,7 @@ const TrackPage = () => {
               {/* Play/Pause */}
               <button
                 onClick={handlePlayPause}
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-black shadow-lg transition-transform hover:scale-105 sm:h-16 sm:w-16"
+                className="sc-track-hero-play flex h-12 w-12 shrink-0 items-center justify-center rounded-full shadow-lg transition-transform hover:scale-105 sm:h-16 sm:w-16"
                 aria-label={pageIsPlaying ? 'Pause' : 'Play'}
               >
                 {pageIsPlaying ? (

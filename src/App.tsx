@@ -139,6 +139,10 @@ const router = createBrowserRouter([
         element: <MessagesPage />,
       },
       {
+        path: "/messages/:conversationId",
+        element: <MessagesPage />,
+      },
+      {
         path: '/tracks/:trackId',
         element: <TrackPage />,
       },

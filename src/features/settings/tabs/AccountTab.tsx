@@ -117,7 +117,7 @@ export default function AccountTab() {
   const { theme, setTheme } = useTheme();
   const { isEmailFormOpen, setIsEmailFormOpen } = useSettings();
   const [emailInput, setEmailInput] = useState("");
-  const [unconfirmedEmail, setUnconfirmedEmail] = useState("asmahanbettarhsvdcba@gmail.com");
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState("");
   const [month, setMonth] = useState("June");
   const [day, setDay] = useState("1");
   const [year, setYear] = useState("1999");
@@ -226,13 +226,13 @@ export default function AccountTab() {
           </button>
         </div>
         <div className="flex flex-wrap gap-3">
-          <button type="button" data-testid="social-add-facebook" className="flex items-center gap-3 rounded-sm bg-[#1457d9] px-4 py-2 text-sm font-black text-white">
+          <button type="button" data-testid="social-add-facebook" className="settings-social-facebook flex items-center gap-3 rounded-sm px-4 py-2 text-sm font-black">
             <FaFacebookF /> Add Facebook account
           </button>
-          <button type="button" data-testid="social-add-google" className="flex items-center gap-3 rounded-sm bg-white/10 px-4 py-2 text-sm font-black text-white">
+          <button type="button" data-testid="social-add-google" className="settings-social-google flex items-center gap-3 rounded-sm px-4 py-2 text-sm font-black">
             <FcGoogle /> Add Google account
           </button>
-          <button type="button" data-testid="social-add-apple" className="flex items-center gap-3 rounded-sm bg-white px-4 py-2 text-sm font-black text-[var(--sc-bg)]">
+          <button type="button" data-testid="social-add-apple" className="settings-social-apple flex items-center gap-3 rounded-sm px-4 py-2 text-sm font-black">
             <FaApple /> Add Apple account
           </button>
         </div>

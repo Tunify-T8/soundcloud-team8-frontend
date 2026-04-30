@@ -190,7 +190,7 @@ export default function CreatePlaylistOverlay({
                   value={filterQuery}
                   onChange={(e) => setFilterQuery(e.target.value)}
                   placeholder="Filter playlists"
-                  className="w-full rounded-sm border border-zinc-700 bg-[#272727] px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-zinc-500"
+                  className="w-full rounded-sm border border-zinc-300 bg-[#ffffff] px-3 py-2 text-sm text-[#111] outline-none placeholder:text-zinc-500 focus:border-zinc-500"
                 />
 
                 <div className="mt-4 space-y-2">
@@ -247,7 +247,7 @@ export default function CreatePlaylistOverlay({
                     value={playlistTitle}
                     onChange={(e) => setPlaylistTitle(e.target.value)}
                     onBlur={() => setTitleTouched(true)}
-                    className={`mt-1 w-full rounded-sm border ${!isTitleValid && titleTouched ? "border-red-500" : "border-zinc-600"} bg-[#272727] px-3 py-2 text-sm text-white outline-none focus:border-zinc-400`}
+                    className={`mt-1 w-full rounded-sm border ${!isTitleValid && titleTouched ? "border-red-500" : "border-zinc-300"} bg-[#ffffff] px-3 py-2 text-sm text-[#111] outline-none focus:border-zinc-500`}
                     required
                     aria-invalid={!isTitleValid && titleTouched}
                     aria-describedby="playlist-title-error"
