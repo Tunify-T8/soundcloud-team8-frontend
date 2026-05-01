@@ -4,7 +4,7 @@ import EmptyCollectionGrid from "../components/EmptyCollectionGrid";
 import FollowingSection from "../components/FollowingSection";
 import TrackRow from "../components/TrackRow";
 import { useRecentlyPlayed } from "@/features/playerUI/context/useRecentlyPlayed";
-import { FOLLOWING, HISTORY_TRACKS } from "../tests/mockdata";
+import { followingService } from "@/features/following/followingService";
 import MediaCard from "../components/MediaCard";
 import {
   getLikedTracks,
@@ -12,7 +12,7 @@ import {
   playlistService,
 } from "../libraryService";
 import { feedService } from "@/features/feed/feedservice";
-import type { CollectionPreview, TrackItem } from "../types";
+import type { CollectionPreview, FollowingUser, TrackItem } from "../types";
 
 const COLS = 6;
 
@@ -21,6 +21,7 @@ export default function OverviewTab() {
   const [likedTracks, setLikedTracks] = useState<TrackItem[]>([]);
   const [playlists, setPlaylists] = useState<CollectionPreview[]>([]);
   const [albums, setAlbums] = useState<CollectionPreview[]>([]);
+  const [followingUsers, setFollowingUsers] = useState<FollowingUser[]>([]);
 
   useEffect(() => {
     const fetchLikedTracks = async () => {
@@ -53,6 +54,33 @@ export default function OverviewTab() {
     };
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchFollowing = async () => {
+      try {
+        const response = await followingService.getMeFollowing(1, 12);
+        if (!isMounted) return;
+        const mapped = response.following.map((user) => ({
+          id: user.id,
+          name: user.displayName ?? user.username,
+          avatarUrl: user.avatarUrl ?? undefined,
+          followers: (user.followersCount ?? 0).toLocaleString(),
+          verified: Boolean(user.isCertified),
+        }));
+        setFollowingUsers(mapped);
+      } catch {
+        if (!isMounted) return;
+        setFollowingUsers([]);
+      }
+    };
+
+    void fetchFollowing();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const handleUnlike = async (trackId: string) => {
     await feedService.unlikeTrack(trackId);
     setLikedTracks((prev) => prev.filter((t) => t.id !== trackId));
@@ -77,8 +105,6 @@ export default function OverviewTab() {
   const playlistTotalSlots =
     Math.ceil(Math.max(playlists.length, 1) / COLS) * COLS;
   const albumTotalSlots = Math.ceil(Math.max(albums.length, 1) / COLS) * COLS;
-  const historyTotalSlots =
-    Math.ceil(Math.max(HISTORY_TRACKS.length, 1) / COLS) * COLS;
 
   return (
     <div data-testid="overview-tab">
@@ -193,44 +219,7 @@ export default function OverviewTab() {
         )}
       </section>
 
-      <section className="mb-8" data-testid="overview-history-section">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-white font-bold text-sm">History</h2>
-        </div>
-        {HISTORY_TRACKS.length === 0 ? (
-          <EmptyCollectionGrid
-            title=""
-            emptyMessage="You have no listening history yet"
-          />
-        ) : (
-          <div className="grid grid-cols-6 gap-4">
-            {Array.from({ length: historyTotalSlots }).map((_, i) => {
-              const track = HISTORY_TRACKS[i];
-              return track ? (
-                <MediaCard
-                  key={track.id}
-                  id={track.id}
-                  title={track.title}
-                  subtitle={track.artist}
-                  coverUrl={track.coverUrl}
-                />
-              ) : (
-                <div
-                  key={i}
-                  data-testid={`overview-history-slot-${i}`}
-                  className="w-full aspect-square rounded-sm bg-[#282828]"
-                />
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      <EmptyCollectionGrid
-        title="Liked Stations"
-        emptyMessage="You haven't liked any stations yet"
-      />
-      <FollowingSection users={FOLLOWING} />
+      <FollowingSection users={followingUsers} />
     </div>
   );
 }
