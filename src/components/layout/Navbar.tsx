@@ -4,7 +4,6 @@ import SearchBar from "../ui/SearchBar";
 
 import { SiSoundcloud } from "react-icons/si";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Outlet } from "react-router-dom";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { useMe } from "../../features/profile/context/useMe";
@@ -584,7 +583,6 @@ export default function Navbar() {
           </div>
         )}
       </nav>
-      <Outlet />
       {checkoutOpen && <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />}
       {planModalOpen && <MyPlanModal onClose={() => setPlanModalOpen(false)} />}
     </>

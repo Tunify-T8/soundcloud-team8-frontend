@@ -99,6 +99,7 @@ const router = createBrowserRouter([
       // This index route ensures that if a logged-in user hits "/", 
       // they are instantly moved to /discover.
       {
+        index: true,
         element: <Navigate to="/discover" replace />,
       },
       { path: "/discover", element: <DiscoverPage /> },
@@ -116,12 +117,8 @@ const router = createBrowserRouter([
         ]
       },
       { path: "/settings/verification", element: <VerificationPage /> },
-      {
-        path: "/messages",
-        element: <MessagesPage />,
-            
-        children: [{ path: ":conversationId", element: <MessagesPage /> }]
-      },
+      { path: "/messages", element: <MessagesPage /> },
+      { path: "/messages/:conversationId", element: <MessagesPage /> },
       
       { path: "/tracks/:trackId", element: <TrackPage /> },
       { path: "/tracks/:trackId/likes", element: <LikesPage /> },
