@@ -28,6 +28,8 @@ import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgra
 import { useSubscription } from "@/hooks/useSubscription";
 import SubscriptionBadge from "@/features/premium/components/SubscriptionBadge";
 import MyPlanModal from "@/features/premium/components/MyPlanModal";
+import { applyTheme } from "../../features/settings/hooks/useTheme";
+import type { Theme } from "../../features/settings/types/settings.types";
 
 
 function timeAgo(dateStr: string): string {
@@ -218,7 +220,14 @@ export default function Navbar() {
   }, [location.pathname]);
 
   const handleSignOut = async () => {
+    const currentTheme = (localStorage.getItem("sc-theme") ||
+      localStorage.getItem("tunify-theme") ||
+      document.documentElement.getAttribute("data-theme")) as Theme | null;
     try { await logout(); } catch { }
+    if (currentTheme === "light" || currentTheme === "dark") {
+      localStorage.setItem("sc-theme", currentTheme);
+      applyTheme(currentTheme);
+    }
     navigate("/signin");
   };
 
