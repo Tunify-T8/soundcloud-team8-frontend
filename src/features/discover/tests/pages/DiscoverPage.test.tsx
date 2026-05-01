@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import DiscoverPage from "../../pages/DiscoverPage";
 import {
   getDiscoverTracks,
+  getRecommendations,
   getSuggestedArtists,
   getTrendingAlbums,
   getTrendingTracks,
@@ -10,6 +11,7 @@ import {
 
 vi.mock("../../discoverService", () => ({
   getDiscoverTracks: vi.fn(),
+  getRecommendations: vi.fn(),
   getSuggestedArtists: vi.fn(),
   getTrendingAlbums: vi.fn(),
   getTrendingTracks: vi.fn(),
@@ -20,6 +22,7 @@ vi.mock("@/components/layout/Sidebar", () => ({
 }));
 
 const mockedGetDiscoverTracks = vi.mocked(getDiscoverTracks);
+const mockedGetRecommendations = vi.mocked(getRecommendations);
 const mockedGetSuggestedArtists = vi.mocked(getSuggestedArtists);
 const mockedGetTrendingAlbums = vi.mocked(getTrendingAlbums);
 const mockedGetTrendingTracks = vi.mocked(getTrendingTracks);
@@ -53,6 +56,54 @@ const mockDiscoverResponse = {
   personalized: false,
 };
 
+const mockRecommendationsResponse = {
+  data: [
+    {
+      trackId: "6e0a1fa3-dae1-4b20-aef0-8cc2a2cd7955",
+      artistId: "artist-1",
+      artistAvatarUrl: "https://example.com/artist-1.jpg",
+      artistIsCertified: false,
+      title: "Rock Revolution",
+      artist: "Jazz Artist",
+      genre: "Rock",
+      durationInSeconds: 199,
+      coverUrl: "https://example.com/rock-revolution-cover.jpg",
+      waveformUrl: "https://example.com/rock-revolution-waveform.png",
+      numberOfComments: 0,
+      numberOfLikes: 0,
+      numberOfReposts: 0,
+      numberOfListens: 0,
+      isLiked: false,
+      isReposted: false,
+      reason: "Because you like Rock",
+      reasonType: "GENRE",
+    },
+    {
+      trackId: "4a6b2d9f-1a95-4c97-9b77-6c8cb4b5402d",
+      artistId: "artist-2",
+      artistAvatarUrl: "https://example.com/artist-2.jpg",
+      artistIsCertified: false,
+      title: "Midnight Current",
+      artist: "Ava Mix",
+      genre: "Electronic",
+      durationInSeconds: 214,
+      coverUrl: "https://example.com/midnight-current-cover.jpg",
+      waveformUrl: "https://example.com/midnight-current-waveform.png",
+      numberOfComments: 0,
+      numberOfLikes: 0,
+      numberOfReposts: 0,
+      numberOfListens: 0,
+      isLiked: false,
+      isReposted: false,
+      reason: "Because you listen to Electronic",
+      reasonType: "GENRE",
+    },
+  ],
+  page: 1,
+  limit: 20,
+  hasMore: false,
+};
+
 const mockSuggestedArtistsResponse = {
   items: [
     {
@@ -79,6 +130,7 @@ describe("DiscoverPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockedGetDiscoverTracks.mockResolvedValue(mockDiscoverResponse);
+    mockedGetRecommendations.mockResolvedValue(mockRecommendationsResponse);
     mockedGetSuggestedArtists.mockResolvedValue(mockSuggestedArtistsResponse);
     mockedGetTrendingAlbums.mockResolvedValue(mockDiscoverResponse);
     mockedGetTrendingTracks.mockResolvedValue(mockDiscoverResponse);
@@ -89,6 +141,12 @@ describe("DiscoverPage", () => {
 
     expect(
       await screen.findByRole("heading", { name: "More of what you like" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Recently Played" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Trending by genre" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Albums for you" }),
@@ -120,20 +178,28 @@ describe("DiscoverPage", () => {
   });
 
   it("renders an empty state when API returns no items", async () => {
-    const emptyResponse = {
+    const emptyDiscoverResponse = {
       ...mockDiscoverResponse,
       items: [],
     };
 
+    const emptyRecommendationsResponse = {
+      ...mockRecommendationsResponse,
+      data: [],
+    };
+
+    mockedGetRecommendations.mockResolvedValueOnce({
+      ...emptyRecommendationsResponse,
+    });
     mockedGetDiscoverTracks.mockResolvedValueOnce({
-      ...emptyResponse,
+      ...emptyDiscoverResponse,
     });
     mockedGetSuggestedArtists.mockResolvedValueOnce({
       ...mockSuggestedArtistsResponse,
       items: [],
     });
-    mockedGetTrendingAlbums.mockResolvedValueOnce({ ...emptyResponse });
-    mockedGetTrendingTracks.mockResolvedValueOnce({ ...emptyResponse });
+    mockedGetTrendingAlbums.mockResolvedValueOnce({ ...emptyDiscoverResponse });
+    mockedGetTrendingTracks.mockResolvedValueOnce({ ...emptyDiscoverResponse });
 
     render(<DiscoverPage />);
 

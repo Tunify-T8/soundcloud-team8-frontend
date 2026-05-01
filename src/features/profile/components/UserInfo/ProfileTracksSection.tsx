@@ -29,6 +29,7 @@ interface ProfileTracksSectionProps {
   meDisplayName?: string | null;
   meUsername?: string;
   className?: string;
+  hideEmptyState?: boolean;
 }
 
 export default function ProfileTracksSection({
@@ -37,6 +38,7 @@ export default function ProfileTracksSection({
   meDisplayName,
   meUsername,
   className = "",
+  hideEmptyState = false,
 }: ProfileTracksSectionProps) {
   const [tracks, setTracks] = useState<UserTrack[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,7 +58,11 @@ export default function ProfileTracksSection({
           return;
         }
 
-        const tracksRes = await profileService.getUserTracks(username || "", 1, 20);
+        const tracksRes = await profileService.getUserTracks(
+          username || "",
+          1,
+          20,
+        );
         if (!isMounted) return;
         setTracks(tracksRes?.tracks ?? []);
       } catch {
@@ -75,9 +81,34 @@ export default function ProfileTracksSection({
   }, [isMeView, username]);
 
   const content = useMemo(() => {
-    if (loading) return <p data-testid="profile-tracks-loading" className="py-10 text-sm text-zinc-400">Loading tracks...</p>;
-    if (error) return <p data-testid="profile-tracks-error" className="py-10 text-sm text-red-400">{error}</p>;
-    if (tracks.length === 0) return <p data-testid="profile-tracks-empty" className="py-10 text-sm text-zinc-400">No tracks yet.</p>;
+    if (loading)
+      return (
+        <p
+          data-testid="profile-tracks-loading"
+          className="py-10 text-sm text-zinc-400"
+        >
+          Loading tracks...
+        </p>
+      );
+    if (error)
+      return (
+        <p
+          data-testid="profile-tracks-error"
+          className="py-10 text-sm text-red-400"
+        >
+          {error}
+        </p>
+      );
+    if (tracks.length === 0) {
+      return hideEmptyState ? null : (
+        <p
+          data-testid="profile-tracks-empty"
+          className="py-10 text-sm text-zinc-400"
+        >
+          No tracks yet.
+        </p>
+      );
+    }
 
     return (
       <div data-testid="profile-tracks-list" className="mt-8 space-y-8">
@@ -109,5 +140,9 @@ export default function ProfileTracksSection({
     );
   }, [error, loading, meDisplayName, meUsername, tracks]);
 
-  return <div data-testid="profile-tracks-section" className={className}>{content}</div>;
+  return (
+    <div data-testid="profile-tracks-section" className={className}>
+      {content}
+    </div>
+  );
 }

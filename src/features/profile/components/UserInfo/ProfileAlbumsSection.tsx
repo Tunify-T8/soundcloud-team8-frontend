@@ -2,7 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import SongCard from "@/components/ui/SongCard";
 import { playlistService } from "@/features/library/libraryService";
 import { profileService } from "@/features/profile/profileService";
-import type { CollectionPreview, CollectionTrack } from "@/features/library/types";
+import type {
+  CollectionPreview,
+  CollectionTrack,
+} from "@/features/library/types";
 import trackFallback from "@/assets/track.jpg";
 
 type AlbumWithTrack = {
@@ -58,6 +61,7 @@ interface ProfileAlbumsSectionProps {
   className?: string;
   heading?: string;
   sortOrder?: "asc" | "desc";
+  hideEmptyState?: boolean;
 }
 
 export default function ProfileAlbumsSection({
@@ -68,6 +72,7 @@ export default function ProfileAlbumsSection({
   className = "",
   heading,
   sortOrder = "desc",
+  hideEmptyState = false,
 }: ProfileAlbumsSectionProps) {
   const [items, setItems] = useState<AlbumWithTrack[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,7 +89,8 @@ export default function ProfileAlbumsSection({
         let targetUsername = username || "";
         if (!isMeView && targetUsername && isUuidLike(targetUsername)) {
           try {
-            const profile = await profileService.getPublicProfile(targetUsername);
+            const profile =
+              await profileService.getPublicProfile(targetUsername);
             targetUsername = profile.username || targetUsername;
           } catch {
             // fallback to route param if resolve fails
@@ -96,20 +102,30 @@ export default function ProfileAlbumsSection({
           : await playlistService.getUserAlbums(targetUsername, 1, 20);
         const albums = (res?.data ?? []) as CollectionPreview[];
         const visibleAlbums = isMeView
-          ? albums.filter((album) => isOwnedCollection(album, meUsername || undefined))
+          ? albums.filter((album) =>
+              isOwnedCollection(album, meUsername || undefined),
+            )
           : albums;
 
         const withTracks = await Promise.all(
           visibleAlbums.map(async (album) => {
-            const tracksRes = await playlistService.getPlaylistTracks(album.id, 1, 20);
+            const tracksRes = await playlistService.getPlaylistTracks(
+              album.id,
+              1,
+              20,
+            );
             const tracks = tracksRes?.data ?? [];
             return { album, tracks };
           }),
         );
 
         withTracks.sort((a, b) => {
-          const aTime = new Date(a.album.updatedAt || a.album.createdAt || 0).getTime();
-          const bTime = new Date(b.album.updatedAt || b.album.createdAt || 0).getTime();
+          const aTime = new Date(
+            a.album.updatedAt || a.album.createdAt || 0,
+          ).getTime();
+          const bTime = new Date(
+            b.album.updatedAt || b.album.createdAt || 0,
+          ).getTime();
           return sortOrder === "asc" ? aTime - bTime : bTime - aTime;
         });
 
@@ -131,9 +147,34 @@ export default function ProfileAlbumsSection({
   }, [isMeView, meUsername, username]);
 
   const content = useMemo(() => {
-    if (loading) return <p data-testid="profile-albums-loading" className="py-10 text-sm text-zinc-400">Loading albums...</p>;
-    if (error) return <p data-testid="profile-albums-error" className="py-10 text-sm text-red-400">{error}</p>;
-    if (items.length === 0) return <p data-testid="profile-albums-empty" className="py-10 text-sm text-zinc-400">No albums yet.</p>;
+    if (loading)
+      return (
+        <p
+          data-testid="profile-albums-loading"
+          className="py-10 text-sm text-zinc-400"
+        >
+          Loading albums...
+        </p>
+      );
+    if (error)
+      return (
+        <p
+          data-testid="profile-albums-error"
+          className="py-10 text-sm text-red-400"
+        >
+          {error}
+        </p>
+      );
+    if (items.length === 0) {
+      return hideEmptyState ? null : (
+        <p
+          data-testid="profile-albums-empty"
+          className="py-10 text-sm text-zinc-400"
+        >
+          No albums yet.
+        </p>
+      );
+    }
 
     return (
       <div data-testid="profile-albums-list" className="space-y-8 mt-8">
@@ -146,8 +187,10 @@ export default function ProfileAlbumsSection({
             artist: ct.track.user.displayName || ct.track.user.username,
             avatarUrl: ct.track.coverUrl ?? null,
             playsCount:
-              (ct.track as { playCount?: number; playsCount?: number }).playCount ??
-              (ct.track as { playCount?: number; playsCount?: number }).playsCount ??
+              (ct.track as { playCount?: number; playsCount?: number })
+                .playCount ??
+              (ct.track as { playCount?: number; playsCount?: number })
+                .playsCount ??
               0,
           }));
           const artistName =
@@ -158,17 +201,33 @@ export default function ProfileAlbumsSection({
             "Album";
           const totalPlays = tracks.reduce((sum, ct) => {
             const trackPlays =
-              (ct.track as { playCount?: number; playsCount?: number }).playCount ??
-              (ct.track as { playCount?: number; playsCount?: number }).playsCount ??
+              (ct.track as { playCount?: number; playsCount?: number })
+                .playCount ??
+              (ct.track as { playCount?: number; playsCount?: number })
+                .playsCount ??
               0;
             return sum + trackPlays;
           }, 0);
 
-          const albumTrackCount = (
-            album as CollectionPreview & { tracksCount?: number; totalTracks?: number }
-          ).trackCount ??
-            (album as CollectionPreview & { tracksCount?: number; totalTracks?: number }).tracksCount ??
-            (album as CollectionPreview & { tracksCount?: number; totalTracks?: number }).totalTracks ??
+          const albumTrackCount =
+            (
+              album as CollectionPreview & {
+                tracksCount?: number;
+                totalTracks?: number;
+              }
+            ).trackCount ??
+            (
+              album as CollectionPreview & {
+                tracksCount?: number;
+                totalTracks?: number;
+              }
+            ).tracksCount ??
+            (
+              album as CollectionPreview & {
+                tracksCount?: number;
+                totalTracks?: number;
+              }
+            ).totalTracks ??
             0;
 
           return (
@@ -179,7 +238,9 @@ export default function ProfileAlbumsSection({
                 smallCoverOnMobile
                 artistName={artistName}
                 title={album.title || "Untitled album"}
-                coverUrl={firstTrack?.track.coverUrl ?? album.coverUrl ?? trackFallback}
+                coverUrl={
+                  firstTrack?.track.coverUrl ?? album.coverUrl ?? trackFallback
+                }
                 timeAgo={formatTimeAgo(album.updatedAt || album.createdAt)}
                 contextTag="Album"
                 likes={(album.likeCount ?? 0).toString()}
@@ -199,7 +260,9 @@ export default function ProfileAlbumsSection({
 
   return (
     <div data-testid="profile-albums-section" className={className}>
-      {heading ? <h2 className="text-white text-2xl font-bold">{heading}</h2> : null}
+      {heading ? (
+        <h2 className="text-white text-2xl font-bold">{heading}</h2>
+      ) : null}
       {content}
     </div>
   );

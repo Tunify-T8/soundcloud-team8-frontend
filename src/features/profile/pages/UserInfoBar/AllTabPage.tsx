@@ -20,6 +20,7 @@ export default function AllTabPage() {
           isMeView={isMeView}
           meDisplayName={me?.displayName}
           meUsername={me?.username}
+          hideEmptyState
         />
         <ProfileAlbumsSection
           username={username}
@@ -28,6 +29,7 @@ export default function AllTabPage() {
           meUsername={me?.username}
           sortOrder="asc"
           className="mt-8"
+          hideEmptyState
         />
         <ProfilePlaylistsSection
           username={username}
@@ -35,11 +37,13 @@ export default function AllTabPage() {
           meDisplayName={me?.displayName}
           meUsername={me?.username}
           className=""
+          hideEmptyState
         />
         <ProfileRepostsSection
           isMeView={isMeView}
           meDisplayName={me?.displayName}
           meUsername={me?.username}
+          hideEmptyState
         />
       </div>
     </div>
