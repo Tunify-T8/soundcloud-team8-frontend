@@ -226,7 +226,9 @@ const router = createBrowserRouter([
     path: "/upload",
     element: (
       <ProtectedRoute>
-        <UploadPage />
+        <ProfileProvider>
+          <UploadPage />
+        </ProfileProvider>
       </ProtectedRoute>
     ),
   },
@@ -234,7 +236,9 @@ const router = createBrowserRouter([
     path: "/artists",
     element: (
       <ProtectedRoute>
-        <ArtistsPage />
+        <ProfileProvider>
+          <ArtistsPage />
+        </ProfileProvider>
       </ProtectedRoute>
     ),
   },

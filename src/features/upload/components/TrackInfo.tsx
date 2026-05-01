@@ -259,7 +259,13 @@ type UserProfile = {
   isCertified: boolean
 }
 
-export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
+export default function TrackInfoPage({
+  onBack,
+  onUploadLimitReached,
+}: {
+  onBack?: () => void
+  onUploadLimitReached?: (uploadMinutesRemaining: number) => void
+}) {
   const { currentTrack } = usePlayer();
   const dispatch = useDispatch();
   const source = useAppSelector((s) => s.audioSource.source);
@@ -451,8 +457,13 @@ export default function TrackInfoPage({ onBack }: { onBack?: () => void }) {
           if (audioErr?.response?.status === 403) {
             const errData = audioErr.response.data;
             if (errData?.error === "upload_limit_reached") {
-              setLimitMinutesRemaining(errData.uploadMinutesRemaining ?? 0);
-              setLimitReached(true);
+              const uploadMinutesRemaining = Number(errData.uploadMinutesRemaining ?? 0);
+              if (onUploadLimitReached) {
+                onUploadLimitReached(uploadMinutesRemaining);
+              } else {
+                setLimitMinutesRemaining(uploadMinutesRemaining);
+                setLimitReached(true);
+              }
               setIsSubmitting(false);
               return; // Stop — don't mark as done
             }

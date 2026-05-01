@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import { SiSoundcloud } from "react-icons/si";
 import { useAppSelector } from "../../../app/hooks";
 import { setAudioSource } from "../../../store/AudioSourceSlice";
-import { api } from "@/features/auth/services/api";
 import ArtistModal from "@/features/premium/components/ArtistModal";
 import UploadQuotaBanner, { type UploadQuota } from "../components/UploadQuotaBanner";
 import UploadLimitScreen from "../components/UploadLimitScreen";
@@ -12,7 +11,35 @@ import Recorder from "../components/Recorder";
 import TrackInfoPage from "../components/TrackInfo";
 import uploadImg from "@/assets/upload.png";
 import SubscriptionBadge from "@/features/premium/components/SubscriptionBadge";
-import { subscriptionService } from "@/features/premium/premiumService";
+import { trackService } from "@/features/track-management/trackService";
+import { useSubscription } from "@/hooks/useSubscription";
+
+const PLAN_LIMITS = {
+  free: 10,
+  artist: 180,
+  "artist-pro": null,
+} as const;
+
+function buildQuotaFromPlan(
+  tier: "free" | "artist" | "artist-pro",
+  uploadedMinutesUsed: number,
+): UploadQuota {
+  const uploadMinutesLimit = PLAN_LIMITS[tier];
+  const uploadMinutesRemaining =
+    uploadMinutesLimit === null
+      ? null
+      : Math.max(0, Number((uploadMinutesLimit - uploadedMinutesUsed).toFixed(1)));
+
+  return {
+    tier,
+    uploadMinutesLimit,
+    uploadMinutesUsed,
+    uploadMinutesRemaining,
+    canReplaceFiles: tier !== "free",
+    canScheduleRelease: tier !== "free",
+    canAccessAdvancedTab: tier !== "free",
+  };
+}
 
 export default function SoundCloudUpload() {
   const [isDragging, setIsDragging] = useState(false);
@@ -22,73 +49,47 @@ export default function SoundCloudUpload() {
 
   const [quota, setQuota] = useState<UploadQuota | null>(null);
   const [quotaLoading, setQuotaLoading] = useState(true);
-  const [limitReached, setLimitReached] = useState(false);
-  const [quotaBlocked, setQuotaBlocked] = useState(false);
+  const [limitExceededQuota, setLimitExceededQuota] = useState<UploadQuota | null>(null);
   const [planTier, setPlanTier] = useState<"free" | "artist" | "artist-pro">("free");
 
   const dispatch = useDispatch();
   const readyToNavigate = useAppSelector((s) => s.audioSource.readyToNavigate);
-
-  useEffect(() => {
-    const fetchQuota = async () => {
-      try {
-        const { data } = await api.get<UploadQuota>("/users/me/upload");
-        setQuota(data);
-        if (
-          data.uploadMinutesLimit !== null &&
-          data.uploadMinutesUsed >= data.uploadMinutesLimit
-        ) {
-          setLimitReached(true);
-        }
-        } catch (err) {
-        const status = (err as { response?: { status?: number } })?.response?.status;
-        if (status === 403) {
-          setQuotaBlocked(true);
-          setQuota({
-            tier: "free",
-            uploadMinutesLimit: 180,
-            uploadMinutesUsed: 180,
-            uploadMinutesRemaining: 0,
-            canReplaceFiles: false,
-            canScheduleRelease: false,
-            canAccessAdvancedTab: false,
-          });
-          setLimitReached(false);
-        } else {
-          console.error("Failed to fetch upload quota:", err);
-        }
-      } finally {
-        setQuotaLoading(false);
-      }
-    };
-    fetchQuota();
-  }, []);
+  const { tier, isArtistPro } = useSubscription();
 
   useEffect(() => {
     let mounted = true;
-    subscriptionService
-      .getMySubscription({ fallbackToFree: true })
-      .then((sub) => {
+
+    const fetchQuota = async () => {
+      try {
+        const uploadedTracks = await trackService.getUploadedTracks().catch(() => []);
+
         if (!mounted) return;
-        setPlanTier(sub.tier);
-      })
-      .catch(() => {
+
+        const nextPlanTier = tier;
+        const totalDurationSeconds = uploadedTracks.reduce(
+          (sum, track) => sum + (Number(track.duration) || 0),
+          0,
+        );
+        const uploadedMinutesUsed = Number((totalDurationSeconds / 60).toFixed(1));
+
+        setPlanTier(nextPlanTier);
+        setQuota(buildQuotaFromPlan(nextPlanTier, uploadedMinutesUsed));
+      } catch (err) {
         if (!mounted) return;
+        console.error("Failed to build upload quota banner:", err);
         setPlanTier("free");
-      });
+        setQuota(buildQuotaFromPlan("free", 0));
+      } finally {
+        if (mounted) setQuotaLoading(false);
+      }
+    };
+
+    fetchQuota();
+
     return () => {
       mounted = false;
     };
-  }, []);
-
-  const isUnlimited = quota?.uploadMinutesLimit === null;
-  const minutesLimit = quota?.uploadMinutesLimit ?? 0;
-  const minutesUsed = quota?.uploadMinutesUsed ?? 0;
-  const percentUsed =
-    isUnlimited || minutesLimit === 0
-      ? 0
-      : Math.min(100, Math.round((minutesUsed / minutesLimit) * 100));
-  const isOverLimit = !isUnlimited && percentUsed >= 100;
+  }, [tier]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -101,11 +102,6 @@ export default function SoundCloudUpload() {
     (e: React.DragEvent) => {
       e.preventDefault();
       setIsDragging(false);
-      if (quotaBlocked) {
-        setLimitReached(true);
-        return;
-      }
-      if (limitReached) return;
       const file = e.dataTransfer.files[0];
       if (!file) return;
       dispatch(
@@ -118,16 +114,11 @@ export default function SoundCloudUpload() {
         }),
       );
     },
-    [dispatch, limitReached],
+    [dispatch],
   );
 
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (quotaBlocked) {
-        setLimitReached(true);
-        return;
-      }
-      if (limitReached) return;
       const file = e.target.files?.[0];
       if (!file) return;
       dispatch(
@@ -140,19 +131,43 @@ export default function SoundCloudUpload() {
         }),
       );
     },
-    [dispatch, limitReached],
+    [dispatch],
   );
 
-  if (limitReached && quota) {
+  const handleUploadLimitReached = useCallback(
+    (uploadMinutesRemaining: number) => {
+      if (!quota) return;
+
+      const nextUsedMinutes =
+        quota.uploadMinutesLimit === null
+          ? quota.uploadMinutesUsed
+          : Math.max(
+              quota.uploadMinutesUsed,
+              Number((quota.uploadMinutesLimit - Math.max(uploadMinutesRemaining, 0)).toFixed(1)),
+            );
+
+      setLimitExceededQuota({
+        ...quota,
+        uploadMinutesUsed: nextUsedMinutes,
+        uploadMinutesRemaining:
+          quota.uploadMinutesLimit === null
+            ? null
+            : Math.max(0, Number(uploadMinutesRemaining.toFixed(1))),
+      });
+    },
+    [quota],
+  );
+
+  if (limitExceededQuota) {
     return (
       <>
-        <UploadLimitScreen quota={quota} />
+        <UploadLimitScreen quota={limitExceededQuota} />
       </>
     );
   }
 
   if (readyToNavigate) {
-    return <TrackInfoPage />;
+    return <TrackInfoPage onUploadLimitReached={handleUploadLimitReached} />;
   }
 
   return (
@@ -183,7 +198,7 @@ export default function SoundCloudUpload() {
       <main className="flex-1 flex justify-center px-6 py-10">
         <div className="w-full max-w-[1100px]">
           <div data-testid="upload-quota-bar">
-            {planTier === "artist-pro" && !quotaLoading ? (
+            {isArtistPro && !quotaLoading ? (
               <div className="bg-gradient-to-r from-[#f6e9b1] via-[#f2d57a] to-[#f6e9b1] border-b border-[#e2c76b] px-4 sm:px-8 py-3 rounded-sm">
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-3">
@@ -202,10 +217,6 @@ export default function SoundCloudUpload() {
                 quota={quota}
                 loading={quotaLoading}
                 onOpenDetails={() => setShowArtistModal(true)}
-                forceOverLimit={quotaBlocked}
-                statusMessage={
-                  quotaBlocked ? "You've reached your upload limit for your plan" : undefined
-                }
               />
             )}
           </div>
@@ -221,11 +232,7 @@ export default function SoundCloudUpload() {
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onClick={() => {
-              if (quotaBlocked) {
-                setLimitReached(true);
-                return;
-              }
-              if (!limitReached) fileInputRef.current?.click();
+              fileInputRef.current?.click();
             }}
             data-testid="upload-dropzone"
             className={`w-full rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all mb-6 py-20 border-2 border-dashed ${
@@ -255,11 +262,7 @@ export default function SoundCloudUpload() {
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                if (quotaBlocked) {
-                  setLimitReached(true);
-                  return;
-                }
-                if (!limitReached) fileInputRef.current?.click();
+                fileInputRef.current?.click();
               }}
               className="mt-4 bg-white text-black rounded-full px-6 py-2 text-[13px] font-semibold hover:bg-[#eee] transition"
               data-testid="choose-files-btn"
