@@ -169,7 +169,7 @@ export default function UserInfoBar({
     if (!userId || isUpdating) return;
 
     const previousFollowersCount = followersCount ?? 0;
-    const newFollowersCount = isFollowing 
+    const newFollowersCount = isFollowing
       ? Math.max(0, previousFollowersCount - 1)
       : previousFollowersCount + 1;
 
@@ -216,7 +216,7 @@ export default function UserInfoBar({
     setModal(!modal);
   };
 
-  const menuTargetName = (username?.trim() || displayName?.trim() || "user");
+  const menuTargetName = username?.trim() || displayName?.trim() || "user";
   const sharePathTarget = userId?.trim() || username?.trim() || "";
   const shareUrl =
     typeof window === "undefined"
@@ -380,6 +380,7 @@ export default function UserInfoBar({
           onClick={toggleModal}
           onSaved={onProfileUpdated}
           displayName={displayName}
+          username={username}
           avatarUrl={avatarUrl}
           country={country}
           city={city}
