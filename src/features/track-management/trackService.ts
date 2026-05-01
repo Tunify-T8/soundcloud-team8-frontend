@@ -69,6 +69,7 @@ async updateTrack(id: string, payload: UpdateTrackPayload): Promise<Track> {
     downloads: null,
     plays: null,
     isPrivate,
+    privateToken: data.privateToken ?? null,
     thumbnailUrl: data.artworkUrl || null,
   };
 }

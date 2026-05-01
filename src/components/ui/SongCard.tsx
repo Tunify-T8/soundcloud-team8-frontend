@@ -157,8 +157,10 @@ export default function SongCard({
   const [downloaded, setDownloaded] = useState(false);
   const [showDownloadTooltip, setShowDownloadTooltip] = useState(false);
   const [showAlreadyDownloaded, setShowAlreadyDownloaded] = useState(false);
+  const [showCopyToast, setShowCopyToast] = useState(false);
   const [randomSeed] = useState(() => Math.random() * 1000000);
   const [hoveredSubtrackId, setHoveredSubtrackId] = useState<string | null>(null);
+  const copyToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handlePlayToggle = () => {
     if (!trackId) return;
@@ -272,6 +274,46 @@ export default function SongCard({
     };
   }, [trackId, me?.id, hasOfflineListening]);
 
+  useEffect(() => {
+    return () => {
+      if (copyToastTimerRef.current) {
+        clearTimeout(copyToastTimerRef.current);
+      }
+    };
+  }, []);
+
+  const copyTextToClipboard = async (value: string) => {
+    if (navigator?.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return;
+    }
+
+    const helper = document.createElement("textarea");
+    helper.value = value;
+    helper.setAttribute("readonly", "true");
+    helper.style.position = "absolute";
+    helper.style.left = "-9999px";
+    document.body.appendChild(helper);
+    helper.select();
+    document.execCommand("copy");
+    document.body.removeChild(helper);
+  };
+
+  const handleCopyLink = async () => {
+    if (!trackId) return;
+    const shareUrl = `${window.location.origin}/tracks/${trackId}`;
+    try {
+      await copyTextToClipboard(shareUrl);
+      setShowCopyToast(true);
+      if (copyToastTimerRef.current) clearTimeout(copyToastTimerRef.current);
+      copyToastTimerRef.current = setTimeout(() => {
+        setShowCopyToast(false);
+      }, 2000);
+    } catch (error) {
+      console.error("Failed to copy track link:", error);
+    }
+  };
+
   const handleLikeToggle = async () => {
     if (!trackId || isLikePending) return;
     const mutationVersion = ++likeMutationVersionRef.current;
@@ -311,6 +353,7 @@ export default function SongCard({
 
   const handleRepostToggle = async () => {
     if (!trackId || repostDisabled || isRepostPending) return;
+    const mutationVersion = ++likeMutationVersionRef.current;
     const wasReposted = isReposted;
     setIsRepostPending(true);
     setIsReposted(!wasReposted);
@@ -323,10 +366,14 @@ export default function SongCard({
       }
       onToggleRepost?.();
     } catch {
-      setIsReposted(wasReposted);
-      setRepostsCount((prev) => Math.max(0, prev + (wasReposted ? 1 : -1)));
+      if (likeMutationVersionRef.current === mutationVersion) {
+        setIsReposted(wasReposted);
+        setRepostsCount((prev) => Math.max(0, prev + (wasReposted ? 1 : -1)));
+      }
     } finally {
-      setIsRepostPending(false);
+      if (likeMutationVersionRef.current === mutationVersion) {
+        setIsRepostPending(false);
+      }
     }
   };
 
@@ -667,9 +714,11 @@ export default function SongCard({
               <button
                 type="button"
                 onClick={handleRepostToggle}
-                disabled={repostDisabled || isRepostPending}
+                disabled={repostDisabled}
+                aria-disabled={repostDisabled || isRepostPending}
+                data-pending={isRepostPending}
                 aria-label={isReposted ? "Undo repost" : "Repost"}
-                className={`flex h-8 shrink-0 items-center gap-1.5 rounded-[4px] bg-[#2f3033] px-3 text-[13px] font-semibold transition-colors hover:bg-[#3a3b3f] disabled:cursor-not-allowed disabled:opacity-60 ${
+                className={`flex h-8 shrink-0 items-center gap-1.5 rounded-[4px] bg-[#2f3033] px-3 text-[13px] font-semibold transition-colors hover:bg-[#3a3b3f] disabled:cursor-not-allowed ${
                   isReposted ? "text-[#ff5500]" : "text-zinc-100"
                 }`}
               >
@@ -680,7 +729,12 @@ export default function SongCard({
             <button className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f]">
               <Share2 size={16} />
             </button>
-            <button className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f]">
+            <button
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f]"
+              onClick={handleCopyLink}
+              aria-label="Copy track link"
+              type="button"
+            >
               <Copy size={16} />
             </button>
 
@@ -828,6 +882,17 @@ export default function SongCard({
         defaultCoverUrl={coverUrl}
         autoAddTrackId={trackId}
       />
+
+      {showCopyToast ? (
+        <div className="fixed right-6 top-6 z-[140]">
+          <div className="flex max-w-[360px] items-center gap-3 rounded-[4px] border border-zinc-500 bg-[#2f2f2f] px-4 py-2.5 text-white shadow-xl">
+            <Check className="h-5 w-5 text-emerald-400" />
+            <div className="text-[13px] font-semibold leading-tight">
+              Link has been copied to the clipboard!
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -9,6 +9,7 @@ export interface TrackMeta {
   recentlyPlayedArtworkUrl?: string;
   recentlyPlayedEntityType?: "track" | "playlist" | "album";
   recentlyPlayedLinkTo?: string;
+  privateToken?: string;
   /**
    * When set, the player skips the stream API and plays this
    * blob URL directly. Used for downloaded/offline tracks.

@@ -189,6 +189,7 @@ export default function TrackCard({
         id: track.id,
         title: track.title,
         artist: track.artist,
+        privateToken: track.privateToken ?? undefined,
         duration: 0,
       });
       setIsPlaying(true);
