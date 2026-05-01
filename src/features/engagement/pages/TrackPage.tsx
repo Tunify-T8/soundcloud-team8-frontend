@@ -223,6 +223,7 @@ const TrackPage = () => {
     currentTrack,
     isPlaying,
     progress: playerProgress,
+    syncCurrentTrack,
     setCurrentTrack,
     setIsPlaying,
     requestSeek,
@@ -324,7 +325,7 @@ const TrackPage = () => {
     if (isThisTrack) {
       setIsPlaying(!isPlaying);
     } else {
-      setCurrentTrack(trackObj);
+      syncCurrentTrack(trackObj);
       setIsPlaying(true);
     }
   };
@@ -332,7 +333,7 @@ const TrackPage = () => {
   const handleSeek = (ratio: number) => {
     if (!trackId) return;
     if (!isThisTrack) {
-      setCurrentTrack(trackObj);
+      syncCurrentTrack(trackObj);
       setIsPlaying(true);
     }
     requestSeek(trackId, ratio);

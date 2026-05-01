@@ -32,6 +32,8 @@ import fansHoverImg from "@/assets/top_fans_hover.png";
 import benefitsHoverImg from "@/assets/benefits_hover.png";
 
 import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
+import { useMe } from "@/features/profile/context/useMe";
+import { usePlayContext } from "@/hooks/usePlayContext";
 
 export function UploadBanner() {
   const [quota, setQuota] = useState<
@@ -65,9 +67,9 @@ export function UploadBanner() {
           setQuotaBlocked(true);
           setQuota({
             tier: "free",
-            uploadMinutesLimit: 180,
-            uploadMinutesUsed: 180,
-            uploadMinutesRemaining: 0,
+            uploadMinutesLimit: 10,
+            uploadMinutesUsed: 0,
+            uploadMinutesRemaining: 10,
             canReplaceFiles: false,
             canScheduleRelease: false,
             canAccessAdvancedTab: false,
@@ -158,10 +160,6 @@ function StudioHeader() {
           <div className="flex flex-col gap-1 px-5 sm:px-7 border-l border-[hsl(0,0%,20%)]">
             <span className="text-white text-xl sm:text-2xl font-semibold tabular-nums">0</span>
             <span className="text-[hsl(0,0%,42%)] text-xs whitespace-nowrap">Reposts</span>
-          </div>
-          <div className="flex flex-col gap-1 px-5 sm:px-7 border-l border-[hsl(0,0%,20%)]">
-            <span className="text-white text-xl sm:text-2xl font-semibold tabular-nums">0</span>
-            <span className="text-[hsl(0,0%,42%)] text-xs whitespace-nowrap">Downloads</span>
           </div>
           <div className="flex flex-col gap-1 px-5 sm:px-7 border-l border-[hsl(0,0%,20%)]">
             <span className="text-white text-xl sm:text-2xl font-semibold tabular-nums">0</span>
@@ -485,6 +483,9 @@ function CommentsTab() {
 const TABS = ["SoundCloud Tracks", "Distribution", "Vinyl Records", "Comments"];
 
 export default function ArtistsPage() {
+  const { me } = useMe();
+  usePlayContext({ contextType: "profile", contextId: me?.id ?? "" });
+
   const [activeTab, setActiveTab] = useState("SoundCloud Tracks");
   const [searchQuery, setSearchQuery] = useState("");
   const [visibilityFilter, setVisibilityFilter] = useState<"all" | "public" | "private">("all");
