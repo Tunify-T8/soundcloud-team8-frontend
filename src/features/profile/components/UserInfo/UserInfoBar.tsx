@@ -4,11 +4,10 @@ import { FaUser, FaPen, FaEnvelope } from "react-icons/fa";
 import { MdPodcasts, MdMoreHoriz } from "react-icons/md";
 import { FiSlash, FiInfo } from "react-icons/fi";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Upload, BarChart2 } from "lucide-react";
+import { Upload, BarChart2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { followingService } from "../../../following/followingService";
 import { notifySocialGraphUpdated } from "../../socialGraphEvents";
-import ShareOverlay from "@/components/ui/ShareOverlay";
 import { AdminIDDisplay } from "@/features/admin/components/AdminIDDisplay";
 
 function ShareOverlay({
