@@ -73,10 +73,12 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         repeat:       ctx.repeat,
       });
       if (queueBuildRequestRef.current !== requestId) return;
+      const queuedIndex = response.queue.findIndex((item) => item.trackId === track.id);
+      const currentIndex = queuedIndex >= 0 ? queuedIndex : response.currentIndex;
       dispatch(
         setQueue({
           tracks:        response.queue,
-          currentIndex:  response.currentIndex,
+          currentIndex,
           shuffle:       response.shuffle,
           repeat:        response.repeat,
           totalCount:    response.totalCount,

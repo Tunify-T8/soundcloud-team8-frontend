@@ -87,7 +87,9 @@ export const getTrendingTracks = async (
     },
   });
 
-  const items = (response.data.items ?? []).map(mapTrendingItemToDiscoverTrack);
+  const items = (response.data.items ?? [])
+    .filter((item) => item.type === type)
+    .map(mapTrendingItemToDiscoverTrack);
 
   return {
     items,
