@@ -30,44 +30,12 @@ import {
   type TrackLikeChangedDetail,
 } from "@/features/engagement/engagementEvents";
 import ShareOverlay from "@/components/ui/ShareOverlay";
-
-const DB_NAME = "sc_downloads";
-const STORE = "tracks";
-
-function openDB(): Promise<IDBDatabase> {
-  return new Promise((res, rej) => {
-    const req = indexedDB.open(DB_NAME, 1);
-    req.onupgradeneeded = () => req.result.createObjectStore(STORE);
-    req.onsuccess = () => res(req.result);
-    req.onerror = () => rej(req.error);
-  });
-}
-
-async function saveDownload(
-  userId: string,
-  trackId: string,
-  meta: { id: string; title: string; artist: string; coverUrl: string },
-  blob: Blob,
-  artwork?: Blob | null,
-) {
-  const db = await openDB();
-  const tx = db.transaction(STORE, "readwrite");
-  tx.objectStore(STORE).put(
-    { meta, audio: blob, artwork: artwork ?? null },
-    `user_${userId}_song_${trackId}`,
-  );
-}
-
-async function hasDownload(userId: string, trackId: string): Promise<boolean> {
-  const db = await openDB();
-  const tx = db.transaction(STORE, "readonly");
-  const store = tx.objectStore(STORE);
-  return new Promise((res, rej) => {
-    const req = store.get(`user_${userId}_song_${trackId}`);
-    req.onsuccess = () => res(Boolean(req.result));
-    req.onerror = () => rej(req.error);
-  });
-}
+import {
+  DOWNLOAD_LIBRARY_CHANGED_EVENT,
+  hasDownload,
+  saveDownload,
+  type DownloadLibraryChangedDetail,
+} from "@/features/library/downloadStorage";
 
 interface PlayerProps {
   trackId?: string;
@@ -161,10 +129,12 @@ export default function SongCard({
   const [showDownloadTooltip, setShowDownloadTooltip] = useState(false);
   const [showAlreadyDownloaded, setShowAlreadyDownloaded] = useState(false);
   const [showCopyToast, setShowCopyToast] = useState(false);
+  const [showDownloadSuccessToast, setShowDownloadSuccessToast] = useState(false);
   const [randomSeed] = useState(() => Math.random() * 1000000);
   const [barCount, setBarCount] = useState<number | null>(null);
   const [hoveredSubtrackId, setHoveredSubtrackId] = useState<string | null>(null);
   const copyToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const downloadToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handlePlayToggle = () => {
     if (!trackId) return;
@@ -279,9 +249,38 @@ export default function SongCard({
   }, [trackId, me?.id, hasOfflineListening]);
 
   useEffect(() => {
+    if (!trackId || !me?.id) return;
+
+    const handleDownloadLibraryChanged = (event: Event) => {
+      const detail = (event as CustomEvent<DownloadLibraryChangedDetail>).detail;
+      if (!detail || detail.userId !== me.id) return;
+
+      if (detail.action === "saved" && detail.trackId === trackId) {
+        setDownloaded(true);
+        return;
+      }
+
+      if (
+        (detail.action === "deleted" && detail.trackId === trackId) ||
+        detail.action === "cleared"
+      ) {
+        setDownloaded(false);
+      }
+    };
+
+    window.addEventListener(DOWNLOAD_LIBRARY_CHANGED_EVENT, handleDownloadLibraryChanged);
+    return () => {
+      window.removeEventListener(DOWNLOAD_LIBRARY_CHANGED_EVENT, handleDownloadLibraryChanged);
+    };
+  }, [trackId, me?.id]);
+
+  useEffect(() => {
     return () => {
       if (copyToastTimerRef.current) {
         clearTimeout(copyToastTimerRef.current);
+      }
+      if (downloadToastTimerRef.current) {
+        clearTimeout(downloadToastTimerRef.current);
       }
     };
   }, []);
@@ -418,6 +417,11 @@ export default function SongCard({
       );
       setDownloaded(true);
       setShowAlreadyDownloaded(false);
+      setShowDownloadSuccessToast(true);
+      if (downloadToastTimerRef.current) clearTimeout(downloadToastTimerRef.current);
+      downloadToastTimerRef.current = setTimeout(() => {
+        setShowDownloadSuccessToast(false);
+      }, 3500);
     } catch (err) {
       console.error("Download failed", err);
       alert("Failed to download. Please try again.");
@@ -989,6 +993,36 @@ export default function SongCard({
             <Check className="h-5 w-5 text-emerald-400" />
             <div className="text-[13px] font-semibold leading-tight">
               Link has been copied to the clipboard!
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {showDownloadSuccessToast ? (
+        <div className="fixed inset-0 z-[140] flex items-center justify-center px-4">
+          <button
+            type="button"
+            aria-label="Dismiss download success message"
+            onClick={() => setShowDownloadSuccessToast(false)}
+            className="absolute inset-0 bg-black/35 backdrop-blur-[2px]"
+          />
+          <div className="relative flex max-w-[420px] items-start gap-3 rounded-xl border border-zinc-500 bg-[#2b2b2b] px-5 py-4 text-white shadow-2xl">
+            <Check className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />
+            <div className="text-sm font-semibold leading-snug">
+              <div className="mb-1 text-white">Download complete.</div>
+              <div className="text-zinc-300">
+                Your file is saved in Downloads.
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDownloadSuccessToast(false);
+                    navigate("/me/downloads");
+                  }}
+                  className="ml-1 font-bold text-[#66a8ff] underline underline-offset-2"
+                >
+                  Open Downloads
+                </button>
+              </div>
             </div>
           </div>
         </div>

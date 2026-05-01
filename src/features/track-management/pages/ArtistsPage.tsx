@@ -20,8 +20,7 @@ import vinylImg from "@/assets/vinyl.png";
 import commentsImg from "@/assets/comment_bubbles.png";
 import { BenefitsSection } from "../components/BenefitsSection";
 import UploadQuotaBanner from "@/features/upload/components/UploadQuotaBanner";
-import { api } from "@/features/auth/services/api";
-import { subscriptionService } from "@/features/premium/premiumService";
+import type { UploadQuota } from "@/features/upload/components/UploadQuotaBanner";
 import SubscriptionBadge from "@/features/premium/components/SubscriptionBadge";
 
 import insightsImg from "@/assets/insights.png";
@@ -34,57 +33,59 @@ import benefitsHoverImg from "@/assets/benefits_hover.png";
 import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
 import { useMe } from "@/features/profile/context/useMe";
 import { usePlayContext } from "@/hooks/usePlayContext";
+import { useSubscription } from "@/hooks/useSubscription";
+
+const PLAN_LIMITS = {
+  free: 10,
+  artist: 180,
+  "artist-pro": null,
+} as const;
+
+function buildQuotaFromPlan(
+  tier: "free" | "artist" | "artist-pro",
+  uploadedMinutesUsed: number,
+): UploadQuota {
+  const uploadMinutesLimit = PLAN_LIMITS[tier];
+  const uploadMinutesRemaining =
+    uploadMinutesLimit === null
+      ? null
+      : Math.max(0, Number((uploadMinutesLimit - uploadedMinutesUsed).toFixed(1)));
+
+  return {
+    tier,
+    uploadMinutesLimit,
+    uploadMinutesUsed: uploadedMinutesUsed,
+    uploadMinutesRemaining,
+    canReplaceFiles: tier !== "free",
+    canScheduleRelease: tier !== "free",
+    canAccessAdvancedTab: tier !== "free",
+  };
+}
 
 export function UploadBanner() {
-  const [quota, setQuota] = useState<
-    | {
-        tier: string;
-        uploadMinutesLimit: number | null;
-        uploadMinutesUsed: number;
-        uploadMinutesRemaining: number | null;
-        canReplaceFiles: boolean;
-        canScheduleRelease: boolean;
-        canAccessAdvancedTab: boolean;
-      }
-    | null
-  >(null);
+  const [quota, setQuota] = useState<UploadQuota | null>(null);
   const [quotaLoading, setQuotaLoading] = useState(true);
-  const [quotaBlocked, setQuotaBlocked] = useState(false);
-  const [planTier, setPlanTier] = useState<"free" | "artist" | "artist-pro">("free");
+  const { tier, isArtistPro } = useSubscription();
 
   useEffect(() => {
     let mounted = true;
-    api
-      .get("/users/me/upload")
-      .then(({ data }) => {
+
+    trackService
+      .getUploadedTracks()
+      .catch(() => [])
+      .then((tracks) => {
         if (!mounted) return;
-        setQuota(data);
+        const totalDurationSeconds = tracks.reduce(
+          (sum, track) => sum + (Number(track.duration) || 0),
+          0,
+        );
+        const uploadedMinutesUsed = Number((totalDurationSeconds / 60).toFixed(1));
+
+        setQuota(buildQuotaFromPlan(tier, uploadedMinutesUsed));
       })
-      .catch((err) => {
-        const status = (err as { response?: { status?: number } })?.response?.status;
+      .catch(() => {
         if (!mounted) return;
-        if (status === 403) {
-          setQuotaBlocked(true);
-          setQuota({
-            tier: "free",
-            uploadMinutesLimit: 10,
-            uploadMinutesUsed: 0,
-            uploadMinutesRemaining: 10,
-            canReplaceFiles: false,
-            canScheduleRelease: false,
-            canAccessAdvancedTab: false,
-          });
-          return;
-        }
-        setQuota({
-          tier: "free",
-          uploadMinutesLimit: 180,
-          uploadMinutesUsed: 0,
-          uploadMinutesRemaining: 180,
-          canReplaceFiles: false,
-          canScheduleRelease: false,
-          canAccessAdvancedTab: false,
-        });
+        setQuota(buildQuotaFromPlan("free", 0));
       })
       .finally(() => {
         if (mounted) setQuotaLoading(false);
@@ -93,27 +94,10 @@ export function UploadBanner() {
     return () => {
       mounted = false;
     };
-  }, []);
-
-  useEffect(() => {
-    let mounted = true;
-    subscriptionService
-      .getMySubscription({ fallbackToFree: true })
-      .then((sub) => {
-        if (!mounted) return;
-        setPlanTier(sub.tier);
-      })
-      .catch(() => {
-        if (!mounted) return;
-        setPlanTier("free");
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  }, [tier]);
 
   return (
-    planTier === "artist-pro" && !quotaLoading ? (
+    isArtistPro && !quotaLoading ? (
       <div className="px-3 sm:px-6 pt-5">
         <div className="bg-gradient-to-r from-[#f6e9b1] via-[#f2d57a] to-[#f6e9b1] border-b border-[#e2c76b] px-4 sm:px-8 py-3 rounded-sm">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
@@ -124,7 +108,7 @@ export function UploadBanner() {
               </span>
             </div>
             <span className="text-[#7a5b16] text-xs sm:text-sm font-semibold">
-              Total Uploaded Minutes: {quota?.uploadMinutesUsed ?? 0}
+              Total Uploaded Minutes: {quota?.uploadMinutesUsed ?? 0} / Unlimited
             </span>
           </div>
         </div>
@@ -133,10 +117,6 @@ export function UploadBanner() {
       <UploadQuotaBanner
         quota={quota}
         loading={quotaLoading}
-        forceOverLimit={quotaBlocked}
-        statusMessage={
-          quotaBlocked ? "You've reached your upload limit for your plan" : undefined
-        }
       />
     )
   );

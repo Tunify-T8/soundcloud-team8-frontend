@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Heart, Repeat2,
@@ -68,6 +68,23 @@ const mapTrackCommentsToWaveform = (comments: ApiComment[]): WaveformComment[] =
     body:      c.text,
     timestamp: typeof c.timestamp === 'number' ? c.timestamp : 0,
   }));
+
+const copyTextToClipboard = async (value: string) => {
+  if (navigator?.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  const helper = document.createElement('textarea');
+  helper.value = value;
+  helper.setAttribute('readonly', 'true');
+  helper.style.position = 'absolute';
+  helper.style.left = '-9999px';
+  document.body.appendChild(helper);
+  helper.select();
+  document.execCommand('copy');
+  document.body.removeChild(helper);
+};
 
 const Waveform = ({
   onSeek, comments, waveformSeed, isThisTrack, playerProgress, duration,
@@ -167,7 +184,7 @@ const ShareModal = ({ title, onClose }: { title: string; onClose: () => void }) 
   const [copied, setCopied] = useState(false);
   const link = window.location.href;
   const copy = () => {
-    navigator.clipboard.writeText(link).then(() => {
+    copyTextToClipboard(link).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
@@ -212,12 +229,14 @@ const TrackPage = () => {
   const [trackLoading, setLoading]                = useState(true);
   const [error, setError]                         = useState<string | null>(null);
   const [showShare, setShowShare]                 = useState(false);
+  const [showCopyToast, setShowCopyToast]         = useState(false);
   const [fansTab, setFansTab]                     = useState<'top' | 'first'>('top');
   const [isFollowingArtist, setIsFollowingArtist] = useState(false);
   const [artistFollowers, setArtistFollowers]     = useState(0);
   const [artistTracksCount, setArtistTracksCount] = useState(0);
   const [artistUsername, setArtistUsername]       = useState('');
   const [followLoading, setFollowLoading]         = useState(false);
+  const copyToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const {
     currentTrack,
@@ -233,6 +252,14 @@ const TrackPage = () => {
     counts, isLiked, isReposted,
     loading: engLoading, toggleLike, toggleRepost,
   } = useEngagement(trackId ?? '');
+
+  useEffect(() => {
+    return () => {
+      if (copyToastTimerRef.current) {
+        clearTimeout(copyToastTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!trackId) return;
@@ -279,6 +306,23 @@ const TrackPage = () => {
   const handleCommentsUpdate = useCallback((comments: ApiComment[]) => {
     setWaveformComments(mapTrackCommentsToWaveform(comments));
   }, []);
+
+  const handleCopyLink = async () => {
+    if (!trackId) return;
+
+    const shareUrl = `${window.location.origin}/tracks/${trackId}`;
+
+    try {
+      await copyTextToClipboard(shareUrl);
+      setShowCopyToast(true);
+      if (copyToastTimerRef.current) clearTimeout(copyToastTimerRef.current);
+      copyToastTimerRef.current = setTimeout(() => {
+        setShowCopyToast(false);
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to copy track link:', error);
+    }
+  };
 
   if (trackLoading) return <div className="p-8 text-white">Loading...</div>;
   if (error || !track) return <div className="p-8 text-red-400">{error ?? 'Track not found'}</div>;
@@ -369,6 +413,19 @@ const TrackPage = () => {
   return (
     <div className="min-h-screen bg-[#111] text-white">
       {showShare && <ShareModal title={track.title} onClose={() => setShowShare(false)} />}
+
+      {showCopyToast ? (
+        <div className="fixed right-6 top-6 z-[140]">
+          <div className="flex max-w-[360px] items-center gap-3 rounded-[4px] border border-zinc-500 bg-[#2f2f2f] px-4 py-2.5 text-white shadow-xl">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-400 text-[11px] font-black text-black">
+              ✓
+            </span>
+            <div className="text-[13px] font-semibold leading-tight">
+              Track link copied to the clipboard!
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className="mx-auto max-w-[1360px] px-4 sm:px-6">
 
@@ -476,7 +533,11 @@ const TrackPage = () => {
               <Share2 size={12} />
             </button>
 
-            <button className="flex items-center gap-1.5 text-[hsl(0,0%,50%)] hover:text-white text-[11px] px-2 py-1 rounded border border-[hsl(0,0%,18%)] hover:border-[hsl(0,0%,35%)] transition">
+            <button
+              onClick={handleCopyLink}
+              disabled={!trackId}
+              className="flex items-center gap-1.5 text-[hsl(0,0%,50%)] hover:text-white text-[11px] px-2 py-1 rounded border border-[hsl(0,0%,18%)] hover:border-[hsl(0,0%,35%)] transition disabled:opacity-60"
+            >
               <Copy size={12} />
             </button>
 
