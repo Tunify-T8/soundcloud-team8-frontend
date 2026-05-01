@@ -30,6 +30,9 @@ export default function UploadQuotaBanner({
   const isUnlimited = quota?.uploadMinutesLimit === null;
   const minutesLimit = quota?.uploadMinutesLimit ?? 180;
   const minutesUsed = forceOverLimit ? minutesLimit : quota?.uploadMinutesUsed ?? 0;
+  const totalUploadedLabel = isUnlimited
+    ? `${minutesUsed} minutes uploaded`
+    : `${minutesUsed} of ${minutesLimit} minutes uploaded`;
   const percentUsed = forceOverLimit
     ? 100
     : isUnlimited
@@ -58,7 +61,7 @@ export default function UploadQuotaBanner({
             <div className="w-32 sm:w-44 h-1.5 bg-[hsl(0,0%,23%)] rounded-full overflow-hidden">
               <div className="h-full bg-[hsl(142,69%,36%)] rounded-full" style={{ width: "0%" }} />
             </div>
-            <span className="text-[hsl(0,100%,99%)] text-sm font-semibold">Unlimited</span>
+            <span className="text-[hsl(0,100%,99%)] text-sm font-semibold">{totalUploadedLabel}</span>
           </>
         ) : (
           <>
@@ -75,7 +78,7 @@ export default function UploadQuotaBanner({
               />
             </div>
             <span className="text-[hsl(0,100%,99%)] text-sm font-semibold">
-              {minutesUsed} of {minutesLimit} minutes
+              {totalUploadedLabel}
             </span>
             {statusMessage && (
               <span className="text-[hsl(0,0%,70%)] text-xs sm:text-sm">

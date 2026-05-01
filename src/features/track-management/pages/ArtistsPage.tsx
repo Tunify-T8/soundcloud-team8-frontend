@@ -54,7 +54,7 @@ function buildQuotaFromPlan(
   return {
     tier,
     uploadMinutesLimit,
-    uploadMinutesUsed,
+    uploadMinutesUsed: uploadedMinutesUsed,
     uploadMinutesRemaining,
     canReplaceFiles: tier !== "free",
     canScheduleRelease: tier !== "free",
@@ -65,7 +65,6 @@ function buildQuotaFromPlan(
 export function UploadBanner() {
   const [quota, setQuota] = useState<UploadQuota | null>(null);
   const [quotaLoading, setQuotaLoading] = useState(true);
-  const [planTier, setPlanTier] = useState<"free" | "artist" | "artist-pro">("free");
   const { tier, isArtistPro } = useSubscription();
 
   useEffect(() => {
@@ -76,19 +75,16 @@ export function UploadBanner() {
       .catch(() => [])
       .then((tracks) => {
         if (!mounted) return;
-        const nextPlanTier = tier;
         const totalDurationSeconds = tracks.reduce(
           (sum, track) => sum + (Number(track.duration) || 0),
           0,
         );
         const uploadedMinutesUsed = Number((totalDurationSeconds / 60).toFixed(1));
 
-        setPlanTier(nextPlanTier);
-        setQuota(buildQuotaFromPlan(nextPlanTier, uploadedMinutesUsed));
+        setQuota(buildQuotaFromPlan(tier, uploadedMinutesUsed));
       })
       .catch(() => {
         if (!mounted) return;
-        setPlanTier("free");
         setQuota(buildQuotaFromPlan("free", 0));
       })
       .finally(() => {
@@ -112,7 +108,7 @@ export function UploadBanner() {
               </span>
             </div>
             <span className="text-[#7a5b16] text-xs sm:text-sm font-semibold">
-              Total Uploaded Minutes: {quota?.uploadMinutesUsed ?? 0}
+              Total Uploaded Minutes: {quota?.uploadMinutesUsed ?? 0} / Unlimited
             </span>
           </div>
         </div>

@@ -33,7 +33,7 @@ function buildQuotaFromPlan(
   return {
     tier,
     uploadMinutesLimit,
-    uploadMinutesUsed,
+    uploadMinutesUsed: uploadedMinutesUsed,
     uploadMinutesRemaining,
     canReplaceFiles: tier !== "free",
     canScheduleRelease: tier !== "free",
@@ -50,7 +50,6 @@ export default function SoundCloudUpload() {
   const [quota, setQuota] = useState<UploadQuota | null>(null);
   const [quotaLoading, setQuotaLoading] = useState(true);
   const [limitExceededQuota, setLimitExceededQuota] = useState<UploadQuota | null>(null);
-  const [planTier, setPlanTier] = useState<"free" | "artist" | "artist-pro">("free");
 
   const dispatch = useDispatch();
   const readyToNavigate = useAppSelector((s) => s.audioSource.readyToNavigate);
@@ -65,19 +64,16 @@ export default function SoundCloudUpload() {
 
         if (!mounted) return;
 
-        const nextPlanTier = tier;
         const totalDurationSeconds = uploadedTracks.reduce(
           (sum, track) => sum + (Number(track.duration) || 0),
           0,
         );
         const uploadedMinutesUsed = Number((totalDurationSeconds / 60).toFixed(1));
 
-        setPlanTier(nextPlanTier);
-        setQuota(buildQuotaFromPlan(nextPlanTier, uploadedMinutesUsed));
+        setQuota(buildQuotaFromPlan(tier, uploadedMinutesUsed));
       } catch (err) {
         if (!mounted) return;
         console.error("Failed to build upload quota banner:", err);
-        setPlanTier("free");
         setQuota(buildQuotaFromPlan("free", 0));
       } finally {
         if (mounted) setQuotaLoading(false);
@@ -208,7 +204,7 @@ export default function SoundCloudUpload() {
                     </span>
                   </div>
                   <span className="text-[#7a5b16] text-xs sm:text-sm font-semibold">
-                    Total Uploaded Minutes: {quota?.uploadMinutesUsed ?? 0}
+                        Total Uploaded Minutes: {quota?.uploadMinutesUsed ?? 0} / Unlimited
                   </span>
                 </div>
               </div>
