@@ -123,8 +123,8 @@ body {
 }
 
 .soundcloud-auth-page {
-  background: #ffffff !important;
-  color: #111111;
+  background: var(--sc-bg) !important;
+  color: var(--sc-text);
 }
 
 .soundcloud-auth-page .sc-auth-card {
@@ -292,6 +292,136 @@ body {
 .content-checkbox-box svg * {
   color: #ffffff !important;
   stroke: #ffffff !important;
+}
+
+/* ── Auth page: dark mode overrides ──────────────────────────── */
+
+[data-theme="dark"] .soundcloud-auth-page .sc-auth-card {
+  background: var(--sc-bg-secondary) !important;
+  border-color: var(--sc-border) !important;
+}
+
+[data-theme="dark"] .soundcloud-auth-page .sc-auth-title {
+  color: var(--sc-text) !important;
+}
+
+[data-theme="dark"] .soundcloud-auth-page .sc-auth-copy {
+  color: var(--sc-text-secondary) !important;
+}
+
+[data-theme="dark"] .soundcloud-auth-page .sc-auth-google {
+  background: var(--sc-surface) !important;
+  color: var(--sc-text) !important;
+}
+
+[data-theme="dark"] .soundcloud-auth-page .sc-auth-google:hover {
+  background: var(--sc-surface-hover) !important;
+}
+
+[data-theme="dark"] .soundcloud-auth-page .bg-white {
+  background-color: var(--sc-bg-secondary) !important;
+}
+
+[data-theme="dark"] .soundcloud-auth-page .bg-\[\#f2f2f2\],
+[data-theme="dark"] .soundcloud-auth-page .bg-\[\#f7f7f7\] {
+  background-color: var(--sc-surface) !important;
+}
+
+[data-theme="dark"] .soundcloud-auth-page .border-\[\#f2f2f2\],
+[data-theme="dark"] .soundcloud-auth-page .border-\[\#e5e5e5\],
+[data-theme="dark"] .soundcloud-auth-page .border-\[\#d7d7d7\] {
+  border-color: var(--sc-border) !important;
+}
+
+[data-theme="dark"] .soundcloud-auth-page .text-\[\#111\],
+[data-theme="dark"] .soundcloud-auth-page .text-\[\#111111\] {
+  color: var(--sc-text) !important;
+}
+
+[data-theme="dark"] .soundcloud-auth-page .text-\[\#666\],
+[data-theme="dark"] .soundcloud-auth-page .text-\[\#777\] {
+  color: var(--sc-text-secondary) !important;
+}
+
+[data-theme="dark"] .soundcloud-auth-page .text-black {
+  color: var(--sc-text-secondary) !important;
+}
+
+[data-theme="dark"] .soundcloud-auth-page .sc-auth-input {
+  background: var(--sc-surface) !important;
+  border-color: var(--sc-border) !important;
+  color: var(--sc-text) !important;
+}
+
+[data-theme="dark"] .soundcloud-auth-page .sc-auth-input::placeholder {
+  color: var(--sc-text-secondary);
+}
+
+[data-theme="dark"] .soundcloud-auth-page .sc-auth-input:focus {
+  border-color: var(--sc-text-secondary) !important;
+}
+
+[data-theme="dark"] .soundcloud-auth-page .sc-auth-continue {
+  background: var(--sc-surface) !important;
+  color: var(--sc-text-secondary) !important;
+}
+
+[data-theme="dark"] .soundcloud-auth-page .sc-auth-continue:not(:disabled) {
+  background: var(--sc-text) !important;
+  color: var(--sc-bg) !important;
+}
+
+[data-theme="dark"] .soundcloud-auth-page .sc-auth-continue:not(:disabled):hover {
+  background: #e0e0e0 !important;
+  color: var(--sc-bg) !important;
+}
+
+[data-theme="dark"] .soundcloud-auth-page .sc-auth-primary-action {
+  background: var(--sc-surface) !important;
+  color: var(--sc-text-secondary) !important;
+}
+
+[data-theme="dark"] .soundcloud-auth-page .sc-auth-primary-action:not(:disabled) {
+  background: var(--sc-text) !important;
+  color: var(--sc-bg) !important;
+}
+
+[data-theme="dark"] .soundcloud-auth-page .sc-auth-primary-action:hover:not(:disabled) {
+  background: #e0e0e0 !important;
+  color: var(--sc-bg) !important;
+}
+
+[data-theme="dark"] .soundcloud-auth-page .sc-auth-primary-action:disabled,
+[data-theme="dark"] .soundcloud-auth-page .sc-auth-continue:disabled {
+  background: var(--sc-surface) !important;
+  color: var(--sc-text-secondary) !important;
+}
+
+[data-theme="dark"] .soundcloud-auth-page .hover\:bg-\[\#e5e5e5\]:hover {
+  background-color: var(--sc-surface-hover) !important;
+}
+
+[data-theme="dark"] .soundcloud-auth-page .bg-\[\#e5e5e5\] {
+  background-color: var(--sc-border) !important;
+}
+
+[data-theme="dark"] .soundcloud-auth-page input::placeholder,
+[data-theme="dark"] .soundcloud-auth-page textarea::placeholder {
+  color: var(--sc-text-secondary) !important;
+  opacity: 1;
+}
+
+[data-theme="dark"] .soundcloud-auth-page .sc-or-email-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+[data-theme="dark"] .soundcloud-auth-page .sc-or-email-divider::before,
+[data-theme="dark"] .soundcloud-auth-page .sc-or-email-divider::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--sc-border);
 }
 
 @media (max-width: 640px) {

@@ -4,6 +4,7 @@ import { CheckCircle, ChevronDown, ChevronUp, Info } from "lucide-react";
 import { FaApple, FaFacebookF } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import SettingsSection from "../components/shared/SettingsSection";
+import DeleteAccountModal from "../components/DeleteAccountModal";
 import { useSettings } from "../hooks/useSettings";
 import { useTheme } from "../hooks/useTheme";
 import type { Theme } from "../types/settings.types";
@@ -123,6 +124,7 @@ export default function AccountTab() {
   const [year, setYear] = useState("1999");
   const [gender, setGender] = useState("");
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const submitEmail = () => {
     if (emailInput.trim()) setUnconfirmedEmail(emailInput.trim());
@@ -339,9 +341,19 @@ export default function AccountTab() {
         </div>
       </SettingsSection>
 
-      <button type="button" data-testid="delete-account-button" className="font-black text-pink-600 hover:underline">
+      <button
+        type="button"
+        data-testid="delete-account-button"
+        onClick={() => setIsDeleteModalOpen(true)}
+        className="font-black text-pink-600 hover:underline"
+      >
         Delete account
       </button>
+
+      <DeleteAccountModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+      />
     </div>
   );
 }
