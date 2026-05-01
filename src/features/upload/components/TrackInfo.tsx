@@ -4,6 +4,7 @@ import type { ToggleProps } from "../types";
 import type { TogglesState } from "../types";
 import { clearAudioSource } from "../../../store/AudioSourceSlice";
 import UploadSuccessScreen from "./UploadSuccessScreen";
+import type { UploadQuota } from "./UploadQuotaBanner";
 import { api } from "@/features/auth/services/api";
 import { SiSoundcloud } from "react-icons/si";
 import { useDispatch } from "react-redux";
@@ -13,6 +14,34 @@ import albumTemplate from "@/assets/album.png";
 import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
 import CheckoutModal from "@/features/premium/components/CheckoutModal";
 import { usePlayer } from "@/features/playerUI/context/usePlayer";
+
+function readAudioDuration(url: string): Promise<number> {
+  return new Promise((resolve) => {
+    const audio = document.createElement("audio");
+    let settled = false;
+
+    const finish = (duration: number) => {
+      if (settled) return;
+      settled = true;
+      audio.src = "";
+      resolve(Number.isFinite(duration) ? duration : 0);
+    };
+
+    const timeout = window.setTimeout(() => finish(0), 3000);
+
+    audio.preload = "metadata";
+    audio.onloadedmetadata = () => {
+      window.clearTimeout(timeout);
+      finish(audio.duration);
+    };
+    audio.onerror = () => {
+      window.clearTimeout(timeout);
+      finish(0);
+    };
+    audio.src = url;
+    audio.load();
+  });
+}
 
 function Toggle({ enabled, onChange }: ToggleProps) {
   return (
@@ -262,9 +291,13 @@ type UserProfile = {
 export default function TrackInfoPage({
   onBack,
   onUploadLimitReached,
+  quota,
+  quotaLoading = false,
 }: {
   onBack?: () => void
   onUploadLimitReached?: (uploadMinutesRemaining: number) => void
+  quota?: UploadQuota | null
+  quotaLoading?: boolean
 }) {
   const { currentTrack } = usePlayer();
   const dispatch = useDispatch();
@@ -417,7 +450,33 @@ export default function TrackInfoPage({
   };
 
   const handleUpload = async () => {
-    if (!fileReady || isSubmitting) return;
+    if (!fileReady || isSubmitting || quotaLoading) return;
+
+    const uploadQuota = quota ?? null;
+    const sourceDurationSeconds =
+      source?.kind === "recorded"
+        ? source.duration
+        : source?.url
+          ? await readAudioDuration(source.url)
+          : 0;
+
+    if (uploadQuota && uploadQuota.uploadMinutesLimit !== null) {
+      const uploadMinutesUsed = uploadQuota.uploadMinutesUsed ?? 0;
+      const uploadMinutesLimit = uploadQuota.uploadMinutesLimit ?? 0;
+      const trackMinutes = Number((sourceDurationSeconds / 60).toFixed(1));
+      const remainingMinutes = Math.max(0, Number((uploadMinutesLimit - uploadMinutesUsed).toFixed(1)));
+
+      if (uploadMinutesUsed + trackMinutes > uploadMinutesLimit) {
+        if (onUploadLimitReached) {
+          onUploadLimitReached(remainingMinutes);
+        } else {
+          setLimitMinutesRemaining(remainingMinutes);
+          setLimitReached(true);
+        }
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
       const rawGenre = genreRef.current?.value ?? "";
@@ -947,14 +1006,20 @@ export default function TrackInfoPage({
         </p>
         <button
           onClick={handleUpload}
-          disabled={!fileReady || isSubmitting}
+          disabled={!fileReady || isSubmitting || quotaLoading}
           className="bg-[#169b45] hover:bg-[#1db954] disabled:opacity-40 disabled:cursor-not-allowed text-white px-8 py-2.5 rounded-full font-semibold text-sm transition flex items-center gap-2"
           data-testid="upload-submit-btn"
         >
-          {(!fileReady || isSubmitting) && (
+          {(!fileReady || isSubmitting || quotaLoading) && (
             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           )}
-          {!fileReady ? "Uploading…" : isSubmitting ? "Saving…" : "Upload"}
+          {!fileReady
+            ? "Uploading…"
+            : isSubmitting
+              ? "Saving…"
+              : quotaLoading
+                ? "Checking quota…"
+                : "Upload"}
         </button>
       </div>
     </div>

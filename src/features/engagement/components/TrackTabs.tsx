@@ -28,9 +28,7 @@ const TrackTabs = ({ trackId, activeTab }: Props) => {
       >
         reposts
       </Link>
-      <span className="pb-2 text-zinc-400 border-b-2 border-transparent">In albums</span>
-      <span className="pb-2 text-zinc-400 border-b-2 border-transparent">In playlists</span>
-      <span className="pb-2 text-zinc-400 border-b-2 border-transparent">Related tracks</span>
+
     </div>
   );
 };

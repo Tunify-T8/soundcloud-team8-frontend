@@ -163,7 +163,13 @@ export default function SoundCloudUpload() {
   }
 
   if (readyToNavigate) {
-    return <TrackInfoPage onUploadLimitReached={handleUploadLimitReached} />;
+    return (
+      <TrackInfoPage
+        quota={quota}
+        quotaLoading={quotaLoading}
+        onUploadLimitReached={handleUploadLimitReached}
+      />
+    );
   }
 
   return (
