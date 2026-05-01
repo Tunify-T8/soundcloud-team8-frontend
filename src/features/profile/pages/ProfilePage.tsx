@@ -1,10 +1,11 @@
 import Header from "../components/Header/Header";
 import UserInfoBar from "../components/UserInfo/UserInfoBar";
 import ProfileSideBar from "../components/UserInfo/ProfileSideBar";
-import { Outlet, useParams } from "react-router-dom";
+import { Outlet, useParams, useLocation } from "react-router-dom";
 import { profileService } from "../profileService";
 import { useEffect, useState, useCallback } from "react";
 import { useMe } from "../context/useMe";
+import { usePlayContext } from "@/hooks/usePlayContext";
 import type {
   MeUserProfile,
   PublicUserProfile,
@@ -20,6 +21,9 @@ function isMeProfile(
 
 export default function ProfilePage() {
   const { username } = useParams<{ username: string }>();
+  const location = useLocation();
+  const userIdFromState = (location.state as { userId?: string } | null)?.userId ?? null;
+
   const { me, socialAccounts, following, refresh: refreshMe } = useMe();
   const isMe = !username;
   const [publicUser, setPublicUser] = useState<PublicUserProfile | null>(null);
@@ -43,11 +47,16 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!username) return;
+
+    // Prefer UUID from navigation state (avoids backend UUID validation error)
+    // Falls back to username for direct URL access — backend must support it
+    const identifier = userIdFromState ?? username;
+
     const fetchProfile = async () => {
       setLoading(true);
       setError(null);
       try {
-        const data = await profileService.getPublicProfile(username);
+        const data = await profileService.getPublicProfile(identifier);
         setPublicUser(data);
       } catch (err: any) {
         setError(err?.message || "Failed to fetch user");
@@ -55,8 +64,8 @@ export default function ProfilePage() {
         setLoading(false);
       }
     };
-    void fetchProfile();
-  }, [username]);
+    fetchProfile();
+  }, [username, userIdFromState]);
 
   useEffect(() => {
     let isMounted = true;
@@ -113,6 +122,14 @@ export default function ProfilePage() {
     };
   }, [isMe, me?.id, publicUser?.id]);
 
+  const user = username ? publicUser : me;
+
+  // Register profile context — uses the profile owner's UUID
+  usePlayContext({
+    contextType: "profile",
+    contextId: user?.id ?? "",
+  });
+
   if (!username && !me) {
     return (
       <div
@@ -135,8 +152,6 @@ export default function ProfilePage() {
     );
   }
 
-  const user = username ? publicUser : me;
-
   if (error || !user) {
     return (
       <div
@@ -148,8 +163,8 @@ export default function ProfilePage() {
     );
   }
 
-  const userLocation = user.location ?? "";
-  const locationParts = userLocation.split(",");
+  const loc = user.location ?? "";
+  const locationParts = loc.split(",");
   const city = locationParts[0]?.trim() ?? undefined;
   const country = locationParts[1]?.trim() ?? undefined;
 

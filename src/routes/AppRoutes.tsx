@@ -6,6 +6,8 @@ import AdminDashboardPage from '../features/admin/pages/AdminDashboardPage';
 import AdminReportsPage from '../features/admin/pages/AdminReportsPage';
 import AdminContentPage from '../features/admin/pages/AdminContentPage';
 import AdminUsersPage from '../features/admin/pages/AdminUsersPage';
+import MessagesPage from '../features/conversation/pages/MessagesPage';
+
 const AppRoutes = () => {
   return (
     <BrowserRouter>
@@ -50,6 +52,8 @@ const AppRoutes = () => {
             </AdminRoute>
           }
         />
+        <Route path="/messages" element={<MessagesPage />} />
+        <Route path="/messages/:conversationId" element={<MessagesPage />} />
         <Route path="/" element={<Navigate to="/signin" replace />} />
         <Route path="*" element={<Navigate to="/signin" replace />} />
       </Routes>

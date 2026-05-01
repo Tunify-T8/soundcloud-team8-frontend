@@ -194,3 +194,19 @@ const realResetPassword = async (
 };
 
 export const resetPassword = IS_MOCK ? mockResetPassword : realResetPassword;
+
+const mockDeleteAccount = async (_password?: string): Promise<{ message: string }> => {
+  await delay();
+  clearTokens();
+  return { message: 'Your account has been deleted successfully.' };
+};
+
+const realDeleteAccount = async (password?: string): Promise<{ message: string }> => {
+  const body: Record<string, string> = {};
+  if (password) body.password = password;
+  const res = await api.delete('/auth/delete-account', { data: body });
+  clearTokens();
+  return res.data;
+};
+
+export const deleteAccount = IS_MOCK ? mockDeleteAccount : realDeleteAccount;

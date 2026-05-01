@@ -13,6 +13,7 @@ import PlaylistHeader from "../components/PlaylistHeader";
 import TrackList from "../components/TrackList";
 import ActionBar from "../components/ActionBar";
 import EditPlaylistOverlay from "../components/EditPlaylistOverlay";
+import { usePlayContext } from "@/hooks/usePlayContext";
 
 function isUuidLike(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -32,6 +33,8 @@ const PlaylistPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [reorderError, setReorderError] = useState<string | null>(null);
+  const [isFollowingOwner, setIsFollowingOwner] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
   const {
     currentTrack,
     isPlaying,
@@ -40,6 +43,7 @@ const PlaylistPage: React.FC = () => {
     setIsPlaying,
     requestSeek,
   } = usePlayer();
+  usePlayContext({ contextType: "playlist", contextId: playlist?.id ?? "" });
 
   const fetchData = useCallback(async () => {
     if (!id && !token && !tokenFromQuery) return;
@@ -63,9 +67,16 @@ const PlaylistPage: React.FC = () => {
 
     try {
       const accessToken = token ?? tokenFromQuery;
-      const playlistData = accessToken
-        ? await playlistService.getPlaylistByToken(accessToken)
-        : await playlistService.getPlaylistById(id as string);
+      let playlistData: Collection | null = null;
+      if (accessToken) {
+        playlistData = await playlistService.getPlaylistByToken(accessToken);
+      } else if (id) {
+        playlistData = await playlistService.getPlaylistById(id);
+        if (!playlistData && !isUuidLike(id)) {
+          // Shared/private links can arrive as /collections/:token.
+          playlistData = await playlistService.getPlaylistByToken(id);
+        }
+      }
 
       const playlistId = playlistData?.id;
       const tracksData = playlistId
@@ -93,9 +104,31 @@ const PlaylistPage: React.FC = () => {
     return () => clearTimeout(timeout);
   }, [reorderError]);
 
+  useEffect(() => {
+    let mounted = true;
+
+    const syncFollowStatus = async () => {
+      if (!playlist?.owner?.id || currentUser?.id === playlist.owner.id) return;
+      try {
+        const status = await profileService.getFollowStatus(playlist.owner.id);
+        if (!mounted) return;
+        setIsFollowingOwner(Boolean(status.isFollowing));
+      } catch {
+        if (!mounted) return;
+        setIsFollowingOwner(false);
+      }
+    };
+
+    void syncFollowStatus();
+    return () => {
+      mounted = false;
+    };
+  }, [playlist?.owner?.id, currentUser?.id]);
+
   const handleReorder = useCallback(
     async (newTracks: CollectionTrack[]) => {
-      if (!id) return;
+      const collectionId = playlist?.id;
+      if (!collectionId) return;
       const previousTracks = tracks;
       setTracks(newTracks);
       setReorderError(null);
@@ -104,7 +137,7 @@ const PlaylistPage: React.FC = () => {
       //   return;
       // }
 
-      const ok = await playlistService.reorderTracks(id, {
+      const ok = await playlistService.reorderTracks(collectionId, {
         trackIds: newTracks.map((ct) => ct.track.id),
       });
       if (!ok) {
@@ -112,7 +145,7 @@ const PlaylistPage: React.FC = () => {
         setReorderError("Couldn't save the new track order. Please try again.");
       }
     },
-    [id, tracks],
+    [playlist?.id, tracks],
   );
 
   const toPlayerTrack = useCallback((ct: CollectionTrack) => ({
@@ -175,7 +208,7 @@ const PlaylistPage: React.FC = () => {
     );
 
   const isOwner = currentUser?.id === playlist.owner.id;
-  const profileLink = `/${encodeURIComponent(playlist.owner.id)}`;
+  const profileLink = `/${encodeURIComponent(playlist.owner.username || playlist.owner.id)}`;
   const trackCount = playlist.trackCount ?? tracks.length;
 
   const handleToggleFollow = async () => {

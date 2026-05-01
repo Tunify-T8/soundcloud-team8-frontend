@@ -93,7 +93,7 @@ const SortableTrackRow: React.FC<SortableTrackRowProps> = ({
           aria-label={showPause ? "Pause track" : "Play track"}
         >
           <img
-            src={ct.track.coverUrl || "/default-cover.png"}
+            src={ct.track.coverUrl || trackFallback}
             alt={ct.track.title}
             className="h-7 w-7 object-cover"
           />

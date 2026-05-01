@@ -3,7 +3,8 @@
 export type playabilityStatus = "playable" | "preview" | "blocked";
 export type streamQuality     = "auto" | "low" | "medium" | "high";
 export type repeatMode        = "none" | "one" | "all";
-export type contextType       = "playlist" | "profile" | "history";
+// "feed" added alongside the original three
+export type contextType       = "playlist" | "profile" | "history" | "feed";
 export type playerStatus      =
   | "idle"
   | "loading"
@@ -93,14 +94,26 @@ export interface queueResponse {
   totalCount:   number;
 }
 
+/**
+ * Snapshot of the context that built the current queue.
+ * Stored in queueSlice so components can read "what context is active"
+ * without importing playContextSlice.
+ */
+export interface activeQueueContext {
+  contextType: contextType;
+  contextId:   string;
+}
+
 export interface queueState {
-  tracks:       queueTrack[];
-  currentIndex: number;
-  shuffle:      boolean;
-  repeat:       repeatMode;
-  isLoading:    boolean;
-  error:        string | null;
-  totalCount:   number;
+  tracks:         queueTrack[];
+  currentIndex:   number;
+  shuffle:        boolean;
+  repeat:         repeatMode;
+  isLoading:      boolean;
+  error:          string | null;
+  totalCount:     number;
+  /** The context that built this queue — null until first loadQueue call. */
+  activeContext:  activeQueueContext | null;
 }
 
 export interface useQueueReturn {
@@ -115,7 +128,14 @@ export interface useQueueReturn {
   totalCount:     number;
   hasNext:        boolean;
   hasPrev:        boolean;
+  activeContext:  activeQueueContext | null;
   loadQueue:      (params: buildQueueParams) => Promise<void>;
+  /**
+   * Smart play: reads the active PlayContext from Redux, builds the queue
+   * starting at the given track, then marks that track as playing.
+   * Call this instead of loadQueue when the user clicks play on a track.
+   */
+  playTrack:      (trackId: string) => Promise<void>;
   next:           () => void;
   prev:           () => void;
   addTrack:       (track: queueTrack, atIndex?: number) => void;

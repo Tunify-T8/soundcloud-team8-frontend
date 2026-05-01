@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod'; 
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Eye, EyeOff, Loader2, ChevronLeft, AlertCircle } from 'lucide-react';
 import { useGoogleLogin } from '@react-oauth/google';
@@ -11,6 +11,8 @@ import { extractErrorMessage } from '../hooks/useAuth';
 import type { SocialProvider } from '../types/auth.types';
 import { checkEmail } from '../services/index';
 import AuthNavbar from '../components/AuthNavbar';
+import CaptchaField from '../components/CaptchaField';
+import { useCaptcha } from '../hooks/useCaptcha';
 import { useDispatch } from 'react-redux';
 import { setUser } from '../../../store/userSlice';
 import type { AppDispatch } from '../../../app/store';
@@ -44,16 +46,18 @@ interface SocialButtonProps {
   borderColor?: string;
   onClick: (provider: SocialProvider) => void;
   disabled?: boolean;
+  testId?: string;
 }
 
 const SocialButton: React.FC<SocialButtonProps> = ({
-  provider, label, icon, bgColor, hoverColor, borderColor, onClick, disabled,
+  provider, label, icon, bgColor, hoverColor, borderColor, onClick, disabled, testId,
 }) => (
   <button
     type="button"
     disabled={disabled}
+    data-testid={testId}
     onClick={() => onClick(provider)}
-    className={`w-full flex items-center justify-center gap-3 px-4 py-3 rounded-sm font-medium text-sm text-white transition-colors duration-150 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${bgColor} ${hoverColor} ${borderColor ? `border ${borderColor}` : ''}`}
+    className={`sc-auth-button w-full flex items-center justify-center gap-3 px-4 rounded-sm font-semibold text-base transition-colors duration-150 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${bgColor} ${hoverColor} ${borderColor ? `border ${borderColor}` : ''}`}
   >
     {icon}
     <span>{label}</span>
@@ -111,6 +115,7 @@ const SignInPage: React.FC = () => {
   const [showLinkPassword, setShowLinkPassword] = useState(false);
   const [linkPassword, setLinkPassword] = useState('');
   const [isLinking, setIsLinking] = useState(false);
+  const { honeypot, setHoneypot, isHuman, reset: resetCaptcha } = useCaptcha();
 
   const emailRef = useRef<HTMLInputElement>(null);
   const triggerShake = () => {
@@ -144,7 +149,6 @@ useEffect(() => {
   window.addEventListener('pageshow', handlePageShow);
   return () => window.removeEventListener('pageshow', handlePageShow);
 }, []);
-  // ── Google OAuth ───────────────────────────────────────────────
   const googleLogin = useGoogleLogin({
     onSuccess: async (response) => {
       setApiError(null);
@@ -185,7 +189,6 @@ useEffect(() => {
     },
     flow: 'auth-code',
     redirect_uri: 'postmessage',});
-  // ── Google account linking ─────────────────────────────────────
   const handleGoogleLink = async () => {
     if (!linkingToken || !linkPassword) return;
     setIsLinking(true);
@@ -219,7 +222,10 @@ useEffect(() => {
     setApiError(null);
     setEmailError(null);
     if (step === 'email') { setStep('social'); setEmailInput(''); }
-    if (step === 'password') { setStep('email'); }
+    if (step === 'password') {
+      setStep('email');
+      resetCaptcha();
+    }
   };
 
   const handleEmailContinue = async () => {
@@ -247,13 +253,14 @@ useEffect(() => {
   };
 
   const onSubmit = async (data: SignInFormData) => {
+    if (!isHuman()) { resetCaptcha(); return; }
     setApiError(null);
     setIsSubmitting(true);
     try {
       const res = await login(data);
 
       if (res.user && !res.accessToken) {
-        try { await resendVerification(data.email); } catch { /* silent */ }
+        try { await resendVerification(data.email); } catch { }
         navigate('/verify-email', { state: { email: data.email } });
         return;
       }
@@ -291,6 +298,7 @@ useEffect(() => {
         navigate('/signin');
       } else {
         setApiError('This password is incorrect.');
+        resetCaptcha();
       }
     } finally {
       setIsSubmitting(false);
@@ -313,58 +321,58 @@ useEffect(() => {
 
   const isSocialDisabled = socialLoading !== null || isSubmitting || isCheckingEmail;
 
-  const BackButton = ({ onClick }: { onClick: () => void }) => (
+  const BackButton = ({ onClick, testId }: { onClick: () => void; testId?: string }) => (
     <button
       type="button"
       onClick={onClick}
-      className="w-9 h-9 rounded-full bg-[#2a2a2a] hover:bg-[#3a3a3a] flex items-center justify-center transition-colors flex-shrink-0"
+      data-testid={testId ?? 'back-btn'}
+      className="w-9 h-9 rounded-full bg-[#f2f2f2] hover:bg-[#e5e5e5] flex items-center justify-center transition-colors flex-shrink-0"
     >
-      <ChevronLeft className="h-5 w-5 text-white" />
+      <ChevronLeft className="h-5 w-5 text-[#111]" />
     </button>
   );
 
   return (
-    <div data-testid="signInPage" className="min-h-screen bg-[#0d0d0d] flex flex-col" >
+    <div data-testid="signInPage" className="soundcloud-auth-page min-h-screen flex flex-col" >
 
       <AuthNavbar onCreateAccount={triggerShake} />
 
-      {/* ── Main ── */}
-      <main className="flex-1 flex items-center justify-center px-4 py-10">
-        <div className="w-full max-w-[480px]">
-          <div className={`border sm:border-[#3a3a3a] sm:rounded-sm sm:p-[3px] sm:bg-[#111] ${shake ? 'shake' : ''}`}>
-            <div className="border sm:border-[#555] sm:rounded-sm bg-[#181818] sm:min-h-[520px]">
+      <main className="flex-1 flex items-start justify-center px-4 py-14">
+        <div className="w-full max-w-[562px]">
+          <div className={`${shake ? 'shake' : ''}`}>
+            <div className="sc-auth-card rounded-sm bg-white">
 
               {step === 'social' && (
-                <div data-testid="socialStep" className="px-6 py-8 sm:p-8 flex flex-col gap-3">
-                  <h1 className="text-white text-2xl sm:text-xl font-bold mb-1 text-left sm:text-center leading-tight">
+                <div data-testid="socialStep" className="px-7 py-8 sm:p-8 flex flex-col gap-[21px]">
+                  <h1 className="sc-auth-title font-bold text-left leading-tight">
                     Sign in or create an account
                   </h1>
-                  <p className="text-[#999] text-xs mb-2 leading-relaxed text-left sm:text-center">
-                    By clicking "Continue" you agree to SoundCloud's{' '}
+                  <p className="sc-auth-copy text-lg leading-snug text-left">
+                    By clicking any of the &quot;Continue&quot; buttons below, you agree to SoundCloud&apos;s{' '}
                     <a href="https://soundcloud.com/terms-of-use" target="_blank" rel="noreferrer" className="text-[#0066cc] hover:underline">Terms of Use</a>{' '}
                     and acknowledge our{' '}
                     <a href="https://soundcloud.com/pages/privacy" target="_blank" rel="noreferrer" className="text-[#0066cc] hover:underline">Privacy Policy</a>.
                   </p>
 
-                  <SocialButton provider="facebook" label="Continue with Facebook" icon={<FacebookIcon />} bgColor="bg-[#1877f2]" hoverColor="hover:bg-[#1565d8]" onClick={handleSocialLogin} disabled={isSocialDisabled} />
+                  <SocialButton provider="facebook" label="Continue with Facebook" icon={<FacebookIcon />} bgColor="sc-auth-facebook" hoverColor="" onClick={handleSocialLogin} disabled={isSocialDisabled} testId="facebookBtn" />
 
                   <button
                     type="button"
                     disabled={isSocialDisabled}
                     onClick={() => googleLogin()}
                     data-testid="googleBtn"
-                    className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-sm font-medium text-sm text-white transition-colors duration-150 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed bg-[#3c3c3c] hover:bg-[#4a4a4a]"
+                    className="sc-auth-button sc-auth-google w-full flex items-center justify-center gap-3 px-4 rounded-sm font-semibold text-base transition-colors duration-150 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <GoogleIcon />
                     <span>Continue with Google</span>
                   </button>
 
-                  <SocialButton provider="apple" label="Continue with Apple" icon={<AppleIcon />} bgColor="bg-black" hoverColor="hover:bg-[#1a1a1a]" borderColor="border-[#555]" onClick={handleSocialLogin} disabled={isSocialDisabled} />
+                  <SocialButton provider="apple" label="Continue with Apple" icon={<AppleIcon />} bgColor="sc-auth-apple" hoverColor="" onClick={handleSocialLogin} disabled={isSocialDisabled} testId="appleBtn" />
 
                   {showLinkPassword && (
-                    <div className="bg-[#2a2a2a] border border-[#555] rounded-sm p-4 flex flex-col gap-3" data-testid="googleLinkPanel">
-                      <p className="text-white text-sm font-medium">This email is already registered.</p>
-                      <p className="text-[#aaa] text-xs">Enter your Tunify password to link your Google account.</p>
+                    <div className="bg-[#f7f7f7] border border-[#d7d7d7] rounded-sm p-4 flex flex-col gap-3" data-testid="googleLinkPanel">
+                      <p className="text-[#111] text-sm font-medium">This email is already registered.</p>
+                      <p className="text-[#666] text-xs">Enter your Tunify password to link your Google account.</p>
                       {apiError && <p className="text-red-400 text-xs" data-testid="linkError">{apiError}</p>}
                       <input
                         type="password"
@@ -372,7 +380,7 @@ useEffect(() => {
                         onChange={(e) => setLinkPassword(e.target.value)}
                         placeholder="Your SoundCloud password"
                         data-testid="linkPasswordInput"
-                        className="w-full bg-[#1a1a1a] border border-[#555] rounded-sm px-4 py-3 text-white text-sm placeholder-[#666] focus:outline-none focus:border-[#888]"
+                        className="sc-auth-input w-full rounded-sm px-5 text-base focus:outline-none"
                       />
                       <button
                         type="button"
@@ -381,8 +389,8 @@ useEffect(() => {
                         data-testid="linkGoogleBtn"
                         className={`w-full py-3 rounded-sm text-sm font-semibold transition-all ${
                           linkPassword && !isLinking
-                            ? 'bg-white text-black hover:bg-gray-100 cursor-pointer'
-                            : 'bg-[#333] text-[#888] cursor-not-allowed border border-[#444]'
+                            ? 'sc-auth-primary-action cursor-pointer'
+                            : 'sc-auth-primary-action cursor-not-allowed'
                         }`}
                       >
                         {isLinking ? 'Linking...' : 'Link Google account'}
@@ -398,10 +406,8 @@ useEffect(() => {
                     </div>
                   )}
 
-                  <div className="flex items-center gap-3 my-1">
-                    <div className="flex-1 h-px bg-[#444]" />
-                    <span className="text-white text-sm font-semibold whitespace-nowrap">Or with email</span>
-                    <div className="flex-1 h-px bg-[#444]" />
+                  <div className="sc-or-email-divider my-0">
+                    <span className="text-[#111] text-lg font-semibold whitespace-nowrap">Or with email</span>
                   </div>
 
                   <input
@@ -412,18 +418,18 @@ useEffect(() => {
                     onFocus={handleEmailFocus}
                     placeholder="Your email address or profile URL"
                     data-testid="emailInput"
-                    className="w-full bg-[#2a2a2a] border border-[#444] rounded-sm px-4 py-3 text-white text-sm placeholder-[#666] focus:outline-none focus:border-[#888] transition-colors"
+                    className="sc-auth-input w-full rounded-sm px-5 text-base focus:outline-none transition-colors"
                     autoComplete="email"
                   />
                   <button type="button" onClick={handleEmailContinue}
                     disabled={!emailInput.trim() || isSocialDisabled}
                     data-testid="socialContinueBtn"
-                    className="w-full bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white py-3 rounded-sm text-sm font-medium border border-[#555] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
+                    className="sc-auth-continue w-full rounded-sm text-base font-semibold disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
                   >
                     Continue
                   </button>
-                  <div className="text-left sm:text-center">
-                    <a href="https://help.soundcloud.com/hc/en-us/sections/46266771825691" target="_blank" rel="noreferrer" className="text-[#0066cc] text-sm hover:underline">Need help?</a>
+                  <div className="text-left">
+                    <a href="https://help.soundcloud.com/hc/en-us/sections/46266771825691" target="_blank" rel="noreferrer" className="text-[#0066cc] text-lg font-medium hover:underline">Need help?</a>
                   </div>
                 </div>
               )}
@@ -431,8 +437,8 @@ useEffect(() => {
               {step === 'email' && (
                 <div className="p-8" data-testid="emailStep">
                   <div className="flex items-center gap-4 mb-6">
-                    <BackButton onClick={handleBack} />
-                    <h1 className="text-white text-base font-bold">Sign in or create an account</h1>
+                    <BackButton onClick={handleBack} testId="emailBackBtn" />
+                    <h1 className="text-[#111] text-base font-bold">Sign in or create an account</h1>
                   </div>
 
                   <div className="relative mb-1">
@@ -444,7 +450,7 @@ useEffect(() => {
                       onKeyDown={(e) => { if (e.key === 'Enter') handleEmailContinue(); }}
                       placeholder="Your email address or profile URL"
                       data-testid="email-input"
-                      className={`w-full bg-[#2a2a2a] border rounded-sm px-4 py-3 pr-10 text-white text-sm placeholder-[#666] focus:outline-none transition-colors ${emailError ? 'border-red-500 focus:border-red-500' : 'border-[#555] focus:border-[#888]'}`}
+                      className={`w-full bg-[#f2f2f2] border rounded-sm px-4 py-3 pr-10 text-[#111] text-sm placeholder-[#777] focus:outline-none transition-colors ${emailError ? 'border-red-500 focus:border-red-500' : 'border-[#e5e5e5] focus:border-[#999]'}`}
                       autoComplete="email"
                     />
                     {emailError && (
@@ -461,20 +467,19 @@ useEffect(() => {
                   <button type="button" onClick={handleEmailContinue}
                     disabled={!emailInput.trim() || isCheckingEmail}
                     data-testid="email-continue-btn"
-                    className="w-full bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white py-3 rounded-sm text-sm font-medium border border-[#555] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2 mb-4"
+                    className="sc-auth-primary-action w-full py-3 rounded-sm text-sm font-medium disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2 mb-4"
                   >
-                    {isCheckingEmail ? <><Loader2 className="h-4 w-4 animate-spin" /> Checking…</> : 'Continue'}
+                    {isCheckingEmail ? <><Loader2 className="h-4 w-4 animate-spin" /> Checking...</> : 'Continue'}
                   </button>
                   <a href="https://help.soundcloud.com/hc/en-us/sections/46266771825691" target="_blank" rel="noreferrer" className="text-[#0066cc] text-sm hover:underline">Need help?</a>
                 </div>
               )}
 
-              {/* STEP: password */}
               {step === 'password' && (
                 <div className="p-8" data-testid="password-step">
                   <div className="flex items-center gap-4 mb-6">
-                    <BackButton onClick={handleBack} />
-                    <h1 className="text-white text-base font-bold">Welcome back!</h1>
+                    <BackButton onClick={handleBack} testId="passwordBackBtn" />
+                    <h1 className="text-[#111] text-base font-bold">Welcome back!</h1>
                   </div>
 
                   {emailExistsAlert && (
@@ -489,24 +494,25 @@ useEffect(() => {
                   )}
 
                   <div className="mb-4">
-                    <p className="text-[#aaa] text-xs mb-1">Your email address or profile URL</p>
-                    <p className="text-white text-sm font-medium">{emailInput}</p>
+                    <p className="text-[#666] text-xs mb-1">Your email address or profile URL</p>
+                    <p className="text-[#111] text-sm font-medium">{emailInput}</p>
                   </div>
 
                   <form onSubmit={handleSubmit(onSubmit)} noValidate>
                     <input type="hidden" {...register('email')} value={emailInput} />
+                    <CaptchaField value={honeypot} onChange={setHoneypot} />
                     <div className="relative mb-4">
                       <input
                         type={showPassword ? 'text' : 'password'}
                         {...register('password')}
                         data-testid="password-input"
                         placeholder="Your password"
-                        className={`w-full bg-[#2a2a2a] border rounded-sm px-4 py-3 pr-10 text-white text-sm focus:outline-none transition-colors ${errors.password ? 'border-red-500' : 'border-[#444] focus:border-[#888]'}`}
+                        className={`w-full bg-[#f2f2f2] border rounded-sm px-4 py-3 pr-10 text-[#111] text-sm focus:outline-none transition-colors ${errors.password ? 'border-red-500' : 'border-[#e5e5e5] focus:border-[#999]'}`}
                         autoComplete="current-password"
                       />
                       <button type="button" onClick={() => setShowPassword((p) => !p)}
                         data-testid="toggle-password-btn"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#777] hover:text-white"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#777] hover:text-[#111]"
                       >
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
@@ -515,9 +521,9 @@ useEffect(() => {
 
                     <button type="submit" disabled={isSubmitting}
                       data-testid="submit-btn"
-                      className="w-full bg-white hover:bg-gray-200 text-black py-3 rounded-sm text-sm font-semibold transition-colors disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer mb-4"
+                      className="sc-auth-primary-action w-full py-3 rounded-sm text-sm font-semibold transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer mb-4"
                     >
-                      {isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin text-black" />Signing in…</> : 'Continue'}
+                      {isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin text-white" />Signing in...</> : 'Continue'}
                     </button>
 
                     <Link to="/forgot-password" data-testid="forgot-password-link" className="text-[#0066cc] text-sm hover:underline">Forgot your password?</Link>
@@ -530,7 +536,7 @@ useEffect(() => {
 
           <p className="hidden sm:block text-center text-[#777] text-sm mt-6">
             Don't have an account?{' '}
-            <Link to="/signin" className="text-white hover:underline font-medium">Create one for free</Link>
+            <Link to="/signin" className="text-[#111] hover:underline font-bold">Create one for free</Link>
           </p>
         </div>
       </main>
