@@ -2,7 +2,6 @@ import NavBar from "./components/layout/Navbar";
 import {
   createBrowserRouter,
   RouterProvider,
-  Navigate,
 } from "react-router-dom";
 import LikesPage from "./features/engagement/pages/LikesPage"
 import RepostsPage from "./features/engagement/pages/RepostsPage"
@@ -47,11 +46,16 @@ import AllTabPage from  "./features/profile/pages/UserInfoBar/AllTabPage";
 import { AdPopup } from "./features/premium/components/AdPopUp";
 import SettingsPage from "./features/settings/SettingsPage";
 import VerificationPage from "./features/settings/VerificationPage";
+import SoundCloudLanding from "./features/landing/pages/landingPage";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Navigate to="/discover" replace />,
+    element: (
+      <PublicOnlyRoute>
+        <SoundCloudLanding />
+      </PublicOnlyRoute>
+    ),
   },
   { path: "/verify-email", element: <VerifyEmailPage /> },
   {
@@ -278,7 +282,6 @@ function App() {
   );
 }
 
-// Reads from context — only renders when a track is selected
 function PlayerBarWrapper() {
   const { currentTrack } = usePlayer();
   if (!currentTrack) return null;
@@ -287,4 +290,5 @@ function PlayerBarWrapper() {
     <PlayerBar/>
   );
 }
+
 export default App;
