@@ -190,8 +190,13 @@ export default function EditInfo({
 
         <div className="grid gap-8 lg:grid-cols-[220px_1fr]">
           <div className="flex flex-col">
-            <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full bg-gray-300 overflow-hidden">
-              <Avatar avatarUrl={avatarUrl} displayName={displayName} />
+            <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full bg-gray-300 overflow-visible">
+              <Avatar
+                avatarUrl={avatarUrl}
+                displayName={displayName}
+                isMe
+                variant="edit"
+              />
             </div>
           </div>
 

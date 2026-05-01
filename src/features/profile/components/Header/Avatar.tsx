@@ -8,11 +8,13 @@ export default function Avatar({
   displayName,
   isMe,
   onProfileUpdated,
+  variant = "default",
 }: {
   avatarUrl?: string;
   displayName?: string;
   isMe?: boolean;
   onProfileUpdated?: () => void;
+  variant?: "default" | "edit";
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -64,6 +66,19 @@ export default function Avatar({
   };
 
   const src = previewUrl ?? avatarUrl;
+  const isEditVariant = variant === "edit";
+  const idleOverlayClass = isEditVariant
+    ? "opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+    : "opacity-0 group-hover:opacity-100";
+  const actionWrapperClass = isEditVariant
+    ? "absolute bottom-1 right-3 z-20 transition-opacity sm:bottom-10 sm:left-1/2 sm:mt-0 sm:-translate-x-1/2 sm:translate-y-0"
+    : "absolute bottom-0 left-1/2 z-20 mt-1 -translate-x-1/2 translate-y-full transition-opacity sm:bottom-10 sm:mt-0 sm:translate-y-0";
+  const actionButtonClass = isEditVariant
+    ? "rounded-[3px] bg-zinc-800/90 px-1.5 py-0.5 text-center text-[8px] font-bold leading-tight transition-colors cursor-pointer whitespace-normal sm:px-2 sm:py-1 sm:text-[12px]"
+    : "w-24 rounded-sm bg-zinc-800 px-2 py-1 text-[11px] font-bold transition-colors cursor-pointer sm:w-32 sm:text-[14px]";
+  const actionMenuClass = isEditVariant
+    ? "absolute top-full right-0 mt-2 flex w-24 flex-col rounded-sm border border-zinc-700 bg-zinc-950 shadow-lg sm:left-1/2 sm:-translate-x-1/2 sm:w-32"
+    : "absolute top-full left-1/2 mt-2 flex w-24 -translate-x-1/2 flex-col rounded-sm border border-zinc-700 bg-zinc-950 shadow-lg sm:w-32";
 
   return (
     <div data-testid="profile-avatar" className="relative w-full h-full group overflow-visible">
@@ -78,7 +93,7 @@ export default function Avatar({
         {isMe && (
           <div
             className={`absolute inset-0 bg-white/40 transition-opacity rounded-full ${
-              showActions ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+              showActions ? "opacity-100" : idleOverlayClass
             }`}
           />
         )}
@@ -96,22 +111,22 @@ export default function Avatar({
 
       {isMe && (
         <div
-          className={`absolute bottom-0 left-1/2 z-20 mt-1 -translate-x-1/2 translate-y-full transition-opacity sm:bottom-10 sm:mt-0 sm:translate-y-0 ${
-            showActions ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          className={`${actionWrapperClass} ${
+            showActions ? "opacity-100" : idleOverlayClass
           }`}
         >
           <button
             data-testid="profile-avatar-update-btn"
             type="button"
             onClick={src ? () => setShowActions((prev) => !prev) : handleOpenUpload}
-            className={`w-24 rounded-sm bg-zinc-800 px-2 py-1 text-[11px] font-bold transition-colors cursor-pointer sm:w-32 sm:text-[14px] ${
+            className={`${actionButtonClass} ${
               showActions ? "text-orange-500" : "text-white hover:text-zinc-500"
             }`}
           >
             {isUploading ? "Uploading..." : src ? "Update image" : "Upload image"}
           </button>
           {src && showActions && (
-            <div className="absolute top-full left-1/2 mt-2 flex w-24 -translate-x-1/2 flex-col rounded-sm border border-zinc-700 bg-zinc-950 shadow-lg sm:w-32">
+            <div className={actionMenuClass}>
               <button
                 data-testid="profile-avatar-replace-btn"
                 type="button"

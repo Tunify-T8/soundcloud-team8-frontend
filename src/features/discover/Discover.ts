@@ -49,3 +49,40 @@ export interface TrendingResponse {
   type: TrendingType;
   period: TrendingPeriod;
 }
+
+export enum ReasonType {
+  FOLLOW = "FOLLOW",
+  TASTE = "TASTE",
+  GENRE = "GENRE",
+  TRENDING = "TRENDING",
+  TAG = "TAG",
+}
+
+export interface RecommendationItemDto {
+  trackId: string;
+  artistId: string;
+  artistAvatarUrl: string | null;
+  artistIsCertified: boolean;
+  title: string;
+  artist: string;
+  genre: string | null;
+  durationInSeconds: number;
+  coverUrl: string | null;
+  waveformUrl: string | null;
+  numberOfComments: number;
+  numberOfLikes: number;
+  numberOfReposts: number;
+  numberOfListens: number;
+  isLiked: boolean;
+  isReposted: boolean;
+  reason: string;
+  reasonType: ReasonType;
+}
+
+export interface RecommendationsResponseDto {
+  data: RecommendationItemDto[];
+  page: number;
+  limit: number;
+  hasMore: boolean;
+  meta?: { code: "NO_DATA"; message: string };
+}

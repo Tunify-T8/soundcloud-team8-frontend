@@ -23,6 +23,7 @@ import { useMe } from "@/features/profile/context/useMe";
 import { playbackService } from "@/features/player-core/Playbackservice";
 import CreatePlaylistOverlay from "@/features/library/tabs/playlists/components/CreatePlaylistOverlay";
 import trackFallback from "@/assets/track.jpg";
+import ShareOverlay from "@/components/ui/ShareOverlay";
 
 const DB_NAME = "sc_downloads";
 const STORE = "tracks";
@@ -142,11 +143,14 @@ export default function SongCard({
   const [isWaveHovered, setIsWaveHovered] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showPlaylistOverlay, setShowPlaylistOverlay] = useState(false);
+  const [showShareOverlay, setShowShareOverlay] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
   const [downloading, setDownloading] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
   const [showDownloadTooltip, setShowDownloadTooltip] = useState(false);
   const [showAlreadyDownloaded, setShowAlreadyDownloaded] = useState(false);
   const [randomSeed] = useState(() => Math.random() * 1000000);
+  const [barCount, setBarCount] = useState<number | null>(null);
 
   const handlePlayToggle = () => {
     if (!trackId) return;
@@ -312,12 +316,58 @@ export default function SongCard({
     return waveGenerators[generatorIndex](effectiveSeed);
   }, [generatorIndex, effectiveSeed]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const updateBarCount = () => {
+      const width = window.innerWidth;
+      if (width < 420) {
+        setBarCount(72);
+      } else if (width < 640) {
+        setBarCount(96);
+      } else if (width < 900) {
+        setBarCount(120);
+      } else {
+        setBarCount(null);
+      }
+    };
+
+    updateBarCount();
+    window.addEventListener("resize", updateBarCount);
+    return () => window.removeEventListener("resize", updateBarCount);
+  }, []);
+
+  const visibleBars = useMemo(() => {
+    if (!barCount || barCount >= bars.length) return bars;
+    const step = bars.length / barCount;
+    return Array.from(
+      { length: barCount },
+      (_, i) => bars[Math.floor(i * step)],
+    );
+  }, [bars, barCount]);
+
   const displayProgress = isThisTrack ? playerProgress : progress;
   const cardPrimaryLink = entityLinkTo || (trackId ? `/tracks/${trackId}` : "");
   const isCollectionCard = contextTag === "Album" || contextTag === "Playlist";
   const mobileCoverSizeClass = smallCoverOnMobile
     ? "h-[72px] w-[72px]"
     : "h-[88px] w-[88px]";
+
+  const buildShareUrl = () => {
+    if (typeof window === "undefined") return "";
+    if (!cardPrimaryLink) return window.location.href;
+    if (/^https?:\/\//i.test(cardPrimaryLink)) return cardPrimaryLink;
+    const normalized = cardPrimaryLink.startsWith("/")
+      ? cardPrimaryLink
+      : `/${cardPrimaryLink}`;
+    return `${window.location.origin}${normalized}`;
+  };
+
+  const handleShareClick = () => {
+    const nextShareUrl = buildShareUrl();
+    if (!nextShareUrl) return;
+    setShareUrl(nextShareUrl);
+    setShowShareOverlay(true);
+  };
 
   const handleWaveformClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!trackId) return;
@@ -351,30 +401,48 @@ export default function SongCard({
   }, [menuOpen]);
 
   return (
-    <div className="bg-[#0b0b0b] rounded-sm flex gap-0 overflow-visible w-full min-w-0 font-sans">
+    <div className="bg-[#0b0b0b] rounded-sm flex flex-col gap-0 overflow-visible w-full min-w-0 font-sans sm:flex-row">
       {cardPrimaryLink ? (
         <Link
           to={cardPrimaryLink}
-          className={`shrink-0 bg-[#111] relative block sm:h-[130px] sm:w-[130px] ${mobileCoverSizeClass}`}
+          className={`shrink-0 bg-[#111] relative block h-[170px] w-full sm:h-[130px] sm:w-[130px] ${mobileCoverSizeClass}`}
           aria-label={`Open ${title || "track"}`}
         >
           {coverUrl ? (
-            <img src={coverUrl} alt={title} className="w-full h-full object-cover" />
+            <img
+              src={coverUrl}
+              alt={title}
+              className="w-full h-full object-cover"
+            />
           ) : (
-            <img src={trackFallback} alt={title || "track"} className="w-full h-full object-cover" />
+            <img
+              src={trackFallback}
+              alt={title || "track"}
+              className="w-full h-full object-cover"
+            />
           )}
         </Link>
       ) : (
-        <div className={`shrink-0 bg-[#111] relative sm:h-[130px] sm:w-[130px] ${mobileCoverSizeClass}`}>
+        <div
+          className={`shrink-0 bg-[#111] relative h-[170px] w-full sm:h-[130px] sm:w-[130px] ${mobileCoverSizeClass}`}
+        >
           {coverUrl ? (
-            <img src={coverUrl} alt={title} className="w-full h-full object-cover" />
+            <img
+              src={coverUrl}
+              alt={title}
+              className="w-full h-full object-cover"
+            />
           ) : (
-            <img src={trackFallback} alt={title || "track"} className="w-full h-full object-cover" />
+            <img
+              src={trackFallback}
+              alt={title || "track"}
+              className="w-full h-full object-cover"
+            />
           )}
         </div>
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col px-2 pb-1 pt-0.5 sm:px-4 sm:pb-3 sm:pt-0">
+      <div className="flex min-w-0 flex-1 flex-col px-2 pb-2 pt-2 sm:px-4 sm:pb-3 sm:pt-0">
         <div className="mb-1 flex flex-wrap items-start gap-1.5 sm:flex-nowrap sm:gap-3">
           <button
             onClick={handlePlayToggle}
@@ -425,22 +493,22 @@ export default function SongCard({
         </div>
 
         <div
-          className="relative mb-1 mt-0.5 flex h-[34px] w-full cursor-pointer items-center sm:h-[52px]"
+          className="relative mb-1 mt-0.5 flex h-[28px] w-full cursor-pointer items-center sm:h-[52px]"
           style={{ gap: `${GAP}px` }}
           onClick={handleWaveformClick}
           onMouseEnter={() => setIsWaveHovered(true)}
           onMouseLeave={() => setIsWaveHovered(false)}
         >
           <div className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-white/20" />
-          {bars.map((height, i) => {
-            const pos = i / (bars.length - 1);
+          {visibleBars.map((height, i) => {
+            const pos = i / (visibleBars.length - 1);
             const played = pos <= displayProgress;
             const showPlayedProgress = isThisTrack && played;
             const inactiveColor = isWaveHovered ? "#d8d8d8" : "#c8c8c8";
             const lowerNoise =
               (Math.sin(effectiveSeed * 0.017 + i * 1.913) + 1) / 2;
-            const topHeight = 8 + height * 29;
-            const bottomHeight = 2 + height * (4 + lowerNoise * 6);
+            const topHeight = 6 + height * 26;
+            const bottomHeight = 2 + height * (3 + lowerNoise * 5);
             const barColor = showPlayedProgress ? "#ff5500" : inactiveColor;
             return (
               <div
@@ -465,7 +533,11 @@ export default function SongCard({
                   style={{
                     height: `${bottomHeight}px`,
                     backgroundColor: barColor,
-                    opacity: showPlayedProgress ? 0.78 : isWaveHovered ? 0.78 : 0.66,
+                    opacity: showPlayedProgress
+                      ? 0.78
+                      : isWaveHovered
+                        ? 0.78
+                        : 0.66,
                     borderRadius: "1px",
                   }}
                 />
@@ -476,13 +548,18 @@ export default function SongCard({
         {isCollectionCard && playlistTracks.length > 0 ? (
           <div className="mb-2 mt-2 space-y-2">
             {playlistTracks.map((collectionTrack) => (
-              <div key={collectionTrack.id} className="flex items-center gap-2 py-0.5 text-sm text-zinc-300">
+              <div
+                key={collectionTrack.id}
+                className="flex items-center gap-2 py-0.5 text-sm text-zinc-300"
+              >
                 <img
                   src={collectionTrack.avatarUrl || trackFallback}
                   alt={collectionTrack.title}
                   className="h-7 w-7 rounded-[2px] object-cover"
                 />
-                <span className="text-zinc-400">{collectionTrack.number} ·</span>
+                <span className="text-zinc-400">
+                  {collectionTrack.number} ·
+                </span>
                 <span className="truncate">
                   <span
                     className={
@@ -510,17 +587,21 @@ export default function SongCard({
         ) : null}
 
         <div className="mt-1 flex flex-wrap items-center justify-between gap-1.5 sm:mt-2 sm:gap-2">
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:flex-none tracking-tight sm:gap-2">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1 sm:flex-none tracking-tight sm:gap-2">
             <button
               type="button"
               onClick={handleLikeToggle}
               disabled={isLikePending}
-              className={`flex h-8 shrink-0 items-center gap-1.5 rounded-[4px] bg-[#2f3033] ${isCollectionCard ? "w-8 justify-center px-0" : "px-3"} text-[13px] font-semibold transition-colors hover:bg-[#3a3b3f] disabled:opacity-60 ${
+              className={`flex h-7 shrink-0 items-center gap-1.5 rounded-[4px] bg-[#2f3033] ${isCollectionCard ? "w-7 justify-center px-0" : "px-2"} text-[11px] font-semibold transition-colors hover:bg-[#3a3b3f] disabled:opacity-60 sm:h-8 sm:text-[13px] ${
                 isLiked ? "text-[#ff5500]" : "text-zinc-100"
               }`}
               aria-label={`Like (${likesCount})`}
             >
-              <Heart size={16} fill={isLiked ? "#ff5500" : "none"} style={{ color: isLiked ? "#ff5500" : "currentColor" }} />
+              <Heart
+                size={16}
+                fill={isLiked ? "#ff5500" : "none"}
+                style={{ color: isLiked ? "#ff5500" : "currentColor" }}
+              />
               {!isCollectionCard ? <span>{likesCount}</span> : null}
             </button>
             {!isCollectionCard ? (
@@ -529,25 +610,33 @@ export default function SongCard({
                 onClick={handleRepostToggle}
                 disabled={repostDisabled || isRepostPending}
                 aria-label={isReposted ? "Undo repost" : "Repost"}
-                className={`flex h-8 shrink-0 items-center gap-1.5 rounded-[4px] bg-[#2f3033] px-3 text-[13px] font-semibold transition-colors hover:bg-[#3a3b3f] disabled:cursor-not-allowed disabled:opacity-60 ${
+                className={`flex h-7 shrink-0 items-center gap-1.5 rounded-[4px] bg-[#2f3033] px-2 text-[11px] font-semibold transition-colors hover:bg-[#3a3b3f] disabled:cursor-not-allowed disabled:opacity-60 sm:h-8 sm:px-3 sm:text-[13px] ${
                   isReposted ? "text-[#ff5500]" : "text-zinc-100"
                 }`}
               >
-                <Repeat2 size={16} style={{ color: isReposted ? "#ff5500" : "currentColor" }} />
+                <Repeat2
+                  size={16}
+                  style={{ color: isReposted ? "#ff5500" : "currentColor" }}
+                />
                 <span>{repostsCount}</span>
               </button>
             ) : null}
-            <button className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f]">
+            <button
+              type="button"
+              onClick={handleShareClick}
+              aria-label="Share"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f] sm:h-8 sm:w-8"
+            >
               <Share2 size={16} />
             </button>
-            <button className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f]">
+            <button className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f] sm:h-8 sm:w-8">
               <Copy size={16} />
             </button>
 
             <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setMenuOpen((prev) => !prev)}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f]"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f] sm:h-8 sm:w-8"
                 aria-label="More options"
               >
                 <MoreHorizontal size={16} />
@@ -610,16 +699,27 @@ export default function SongCard({
                       }`}
                     >
                       {downloading ? (
-                        <Loader2 size={14} className="animate-spin text-zinc-400" />
+                        <Loader2
+                          size={14}
+                          className="animate-spin text-zinc-400"
+                        />
                       ) : downloaded ? (
                         <Check size={14} className="text-green-400" />
                       ) : (
                         <Download
                           size={14}
-                          className={hasOfflineListening ? "text-zinc-300" : "text-zinc-500"}
+                          className={
+                            hasOfflineListening
+                              ? "text-zinc-300"
+                              : "text-zinc-500"
+                          }
                         />
                       )}
-                      {downloading ? "Downloading…" : downloaded ? "Downloaded" : "Download"}
+                      {downloading
+                        ? "Downloading…"
+                        : downloaded
+                          ? "Downloaded"
+                          : "Download"}
                     </button>
 
                     {showAlreadyDownloaded && downloaded && (
@@ -669,7 +769,12 @@ export default function SongCard({
 
           <div className="ml-auto hidden shrink-0 items-center gap-4 text-[13px] font-medium text-[#8f8f8f] sm:flex">
             <span className="flex items-center gap-1.5">
-              <svg width="12" height="12" viewBox="0 0 14 14" fill="currentColor">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 14 14"
+                fill="currentColor"
+              >
                 <polygon points="2,0 14,7 2,14" />
               </svg>
               {plays}
@@ -688,6 +793,12 @@ export default function SongCard({
         defaultCoverUrl={coverUrl}
         autoAddTrackId={trackId}
       />
+      {showShareOverlay && (
+        <ShareOverlay
+          onClose={() => setShowShareOverlay(false)}
+          shareUrl={shareUrl}
+        />
+      )}
     </div>
   );
 }

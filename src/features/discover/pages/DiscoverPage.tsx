@@ -4,11 +4,13 @@ import SideBar from "@/components/layout/Sidebar";
 import type {
   DiscoverArtist,
   DiscoverTrack,
+  RecommendationItemDto,
 } from "@/features/discover/Discover";
 import { ArtistsToWatchSection } from "../components/ArtistsToWatchSection";
 import { DiscoverSection } from "../components/DiscoverSection";
 import {
   getDiscoverTracks,
+  getRecommendations,
   getSuggestedArtists,
   getTrendingAlbums,
   getTrendingTracks,
@@ -16,10 +18,64 @@ import {
 import { usePlayContext } from "@/hooks/usePlayContext";
 import { useMe } from "@/features/profile/context/useMe";
 
+const RECENTLY_PLAYED_KEY = "recentlyPlayed";
+
+type RecentlyPlayedEntry = {
+  id: string;
+  title: string;
+  artworkUrl?: string;
+  entityType?: "track" | "playlist" | "album";
+  linkTo?: string;
+};
+
+function loadRecentlyPlayedFromStorage(): DiscoverTrack[] {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const raw = localStorage.getItem(RECENTLY_PLAYED_KEY);
+    if (!raw) return [];
+    const entries = JSON.parse(raw) as RecentlyPlayedEntry[];
+
+    return entries
+      .filter((entry) => (entry.entityType ?? "track") === "track")
+      .map((entry) => ({
+        id: entry.id,
+        title: entry.title,
+        artist: "Recently played",
+        coverUrl: entry.artworkUrl ?? "",
+        waveformUrl: "",
+        durationSeconds: 0,
+        genre: null,
+        createdAt: "",
+      }));
+  } catch {
+    return [];
+  }
+}
+
+const mapRecommendationToDiscoverTrack = (
+  item: RecommendationItemDto,
+): DiscoverTrack => ({
+  id: item.trackId,
+  title: item.title,
+  artist: item.artist,
+  coverUrl: item.coverUrl ?? "",
+  waveformUrl: item.waveformUrl ?? "",
+  durationSeconds: item.durationInSeconds ?? 0,
+  genre: item.genre ?? null,
+  createdAt: "",
+});
+
 export default function DiscoverPage() {
   const [discoverTracks, setDiscoverTracks] = useState<DiscoverTrack[]>([]);
+  const [recentlyPlayedTracks] = useState<DiscoverTrack[]>(
+    loadRecentlyPlayedFromStorage,
+  );
   const [albumTracks, setAlbumTracks] = useState<DiscoverTrack[]>([]);
   const [madeForYouTracks, setMadeForYouTracks] = useState<DiscoverTrack[]>([]);
+  const [trendingByGenreTracks, setTrendingByGenreTracks] = useState<
+    DiscoverTrack[]
+  >([]);
   const [artistsToWatchTracks, setArtistsToWatchTracks] = useState<
     DiscoverArtist[]
   >([]);
@@ -37,19 +93,28 @@ export default function DiscoverPage() {
         setError(null);
         const [
           discoverResponse,
+          recommendationsResponse,
           suggestedArtistsResponse,
           trendingAlbumsResponse,
           trendingTracksResponse,
         ] = await Promise.all([
           getDiscoverTracks({ page: 1, limit: 20 }),
+          getRecommendations({ page: 1, limit: 20 }),
           getSuggestedArtists({ page: 1, limit: 10 }),
-          getTrendingAlbums({ period: "week" }),
-          getTrendingTracks({ type: "track", period: "week" }),
+          getTrendingAlbums({ period: "month" }),
+          getTrendingTracks({ type: "track", period: "month" }),
         ]);
 
         if (isMounted) {
           setDiscoverTracks(
             Array.isArray(discoverResponse.items) ? discoverResponse.items : [],
+          );
+          const recommendations = Array.isArray(recommendationsResponse.data)
+            ? recommendationsResponse.data
+            : [];
+
+          setMadeForYouTracks(
+            recommendations.map(mapRecommendationToDiscoverTrack),
           );
           setArtistsToWatchTracks(
             Array.isArray(suggestedArtistsResponse.items)
@@ -61,7 +126,7 @@ export default function DiscoverPage() {
               ? trendingAlbumsResponse.items
               : [],
           );
-          setMadeForYouTracks(
+          setTrendingByGenreTracks(
             Array.isArray(trendingTracksResponse.items)
               ? trendingTracksResponse.items
               : [],
@@ -87,10 +152,7 @@ export default function DiscoverPage() {
 
   const discoverSections = [
     { title: "More of what you like", tracks: discoverTracks },
-    // {
-    //   title: "Recently Played",
-    //   tracks: recentlyPlayedTracks,
-    // },
+    { title: "Recently Played", tracks: recentlyPlayedTracks },
     {
       title: "Albums for you",
       tracks: albumTracks,
@@ -99,6 +161,7 @@ export default function DiscoverPage() {
       title: "Made for you",
       tracks: madeForYouTracks,
     },
+    { title: "Trending by genre", tracks: trendingByGenreTracks },
   ];
 
   const hasAnyTracks =

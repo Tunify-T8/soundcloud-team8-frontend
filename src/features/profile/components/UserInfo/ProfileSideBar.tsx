@@ -18,7 +18,7 @@ import { FiInfo } from "react-icons/fi";
 import { Ticket, Heart, Play, Repeat2, MessageSquare } from "lucide-react";
 import type { FollowingUser } from "../../../../shared/types/User";
 import { followingService } from "../../../following/followingService";
-import avatarFallback from '@/assets/avatar.png';
+import avatarFallback from "@/assets/avatar.png";
 import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
 import { useMe } from "@/features/profile/context/useMe";
 import { feedService } from "@/features/feed/feedservice";
@@ -57,12 +57,13 @@ export default function ProfileSideBar({
   const [localFollowerUsers, setLocalFollowerUsers] = useState<FollowingUser[]>(
     followerUsers ?? [],
   );
-  const [localFollowingUsers, setLocalFollowingUsers] = useState<FollowingUser[]>(
-    followingUsers ?? [],
-  );
+  const [localFollowingUsers, setLocalFollowingUsers] = useState<
+    FollowingUser[]
+  >(followingUsers ?? []);
   const [followStates, setFollowStates] = useState<Record<string, boolean>>({});
   const [pendingFollowId, setPendingFollowId] = useState<string | null>(null);
   const [likedTracks, setLikedTracks] = useState<LikedTrack[]>([]);
+  const [likedTracksCount, setLikedTracksCount] = useState(0);
   const [likesLoading, setLikesLoading] = useState(true);
   const { me } = useMe();
 
@@ -80,16 +81,28 @@ export default function ProfileSideBar({
     const loadLikes = async () => {
       setLikesLoading(true);
       try {
-        const data =
+        const likesResponse =
           profileId && me?.id && profileId !== me.id
-            ? await feedService.getUserLikes(profileId, 6)
-            : await feedService.getMyLikes(6);
+            ? await feedService.getUserLikesPage(profileId, 1, 6)
+            : await feedService.getMyLikesPage(1, 6);
+
+        let totalCount = likesResponse.items.length;
+        if (likesResponse.hasMore) {
+          const nextPage =
+            profileId && me?.id && profileId !== me.id
+              ? await feedService.getUserLikesPage(profileId, 2, 6)
+              : await feedService.getMyLikesPage(2, 6);
+          totalCount += nextPage.items.length;
+        }
+
         if (isMounted) {
-          setLikedTracks(data);
+          setLikedTracks(likesResponse.items);
+          setLikedTracksCount(totalCount);
         }
       } catch {
         if (isMounted) {
           setLikedTracks([]);
+          setLikedTracksCount(0);
         }
       } finally {
         if (isMounted) {
@@ -157,7 +170,11 @@ export default function ProfileSideBar({
   );
 
   // ✅ Use the viewed profile's id/username for links, fall back to me if not provided
-  const userPath = profileId ? `/${profileId}` : me?.username ? `/${me.username}` : "/me";
+  const userPath = profileId
+    ? `/${profileId}`
+    : me?.username
+      ? `/${me.username}`
+      : "/me";
 
   const userInfo = [
     { label: "Followers", path: `${userPath}/followers`, value: followers },
@@ -282,20 +299,21 @@ export default function ProfileSideBar({
           With an Artist Pro account, you can create ticketed live events on
           SoundCloud, and list existing events.
         </p>
-        <ArtistProUpgradeButton
-          className="mt-4 flex w-full items-center justify-center rounded-full bg-white px-6 py-2.5 text-[13px] font-bold text-zinc-900 transition-colors hover:bg-zinc-100 sm:py-3 sm:text-[14px]"
-        >
+        <ArtistProUpgradeButton className="mt-4 flex w-full items-center justify-center rounded-full bg-white px-6 py-2.5 text-[13px] font-bold text-zinc-900 transition-colors hover:bg-zinc-100 sm:py-3 sm:text-[14px]">
           Upgrade to Artist Pro
         </ArtistProUpgradeButton>
       </div>
       <div className="mt-6">
         <div className="flex items-center justify-between">
           <span className="text-[12px] font-extrabold uppercase leading-none tracking-wide text-white">
-            {likedTracks.length > 0 ? `${likedTracks.length} LIKES` : "LIKES"}
+            {likedTracksCount > 0 ? `${likedTracksCount} LIKES` : "LIKES"}
           </span>
-          <button className="text-[13px] text-zinc-500 hover:text-zinc-300">
+          <Link
+            to={`${userPath}/likes`}
+            className="text-[13px] text-zinc-500 hover:text-zinc-300"
+          >
             View all
-          </button>
+          </Link>
         </div>
 
         {likesLoading ? (
@@ -368,7 +386,8 @@ export default function ProfileSideBar({
                 followingUser.displayName ?? followingUser.username;
               const followingFollowersCount =
                 followingUser.followersCount ?? "0";
-              const followingRouteId = followingUser.username || followingUser.id;
+              const followingRouteId =
+                followingUser.username || followingUser.id;
 
               return (
                 <div
@@ -405,7 +424,10 @@ export default function ProfileSideBar({
                       const userId = followingUser.id;
                       const wasFollowing = followStates[userId] ?? false;
                       setPendingFollowId(userId);
-                      setFollowStates((prev) => ({ ...prev, [userId]: !wasFollowing }));
+                      setFollowStates((prev) => ({
+                        ...prev,
+                        [userId]: !wasFollowing,
+                      }));
                       try {
                         if (wasFollowing) {
                           await followingService.unfollowUser(userId);
@@ -414,7 +436,10 @@ export default function ProfileSideBar({
                           await followingService.followUser(userId);
                         }
                       } catch {
-                        setFollowStates((prev) => ({ ...prev, [userId]: wasFollowing }));
+                        setFollowStates((prev) => ({
+                          ...prev,
+                          [userId]: wasFollowing,
+                        }));
                       } finally {
                         setPendingFollowId((current) =>
                           current === userId ? null : current,
@@ -424,7 +449,9 @@ export default function ProfileSideBar({
                     disabled={pendingFollowId === followingUser.id}
                     className="shrink-0 rounded-md bg-zinc-800 px-3 py-2 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 sm:text-[14px]"
                   >
-                    {followStates[followingUser.id] ?? true ? "Following" : "Follow"}
+                    {(followStates[followingUser.id] ?? true)
+                      ? "Following"
+                      : "Follow"}
                   </button>
                 </div>
               );
@@ -432,7 +459,7 @@ export default function ProfileSideBar({
           </div>
         </div>
       )}
-      <div>
+      <div className="mt-6">
         <span className="text-xs font-bold tracking-wide text-white">
           GO MOBILE
         </span>

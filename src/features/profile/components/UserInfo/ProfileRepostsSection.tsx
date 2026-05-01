@@ -28,6 +28,7 @@ interface ProfileRepostsSectionProps {
   meDisplayName?: string | null;
   meUsername?: string;
   className?: string;
+  hideEmptyState?: boolean;
 }
 
 export default function ProfileRepostsSection({
@@ -35,6 +36,7 @@ export default function ProfileRepostsSection({
   meDisplayName,
   meUsername,
   className = "",
+  hideEmptyState = false,
 }: ProfileRepostsSectionProps) {
   const [reposts, setReposts] = useState<RepostItemDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,15 +74,52 @@ export default function ProfileRepostsSection({
   }, [isMeView]);
 
   const content = useMemo(() => {
-    if (loading) return <p data-testid="profile-reposts-loading" className="py-10 text-sm text-zinc-400">Loading reposts...</p>;
-    if (error) return <p data-testid="profile-reposts-error" className="py-10 text-sm text-red-400">{error}</p>;
-    if (!isMeView) return <p data-testid="profile-reposts-not-available" className="py-10 text-sm text-zinc-400">Reposts are only available on your profile for now.</p>;
-    if (reposts.length === 0) return <p data-testid="profile-reposts-empty" className="py-10 text-sm text-zinc-400">No reposts yet.</p>;
+    if (loading)
+      return (
+        <p
+          data-testid="profile-reposts-loading"
+          className="py-10 text-sm text-zinc-400"
+        >
+          Loading reposts...
+        </p>
+      );
+    if (error)
+      return (
+        <p
+          data-testid="profile-reposts-error"
+          className="py-10 text-sm text-red-400"
+        >
+          {error}
+        </p>
+      );
+    if (!isMeView) {
+      return hideEmptyState ? null : (
+        <p
+          data-testid="profile-reposts-not-available"
+          className="py-10 text-sm text-zinc-400"
+        >
+          Reposts are only available on your profile for now.
+        </p>
+      );
+    }
+    if (reposts.length === 0) {
+      return hideEmptyState ? null : (
+        <p
+          data-testid="profile-reposts-empty"
+          className="py-10 text-sm text-zinc-400"
+        >
+          No reposts yet.
+        </p>
+      );
+    }
 
     return (
       <div data-testid="profile-reposts-list" className="mt-8 space-y-8">
         {reposts.map((item) => (
-          <div key={item.repostId} data-testid={`profile-repost-item-${item.repostId}`}>
+          <div
+            key={item.repostId}
+            data-testid={`profile-repost-item-${item.repostId}`}
+          >
             <SongCard
               trackId={item.track.id}
               artistName={meDisplayName || meUsername || "Artist"}
@@ -99,5 +138,9 @@ export default function ProfileRepostsSection({
     );
   }, [error, isMeView, loading, meDisplayName, meUsername, reposts]);
 
-  return <div data-testid="profile-reposts-section" className={className}>{content}</div>;
+  return (
+    <div data-testid="profile-reposts-section" className={className}>
+      {content}
+    </div>
+  );
 }
