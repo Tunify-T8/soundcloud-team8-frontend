@@ -50,6 +50,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const queueBuildRequestRef = useRef(0);
 
   const syncCurrentTrack = (track: TrackMeta) => {
+    queueBuildRequestRef.current += 1;
     pushRecentlyPlayed(track);
     setCurrentTrackState(track);
     setProgress(0);

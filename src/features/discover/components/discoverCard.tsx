@@ -1,11 +1,59 @@
 import type { DiscoverTrack } from "@/features/discover/Discover";
 import imageFallback from "@/assets/track.jpg";
 import { usePlayer } from "@/features/playerUI/context/usePlayer";
+import { useDispatch } from "react-redux";
+import { setQueue } from "@/store/queueSlice";
 
-export function DiscoverCard({ item }: { item: DiscoverTrack }) {
-  const { currentTrack, isPlaying, setCurrentTrack, setIsPlaying } = usePlayer();
+type DiscoverCardProps = {
+  item: DiscoverTrack;
+  queueTracks: DiscoverTrack[];
+  trackIndex: number;
+  queueId: string;
+};
+
+export function DiscoverCard({
+  item,
+  queueTracks,
+  trackIndex,
+  queueId,
+}: DiscoverCardProps) {
+  const dispatch = useDispatch();
+  const { currentTrack, isPlaying, syncCurrentTrack, setIsPlaying } = usePlayer();
   const isThisTrack = currentTrack?.id === item.id;
   const playing = isThisTrack && isPlaying;
+
+  const playDiscoverTrack = () => {
+    syncCurrentTrack({
+      id: item.id,
+      title: item.title,
+      artist: item.artist,
+      thumbnailUrl: item.coverUrl || undefined,
+      artworkUrl: item.coverUrl || undefined,
+      duration: item.durationSeconds || 0,
+    });
+
+    dispatch(
+      setQueue({
+        tracks: queueTracks.map((track) => ({
+          trackId: track.id,
+          title: track.title,
+          artist: track.artist,
+          durationSeconds: track.durationSeconds || 0,
+          thumbnailUrl: track.coverUrl || undefined,
+          artworkUrl: track.coverUrl || undefined,
+        })),
+        currentIndex: trackIndex,
+        shuffle: false,
+        repeat: "none",
+        totalCount: queueTracks.length,
+        activeContext: {
+          contextType: "feed",
+          contextId: `discover:${queueId}`,
+        },
+      }),
+    );
+    setIsPlaying(true);
+  };
 
   const handlePlayClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -15,14 +63,7 @@ export function DiscoverCard({ item }: { item: DiscoverTrack }) {
     if (isThisTrack) {
       setIsPlaying(!isPlaying);
     } else {
-      setCurrentTrack({
-        id: item.id,
-        title: item.title,
-        artist: item.artist,
-        thumbnailUrl: item.coverUrl || undefined,
-        duration: item.durationSeconds || 0,
-      });
-      setIsPlaying(true);
+      playDiscoverTrack();
     }
   };
 
@@ -32,14 +73,7 @@ export function DiscoverCard({ item }: { item: DiscoverTrack }) {
     if (isThisTrack) {
       setIsPlaying(!isPlaying);
     } else {
-      setCurrentTrack({
-        id: item.id,
-        title: item.title,
-        artist: item.artist,
-        thumbnailUrl: item.coverUrl || undefined,
-        duration: item.durationSeconds || 0,
-      });
-      setIsPlaying(true);
+      playDiscoverTrack();
     }
   };
 

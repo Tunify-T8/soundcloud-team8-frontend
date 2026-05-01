@@ -76,6 +76,9 @@ export interface queueTrack {
   title:           string;
   artist:          string;
   durationSeconds: number;
+  thumbnailUrl?:   string;
+  artworkUrl?:     string;
+  privateToken?:   string;
 }
 
 export interface buildQueueParams {

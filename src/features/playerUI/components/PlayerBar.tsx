@@ -71,7 +71,6 @@ export default function PlayerBar() {
   const trackId      = currentTrack?.id      ?? "";
   const trackTitle   = currentTrack?.title   ?? "";
   const trackArtist  = currentTrack?.artist  ?? "";
-  const thumbnailUrl = currentTrack?.thumbnailUrl;
   const offlineSrc   = currentTrack?.offlineSrc;
   const privateToken = currentTrack?.privateToken;
 
@@ -91,6 +90,7 @@ export default function PlayerBar() {
     toggleMute,
     audioRef,
   } = usePlayback({ trackId, privateToken, autoPlay: contextIsPlaying, offlineSrc });
+  const thumbnailUrl = currentTrack?.thumbnailUrl ?? currentTrack?.artworkUrl ?? bundle?.coverUrl;
 
   const isPlaying   = status === "playing";
   const uiIsPlaying = contextIsPlaying || isPlaying;
@@ -159,6 +159,9 @@ export default function PlayerBar() {
       id:       queueCurrentTrack.trackId,
       title:    queueCurrentTrack.title,
       artist:   queueCurrentTrack.artist,
+      thumbnailUrl: queueCurrentTrack.thumbnailUrl,
+      artworkUrl: queueCurrentTrack.artworkUrl,
+      privateToken: queueCurrentTrack.privateToken,
       duration: queueCurrentTrack.durationSeconds,
     });
     setIsPlaying(true);

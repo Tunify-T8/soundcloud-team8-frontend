@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import type { Track } from "@/shared/types/Track";
 import { usePlayer } from "@/features/playerUI/context/usePlayer";
+import { trackService } from "../trackService";
 import amplify from "@/assets/amplify.png";
 import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
 import TrackDeleteConfirmModal from "./TrackDeleteConfirmModal";
@@ -180,17 +181,32 @@ export default function TrackCard({
   const isThisTrack = currentTrack?.id === track.id;
   const playing = isThisTrack && isPlaying;
 
-  const handlePlayToggle = (e: React.MouseEvent) => {
+  const handlePlayToggle = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isThisTrack) {
       setIsPlaying(!isPlaying);
     } else {
+      let playableTrack = track;
+
+      if (
+        track.isPrivate &&
+        (!track.privateToken || !track.audioUrl)
+      ) {
+        try {
+          playableTrack = await trackService.getTrackDetails(track.id);
+        } catch {
+          playableTrack = track;
+        }
+      }
+
       setCurrentTrack({
-        id: track.id,
-        title: track.title,
-        artist: track.artist,
-        privateToken: track.privateToken ?? undefined,
-        duration: 0,
+        id: playableTrack.id,
+        title: playableTrack.title,
+        artist: playableTrack.artist,
+        thumbnailUrl: playableTrack.thumbnailUrl ?? undefined,
+        artworkUrl: playableTrack.thumbnailUrl ?? undefined,
+        privateToken: playableTrack.privateToken ?? undefined,
+        duration: playableTrack.duration ?? 0,
       });
       setIsPlaying(true);
     }
