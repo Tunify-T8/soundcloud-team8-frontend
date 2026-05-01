@@ -6,7 +6,9 @@ import {
 import type { Track } from "@/shared/types/Track";
 import { usePlayer } from "@/features/playerUI/context/usePlayer";
 import { useSubscription } from "@/hooks/useSubscription";
+import { playbackService } from "@/features/player-core/Playbackservice";
 import { trackService } from "../trackService";
+import CreatePlaylistOverlay from "@/features/library/tabs/playlists/components/CreatePlaylistOverlay";
 import amplify from "@/assets/amplify.png";
 import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
 import TrackDeleteConfirmModal from "./TrackDeleteConfirmModal";
@@ -145,7 +147,6 @@ interface TrackCardProps {
   isSelected?: boolean;
   onSelect?: (id: string) => void;
   onEdit?: (id: string) => void;
-  onAddToPlaylist?: (id: string) => void;
   onMonetize?: (id: string) => void;
   onMaster?: (id: string) => void;
   onDistribute?: (id: string) => void;
@@ -198,7 +199,6 @@ export default function TrackCard({
   isSelected = false,
   onSelect,
   onEdit,
-  onAddToPlaylist,
   onMonetize,
   onMaster,
   onDistribute,
@@ -212,10 +212,14 @@ export default function TrackCard({
   const [dropdownUp, setDropdownUp] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showAmplifyModal, setShowAmplifyModal] = useState(false);
+  const [showPlaylistOverlay, setShowPlaylistOverlay] = useState(false);
   const [amplifyHovered, setAmplifyHovered] = useState(false);
+  const [downloadState, setDownloadState] = useState<"idle" | "loading" | "done">("idle");
   const menuRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const downloadDoneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { isArtistPro } = useSubscription();
+  const fallbackDownload = onDownload;
 
   const { currentTrack, isPlaying, setCurrentTrack, setIsPlaying } = usePlayer();
   const isThisTrack = currentTrack?.id === track.id;
@@ -254,6 +258,43 @@ export default function TrackCard({
 
   const fmt = (val: number | null | undefined) =>
     val === null || val === 0 || val === undefined ? "-" : val.toString();
+
+  useEffect(() => {
+    return () => {
+      if (downloadDoneTimerRef.current) {
+        clearTimeout(downloadDoneTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleDownloadTrack = async () => {
+    if (!track.id || downloadState === "loading") return;
+
+    try {
+      setDownloadState("loading");
+      const streamData = await playbackService.requestStreamUrl(track.id);
+      const audioResponse = await fetch(streamData.stream.url);
+      const audioBlob = await audioResponse.blob();
+      const objectUrl = URL.createObjectURL(audioBlob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = `${track.title || "track"}.${streamData.stream.format === "hls" ? "m3u8" : "mp3"}`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+
+      setDownloadState("done");
+      if (downloadDoneTimerRef.current) clearTimeout(downloadDoneTimerRef.current);
+      downloadDoneTimerRef.current = setTimeout(() => {
+        setDownloadState("idle");
+      }, 1400);
+    } catch (error) {
+      console.error("Download failed:", error);
+      setDownloadState("idle");
+      fallbackDownload?.(track.id);
+    }
+  };
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -416,7 +457,7 @@ export default function TrackCard({
               ${dropdownUp ? "bottom-full mb-1" : "top-full mt-1"}`}
           >
             <MenuItem icon={<Pencil className="w-4 h-4" />} label="Edit" onClick={() => { onEdit?.(track.id); setMenuOpen(false); }} />
-            <MenuItem icon={<ListPlus className="w-4 h-4" />} label="Add to playlist" onClick={() => { onAddToPlaylist?.(track.id); setMenuOpen(false); }} />
+            <MenuItem icon={<ListPlus className="w-4 h-4" />} label="Add to playlist" onClick={() => { setShowPlaylistOverlay(true); setMenuOpen(false); }} />
             {/* Amplify in menu on mobile */}
             <div className="sm:hidden">
               <MenuItem icon={<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1L9 6H14L10 9.5L11.5 14L7 11L2.5 14L4 9.5L0 6H5L7 1Z" fill="currentColor" /></svg>} label="Amplify" onClick={() => { setShowAmplifyModal(true); setMenuOpen(false); }} />
@@ -431,20 +472,7 @@ export default function TrackCard({
               label="Download file"
               onClick={async () => {
                 setMenuOpen(false);
-                if (track.audioUrl) {
-                  try {
-                    const a = document.createElement("a");
-                    a.href = track.audioUrl;
-                    a.download = `${track.title}.mp3`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                  } catch (e) {
-                    console.error("Download failed:", e);
-                  }
-                } else {
-                  onDownload?.(track.id);
-                }
+                await handleDownloadTrack();
               }}
             />
             <MenuItem icon={<Link className="w-4 h-4" />} label="Copy link" onClick={() => { onCopyLink?.(track.id); setMenuOpen(false); }} />
@@ -467,6 +495,54 @@ export default function TrackCard({
             onDelete?.(id);
           }}
         />
+      )}
+
+      {showPlaylistOverlay && (
+        <CreatePlaylistOverlay
+          isOpen={showPlaylistOverlay}
+          onClose={() => setShowPlaylistOverlay(false)}
+          track={{
+            id: track.id,
+            title: track.title,
+            artist: track.artist,
+            coverUrl: track.thumbnailUrl || "",
+          }}
+          defaultCoverUrl={track.thumbnailUrl || ""}
+          autoAddTrackId={track.id}
+        />
+      )}
+
+      {downloadState !== "idle" && (
+        <div className="fixed inset-0 z-[140] flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/45 backdrop-blur-[1px]" />
+          <div className="relative w-full max-w-[420px] rounded-2xl border border-zinc-700 bg-[#121212] px-6 py-5 shadow-2xl">
+            <div className="flex items-start gap-4">
+              <div
+                className={`mt-0.5 flex h-10 w-10 items-center justify-center rounded-full ${
+                  downloadState === "done" ? "bg-emerald-500/20 text-emerald-400" : "bg-indigo-500/20 text-indigo-300"
+                }`}
+              >
+                {downloadState === "done" ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ) : (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-white">
+                  {downloadState === "done" ? "Done" : "Downloading your file shortly..."}
+                </p>
+                <p className={`mt-1 text-xs leading-relaxed ${downloadState === "done" ? "text-emerald-400" : "text-zinc-400"}`}>
+                  {downloadState === "done"
+                    ? "Your browser has started downloading the track."
+                    : "We’re preparing the stream URL and starting the download."}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
