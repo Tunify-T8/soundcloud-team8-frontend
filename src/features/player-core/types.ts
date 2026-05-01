@@ -76,6 +76,9 @@ export interface queueTrack {
   title:           string;
   artist:          string;
   durationSeconds: number;
+  thumbnailUrl?:   string;
+  artworkUrl?:     string;
+  privateToken?:   string;
 }
 
 export interface buildQueueParams {
@@ -143,6 +146,7 @@ export interface useQueueReturn {
   jumpTo:         (index: number) => void;
   toggleShuffle:  () => void;
   toggleRepeat:   () => void;
+  setRepeatMode:  (mode: repeatMode) => void;
   clearQueue:     () => void;
 }
 
@@ -175,6 +179,7 @@ export interface usePlaybackReturn {
   volume:                  number;
   isMuted:                 boolean;
   buffered:                number;
+  endedCount:              number;
   previewSecondsRemaining: number | null;
   play:                    () => void;
   pause:                   () => void;

@@ -8,6 +8,12 @@ import type {
 } from '../types/auth.types';
 
 const IS_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
+const CLIENT_CACHE_KEYS = [
+  "profile_context_cache_v1",
+  "discover_page_cache_v1",
+  "feed_page_cache_v1",
+  "ad-popup-seen",
+] as const;
 
 const delay = (ms = 800) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -139,6 +145,16 @@ const linkGoogleAccount = async (linkingToken: string, password: string) => {
 
 export const googleSignIn = sendGoogleCode;
 export const googleLink = linkGoogleAccount;
+export const clearClientSessionData = () => {
+  try {
+    for (const key of CLIENT_CACHE_KEYS) {
+      window.localStorage.removeItem(key);
+      window.sessionStorage.removeItem(key);
+    }
+  } catch {
+    // Ignore storage cleanup failures during sign-out cleanup.
+  }
+};
 
 // ── 8. Logout ─────────────────────────────────────────────────
 const mockLogout = async (): Promise<void> => {
@@ -148,10 +164,13 @@ const mockLogout = async (): Promise<void> => {
 
 const realLogout = async (): Promise<void> => {
   const refreshToken = getRefreshToken();
-  if (refreshToken) {
-    await api.post('/auth/signout', { refreshToken });
+  try {
+    if (refreshToken) {
+      await api.post('/auth/signout', { refreshToken });
+    }
+  } finally {
+    clearTokens();
   }
-  clearTokens();
 };
 
 export const logout = IS_MOCK ? mockLogout : realLogout;

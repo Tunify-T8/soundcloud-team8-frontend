@@ -12,14 +12,48 @@ import { usePlayback } from "@/hooks/Useplayback";
 import { useQueue } from "@/hooks/useQueue";
 import { usePlayer } from "@/features/playerUI/context/usePlayer";
 import NextUpPanel from "./NextUpPanel";
-import { Link } from "react-router-dom";
 import { useEngagement } from "@/features/engagement/hooks/useEngagement";
+import { followingService } from "@/features/following/followingService";
 
 const formatTime = (s: number) => {
   const m = Math.floor(s / 60);
   const sec = Math.floor(s % 60);
   return `${m}:${sec.toString().padStart(2, "0")}`;
 };
+
+const createHistoryKey = () => Math.random().toString(36).slice(2, 10);
+
+function navigateWithinApp(
+  event: React.MouseEvent<HTMLElement>,
+  href: string,
+  state?: unknown,
+) {
+  if (
+    event.defaultPrevented ||
+    event.button !== 0 ||
+    event.metaKey ||
+    event.altKey ||
+    event.ctrlKey ||
+    event.shiftKey
+  ) {
+    return;
+  }
+
+  event.preventDefault();
+
+  const currentState = window.history.state ?? {};
+  window.history.pushState(
+    {
+      ...currentState,
+      usr: state,
+      key: createHistoryKey(),
+      idx: typeof currentState.idx === "number" ? currentState.idx + 1 : 1,
+    },
+    "",
+    href,
+  );
+  window.dispatchEvent(new PopStateEvent("popstate", { state: window.history.state }));
+}
 
 export default function PlayerBar() {
   const {
@@ -28,6 +62,7 @@ export default function PlayerBar() {
     pendingSeek,
     setIsPlaying,
     setCurrentTrack,
+    syncCurrentTrack,
     setProgress,
     requestSeek,
     clearPendingSeek,
@@ -36,8 +71,8 @@ export default function PlayerBar() {
   const trackId      = currentTrack?.id      ?? "";
   const trackTitle   = currentTrack?.title   ?? "";
   const trackArtist  = currentTrack?.artist  ?? "";
-  const thumbnailUrl = currentTrack?.thumbnailUrl;
   const offlineSrc   = currentTrack?.offlineSrc;
+  const privateToken = currentTrack?.privateToken;
 
   const {
     status,
@@ -46,46 +81,40 @@ export default function PlayerBar() {
     volume,
     isMuted,
     buffered,
+    bundle,
+    endedCount,
     play,
     pause,
     seek,
     setVolume,
     toggleMute,
     audioRef,
-  } = usePlayback({ trackId, autoPlay: false, offlineSrc });
+  } = usePlayback({ trackId, privateToken, autoPlay: contextIsPlaying, offlineSrc });
+  const thumbnailUrl = currentTrack?.thumbnailUrl ?? currentTrack?.artworkUrl ?? bundle?.coverUrl;
 
   const isPlaying   = status === "playing";
   const uiIsPlaying = contextIsPlaying || isPlaying;
 
-  const { isLiked, toggleLike, loading: likeLoading } = useEngagement(trackId);
+  const { isLiked, toggleLike } = useEngagement(trackId);
+  const artistId = bundle?.artist.id ?? null;
+  const [isFollowingArtist, setIsFollowingArtist] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
 
   useEffect(() => {
     if (!trackId) return;
     if (contextIsPlaying) {
-      if (status === "paused") play();
-    } else if (status === "playing") {
-      pause();
+      play();
+      return;
     }
+    pause();
   }, [contextIsPlaying, trackId, play, pause]);
 
   useEffect(() => {
     if (!trackId) return;
-    if (contextIsPlaying && status === "ready") play();
-  }, [contextIsPlaying, status, trackId, play]);
-
-  useEffect(() => {
-    const prevStatus = prevStatusRef.current;
-    if (
-      (status === "paused" || status === "idle" || status === "blocked" || status === "error") &&
-      prevStatus === "playing" &&
-      contextIsPlaying
-    
-    ) 
-    {
+    if (status === "blocked" || status === "error") {
       setIsPlaying(false);
     }
-    prevStatusRef.current = status;
-  }, [status, contextIsPlaying, setIsPlaying]);
+  }, [trackId, status, setIsPlaying]);
 
   useEffect(() => {
     const nextProgress = duration > 0 ? Math.min(1, Math.max(0, currentTime / duration)) : 0;
@@ -106,20 +135,33 @@ export default function PlayerBar() {
 
   const hideTimer     = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPlayingRef  = useRef(isPlaying);
-  const prevStatusRef = useRef(status);
+  const handledEndedCountRef = useRef(0);
 
   // No more hardcoded loadQueue here.
   // Queue is built by playTrack() when the user clicks play on a track.
-  const { next, prev, shuffle, repeat, toggleShuffle, toggleRepeat, currentTrack: queueCurrentTrack, currentTrackId: queueCurrentTrackId } = useQueue();
+  const {
+    next,
+    prev,
+    hasNext,
+    shuffle,
+    repeat,
+    toggleShuffle,
+    setRepeatMode,
+    currentTrack: queueCurrentTrack,
+    currentTrackId: queueCurrentTrackId,
+  } = useQueue();
 
   // When next/prev/jumpTo changes the queue index, sync PlayerContext
   useEffect(() => {
     if (!queueCurrentTrack || !queueCurrentTrackId) return;
     if (queueCurrentTrackId === currentTrack?.id) return;
-    setCurrentTrack({
+    syncCurrentTrack({
       id:       queueCurrentTrack.trackId,
       title:    queueCurrentTrack.title,
       artist:   queueCurrentTrack.artist,
+      thumbnailUrl: queueCurrentTrack.thumbnailUrl,
+      artworkUrl: queueCurrentTrack.artworkUrl,
+      privateToken: queueCurrentTrack.privateToken,
       duration: queueCurrentTrack.durationSeconds,
     });
     setIsPlaying(true);
@@ -128,6 +170,50 @@ export default function PlayerBar() {
   useEffect(() => {
     isPlayingRef.current = uiIsPlaying;
   }, [uiIsPlaying]);
+
+  useEffect(() => {
+    if (!artistId) {
+      setIsFollowingArtist(false);
+      return;
+    }
+
+    let active = true;
+
+    followingService
+      .getFollowStatus(artistId)
+      .then((status) => {
+        if (!active) return;
+        setIsFollowingArtist(Boolean(status.isFollowing));
+      })
+      .catch(() => {
+        if (!active) return;
+        setIsFollowingArtist(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [artistId]);
+
+  useEffect(() => {
+    if (!endedCount || endedCount === handledEndedCountRef.current) return;
+    handledEndedCountRef.current = endedCount;
+
+    if (repeat === "one") {
+      seek(0);
+      setIsPlaying(true);
+      play();
+      return;
+    }
+
+    if (hasNext) {
+      next();
+      setIsPlaying(true);
+      return;
+    }
+
+    setIsPlaying(false);
+  }, [endedCount, repeat, hasNext, seek, play, next, setIsPlaying]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -169,7 +255,38 @@ export default function PlayerBar() {
 
   const progressPct  = Math.min(100, Math.max(0, duration > 0 ? (currentTime / duration) * 100 : 0));
   const bufferedPct  = Math.min(100, Math.max(0, buffered * 100));
-  const handlePlayPause = () => setIsPlaying(!uiIsPlaying);
+  const handlePlayPause = () => {
+    const next = !uiIsPlaying;
+    setIsPlaying(next);
+    if (next) {
+      play();
+    } else {
+      pause();
+    }
+  };
+  const handleRepeatToggle = () => setRepeatMode(repeat === "one" ? "none" : "one");
+  const trackLink = trackId ? `/tracks/${trackId}` : "#";
+  const artistLink = artistId ? `/${artistId}` : "#";
+
+  const handleFollowToggle = async () => {
+    if (!artistId || followLoading) return;
+
+    const wasFollowing = isFollowingArtist;
+    setFollowLoading(true);
+    setIsFollowingArtist(!wasFollowing);
+
+    try {
+      if (wasFollowing) {
+        await followingService.unfollowUser(artistId);
+      } else {
+        await followingService.followUser(artistId);
+      }
+    } catch {
+      setIsFollowingArtist(wasFollowing);
+    } finally {
+      setFollowLoading(false);
+    }
+  };
 
   return (
     <>
@@ -233,8 +350,8 @@ export default function PlayerBar() {
             data-repeat-mode={repeat}
             size={15}
             className="cursor-pointer transition-colors"
-            style={{ color: repeat !== "none" ? "#FF5500" : "#71717a" }}
-            onClick={toggleRepeat}
+            style={{ color: repeat === "one" ? "#FF5500" : "#71717a" }}
+            onClick={handleRepeatToggle}
           />
         </div>
 
@@ -314,11 +431,38 @@ export default function PlayerBar() {
         {/* Track info */}
         <div data-testid="player-track-info" className="flex items-center gap-2 shrink-0">
           {thumbnailUrl && (
-            <img data-testid="player-track-thumbnail" src={thumbnailUrl} alt="cover" className="w-8 h-8 object-cover" />
+            <a
+              href={trackLink}
+              aria-label={`Open ${trackTitle}`}
+              onClick={(event) => navigateWithinApp(event, trackLink)}
+            >
+              <img data-testid="player-track-thumbnail" src={thumbnailUrl} alt="cover" className="w-8 h-8 object-cover" />
+            </a>
           )}
           <div className="flex flex-col leading-tight">
-            <span data-testid="player-track-artist" className="text-xs text-zinc-400 leading-none font-bold tracking-tight">{trackArtist}</span>
-            <span data-testid="player-track-title"  className="text-xs font-bold text-white leading-none mt-0.5">{trackTitle}</span>
+            <a
+              href={artistLink}
+              data-testid="player-track-artist"
+              className="text-xs text-zinc-400 leading-none font-bold tracking-tight text-left transition-colors hover:text-white"
+              aria-disabled={!artistId}
+              onClick={(event) => {
+                if (!artistId) {
+                  event.preventDefault();
+                  return;
+                }
+                navigateWithinApp(event, artistLink, { userId: artistId });
+              }}
+            >
+              {trackArtist}
+            </a>
+            <a
+              href={trackLink}
+              data-testid="player-track-title"
+              className="mt-0.5 text-xs font-bold leading-none text-white transition-colors hover:text-zinc-300"
+              onClick={(event) => navigateWithinApp(event, trackLink)}
+            >
+              {trackTitle}
+            </a>
           </div>
         </div>
 
@@ -330,13 +474,14 @@ export default function PlayerBar() {
             fill={isLiked ? "#FF5500" : "none"}
             className="cursor-pointer hover:opacity-80"
             style={{ color: isLiked ? "#FF5500" : "#71717a" }}
-            onClick={() => { if (trackId && !likeLoading) toggleLike(); }}
+            onClick={() => { if (trackId) toggleLike(); }}
           />
           <UserPlus2
             data-testid="player-follow-button"
             size={15}
             className="cursor-pointer hover:opacity-80"
-            style={{ color: "#FF5500" }}
+            style={{ color: isFollowingArtist ? "#FF5500" : "#71717a" }}
+            onClick={() => void handleFollowToggle()}
           />
 
           <button

@@ -75,6 +75,8 @@ export default function PopularTracksPage() {
           <div key={track.id} data-testid={`popular-track-item-${track.id}`}>
             <SongCard
               trackId={track.id}
+              artistLinkTo={track.artist?.id ? `/${encodeURIComponent(track.artist.id)}` : track.artist?.username ? `/${encodeURIComponent(track.artist.username)}` : undefined}
+              artistRouteState={track.artist?.id ? { userId: track.artist.id } : undefined}
               artistName={
                 track.artist?.displayName ||
                 track.artist?.username ||

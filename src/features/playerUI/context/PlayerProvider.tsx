@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { PlayerContext } from "./PlayerContext";
 import type { TrackMeta, RecentlyPlayedEntry } from "./PlayerTypes";
@@ -47,11 +47,18 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [pendingSeek, setPendingSeek] = useState<{ trackId: string; progress: number } | null>(null);
+  const queueBuildRequestRef = useRef(0);
 
-  const setCurrentTrack = async (track: TrackMeta) => {
+  const syncCurrentTrack = (track: TrackMeta) => {
+    queueBuildRequestRef.current += 1;
     pushRecentlyPlayed(track);
     setCurrentTrackState(track);
     setProgress(0);
+  };
+
+  const setCurrentTrack = async (track: TrackMeta) => {
+    syncCurrentTrack(track);
+    const requestId = ++queueBuildRequestRef.current;
 
     const myId = await fetchMyId();
     const ctx = playContext ?? { contextType: "feed" as const, contextId: myId, shuffle: false, repeat: "none" as const };
@@ -66,10 +73,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         shuffle:      ctx.shuffle,
         repeat:       ctx.repeat,
       });
+      if (queueBuildRequestRef.current !== requestId) return;
+      const queuedIndex = response.queue.findIndex((item) => item.trackId === track.id);
+      const currentIndex = queuedIndex >= 0 ? queuedIndex : response.currentIndex;
       dispatch(
         setQueue({
           tracks:        response.queue,
-          currentIndex:  response.currentIndex,
+          currentIndex,
           shuffle:       response.shuffle,
           repeat:        response.repeat,
           totalCount:    response.totalCount,
@@ -77,6 +87,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         })
       );
     } catch (err: unknown) {
+      if (queueBuildRequestRef.current !== requestId) return;
       dispatch(setQueueError(err instanceof Error ? err.message : "Failed to load queue."));
     }
   };
@@ -88,7 +99,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const clearPendingSeek = () => setPendingSeek(null);
 
   return (
-    <PlayerContext.Provider value={{ currentTrack, isPlaying, progress, pendingSeek, setCurrentTrack, setIsPlaying, setProgress, requestSeek, clearPendingSeek }}>
+    <PlayerContext.Provider value={{ currentTrack, isPlaying, progress, pendingSeek, setCurrentTrack, syncCurrentTrack, setIsPlaying, setProgress, requestSeek, clearPendingSeek }}>
       {children}
     </PlayerContext.Provider>
   );

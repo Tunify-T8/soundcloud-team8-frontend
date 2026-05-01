@@ -7,7 +7,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { useMe } from "../../features/profile/context/useMe";
-import { logout } from "../../features/auth/services/index";
+import { clearClientSessionData, logout } from "../../features/auth/services/index";
 import { io, Socket } from "socket.io-client";
 import {
   getNotifications,
@@ -21,12 +21,14 @@ import { getAccessToken, getStoredUser } from "@/features/auth/utils/token.utils
 import CheckoutModal from "../../features/premium/components/CheckoutModal";
 import { socketSingleton } from "../../features/conversation/hooks/useSocket";
 import { useUnreadMessages } from "../../features/conversation/hooks/useUnreadMessages";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../../app/store";
 import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
 import { useSubscription } from "@/hooks/useSubscription";
 import SubscriptionBadge from "@/features/premium/components/SubscriptionBadge";
 import MyPlanModal from "@/features/premium/components/MyPlanModal";
+import { clearUser } from "@/store/userSlice";
+import { usePlayer } from "@/features/playerUI/context/usePlayer";
 import { applyTheme } from "../../features/settings/hooks/useTheme";
 import type { Theme } from "../../features/settings/types/settings.types";
 
@@ -67,8 +69,10 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { me } = useMe();
+  const dispatch = useDispatch();
   const currentUserId = useSelector((state: RootState) => state.user.currentUser?.id ?? null);
   const { unreadMessages } = useUnreadMessages(currentUserId);
+  const { setIsPlaying } = usePlayer();
 
   const { tier, isArtist, isArtistPro } = useSubscription();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -238,17 +242,25 @@ export default function Navbar() {
     setAdminMenuOpen(false);
   }, [location.pathname]);
 
-  const handleSignOut = async () => {
-    const currentTheme = (localStorage.getItem("sc-theme") ||
-      localStorage.getItem("tunify-theme") ||
-      document.documentElement.getAttribute("data-theme")) as Theme | null;
-    try { await logout(); } catch { }
-    if (currentTheme === "light" || currentTheme === "dark") {
-      localStorage.setItem("sc-theme", currentTheme);
-      applyTheme(currentTheme);
-    }
-    navigate("/signin");
-  };
+const handleSignOut = async () => {
+  setIsPlaying(false);
+  
+  const currentTheme = (localStorage.getItem("sc-theme") ||
+    localStorage.getItem("tunify-theme") ||
+    document.documentElement.getAttribute("data-theme")) as Theme | null;
+
+  try { await logout(); } catch { }
+
+  dispatch(clearUser());
+  clearClientSessionData();
+
+  if (currentTheme === "light" || currentTheme === "dark") {
+    localStorage.setItem("sc-theme", currentTheme);
+    applyTheme(currentTheme);
+  }
+
+  navigate("/signed-out", { replace: true }); 
+};
 
   const profileMenuItems = [
     { to: "/me",                    icon: <User size={17} />,       label: "Profile" },

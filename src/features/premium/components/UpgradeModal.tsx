@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { X, Upload, Zap, Share2, RefreshCw, Plus, Star } from "lucide-react";
+import { createPortal } from "react-dom";
 import CheckoutModal from "./CheckoutModal";
 import { subscriptionService } from "@/features/premium/premiumService";
 import type { Plan } from "@/features/premium/premiumService";
@@ -67,19 +68,23 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
       )
     : "EGP 95.83";
 
+  const modalRoot = typeof document !== "undefined" ? document.body : null;
+
   if (checkoutPlan) {
-    return (
+    const checkoutContent = (
       <CheckoutModal
         plan={checkoutPlan}
         plans={plans}
         onClose={onClose}
       />
     );
+
+    return modalRoot ? createPortal(checkoutContent, modalRoot) : checkoutContent;
   }
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+      className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="relative bg-white w-full max-w-[1000px] max-h-[90vh] overflow-y-auto shadow-2xl animate-in">
@@ -233,6 +238,8 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
       </div>
     </div>
   );
+
+  return modalRoot ? createPortal(modalContent, modalRoot) : modalContent;
 }
 
 interface FeatureRowProps {

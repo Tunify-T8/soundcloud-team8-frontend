@@ -21,8 +21,14 @@ import { usePlayer } from "@/features/playerUI/context/usePlayer";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useMe } from "@/features/profile/context/useMe";
 import { playbackService } from "@/features/player-core/Playbackservice";
+import { useQueue } from "@/hooks/useQueue";
 import CreatePlaylistOverlay from "@/features/library/tabs/playlists/components/CreatePlaylistOverlay";
 import trackFallback from "@/assets/track.jpg";
+import {
+  notifyTrackLikeChanged,
+  TRACK_LIKE_CHANGED_EVENT,
+  type TrackLikeChangedDetail,
+} from "@/features/engagement/engagementEvents";
 import ShareOverlay from "@/components/ui/ShareOverlay";
 
 const DB_NAME = "sc_downloads";
@@ -66,6 +72,8 @@ async function hasDownload(userId: string, trackId: string): Promise<boolean> {
 interface PlayerProps {
   trackId?: string;
   entityLinkTo?: string;
+  artistLinkTo?: string;
+  artistRouteState?: { userId?: string };
   smallCoverOnMobile?: boolean;
   isLikedInitial?: boolean;
   isRepostedInitial?: boolean;
@@ -101,6 +109,8 @@ interface PlayerProps {
 export default function SongCard({
   trackId = "",
   entityLinkTo,
+  artistLinkTo,
+  artistRouteState,
   smallCoverOnMobile = false,
   isLikedInitial = false,
   isRepostedInitial = false,
@@ -136,6 +146,7 @@ export default function SongCard({
   const { hasOfflineListening } = useSubscription();
   const { me } = useMe();
   const navigate = useNavigate();
+  const { addTrack, currentIndex, currentTrackId } = useQueue();
 
   const isThisTrack = currentTrack?.id === trackId;
   const playing = isThisTrack && isPlaying;
@@ -149,8 +160,11 @@ export default function SongCard({
   const [downloaded, setDownloaded] = useState(false);
   const [showDownloadTooltip, setShowDownloadTooltip] = useState(false);
   const [showAlreadyDownloaded, setShowAlreadyDownloaded] = useState(false);
+  const [showCopyToast, setShowCopyToast] = useState(false);
   const [randomSeed] = useState(() => Math.random() * 1000000);
   const [barCount, setBarCount] = useState<number | null>(null);
+  const [hoveredSubtrackId, setHoveredSubtrackId] = useState<string | null>(null);
+  const copyToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handlePlayToggle = () => {
     if (!trackId) return;
@@ -170,12 +184,36 @@ export default function SongCard({
     setIsPlaying(true);
   };
 
+  const handleSubtrackPlayToggle = (subtrack: {
+    id: string;
+    title: string;
+    artist: string;
+    avatarUrl?: string | null;
+  }) => {
+    const isCurrentSubtrack = currentTrack?.id === subtrack.id;
+    if (isCurrentSubtrack) {
+      setIsPlaying(!isPlaying);
+      return;
+    }
+
+    setCurrentTrack({
+      id: subtrack.id,
+      title: subtrack.title,
+      artist: subtrack.artist,
+      thumbnailUrl: subtrack.avatarUrl || coverUrl || undefined,
+      artworkUrl: subtrack.avatarUrl || coverUrl || undefined,
+      duration: 0,
+    });
+    setIsPlaying(true);
+  };
+
   const [isLiked, setIsLiked] = useState(isLikedInitial);
   const [isReposted, setIsReposted] = useState(isRepostedInitial);
   const [likesCount, setLikesCount] = useState(Number(likes) || 0);
   const [repostsCount, setRepostsCount] = useState(Number(reposts) || 0);
   const [isLikePending, setIsLikePending] = useState(false);
   const [isRepostPending, setIsRepostPending] = useState(false);
+  const likeMutationVersionRef = useRef(0);
 
   useEffect(() => {
     setIsLiked(isLikedInitial);
@@ -187,10 +225,11 @@ export default function SongCard({
   useEffect(() => {
     if (!trackId) return;
     let mounted = true;
+    const fetchMutationVersion = likeMutationVersionRef.current;
     engagementService
       .getEngagement(trackId)
       .then((data) => {
-        if (!mounted) return;
+        if (!mounted || likeMutationVersionRef.current !== fetchMutationVersion) return;
         setIsLiked(Boolean(data.isLiked));
         setIsReposted(Boolean(data.isReposted));
         if (Number.isFinite(data.likesCount)) {
@@ -203,6 +242,25 @@ export default function SongCard({
       .catch(() => {});
     return () => {
       mounted = false;
+    };
+  }, [trackId]);
+
+  useEffect(() => {
+    if (!trackId) return;
+
+    const handleTrackLikeChanged = (event: Event) => {
+      const detail = (event as CustomEvent<TrackLikeChangedDetail>).detail;
+      if (!detail || detail.trackId !== trackId) return;
+
+      setIsLiked(detail.isLiked);
+      if (typeof detail.likesCount === "number") {
+        setLikesCount(detail.likesCount);
+      }
+    };
+
+    window.addEventListener(TRACK_LIKE_CHANGED_EVENT, handleTrackLikeChanged);
+    return () => {
+      window.removeEventListener(TRACK_LIKE_CHANGED_EVENT, handleTrackLikeChanged);
     };
   }, [trackId]);
 
@@ -220,12 +278,60 @@ export default function SongCard({
     };
   }, [trackId, me?.id, hasOfflineListening]);
 
+  useEffect(() => {
+    return () => {
+      if (copyToastTimerRef.current) {
+        clearTimeout(copyToastTimerRef.current);
+      }
+    };
+  }, []);
+
+  const copyTextToClipboard = async (value: string) => {
+    if (navigator?.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return;
+    }
+
+    const helper = document.createElement("textarea");
+    helper.value = value;
+    helper.setAttribute("readonly", "true");
+    helper.style.position = "absolute";
+    helper.style.left = "-9999px";
+    document.body.appendChild(helper);
+    helper.select();
+    document.execCommand("copy");
+    document.body.removeChild(helper);
+  };
+
+  const handleCopyLink = async () => {
+    if (!trackId) return;
+    const shareUrl = `${window.location.origin}/tracks/${trackId}`;
+    try {
+      await copyTextToClipboard(shareUrl);
+      setShowCopyToast(true);
+      if (copyToastTimerRef.current) clearTimeout(copyToastTimerRef.current);
+      copyToastTimerRef.current = setTimeout(() => {
+        setShowCopyToast(false);
+      }, 2000);
+    } catch (error) {
+      console.error("Failed to copy track link:", error);
+    }
+  };
+
   const handleLikeToggle = async () => {
     if (!trackId || isLikePending) return;
+    const mutationVersion = ++likeMutationVersionRef.current;
     const wasLiked = isLiked;
+    const nextIsLiked = !wasLiked;
+    const nextLikesCount = Math.max(0, likesCount + (wasLiked ? -1 : 1));
     setIsLikePending(true);
-    setIsLiked(!wasLiked);
-    setLikesCount((prev) => Math.max(0, prev + (wasLiked ? -1 : 1)));
+    setIsLiked(nextIsLiked);
+    setLikesCount(nextLikesCount);
+    notifyTrackLikeChanged({
+      trackId,
+      isLiked: nextIsLiked,
+      likesCount: nextLikesCount,
+    });
     try {
       if (wasLiked) {
         await engagementService.unlikeTrack(trackId);
@@ -233,15 +339,25 @@ export default function SongCard({
         await engagementService.likeTrack(trackId);
       }
     } catch {
-      setIsLiked(wasLiked);
-      setLikesCount((prev) => Math.max(0, prev + (wasLiked ? 1 : -1)));
+      if (likeMutationVersionRef.current === mutationVersion) {
+        setIsLiked(wasLiked);
+        setLikesCount(likesCount);
+        notifyTrackLikeChanged({
+          trackId,
+          isLiked: wasLiked,
+          likesCount,
+        });
+      }
     } finally {
-      setIsLikePending(false);
+      if (likeMutationVersionRef.current === mutationVersion) {
+        setIsLikePending(false);
+      }
     }
   };
 
   const handleRepostToggle = async () => {
     if (!trackId || repostDisabled || isRepostPending) return;
+    const mutationVersion = ++likeMutationVersionRef.current;
     const wasReposted = isReposted;
     setIsRepostPending(true);
     setIsReposted(!wasReposted);
@@ -254,10 +370,14 @@ export default function SongCard({
       }
       onToggleRepost?.();
     } catch {
-      setIsReposted(wasReposted);
-      setRepostsCount((prev) => Math.max(0, prev + (wasReposted ? 1 : -1)));
+      if (likeMutationVersionRef.current === mutationVersion) {
+        setIsReposted(wasReposted);
+        setRepostsCount((prev) => Math.max(0, prev + (wasReposted ? 1 : -1)));
+      }
     } finally {
-      setIsRepostPending(false);
+      if (likeMutationVersionRef.current === mutationVersion) {
+        setIsRepostPending(false);
+      }
     }
   };
 
@@ -389,6 +509,25 @@ export default function SongCard({
     requestSeek(trackId, pct);
   };
 
+  const handleAddToNextUp = () => {
+    if (!trackId) return;
+
+    if (onAddToNextUp) {
+      onAddToNextUp();
+      return;
+    }
+
+    addTrack(
+      {
+        trackId,
+        title,
+        artist: artistName,
+        durationSeconds: 0,
+      },
+      currentTrackId ? currentIndex + 1 : 0,
+    );
+  };
+
   useEffect(() => {
     const onClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -463,9 +602,19 @@ export default function SongCard({
           </button>
 
           <div className="flex-1 min-w-0">
-            <div className="mb-0.5 truncate text-[8px] text-[hsl(0,0%,50%)] sm:text-[11px]">
-              {artistName}
-            </div>
+            {artistLinkTo ? (
+              <Link
+                to={artistLinkTo}
+                state={artistRouteState}
+                className="mb-0.5 block truncate text-[8px] text-[hsl(0,0%,50%)] transition-colors hover:text-[hsl(0,0%,35%)] sm:text-[11px]"
+              >
+                {artistName}
+              </Link>
+            ) : (
+              <div className="mb-0.5 truncate text-[8px] text-[hsl(0,0%,50%)] transition-colors hover:text-[hsl(0,0%,35%)] sm:text-[11px]">
+                {artistName}
+              </div>
+            )}
             {cardPrimaryLink ? (
               <Link
                 to={cardPrimaryLink}
@@ -548,18 +697,51 @@ export default function SongCard({
         {isCollectionCard && playlistTracks.length > 0 ? (
           <div className="mb-2 mt-2 space-y-2">
             {playlistTracks.map((collectionTrack) => (
-              <div
-                key={collectionTrack.id}
-                className="flex items-center gap-2 py-0.5 text-sm text-zinc-300"
-              >
-                <img
-                  src={collectionTrack.avatarUrl || trackFallback}
-                  alt={collectionTrack.title}
-                  className="h-7 w-7 rounded-[2px] object-cover"
-                />
-                <span className="text-zinc-400">
-                  {collectionTrack.number} ·
-                </span>
+              <div key={collectionTrack.id} className="flex items-center gap-2 py-0.5 text-sm text-zinc-300">
+                <button
+                  type="button"
+                  onClick={() => handleSubtrackPlayToggle(collectionTrack)}
+                  onMouseEnter={() => setHoveredSubtrackId(collectionTrack.id)}
+                  onMouseLeave={() =>
+                    setHoveredSubtrackId((current) =>
+                      current === collectionTrack.id ? null : current,
+                    )
+                  }
+                  className="group relative h-7 w-7 shrink-0 overflow-hidden rounded-[2px]"
+                  aria-label={
+                    currentTrack?.id === collectionTrack.id && isPlaying
+                      ? "Pause track"
+                      : "Play track"
+                  }
+                >
+                  <img
+                    src={collectionTrack.avatarUrl || trackFallback}
+                    alt={collectionTrack.title}
+                    className="h-7 w-7 object-cover"
+                  />
+                  <div
+                    className={`absolute inset-0 flex items-center justify-center bg-black/55 transition-opacity ${
+                      (currentTrack?.id === collectionTrack.id && isPlaying) ||
+                      hoveredSubtrackId === collectionTrack.id
+                        ? "opacity-100"
+                        : "opacity-0"
+                    }`}
+                  >
+                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-black">
+                      {currentTrack?.id === collectionTrack.id && isPlaying ? (
+                        <svg width="11" height="11" viewBox="0 0 14 14" fill="currentColor">
+                          <rect x="1" y="1" width="4" height="12" />
+                          <rect x="9" y="1" width="4" height="12" />
+                        </svg>
+                      ) : (
+                        <svg width="11" height="11" viewBox="0 0 14 14" fill="currentColor">
+                          <polygon points="2,0 14,7 2,14" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                </button>
+                <span className="text-zinc-400">{collectionTrack.number} ·</span>
                 <span className="truncate">
                   <span
                     className={
@@ -608,9 +790,11 @@ export default function SongCard({
               <button
                 type="button"
                 onClick={handleRepostToggle}
-                disabled={repostDisabled || isRepostPending}
+                disabled={repostDisabled}
+                aria-disabled={repostDisabled || isRepostPending}
+                data-pending={isRepostPending}
                 aria-label={isReposted ? "Undo repost" : "Repost"}
-                className={`flex h-7 shrink-0 items-center gap-1.5 rounded-[4px] bg-[#2f3033] px-2 text-[11px] font-semibold transition-colors hover:bg-[#3a3b3f] disabled:cursor-not-allowed disabled:opacity-60 sm:h-8 sm:px-3 sm:text-[13px] ${
+                className={`flex h-8 shrink-0 items-center gap-1.5 rounded-[4px] bg-[#2f3033] px-3 text-[13px] font-semibold transition-colors hover:bg-[#3a3b3f] disabled:cursor-not-allowed ${
                   isReposted ? "text-[#ff5500]" : "text-zinc-100"
                 }`}
               >
@@ -629,7 +813,12 @@ export default function SongCard({
             >
               <Share2 size={16} />
             </button>
-            <button className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f] sm:h-8 sm:w-8">
+            <button
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#2f3033] text-zinc-100 transition-colors hover:bg-[#3a3b3f]"
+              onClick={handleCopyLink}
+              aria-label="Copy track link"
+              type="button"
+            >
               <Copy size={16} />
             </button>
 
@@ -646,7 +835,7 @@ export default function SongCard({
                 <div className="absolute left-0 top-full mt-1 z-50 min-w-[180px] overflow-visible rounded-md border border-[hsl(0,0%,18%)] bg-[#0b0b0b] py-0.5 shadow-2xl">
                   <button
                     onClick={() => {
-                      onAddToNextUp?.();
+                      handleAddToNextUp();
                       setMenuOpen(false);
                     }}
                     className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-[13px] font-semibold text-white hover:text-zinc-500"
@@ -793,7 +982,19 @@ export default function SongCard({
         defaultCoverUrl={coverUrl}
         autoAddTrackId={trackId}
       />
-      {showShareOverlay && (
+
+      {showCopyToast ? (
+        <div className="fixed right-6 top-6 z-[140]">
+          <div className="flex max-w-[360px] items-center gap-3 rounded-[4px] border border-zinc-500 bg-[#2f2f2f] px-4 py-2.5 text-white shadow-xl">
+            <Check className="h-5 w-5 text-emerald-400" />
+            <div className="text-[13px] font-semibold leading-tight">
+              Link has been copied to the clipboard!
+            </div>
+          </div>
+        </div>
+      ) : null}
+     
+        {showShareOverlay && (
         <ShareOverlay
           onClose={() => setShowShareOverlay(false)}
           shareUrl={shareUrl}

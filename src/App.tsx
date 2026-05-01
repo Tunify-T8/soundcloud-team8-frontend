@@ -18,6 +18,7 @@ import PlaylistsPage from "./features/profile/pages/UserInfoBar/PlaylistsPage";
 import ProfileRepostsPage from "./features/profile/pages/UserInfoBar/RepostsPage";
 import SignInPage from "./features/auth/pages/SignInPage";
 import SignUpPage from "./features/auth/pages/SignUpPage";
+import SignedOutPage from "./features/auth/pages/SignedOutPage";
 import PublicOnlyRoute from "./routes/PublicOnlyRoute";
 import ForgotPasswordPage from "./features/auth/pages/ForgotPasswordPage";
 import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage";
@@ -86,6 +87,23 @@ const router = createBrowserRouter([
 
   // 2. MAIN APP SHELL (Authenticated users)
   {
+    path: "/signed-out",
+    element: (
+      <PublicOnlyRoute>
+        <SignedOutPage />
+      </PublicOnlyRoute>
+    ),
+  },
+  {
+    path: "/forgot-password",
+    element: <ForgotPasswordPage />,
+  },
+  {
+    path: "/reset-password",
+    element: <ResetPasswordPage />,
+  },
+  {
+    path: "/",
     element: (
       <ProtectedRoute>
         <ProfileProvider>

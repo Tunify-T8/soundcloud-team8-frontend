@@ -8,15 +8,20 @@ export default function UploadSuccessScreen({ trackId }: { trackId: string }) {
 
       {/* Header */}
       <header className="flex items-center justify-between px-8 py-4 border-b border-[#222]" data-testid="success-header">
-        <a href="/" className="hover:opacity-80 transition">
+        <Link to="/discover" className="hover:opacity-80 transition">
           <SiSoundcloud size={36} color="white" />
-        </a>
-        <button className="text-[#888] hover:text-white transition" data-testid="success-close-btn">
+        </Link>
+        <Link
+          to="/discover"
+          className="text-[#888] hover:text-white transition"
+          data-testid="success-close-btn"
+          aria-label="Close upload success"
+        >
           <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18"/>
             <line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
-        </button>
+        </Link>
       </header>
 
       {/* Content */}

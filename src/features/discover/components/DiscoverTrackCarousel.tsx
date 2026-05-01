@@ -4,11 +4,13 @@ import { DiscoverCard } from "./discoverCard";
 
 type DiscoverTrackCarouselProps = {
   tracks: DiscoverTrack[];
+  queueId: string;
   scrollStep?: number;
 };
 
 export function DiscoverTrackCarousel({
   tracks,
+  queueId,
   scrollStep = 340,
 }: DiscoverTrackCarouselProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -61,8 +63,14 @@ export function DiscoverTrackCarousel({
         ref={scrollRef}
         className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-4"
       >
-        {tracks.map((track) => (
-          <DiscoverCard key={track.id} item={track} />
+        {tracks.map((track, index) => (
+          <DiscoverCard
+            key={track.id}
+            item={track}
+            queueTracks={tracks}
+            trackIndex={index}
+            queueId={queueId}
+          />
         ))}
       </div>
 
