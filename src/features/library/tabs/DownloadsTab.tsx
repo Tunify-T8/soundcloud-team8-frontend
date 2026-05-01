@@ -67,7 +67,7 @@ function UpsellPage() {
       </div>
 
       <p className="mb-4 text-xs text-zinc-500">
-        Free for 7 days · then <span className="text-zinc-300">EGP 74.99/month</span>
+        Free for 7 days · then <span className="text-zinc-300">EGP 164.99/month</span>
       </p>
 
       <ArtistProUpgradeButton

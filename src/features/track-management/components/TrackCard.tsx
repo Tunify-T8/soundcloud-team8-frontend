@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import type { Track } from "@/shared/types/Track";
 import { usePlayer } from "@/features/playerUI/context/usePlayer";
+import { useSubscription } from "@/hooks/useSubscription";
 import { trackService } from "../trackService";
 import amplify from "@/assets/amplify.png";
 import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
@@ -25,74 +26,112 @@ function formatDuration(seconds: number | string | null | undefined): string {
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
-function AmplifyModal({ onClose }: { onClose: () => void }) {
+function AmplifyModal({ onClose, isArtistPro }: { onClose: () => void; isArtistPro: boolean }) {
+  const proTheme = isArtistPro;
+
   return (
     <>
-      <div className="fixed inset-0 z-50" style={{ background: "rgba(246, 235, 235, 0.58)" }} onClick={onClose} />
+      <div
+        className={proTheme ? "fixed inset-0 z-50 bg-black/55 backdrop-blur-[2px]" : "fixed inset-0 z-50"}
+        style={proTheme ? undefined : { background: "rgba(246, 235, 235, 0.58)" }}
+        onClick={onClose}
+      />
       <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none px-4">
-        <div data-testid="amplify-modal" className="bg-black rounded-2xl w-full max-w-[820px] overflow-hidden pointer-events-auto shadow-2xl relative">
+        <div
+          data-testid="amplify-modal"
+          className={`rounded-2xl w-full max-w-[820px] overflow-hidden pointer-events-auto shadow-2xl relative border ${
+            proTheme ? "bg-[#1c1608] border-[#d4b253]/40" : "bg-black border-transparent"
+          }`}
+        >
 
           <button
             data-testid="amplify-modal-close-btn"
             onClick={onClose}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-zinc-700 hover:bg-zinc-600 flex items-center justify-center text-zinc-300 hover:text-white transition-colors z-10"
+            className={`absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-colors z-10 ${
+              proTheme
+                ? "bg-[#d4b253] hover:bg-[#e1c36a] text-[#281f07]"
+                : "bg-zinc-700 hover:bg-zinc-600 text-zinc-300 hover:text-white"
+            }`}
           >
             <X className="w-4 h-4" />
           </button>
 
-          <div className="flex flex-col sm:flex-row items-start justify-between px-6 sm:px-10 pt-8 sm:pt-10 pb-4 gap-6">
+          <div className={`flex flex-col sm:flex-row items-start justify-between px-6 sm:px-10 pt-8 sm:pt-10 pb-4 gap-6 ${proTheme ? "bg-[linear-gradient(135deg,rgba(212,178,83,0.18),rgba(28,22,8,0.15))]" : ""}`}>
             <div className="flex-1">
-              <h2 className="text-white text-2xl sm:text-3xl font-bold leading-tight mb-4">
-                Reach more listeners with Artist Pro
-              </h2>
-              <p className="text-zinc-400 text-sm mb-4 leading-relaxed">
-                In order to be eligible, you must have an Artist or Artist Pro subscription.
-              </p>
-              <p className="text-zinc-300 text-sm leading-relaxed">
-                With an Artist Pro subscription you can have this track analyzed and recommended to reach{" "}
-                <span className="text-white font-bold">100+ plays by listeners on SoundCloud.</span>
-              </p>
+              {isArtistPro ? (
+                <>
+                  <h2 className="text-[#f7e6ad] text-2xl sm:text-3xl font-bold leading-tight mb-4">
+                    You can now Amplify with Artist-Pro
+                  </h2>
+                  <p className="text-[#f7e6ad]/90 text-sm leading-relaxed">
+                    Coming Soon, you'll be the first to know!
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-white text-2xl sm:text-3xl font-bold leading-tight mb-4">
+                    Reach more listeners with Artist Pro
+                  </h2>
+                  <p className="text-zinc-400 text-sm mb-4 leading-relaxed">
+                    In order to be eligible, you must have an Artist or Artist Pro subscription.
+                  </p>
+                  <p className="text-zinc-300 text-sm leading-relaxed">
+                    With an Artist Pro subscription you can have this track analyzed and recommended to reach{" "}
+                    <span className="text-white font-bold">100+ plays by listeners on SoundCloud.</span>
+                  </p>
+                </>
+              )}
             </div>
-            <div className="w-full sm:w-64 h-36 sm:h-44 flex-shrink-0 rounded-xl overflow-hidden bg-zinc-800 flex items-center justify-center">
+            <div className={`w-full sm:w-64 h-36 sm:h-44 flex-shrink-0 rounded-xl overflow-hidden flex items-center justify-center ${proTheme ? "bg-[#d4b253]/20 ring-1 ring-[#d4b253]/35 shadow-[0_0_0_1px_rgba(212,178,83,0.15),0_20px_40px_rgba(0,0,0,0.35)]" : "bg-zinc-800"}`}>
               <img src={amplify} alt="Artist Pro" className="w-full h-full object-cover" />
             </div>
           </div>
 
           <div className="px-6 sm:px-10 pb-6">
-            <div className="bg-zinc-800/60 rounded-xl p-5 sm:p-6">
-              <p className="text-white text-sm font-bold mb-4">Upgrade to Artist Pro to get:</p>
-              <ul className="space-y-3">
-                {[
-                  "Unlimited track recommendations",
-                  "Unlimited uploads + replace tracks",
-                  "Unlimited track distribution",
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-zinc-300 text-sm">
-                    <span className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0">
-                      <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                        <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
+            <div className={`rounded-xl p-5 sm:p-6 ${proTheme ? "bg-[#d4b253]/15 border border-[#d4b253]/30" : "bg-zinc-800/60"}`}>
+              {isArtistPro ? (
+                <p className="text-[#f7e6ad] text-sm leading-relaxed font-medium">
+                  Amplify access is coming soon for Artist Pro members.
+                </p>
+              ) : (
+                <>
+                  <p className="text-white text-sm font-bold mb-4">Upgrade to Artist Pro to get:</p>
+                  <ul className="space-y-3">
+                    {[
+                      "Unlimited track recommendations",
+                      "Unlimited uploads + replace tracks",
+                      "Unlimited track distribution",
+                    ].map((item) => (
+                      <li key={item} className="flex items-center gap-3 text-zinc-300 text-sm">
+                        <span className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                          <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                            <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </span>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center justify-start gap-4 px-6 sm:px-10 pb-8 sm:pb-10">
-            <ArtistProUpgradeButton
-              data-testid="amplify-modal-unlock-btn"
-              className="px-6 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold transition-colors tracking-tight"
-            >
-              Unlock with Artist Pro
-            </ArtistProUpgradeButton>
+          <div className="flex items-center justify-end gap-4 px-6 sm:px-10 pb-8 sm:pb-10">
+            {!isArtistPro ? (
+              <ArtistProUpgradeButton
+                data-testid="amplify-modal-unlock-btn"
+                className="px-6 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold transition-colors tracking-tight"
+              >
+                Unlock with Artist Pro
+              </ArtistProUpgradeButton>
+            ) : null}
             <button
               data-testid="amplify-modal-later-btn"
               onClick={onClose}
-              className="px-6 py-2.5 text-white text-sm font-semibold hover:text-zinc-300 transition-colors"
+              className={proTheme ? "px-6 py-2.5 text-[#f7e6ad] text-sm font-semibold hover:text-white transition-colors" : "px-6 py-2.5 text-white text-sm font-semibold hover:text-zinc-300 transition-colors"}
             >
-              Maybe later
+              OK
             </button>
           </div>
         </div>
@@ -176,6 +215,7 @@ export default function TrackCard({
   const [amplifyHovered, setAmplifyHovered] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const { isArtistPro } = useSubscription();
 
   const { currentTrack, isPlaying, setCurrentTrack, setIsPlaying } = usePlayer();
   const isThisTrack = currentTrack?.id === track.id;
@@ -415,7 +455,7 @@ export default function TrackCard({
       </div>
 
       {showAmplifyModal && (
-        <AmplifyModal onClose={() => setShowAmplifyModal(false)} />
+        <AmplifyModal onClose={() => setShowAmplifyModal(false)} isArtistPro={isArtistPro} />
       )}
 
       {showDeleteModal && (
