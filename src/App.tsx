@@ -99,7 +99,7 @@ const router = createBrowserRouter([
       // This index route ensures that if a logged-in user hits "/", 
       // they are instantly moved to /discover.
       {
-        index: true,
+        
         element: <Navigate to="/discover" replace />,
       },
       { path: "/discover", element: <DiscoverPage /> },
