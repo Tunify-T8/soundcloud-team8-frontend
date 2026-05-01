@@ -13,6 +13,7 @@ const AppRoutes = () => {
     <BrowserRouter>
       <Routes>
         <Route path="/signin" element={<SignInPage />} />
+        <Route path="/subscription" element={<Navigate to="/subscriptions" replace />} />
         <Route path="/library"      element={<LibraryPage />} />
         <Route path="/me/sets"      element={<LibraryPage />} />
         <Route path="/me/likes"     element={<LibraryPage />} />
