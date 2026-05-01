@@ -2,7 +2,7 @@ import avatarFallback from "@/assets/avatar.png";
 import SideBar from "../../../components/layout/Sidebar";
 import SongCard from "../../../components/ui/SongCard";
 import { Repeat2 } from "lucide-react";
-import type { FeedItem, FeedResponse } from "@/features/feed/type";
+import type { FeedItem } from "@/features/feed/type";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { feedService } from "@/features/feed/feedservice";
@@ -476,7 +476,7 @@ export default function FeedPage() {
                       >
                         <img
                           src={item.action.avatarUrl || avatarFallback}
-                          alt={item.action.username || item.action.username}
+                          alt={item.action.username}
                           data-testid={`feed-avatar-${item.trackId}`}
                           className="h-7 w-7 rounded-full object-cover cursor-pointer sm:h-8 sm:w-8"
                         />
@@ -487,7 +487,7 @@ export default function FeedPage() {
                         data-testid={`feed-username-link-${item.trackId}`}
                         className="text-[13px] font-semibold text-white hover:text-zinc-300 sm:text-base"
                       >
-                        {item.action.username || item.action.username}
+                        {item.action.username}
                       </Link>
 
                       {hoveredTrackId === item.trackId && (
@@ -565,26 +565,33 @@ export default function FeedPage() {
                     </span>
                   </div>
 
-                <div className="flex items-start gap-2 py-1.5 sm:gap-4 sm:py-2">
-                  <div className="flex-1 bg-[#181818] rounded-lg">
-                    <SongCard
-                      trackId={item.trackId}
-                      artistLinkTo={item.artistId ? `/${encodeURIComponent(item.artistId)}` : undefined}
-                      artistRouteState={item.artistId ? { userId: item.artistId } : undefined}
-                      isLikedInitial={item.isLiked}
-                      isRepostedInitial={item.isReposted}
-                      onToggleRepost={() => handleRepostToggle(item)}
-                      artistName={item.artist}
-                      title={item.title}
-                      coverUrl={item.coverUrl ?? undefined}
-                      genre={item.genre as any}
-                      likes={item.numberOfLikes.toString()}
-                      reposts={item.numberOfReposts.toString()}
-                      plays={item.numberOfListens.toString()}
-                      comments={item.numberOfComments.toString()}
-                      timeAgo={formatTimeAgo(item.action.date)}
-                      waveformSeed={waveformSeedFromId(item.trackId)}
-                    />
+                  <div className="flex items-start gap-2 py-1.5 sm:gap-4 sm:py-2">
+                    <div className="flex-1 rounded-lg bg-[#181818]">
+                      <SongCard
+                        trackId={item.trackId}
+                        artistLinkTo={
+                          item.artistId
+                            ? `/${encodeURIComponent(item.artistId)}`
+                            : undefined
+                        }
+                        artistRouteState={
+                          item.artistId ? { userId: item.artistId } : undefined
+                        }
+                        isLikedInitial={item.isLiked}
+                        isRepostedInitial={item.isReposted}
+                        onToggleRepost={() => handleRepostToggle(item)}
+                        artistName={item.artist}
+                        title={item.title}
+                        coverUrl={item.coverUrl ?? undefined}
+                        genre={item.genre as any}
+                        likes={item.numberOfLikes.toString()}
+                        reposts={item.numberOfReposts.toString()}
+                        plays={item.numberOfListens.toString()}
+                        comments={item.numberOfComments.toString()}
+                        timeAgo={formatTimeAgo(item.action.date)}
+                        waveformSeed={waveformSeedFromId(item.trackId)}
+                      />
+                    </div>
                   </div>
                 </div>
               );

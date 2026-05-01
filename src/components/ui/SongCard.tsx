@@ -162,6 +162,7 @@ export default function SongCard({
   const [showAlreadyDownloaded, setShowAlreadyDownloaded] = useState(false);
   const [showCopyToast, setShowCopyToast] = useState(false);
   const [randomSeed] = useState(() => Math.random() * 1000000);
+  const [barCount, setBarCount] = useState<number | null>(null);
   const [hoveredSubtrackId, setHoveredSubtrackId] = useState<string | null>(null);
   const copyToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
