@@ -4,11 +4,10 @@ import SearchBar from "../ui/SearchBar";
 
 import { SiSoundcloud } from "react-icons/si";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Outlet } from "react-router-dom";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { useMe } from "../../features/profile/context/useMe";
-import { logout } from "../../features/auth/services/index";
+import { clearClientSessionData, logout } from "../../features/auth/services/index";
 import { io, Socket } from "socket.io-client";
 import {
   getNotifications,
@@ -18,16 +17,18 @@ import {
   unfollowUser,
 } from "@/features/notifications/service/service"; 
 import type { NotificationObject } from "@/features/notifications/types";
-import { getAccessToken } from "@/features/auth/utils/token.utils";
+import { getAccessToken, getStoredUser } from "@/features/auth/utils/token.utils";
 import CheckoutModal from "../../features/premium/components/CheckoutModal";
 import { socketSingleton } from "../../features/conversation/hooks/useSocket";
 import { useUnreadMessages } from "../../features/conversation/hooks/useUnreadMessages";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../../app/store";
 import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
 import { useSubscription } from "@/hooks/useSubscription";
 import SubscriptionBadge from "@/features/premium/components/SubscriptionBadge";
 import MyPlanModal from "@/features/premium/components/MyPlanModal";
+import { clearUser } from "@/store/userSlice";
+import { usePlayer } from "@/features/playerUI/context/usePlayer";
 import { applyTheme } from "../../features/settings/hooks/useTheme";
 import type { Theme } from "../../features/settings/types/settings.types";
 
@@ -68,20 +69,35 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { me } = useMe();
+  const dispatch = useDispatch();
   const currentUserId = useSelector((state: RootState) => state.user.currentUser?.id ?? null);
   const { unreadMessages } = useUnreadMessages(currentUserId);
+  const { setIsPlaying } = usePlayer();
 
   const { tier, isArtist, isArtistPro } = useSubscription();
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
+  const adminMenuRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
+
+  // Admin
+  const storedUser = getStoredUser();
+  const isAdmin = storedUser?.role?.toLowerCase() === "admin";
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+        
+  const adminPageLinks = [
+    { to: "/admin",         label: "Dashboard" },
+    { to: "/admin/reports", label: "Reports" },
+    { to: "/admin/content", label: "Content" },
+    { to: "/admin/users",   label: "Users" },
+  ];
 
   // Notification state
   const [notifications, setNotifications] = useState<NotificationObject[]>([]);
@@ -174,7 +190,6 @@ export default function Navbar() {
   const handleFollowBack = async (actorId: string, isFollowed?: boolean) => {
     if (!actorId) return;
 
-    // Step 1: Optimistic update - update UI immediately
     setNotifications((prev) =>
       prev.map((notif) =>
         notif.actor?.id === actorId
@@ -184,7 +199,6 @@ export default function Navbar() {
     );
 
     try {
-      // Step 2: Sync with backend
       if (isFollowed) {
         await unfollowUser(actorId);
       } else {
@@ -192,7 +206,6 @@ export default function Navbar() {
       }
       setFollowedBack((prev) => new Set([...prev, actorId]));
     } catch {
-      // Step 3: If API call fails, revert the changes
       setNotifications((prev) =>
         prev.map((notif) =>
           notif.actor?.id === actorId
@@ -206,9 +219,18 @@ export default function Navbar() {
   // ── Outside-click handler ─────────────────────────────────────────────────
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
-      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) setProfileMenuOpen(false);
-      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false);
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+        setProfileMenuOpen(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
+      }
+      if (adminMenuRef.current && !adminMenuRef.current.contains(e.target as Node)) {
+        setAdminMenuOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -217,19 +239,28 @@ export default function Navbar() {
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     setMobileMenuOpen(false);
+    setAdminMenuOpen(false);
   }, [location.pathname]);
 
-  const handleSignOut = async () => {
-    const currentTheme = (localStorage.getItem("sc-theme") ||
-      localStorage.getItem("tunify-theme") ||
-      document.documentElement.getAttribute("data-theme")) as Theme | null;
-    try { await logout(); } catch { }
-    if (currentTheme === "light" || currentTheme === "dark") {
-      localStorage.setItem("sc-theme", currentTheme);
-      applyTheme(currentTheme);
-    }
-    navigate("/signin");
-  };
+const handleSignOut = async () => {
+  setIsPlaying(false);
+  
+  const currentTheme = (localStorage.getItem("sc-theme") ||
+    localStorage.getItem("tunify-theme") ||
+    document.documentElement.getAttribute("data-theme")) as Theme | null;
+
+  try { await logout(); } catch { }
+
+  dispatch(clearUser());
+  clearClientSessionData();
+
+  if (currentTheme === "light" || currentTheme === "dark") {
+    localStorage.setItem("sc-theme", currentTheme);
+    applyTheme(currentTheme);
+  }
+
+  navigate("/signed-out", { replace: true }); 
+};
 
   const profileMenuItems = [
     { to: "/me",                    icon: <User size={17} />,       label: "Profile" },
@@ -309,7 +340,34 @@ export default function Navbar() {
           </div>
 
           <div className="hidden shrink-0 items-center gap-4 text-sm md:flex">
-            {hasPaidPlan ? (
+
+            {/* ── Try Free / View My Plan / Admin Pages ── */}
+            {isAdmin ? (
+              <div className="relative" ref={adminMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setAdminMenuOpen((v) => !v)}
+                  className="border border-orange-500 text-white hover:bg-orange-500 font-bold tracking-tight px-3 py-1 rounded-sm transition-colors duration-150 text-xs flex items-center gap-1"
+                >
+                  Admin Pages
+                  <ChevronDown size={14} className={`${adminMenuOpen ? "rotate-180" : ""} transition-transform duration-150`} />
+                </button>
+                {adminMenuOpen && (
+                  <div className="absolute right-0 top-9 w-44 bg-[#111] border border-zinc-800 rounded-sm shadow-2xl z-50 overflow-hidden">
+                    {adminPageLinks.map((item) => (
+                      <Link
+                        key={item.to}
+                        to={item.to}
+                        onClick={() => setAdminMenuOpen(false)}
+                        className="block px-4 py-2 font-bold text-sm text-white hover:text-zinc-400 transition-colors duration-150"
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : hasPaidPlan ? (
               <button
                 onClick={() => setPlanModalOpen(true)}
                 className={`border text-white font-bold tracking-tight px-3 py-1 rounded-sm transition-colors duration-150 text-xs ${planButtonClass}`}
@@ -323,6 +381,7 @@ export default function Navbar() {
                 Try Free
               </ArtistProUpgradeButton>
             )}
+
             <Link to="/artists" className="text-zinc-400 hover:text-white font-bold tracking-tight">For Artists</Link>
             <Link to="/upload" className="text-zinc-400 hover:text-white font-bold tracking-tight ml-1">Upload</Link>
 
@@ -536,7 +595,6 @@ export default function Navbar() {
           </div>
         )}
       </nav>
-      <Outlet />
       {checkoutOpen && <CheckoutModal plan="artist-pro" onClose={() => setCheckoutOpen(false)} />}
       {planModalOpen && <MyPlanModal onClose={() => setPlanModalOpen(false)} />}
     </>

@@ -5,7 +5,10 @@ import { useMe } from "@/features/profile/context/useMe";
 import { useLocation, useNavigate } from "react-router-dom";
 import soundcloudImg from "@/assets/graysound.png";
 import CheckoutModal from "../components/CheckoutModal";
-import { logout } from "@/features/auth/services";
+import { clearClientSessionData, logout } from "@/features/auth/services";
+import { usePlayer } from "@/features/playerUI/context/usePlayer";
+import { useDispatch } from "react-redux";
+import { clearUser } from "@/store/userSlice";
 
 const sections = [
   {
@@ -149,12 +152,14 @@ function MobileComparison({ onCheckout }: { onCheckout: (plan: "artist" | "artis
 }
 
 export default function PlansPage() {
+  const dispatch = useDispatch();
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { me } = useMe();
   const location = useLocation();
   const navigate = useNavigate();
+  const { setIsPlaying } = usePlayer();
   const plansRef = useRef<HTMLElement>(null);
   const comparisonRef = useRef<HTMLElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
@@ -191,11 +196,22 @@ export default function PlansPage() {
     return () => window.cancelAnimationFrame(frame);
   }, [location.hash]);
 
+  useEffect(() => {
+    if (location.hash !== "#available-plans") return;
+    const frame = window.requestAnimationFrame(() => {
+      plansRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [location.hash]);
+
   const scrollToPlans = () => plansRef.current?.scrollIntoView({ behavior: "smooth" });
 
   const handleSignOut = async () => {
+    setIsPlaying(false);
     try { await logout(); } catch {}
-    navigate("/signin");
+    dispatch(clearUser());
+    clearClientSessionData();
+    navigate("/signed-out", { replace: true });
   };
 
   return (
@@ -321,7 +337,7 @@ export default function PlansPage() {
       </section>
 
       {/* ── Available Plans ── */}
-      <section ref={plansRef} className="bg-white py-14 sm:py-20">
+      <section id="available-plans" ref={plansRef} className="scroll-mt-20 bg-white py-14 sm:py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <h2 className="text-zinc-900 font-semibold text-[36px] sm:text-[52px] tracking-tight mb-10 sm:mb-14 text-center">
             Available plans.

@@ -12,7 +12,7 @@ export function DiscoverSection({ title, tracks }: DiscoverSectionProps) {
       <h2 className="mb-3 text-[18px] font-bold tracking-tight text-white sm:text-[22px]">
         {title}
       </h2>
-      <DiscoverTrackCarousel tracks={tracks} />
+      <DiscoverTrackCarousel tracks={tracks} queueId={title} />
     </section>
   );
 }

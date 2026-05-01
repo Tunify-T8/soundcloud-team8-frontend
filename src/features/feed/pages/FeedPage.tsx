@@ -2,7 +2,7 @@ import avatarFallback from "@/assets/avatar.png";
 import SideBar from "../../../components/layout/Sidebar";
 import SongCard from "../../../components/ui/SongCard";
 import { Repeat2 } from "lucide-react";
-import type { FeedItem, FeedResponse } from "@/features/feed/type";
+import type { FeedItem } from "@/features/feed/type";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { feedService } from "@/features/feed/feedservice";
@@ -38,6 +38,35 @@ type HoverCardState = {
   isLoading: boolean;
 };
 
+const FEED_CACHE_KEY = "feed_page_cache_v1";
+
+type FeedPageCache = {
+  feedItems: FeedItem[];
+  page: number;
+  hasMore: boolean;
+};
+
+function readFeedCache(): FeedPageCache | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.sessionStorage.getItem(FEED_CACHE_KEY);
+    return raw ? (JSON.parse(raw) as FeedPageCache) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeFeedCache(cache: FeedPageCache) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.sessionStorage.setItem(FEED_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // Ignore cache write failures.
+  }
+}
+
 const dedupeFeedByTrackId = (items: FeedItem[]): FeedItem[] => {
   const byTrackId = new Map<string, FeedItem>();
 
@@ -69,15 +98,18 @@ const dedupeFeedByTrackId = (items: FeedItem[]): FeedItem[] => {
 };
 
 export default function FeedPage() {
+  const initialCache = readFeedCache();
   const { me } = useMe();
-  const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [feedItems, setFeedItems] = useState<FeedItem[]>(
+    () => initialCache?.feedItems ?? [],
+  );
+  const [loading, setLoading] = useState(!initialCache);
   const [error, setError] = useState<string | null>(null);
   const [showReposts, setShowReposts] = useState(true);
 
   const FEED_PAGE_LIMIT = 20;
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(() => initialCache?.page ?? 1);
+  const [hasMore, setHasMore] = useState(() => initialCache?.hasMore ?? true);
   const [loadingMore, setLoadingMore] = useState(false);
   const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
   const lastRequestedPageRef = useRef(1);
@@ -95,7 +127,7 @@ export default function FeedPage() {
   const requestedUserIdsRef = useRef<Set<string>>(new Set());
 
   const refreshFeed = useCallback(async () => {
-    setLoading(true);
+    setLoading(feedItems.length === 0);
     setError(null);
     setPage(1);
     setHasMore(true);
@@ -113,19 +145,32 @@ export default function FeedPage() {
             ? Boolean((data as any).hasMore)
             : data.items.length === (data.limit ?? FEED_PAGE_LIMIT);
 
-        setFeedItems(dedupeFeedByTrackId(data.items));
+        const nextItems = dedupeFeedByTrackId(data.items);
+        setFeedItems(nextItems);
         setPage(data.page ?? 1);
         setHasMore(nextHasMore);
+        writeFeedCache({
+          feedItems: nextItems,
+          page: data.page ?? 1,
+          hasMore: nextHasMore,
+        });
       } else {
         setFeedItems([]);
         setHasMore(false);
+        writeFeedCache({
+          feedItems: [],
+          page: 1,
+          hasMore: false,
+        });
       }
     } catch {
-      setError("Failed to load feed");
+      if (feedItems.length === 0) {
+        setError("Failed to load feed");
+      }
     } finally {
       setLoading(false);
     }
-  }, [FEED_PAGE_LIMIT]);
+  }, [FEED_PAGE_LIMIT, feedItems.length]);
 
   const ensureHoverCardData = async (item: FeedItem) => {
     const userId = item.action.id;
@@ -243,7 +288,15 @@ export default function FeedPage() {
           ? Boolean((data as any).hasMore)
           : data.items.length === (data.limit ?? FEED_PAGE_LIMIT);
 
-      setFeedItems((prev) => dedupeFeedByTrackId([...prev, ...data.items]));
+      setFeedItems((prev) => {
+        const nextItems = dedupeFeedByTrackId([...prev, ...data.items]);
+        writeFeedCache({
+          feedItems: nextItems,
+          page: data.page ?? nextPage,
+          hasMore: nextHasMore,
+        });
+        return nextItems;
+      });
       setPage(data.page ?? nextPage);
       setHasMore(nextHasMore);
     } finally {
@@ -315,7 +368,7 @@ export default function FeedPage() {
     return () => observer.disconnect();
   }, [hasMore, loading, loadingMore, page]);
 
-  if (loading) {
+  if (loading && feedItems.length === 0) {
     return (
       <div
         data-testid="feed-loading"
@@ -326,7 +379,7 @@ export default function FeedPage() {
     );
   }
 
-  if (error) {
+  if (error && feedItems.length === 0) {
     return (
       <div
         data-testid="feed-error"
@@ -423,7 +476,7 @@ export default function FeedPage() {
                       >
                         <img
                           src={item.action.avatarUrl || avatarFallback}
-                          alt={item.action.username || item.action.username}
+                          alt={item.action.username}
                           data-testid={`feed-avatar-${item.trackId}`}
                           className="h-7 w-7 rounded-full object-cover cursor-pointer sm:h-8 sm:w-8"
                         />
@@ -434,7 +487,7 @@ export default function FeedPage() {
                         data-testid={`feed-username-link-${item.trackId}`}
                         className="text-[13px] font-semibold text-white hover:text-zinc-300 sm:text-base"
                       >
-                        {item.action.username || item.action.username}
+                        {item.action.username}
                       </Link>
 
                       {hoveredTrackId === item.trackId && (
@@ -513,9 +566,17 @@ export default function FeedPage() {
                   </div>
 
                   <div className="flex items-start gap-2 py-1.5 sm:gap-4 sm:py-2">
-                    <div className="flex-1 bg-[#181818] rounded-lg">
+                    <div className="flex-1 rounded-lg bg-[#181818]">
                       <SongCard
                         trackId={item.trackId}
+                        artistLinkTo={
+                          item.artistId
+                            ? `/${encodeURIComponent(item.artistId)}`
+                            : undefined
+                        }
+                        artistRouteState={
+                          item.artistId ? { userId: item.artistId } : undefined
+                        }
                         isLikedInitial={item.isLiked}
                         isRepostedInitial={item.isReposted}
                         onToggleRepost={() => handleRepostToggle(item)}

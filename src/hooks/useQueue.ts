@@ -12,6 +12,7 @@ import {
   removeTrack,
   toggleShuffle,
   toggleRepeat,
+  setRepeatMode,
   clearQueue,
   selectQueueTracks,
   selectCurrentIndex,
@@ -30,6 +31,7 @@ import { selectPlayContext } from "@/store/playContextSlice";
 import type {
   buildQueueParams,
   queueTrack,
+  repeatMode,
   useQueueReturn,
 } from "@/features/player-core/types";
 
@@ -155,6 +157,10 @@ export function useQueue(): useQueueReturn {
   const handleRemove  = useCallback((id: string) => dispatch(removeTrack(id)), [dispatch]);
   const handleShuffle = useCallback(() => dispatch(toggleShuffle()),           [dispatch]);
   const handleRepeat  = useCallback(() => dispatch(toggleRepeat()),            [dispatch]);
+  const handleSetRepeatMode = useCallback(
+    (mode: repeatMode) => dispatch(setRepeatMode(mode)),
+    [dispatch]
+  );
   const handleClear   = useCallback(() => dispatch(clearQueue()),              [dispatch]);
 
   return {
@@ -179,6 +185,7 @@ export function useQueue(): useQueueReturn {
     jumpTo,
     toggleShuffle: handleShuffle,
     toggleRepeat:  handleRepeat,
+    setRepeatMode: handleSetRepeatMode,
     clearQueue:    handleClear,
   };
 }

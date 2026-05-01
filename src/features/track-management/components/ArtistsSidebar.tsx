@@ -31,11 +31,6 @@ export default function ArtistsSidebar() {
       <span className="text-[10px]">Stats</span>
     </button>
     </Link>
-
-    <button data-testid="sidebar-nav-for-artists" className="flex flex-col items-center gap-1.5 text-[hsl(0,0%,45%)] hover:text-white transition-colors w-full py-3">
-      <Star className="w-5 h-5" />
-      <span className="text-[10px]">Featured</span>
-    </button>
       <div className="mt-auto">
         <button data-testid="sidebar-more-menu" className="flex flex-col gap-[3px] items-center text-[hsl(0,0%,45%)] hover:text-white transition-colors px-3 py-2">
           <span className="w-1 h-1 rounded-full bg-current" />

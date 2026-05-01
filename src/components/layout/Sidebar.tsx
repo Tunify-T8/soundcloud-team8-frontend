@@ -11,6 +11,7 @@ import UpgradeModal from "@/features/premium/components/UpgradeModal";
 import { api } from "../../features/auth/services/api";
 import avatarFallback from "@/assets/avatar.png";
 import { notifySocialGraphUpdated } from "../../features/profile/socialGraphEvents";
+import { notifyTrackLikeChanged } from "@/features/engagement/engagementEvents";
 import amplifyImg from "@/assets/amplifytool.png";
 import replaceImg from "@/assets/replace.png";
 import distributeImg from "@/assets/distribute.png";
@@ -115,6 +116,9 @@ export default function SideBar() {
   const [likesLoading, setLikesLoading] = useState(true);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [pendingFollowId, setPendingFollowId] = useState<string | null>(null);
+  const [followedSuggestedArtistIds, setFollowedSuggestedArtistIds] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   const handleArtistToolClick = () => {
     setUpgradeOpen(true);
@@ -182,16 +186,21 @@ export default function SideBar() {
   };
 
   const handleSuggestedArtistFollow = async (artistId: string) => {
+    if (pendingFollowId === artistId) return;
+
     setPendingFollowId(artistId);
+    setFollowedSuggestedArtistIds((prev) => new Set(prev).add(artistId));
 
     try {
       await followingService.followUser(artistId);
-      setSuggestedUsers((prev) =>
-        prev.filter((artist) => artist.id !== artistId),
-      );
       notifySocialGraphUpdated();
     } catch (err) {
       console.error("Failed to follow suggested artist", err);
+      setFollowedSuggestedArtistIds((prev) => {
+        const next = new Set(prev);
+        next.delete(artistId);
+        return next;
+      });
     } finally {
       setPendingFollowId((current) => (current === artistId ? null : current));
     }
@@ -382,11 +391,18 @@ export default function SideBar() {
                   <button
                     data-testid={`suggested-artist-follow-btn-${artist.id}`}
                     type="button"
-                    disabled={pendingFollowId === artist.id}
+                    disabled={
+                      pendingFollowId === artist.id ||
+                      followedSuggestedArtistIds.has(artist.id)
+                    }
                     onClick={() => handleSuggestedArtistFollow(artist.id)}
-                    className="font-semibold rounded px-5 py-1.5 text-sm transition disabled:opacity-60 bg-white text-black hover:bg-gray-100"
+                    className="font-semibold rounded px-5 py-1.5 text-sm transition bg-white text-black hover:bg-gray-100 disabled:bg-white disabled:text-black disabled:opacity-100"
                   >
-                    {pendingFollowId === artist.id ? "Following..." : "Follow"}
+                    {followedSuggestedArtistIds.has(artist.id)
+                      ? "Followed"
+                      : pendingFollowId === artist.id
+                        ? "Following..."
+                        : "Follow"}
                   </button>
                 </div>
               ))
@@ -631,20 +647,40 @@ function LikedTrackRow({
     if (isLiked) {
       setIsLiked(false);
       onUnlike(track.id);
+      notifyTrackLikeChanged({
+        trackId: track.id,
+        isLiked: false,
+        likesCount: Math.max(0, track.likesCount - 1),
+      });
       try {
         await feedService.unlikeTrack(track.id);
       } catch {
         setIsLiked(true);
         onReLike(track.id);
+        notifyTrackLikeChanged({
+          trackId: track.id,
+          isLiked: true,
+          likesCount: track.likesCount,
+        });
       }
     } else {
       setIsLiked(true);
       onReLike(track.id);
+      notifyTrackLikeChanged({
+        trackId: track.id,
+        isLiked: true,
+        likesCount: track.likesCount + 1,
+      });
       try {
         await feedService.likeTrack(track.id);
       } catch {
         setIsLiked(false);
         onUnlike(track.id);
+        notifyTrackLikeChanged({
+          trackId: track.id,
+          isLiked: false,
+          likesCount: track.likesCount,
+        });
       }
     }
   };

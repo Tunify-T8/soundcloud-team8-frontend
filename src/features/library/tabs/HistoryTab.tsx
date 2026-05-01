@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import CollectionGrid from "../components/CollectionGrid";
 import TrackRow from "../components/TrackRow";
-import { getListeningHistory, mapHistoryToTrackItem } from "../libraryService";
+import {
+  clearListeningHistory,
+  getListeningHistory,
+  mapHistoryToTrackItem,
+} from "../libraryService";
 import type { TrackItem, CollectionItem } from "../types";
-import { HISTORY_TRACKS } from "../tests/mockdata";
 import { usePlayContext } from "@/hooks/usePlayContext";
 import { useMe } from "@/features/profile/context/useMe";
 const STORAGE_KEY = "recentlyPlayed";
@@ -43,6 +46,7 @@ export default function HistoryTab() {
   const [error, setError] = useState<string | null>(null);
   const [showPopup, setShowPopup] = useState(false);
   const [historyCleared, setHistoryCleared] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
   const [query, setQuery] = useState("");
   const popupRef = useRef<HTMLDivElement>(null);
 
@@ -52,14 +56,10 @@ export default function HistoryTab() {
       try {
         setLoading(true);
         setError(null);
-        //real api calls
-        // const res = await getListeningHistory(1, 20);
-        // if (!cancelled) setTracks((res.data ?? []).map(mapHistoryToTrackItem));
-        //mock data
         const res = await getListeningHistory(1, 20);
         if (!cancelled) {
           const apiTracks = (res.data ?? []).map(mapHistoryToTrackItem);
-          setTracks(apiTracks.length > 0 ? apiTracks : HISTORY_TRACKS);
+          setTracks(apiTracks.length > 0 ? apiTracks : []);
         }
       } catch (err: unknown) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load history");
@@ -91,10 +91,21 @@ export default function HistoryTab() {
     );
   }, [tracks, query]);
 
-  function handleClearHistory() {
-    setTracks([]);
-    setHistoryCleared(true);
-    setShowPopup(false);
+  async function handleClearHistory() {
+    try {
+      setIsClearing(true);
+      setError(null);
+      await clearListeningHistory();
+      setTracks([]);
+      setHistoryCleared(true);
+      setShowPopup(false);
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : "Failed to clear listening history",
+      );
+    } finally {
+      setIsClearing(false);
+    }
   }
 
   return (
@@ -128,9 +139,10 @@ export default function HistoryTab() {
                     <button
                       data-testid="history-clear-confirm"
                       onClick={handleClearHistory}
+                      disabled={isClearing}
                       className="bg-white text-black text-xs font-bold px-3 py-1.5 rounded-full hover:bg-zinc-200 transition-colors"
                     >
-                      Clear my history
+                      {isClearing ? "Clearing..." : "Clear my history"}
                     </button>
                   </div>
                 </div>
