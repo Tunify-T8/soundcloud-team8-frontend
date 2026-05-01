@@ -27,6 +27,7 @@ type DiscoverPageCache = {
   discoverTracks: DiscoverTrack[];
   albumTracks: DiscoverTrack[];
   madeForYouTracks: DiscoverTrack[];
+  trendingByGenreTracks: DiscoverTrack[];
   artistsToWatchTracks: DiscoverArtist[];
   uploadedTracks: Track[];
 };
@@ -105,12 +106,18 @@ export default function DiscoverPage() {
   const [discoverTracks, setDiscoverTracks] = useState<DiscoverTrack[]>(
     () => initialCache?.discoverTracks ?? [],
   );
+  const [recentlyPlayedTracks] = useState<DiscoverTrack[]>(
+    loadRecentlyPlayedFromStorage,
+  );
   const [albumTracks, setAlbumTracks] = useState<DiscoverTrack[]>(
     () => initialCache?.albumTracks ?? [],
   );
   const [madeForYouTracks, setMadeForYouTracks] = useState<DiscoverTrack[]>(
     () => initialCache?.madeForYouTracks ?? [],
   );
+  const [trendingByGenreTracks, setTrendingByGenreTracks] = useState<
+    DiscoverTrack[]
+  >(() => initialCache?.trendingByGenreTracks ?? []);
   const [uploadedTracks, setUploadedTracks] = useState<Track[]>(
     () => initialCache?.uploadedTracks ?? [],
   );
@@ -143,31 +150,38 @@ export default function DiscoverPage() {
           Array.isArray(results[0].value.items)
             ? results[0].value.items
             : discoverTracks;
-        const nextArtistsToWatchTracks =
+        const nextMadeForYouTracks =
           results[1].status === "fulfilled" &&
-          Array.isArray(results[1].value.items)
-            ? results[1].value.items
-            : artistsToWatchTracks;
-        const nextAlbumTracks =
+          Array.isArray(results[1].value.data)
+            ? results[1].value.data.map(mapRecommendationToDiscoverTrack)
+            : madeForYouTracks;
+        const nextArtistsToWatchTracks =
           results[2].status === "fulfilled" &&
           Array.isArray(results[2].value.items)
             ? results[2].value.items
-            : albumTracks;
-        const nextMadeForYouTracks =
+            : artistsToWatchTracks;
+        const nextAlbumTracks =
           results[3].status === "fulfilled" &&
           Array.isArray(results[3].value.items)
             ? results[3].value.items
-            : madeForYouTracks;
+            : albumTracks;
+        const nextTrendingByGenreTracks =
+          results[4].status === "fulfilled" &&
+          Array.isArray(results[4].value.items)
+            ? results[4].value.items
+            : trendingByGenreTracks;
 
         setDiscoverTracks(nextDiscoverTracks);
+        setMadeForYouTracks(nextMadeForYouTracks);
         setArtistsToWatchTracks(nextArtistsToWatchTracks);
         setAlbumTracks(nextAlbumTracks);
-        setMadeForYouTracks(nextMadeForYouTracks);
+        setTrendingByGenreTracks(nextTrendingByGenreTracks);
 
         writeDiscoverCache({
           discoverTracks: nextDiscoverTracks,
           albumTracks: nextAlbumTracks,
           madeForYouTracks: nextMadeForYouTracks,
+          trendingByGenreTracks: nextTrendingByGenreTracks,
           artistsToWatchTracks: nextArtistsToWatchTracks,
           uploadedTracks,
         });
@@ -186,7 +200,7 @@ export default function DiscoverPage() {
     return () => {
       isMounted = false;
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -201,6 +215,7 @@ export default function DiscoverPage() {
           discoverTracks,
           albumTracks,
           madeForYouTracks,
+          trendingByGenreTracks,
           artistsToWatchTracks,
           uploadedTracks: nextUploadedTracks,
         });
@@ -210,7 +225,13 @@ export default function DiscoverPage() {
     return () => {
       isMounted = false;
     };
-  }, [discoverTracks, albumTracks, madeForYouTracks, artistsToWatchTracks]);
+  }, [
+    discoverTracks,
+    albumTracks,
+    madeForYouTracks,
+    trendingByGenreTracks,
+    artistsToWatchTracks,
+  ]);
 
   const latestUploadedTrack = useMemo(() => {
     if (uploadedTracks.length === 0) return null;
@@ -258,16 +279,36 @@ export default function DiscoverPage() {
                     me?.displayName || me?.username || latestUploadedTrack.artist
                   }
                   onTrackUpdated={(updatedTrack) => {
-                    setUploadedTracks((prev) =>
-                      prev.map((track) =>
+                    setUploadedTracks((prev) => {
+                      const nextUploadedTracks = prev.map((track) =>
                         track.id === updatedTrack.id ? updatedTrack : track,
-                      ),
-                    );
+                      );
+                      writeDiscoverCache({
+                        discoverTracks,
+                        albumTracks,
+                        madeForYouTracks,
+                        trendingByGenreTracks,
+                        artistsToWatchTracks,
+                        uploadedTracks: nextUploadedTracks,
+                      });
+                      return nextUploadedTracks;
+                    });
                   }}
                   onTrackDeleted={(trackId) => {
-                    setUploadedTracks((prev) =>
-                      prev.filter((track) => track.id !== trackId),
-                    );
+                    setUploadedTracks((prev) => {
+                      const nextUploadedTracks = prev.filter(
+                        (track) => track.id !== trackId,
+                      );
+                      writeDiscoverCache({
+                        discoverTracks,
+                        albumTracks,
+                        madeForYouTracks,
+                        trendingByGenreTracks,
+                        artistsToWatchTracks,
+                        uploadedTracks: nextUploadedTracks,
+                      });
+                      return nextUploadedTracks;
+                    });
                   }}
                 />
               ) : null}
