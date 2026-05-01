@@ -23,6 +23,7 @@ import ForgotPasswordPage from "./features/auth/pages/ForgotPasswordPage";
 import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage";
 import MessagesPage from "./features/conversation/pages/MessagesPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
+import AdminRoute from "./routes/AdminRoute";
 import VerifyEmailPage from "./features/auth/pages/VerifyEmailPage";
 import { ProfileProvider } from "./features/profile/context/ProfileContext";
 import useRestoreSession from "./hooks/useRestoreSession";
@@ -43,9 +44,14 @@ import InsightsOverviewPage from "./features/insights/components/InsightsOvervie
 import PlansPage from "./features/premium/pages/PlansPage";
 import AllTabPage from "./features/profile/pages/UserInfoBar/AllTabPage";
 import { AdPopup } from "./features/premium/components/AdPopUp";
+import AdminDashboardPage from "./features/admin/pages/AdminDashboardPage";
+import AdminReportsPage from "./features/admin/pages/AdminReportsPage";
+import AdminContentPage from "./features/admin/pages/AdminContentPage";
+import AdminUsersPage from "./features/admin/pages/AdminUsersPage";
 import SettingsPage from "./features/settings/SettingsPage";
 import VerificationPage from "./features/settings/VerificationPage";
 import SoundCloudLanding from "./features/landing/pages/landingPage";
+
 
 const router = createBrowserRouter([
   // 1. PUBLIC ROUTES (Guests only)
@@ -93,6 +99,7 @@ const router = createBrowserRouter([
       // This index route ensures that if a logged-in user hits "/", 
       // they are instantly moved to /discover.
       {
+        index: true,
         element: <Navigate to="/discover" replace />,
       },
       { path: "/discover", element: <DiscoverPage /> },
@@ -110,11 +117,9 @@ const router = createBrowserRouter([
         ]
       },
       { path: "/settings/verification", element: <VerificationPage /> },
-      {
-        path: "/messages",
-        element: <MessagesPage />,
-        children: [{ path: ":conversationId", element: <MessagesPage /> }]
-      },
+      { path: "/messages", element: <MessagesPage /> },
+      { path: "/messages/:conversationId", element: <MessagesPage /> },
+      
       { path: "/tracks/:trackId", element: <TrackPage /> },
       { path: "/tracks/:trackId/likes", element: <LikesPage /> },
       { path: "/tracks/:trackId/reposts", element: <RepostsPage /> },
@@ -133,6 +138,38 @@ const router = createBrowserRouter([
       { path: "/collections/:id", element: <PlaylistPage /> },
       { path: "/playlist/:id", element: <PlaylistPage /> },
       { path: "/collections/token/:token", element: <PlaylistPage /> },
+      {
+        path: "/admin",
+        element: (
+          <AdminRoute>
+            <AdminDashboardPage />
+          </AdminRoute>
+        ),
+      },
+      {
+        path: "/admin/reports",
+        element: (
+          <AdminRoute>
+            <AdminReportsPage />
+          </AdminRoute>
+        ),
+      },
+      {
+        path: "/admin/content",
+        element: (
+          <AdminRoute>
+            <AdminContentPage />
+          </AdminRoute>
+        ),
+      },
+      {
+        path: "/admin/users",
+        element: (
+          <AdminRoute>
+            <AdminUsersPage />
+          </AdminRoute>
+        ),
+      },
       {
         path: "/me",
         element: <ProfilePage />,

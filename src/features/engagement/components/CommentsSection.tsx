@@ -2,6 +2,12 @@ import { useState, useEffect } from 'react';
 import { Heart, Send, Trash2 } from 'lucide-react';
 import { engagementService } from '../services/engagementService';
 import type { ApiComment, ApiReply } from '../types';
+import { AdminIDDisplay } from '@/features/admin/components/AdminIDDisplay';
+import {
+  HIDDEN_COMMENTS_UPDATED_EVENT,
+  getHiddenCommentIds,
+  isCommentHidden,
+} from '@/features/admin/utils/hiddenComments';
 
 export interface CommentsSectionProps {
   trackId: string;
@@ -59,6 +65,19 @@ const CommentsSection = ({
   const [repliesMap, setRepliesMap] = useState<Record<string, ApiReply[]>>({});
   const [loadingReplies, setLoadingReplies] = useState<Set<string>>(new Set());
   const [showReplies, setShowReplies] = useState<Set<string>>(new Set());
+  const [hiddenCommentIds, setHiddenCommentIds] = useState<Set<string>>(() => getHiddenCommentIds());
+
+  useEffect(() => {
+    const syncHiddenCommentIds = () => setHiddenCommentIds(getHiddenCommentIds());
+
+    window.addEventListener(HIDDEN_COMMENTS_UPDATED_EVENT, syncHiddenCommentIds);
+    window.addEventListener('storage', syncHiddenCommentIds);
+
+    return () => {
+      window.removeEventListener(HIDDEN_COMMENTS_UPDATED_EVENT, syncHiddenCommentIds);
+      window.removeEventListener('storage', syncHiddenCommentIds);
+    };
+  }, []);
 
   useEffect(() => {
     if (!trackId) return;
@@ -193,6 +212,10 @@ const CommentsSection = ({
     }
   };
 
+  const visibleComments = comments.filter(
+    (comment) => !hiddenCommentIds.has(comment.commentId) && !isCommentHidden(comment.commentId)
+  );
+
   if (loading) {
     return <div className="p-6 text-zinc-500 text-sm">Loading comments…</div>;
   }
@@ -217,11 +240,11 @@ const CommentsSection = ({
         </button>
       </div>
 
-      {comments.length === 0 && (
+      {visibleComments.length === 0 && (
         <p className="text-zinc-500 text-sm text-center py-8">No comments yet. Be the first!</p>
       )}
 
-      {comments.map((c) => {
+      {visibleComments.map((c) => {
         const isLiked = likedCommentIds.has(c.commentId);
         const isOpen = showReplies.has(c.commentId);
         const isLoadingReplies = loadingReplies.has(c.commentId);
@@ -243,6 +266,7 @@ const CommentsSection = ({
                   <div className="flex items-center gap-2">
                     <p className="text-white text-sm font-medium">{c.user.username}</p>
                     <span className="text-zinc-600 text-[10px]">{timeAgo(c.createdAt)}</span>
+                    <AdminIDDisplay id={c.commentId} label="Comment ID" variant="icon" />
                   </div>
                   <p className="text-zinc-300 text-sm mt-0.5">{c.text}</p>
 
@@ -323,63 +347,66 @@ const CommentsSection = ({
                   <p className="text-zinc-500 text-xs">Loading replies…</p>
                 ) : (
                   replies.map((r) => {
-  const rInitials = r.user.username.slice(0, 2).toUpperCase();
-  const rAvatar = r.user.avatarUrl ?? makeCommentAvatar(rInitials, 28);
-  const isReplyOwner = (r.user.userId ?? (r.user as any).id) === currentUserId;
-  return (
-    <div key={r.replyId} className="flex gap-2 justify-between items-start">
-      <div className="flex gap-2">
-        <img
-          src={rAvatar}
-          className="w-7 h-7 rounded-full object-cover shrink-0"
-          alt={r.user.username}
-        />
-        <div>
-          <p className="text-white text-xs font-medium">{r.user.username}</p>
-          <p className="text-zinc-300 text-xs">{r.text}</p>
-        </div>
-      </div>
-      {isReplyOwner && (
-        <button
-          onClick={async () => {
-            try {
-              await engagementService.deleteComment(r.replyId);
-              setRepliesMap((prev) => {
-                const updatedReplies = (prev[c.commentId] ?? []).filter(
-                  (reply) => reply.replyId !== r.replyId,
-                );
-                return {
-                  ...prev,
-                  [c.commentId]: updatedReplies,
-                };
-              });
-              setComments((prev) =>
-                prev.map((comment) =>
-                  comment.commentId === c.commentId
-                    ? {
-                        ...comment,
-                        repliesCount: Math.max(0, comment.repliesCount - 1),
-                      }
-                    : comment,
-                ),
-              );
-              setShowReplies((prev) => {
-                const next = new Set(prev);
-                if ((replies.length - 1) <= 0) {
-                  next.delete(c.commentId);
-                }
-                return next;
-              });
-            } catch {}
-          }}
-          className="hover:text-red-400 transition flex items-center gap-1 text-zinc-500 text-[10px] shrink-0"
-        >
-          <Trash2 className="w-3 h-3" />
-        </button>
-      )}
-    </div>
-  );
-})
+                    const rInitials = r.user.username.slice(0, 2).toUpperCase();
+                    const rAvatar = r.user.avatarUrl ?? makeCommentAvatar(rInitials, 28);
+                    const isReplyOwner = (r.user.userId ?? (r.user as any).id) === currentUserId;
+                    return (
+                      <div key={r.replyId} className="flex gap-2 justify-between items-start">
+                        <div className="flex gap-2">
+                          <img
+                            src={rAvatar}
+                            className="w-7 h-7 rounded-full object-cover shrink-0"
+                            alt={r.user.username}
+                          />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="text-white text-xs font-medium">{r.user.username}</p>
+                              <AdminIDDisplay id={r.replyId} label="Reply ID" variant="icon" />
+                            </div>
+                            <p className="text-zinc-300 text-xs">{r.text}</p>
+                          </div>
+                        </div>
+                        {isReplyOwner && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                await engagementService.deleteComment(r.replyId);
+                                setRepliesMap((prev) => {
+                                  const updatedReplies = (prev[c.commentId] ?? []).filter(
+                                    (reply) => reply.replyId !== r.replyId,
+                                  );
+                                  return {
+                                    ...prev,
+                                    [c.commentId]: updatedReplies,
+                                  };
+                                });
+                                setComments((prev) =>
+                                  prev.map((comment) =>
+                                    comment.commentId === c.commentId
+                                      ? {
+                                          ...comment,
+                                          repliesCount: Math.max(0, comment.repliesCount - 1),
+                                        }
+                                      : comment,
+                                  ),
+                                );
+                                setShowReplies((prev) => {
+                                  const next = new Set(prev);
+                                  if ((replies.length - 1) <= 0) {
+                                    next.delete(c.commentId);
+                                  }
+                                  return next;
+                                });
+                              } catch {}
+                            }}
+                            className="hover:text-red-400 transition flex items-center gap-1 text-zinc-500 text-[10px] shrink-0"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })
                 )}
               </div>
             )}

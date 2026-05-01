@@ -17,9 +17,11 @@ export function usePlayback({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const streamExpiryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const trackIdRef = useRef(trackId);
+  const completionReportedRef = useRef(false);
 
   useEffect(() => {
     trackIdRef.current = trackId;
+    completionReportedRef.current = false;
   }, [trackId]);
 
   const [bundle, setBundle] = useState<playbackBundle | null>(null);
@@ -86,6 +88,15 @@ export function usePlayback({
     },
     [],
   );
+
+  const reportCompletionOnce = useCallback((completedTrackId: string) => {
+    if (!completedTrackId || completionReportedRef.current) return;
+
+    completionReportedRef.current = true;
+    void playbackService.reportCompleted(completedTrackId).catch(() => {
+      completionReportedRef.current = false;
+    });
+  }, []);
 
   // ── Load track ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -182,9 +193,7 @@ export function usePlayback({
         audio.pause();
         audio.currentTime = duration;
         setStatus("paused");
-        if (trackId) {
-          playbackService.reportCompleted(trackId);
-        }
+        reportCompletionOnce(trackId);
         return;
       }
 
@@ -217,9 +226,7 @@ export function usePlayback({
 
     const onEnded = () => {
       setStatus("paused");
-      if (trackId) {
-        playbackService.reportCompleted(trackId);
-      }
+      reportCompletionOnce(trackId);
     };
 
     const onError = () => {
@@ -244,7 +251,7 @@ export function usePlayback({
       audio.removeEventListener("ended", onEnded);
       audio.removeEventListener("error", onError);
     };
-  }, [trackId, access, duration]);
+  }, [trackId, access, duration, reportCompletionOnce]);
 
   // ── Controls ──────────────────────────────────────────────────────────────
   const play = useCallback(() => {
