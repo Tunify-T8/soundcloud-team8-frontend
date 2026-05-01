@@ -295,7 +295,7 @@ const handleSignOut = async () => {
       { label: "Keyboard shortcuts", href: "/shortcuts" },
     ]},
     { group: [
-      { label: "Subscription",       href: "/subscription" },
+      { label: "Subscriptions",      href: "/subscriptions" },
       { label: "Settings",           href: "/settings" },
       { label: "Sign out",           action: handleSignOut },
     ]},
