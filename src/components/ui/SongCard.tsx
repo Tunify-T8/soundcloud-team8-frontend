@@ -999,21 +999,30 @@ export default function SongCard({
       ) : null}
 
       {showDownloadSuccessToast ? (
-        <div className="fixed right-6 top-20 z-[140]">
-          <div className="flex max-w-[400px] items-start gap-3 rounded-[4px] border border-zinc-500 bg-[#2f2f2f] px-4 py-3 text-white shadow-xl">
+        <div className="fixed inset-0 z-[140] flex items-center justify-center px-4">
+          <button
+            type="button"
+            aria-label="Dismiss download success message"
+            onClick={() => setShowDownloadSuccessToast(false)}
+            className="absolute inset-0 bg-black/35 backdrop-blur-[2px]"
+          />
+          <div className="relative flex max-w-[420px] items-start gap-3 rounded-xl border border-zinc-500 bg-[#2b2b2b] px-5 py-4 text-white shadow-2xl">
             <Check className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />
-            <div className="text-[13px] font-semibold leading-tight">
-              <span>Success! You can find your downloads at </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowDownloadSuccessToast(false);
-                  navigate("/me/downloads");
-                }}
-                className="text-[#2f7fdc] underline"
-              >
-                Downloads
-              </button>
+            <div className="text-sm font-semibold leading-snug">
+              <div className="mb-1 text-white">Download complete.</div>
+              <div className="text-zinc-300">
+                Your file is saved in Downloads.
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDownloadSuccessToast(false);
+                    navigate("/me/downloads");
+                  }}
+                  className="ml-1 font-bold text-[#66a8ff] underline underline-offset-2"
+                >
+                  Open Downloads
+                </button>
+              </div>
             </div>
           </div>
         </div>
