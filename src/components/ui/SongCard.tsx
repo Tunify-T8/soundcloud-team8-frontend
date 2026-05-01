@@ -339,7 +339,10 @@ export default function SongCard({
   const visibleBars = useMemo(() => {
     if (!barCount || barCount >= bars.length) return bars;
     const step = bars.length / barCount;
-    return Array.from({ length: barCount }, (_, i) => bars[Math.floor(i * step)]);
+    return Array.from(
+      { length: barCount },
+      (_, i) => bars[Math.floor(i * step)],
+    );
   }, [bars, barCount]);
 
   const displayProgress = isThisTrack ? playerProgress : progress;

@@ -4,6 +4,7 @@ import type {
   SearchResult,
   LikedTrack,
   SuggestedArtist,
+  AutocompleteResults,
 } from "@/features/feed/type";
 import { api } from "@/features/auth/services/api";
 interface FeedQueryParams {
@@ -275,6 +276,35 @@ export const feedService = {
       return response.data.data ?? [];
     } catch {
       return [];
+    }
+  },
+
+  async searchAutocomplete(query: string): Promise<AutocompleteResults> {
+    const trimmed = query.trim();
+    if (!trimmed) {
+      return { tracks: [], users: [], collections: [] };
+    }
+    try {
+      const response = await api.get("/search/autocomplete", {
+        params: { q: trimmed.toLowerCase() },
+      });
+      const data = response.data ?? {};
+      return {
+        tracks: (data.tracks ?? []).map((item: any) => ({
+          ...item,
+          type: "track",
+        })),
+        users: (data.users ?? []).map((item: any) => ({
+          ...item,
+          type: "user",
+        })),
+        collections: (data.collections ?? []).map((item: any) => ({
+          ...item,
+          type: "collection",
+        })),
+      };
+    } catch {
+      return { tracks: [], users: [], collections: [] };
     }
   },
 
