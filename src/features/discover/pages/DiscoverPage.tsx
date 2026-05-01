@@ -4,12 +4,14 @@ import SideBar from "@/components/layout/Sidebar";
 import type {
   DiscoverArtist,
   DiscoverTrack,
+  RecommendationItemDto,
 } from "@/features/discover/Discover";
 import { ArtistsToWatchSection } from "../components/ArtistsToWatchSection";
 import { DiscoverSection } from "../components/DiscoverSection";
 import { LatestUploadSection } from "../components/LatestUploadSection";
 import {
   getDiscoverTracks,
+  getRecommendations,
   getSuggestedArtists,
   getTrendingAlbums,
   getTrendingTracks,
@@ -50,6 +52,54 @@ function writeDiscoverCache(cache: DiscoverPageCache) {
   }
 }
 
+const RECENTLY_PLAYED_KEY = "recentlyPlayed";
+
+type RecentlyPlayedEntry = {
+  id: string;
+  title: string;
+  artworkUrl?: string;
+  entityType?: "track" | "playlist" | "album";
+  linkTo?: string;
+};
+
+function loadRecentlyPlayedFromStorage(): DiscoverTrack[] {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const raw = localStorage.getItem(RECENTLY_PLAYED_KEY);
+    if (!raw) return [];
+    const entries = JSON.parse(raw) as RecentlyPlayedEntry[];
+
+    return entries
+      .filter((entry) => (entry.entityType ?? "track") === "track")
+      .map((entry) => ({
+        id: entry.id,
+        title: entry.title,
+        artist: "Recently played",
+        coverUrl: entry.artworkUrl ?? "",
+        waveformUrl: "",
+        durationSeconds: 0,
+        genre: null,
+        createdAt: "",
+      }));
+  } catch {
+    return [];
+  }
+}
+
+const mapRecommendationToDiscoverTrack = (
+  item: RecommendationItemDto,
+): DiscoverTrack => ({
+  id: item.trackId,
+  title: item.title,
+  artist: item.artist,
+  coverUrl: item.coverUrl ?? "",
+  waveformUrl: item.waveformUrl ?? "",
+  durationSeconds: item.durationInSeconds ?? 0,
+  genre: item.genre ?? null,
+  createdAt: "",
+});
+
 export default function DiscoverPage() {
   const initialCache = useMemo(() => readDiscoverCache(), []);
   const [discoverTracks, setDiscoverTracks] = useState<DiscoverTrack[]>(
@@ -80,9 +130,10 @@ export default function DiscoverPage() {
         setError(null);
         const results = await Promise.allSettled([
           getDiscoverTracks({ page: 1, limit: 20 }),
+          getRecommendations({ page: 1, limit: 20 }),
           getSuggestedArtists({ page: 1, limit: 10 }),
-          getTrendingAlbums({ period: "week" }),
-          getTrendingTracks({ type: "track", period: "week" }),
+          getTrendingAlbums({ period: "month" }),
+          getTrendingTracks({ type: "track", period: "month" }),
         ]);
 
         if (!isMounted) return;
@@ -171,6 +222,7 @@ export default function DiscoverPage() {
 
   const discoverSections = [
     { title: "More of what you like", tracks: discoverTracks },
+    { title: "Recently Played", tracks: recentlyPlayedTracks },
     {
       title: "Albums for you",
       tracks: albumTracks,
@@ -179,6 +231,7 @@ export default function DiscoverPage() {
       title: "Made for you",
       tracks: madeForYouTracks,
     },
+    { title: "Trending by genre", tracks: trendingByGenreTracks },
   ];
 
   const hasAnyTracks =

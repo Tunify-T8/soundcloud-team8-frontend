@@ -3,6 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import AuthNavbar from '../components/AuthNavbar';
+import CaptchaField from '../components/CaptchaField';
+import { useCaptcha } from '../hooks/useCaptcha';
 import { Eye, EyeOff, Loader2, ChevronLeft } from 'lucide-react';
 
 import { signUpSchema, type SignUpFormData } from '../schemas/auth.schemas';
@@ -39,6 +41,7 @@ const SignUpPage: React.FC = () => {
   const [dobDay, setDobDay] = useState('');
   const [dobYear, setDobYear] = useState('');
   const [gender, setGender] = useState('');
+  const { honeypot, setHoneypot, isHuman, reset: resetCaptcha } = useCaptcha();
 
   const isPasswordReady =
     passwordValue.length >= 8 &&
@@ -107,6 +110,10 @@ const SignUpPage: React.FC = () => {
 
   const handleProfileContinue = async () => {
     if (!isProfileReady) return;
+    if (!isHuman()) {
+      resetCaptcha();
+      return;
+    }
     setApiError(null);
     setIsSubmitting(true);
     try {
@@ -127,6 +134,7 @@ const SignUpPage: React.FC = () => {
       navigate('/verify-email', { state: { email: emailToUse } });
     } catch (error) {
       setApiError(extractErrorMessage(error));
+      resetCaptcha();
     } finally {
       setIsSubmitting(false);
     }
@@ -317,7 +325,6 @@ const SignUpPage: React.FC = () => {
                       <p className="text-[#777] text-xs mt-1">Your date of birth is used to verify your age and is not shared publicly.</p>
                     </div>
 
-                    {/* Gender */}
                     <div>
                       <div className="relative">
                         <select
@@ -336,6 +343,8 @@ const SignUpPage: React.FC = () => {
                       </div>
                     </div>
 
+                    <CaptchaField value={honeypot} onChange={setHoneypot} />
+
                     <button
                       type="button"
                       onClick={handleProfileContinue}
@@ -348,7 +357,7 @@ const SignUpPage: React.FC = () => {
                       }`}
                     >
                       {isSubmitting
-                        ? <><Loader2 className="h-4 w-4 animate-spin" />Creating account…</>
+                        ? <><Loader2 className="h-4 w-4 animate-spin" />Creating account...</>
                         : 'Continue'
                       }
                     </button>
@@ -361,7 +370,7 @@ const SignUpPage: React.FC = () => {
 
           <p className="hidden sm:block text-center text-[#777] text-sm mt-6">
             Already have an account?{' '}
-            <Link to="/signin" className="text-[#111] hover:underline font-medium">Sign in</Link>
+            <Link to="/signin" className="text-[#111] hover:underline font-bold">Sign in</Link>
           </p>
         </div>
       </main>

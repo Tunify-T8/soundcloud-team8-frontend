@@ -19,9 +19,11 @@ export function usePlayback({
   const trackIdRef = useRef(trackId);
   const autoPlayRef = useRef(autoPlay);
   const suppressPauseStatusRef = useRef(false);
+  const completionReportedRef = useRef(false);
 
   useEffect(() => {
     trackIdRef.current = trackId;
+    completionReportedRef.current = false;
   }, [trackId]);
 
   useEffect(() => {
@@ -105,6 +107,15 @@ export function usePlayback({
     },
     [],
   );
+
+  const reportCompletionOnce = useCallback((completedTrackId: string) => {
+    if (!completedTrackId || completionReportedRef.current) return;
+
+    completionReportedRef.current = true;
+    void playbackService.reportCompleted(completedTrackId).catch(() => {
+      completionReportedRef.current = false;
+    });
+  }, []);
 
   // ── Load track ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -292,7 +303,7 @@ export function usePlayback({
       audio.removeEventListener("ended", onEnded);
       audio.removeEventListener("error", onError);
     };
-  }, [trackId, access, duration]);
+  }, [trackId, access, duration, reportCompletionOnce]);
 
   // ── Controls ──────────────────────────────────────────────────────────────
   const play = useCallback(() => {

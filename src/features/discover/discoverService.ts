@@ -4,6 +4,7 @@ import type {
   DiscoverArtistsResponse,
   DiscoverTrack,
   DiscoverResponse,
+  RecommendationsResponseDto,
   TrendingItem,
   TrendingPeriod,
   TrendingResponse,
@@ -25,6 +26,11 @@ export interface GetTrendingParams {
 export type GetTrendingAlbumsParams = Omit<GetTrendingParams, "type">;
 
 export interface GetSuggestedArtistsParams {
+  page?: number;
+  limit?: number;
+}
+
+export interface GetRecommendationsParams {
   page?: number;
   limit?: number;
 }
@@ -128,4 +134,19 @@ export const getSuggestedArtists = async (
     limit: response.data.limit ?? limit,
     hasMore: Boolean(response.data.hasMore),
   };
+};
+
+export const getRecommendations = async (
+  params: GetRecommendationsParams = {},
+): Promise<RecommendationsResponseDto> => {
+  const { page = 1, limit = 20 } = params;
+
+  const response = await api.get<RecommendationsResponseDto>(
+    "/reccomendations/",
+    {
+      params: { page, limit },
+    },
+  );
+
+  return response.data;
 };

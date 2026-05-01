@@ -2,7 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import SongCard from "@/components/ui/SongCard";
 import { playlistService } from "@/features/library/libraryService";
 import { profileService } from "@/features/profile/profileService";
-import type { CollectionPreview, CollectionTrack } from "@/features/library/types";
+import type {
+  CollectionPreview,
+  CollectionTrack,
+} from "@/features/library/types";
 import trackFallback from "@/assets/track.jpg";
 
 type PlaylistWithTrack = {
@@ -34,6 +37,7 @@ interface ProfilePlaylistsSectionProps {
   meDisplayName?: string | null;
   meUsername?: string;
   className?: string;
+  hideEmptyState?: boolean;
 }
 
 export default function ProfilePlaylistsSection({
@@ -42,6 +46,7 @@ export default function ProfilePlaylistsSection({
   meDisplayName,
   meUsername,
   className = "",
+  hideEmptyState = false,
 }: ProfilePlaylistsSectionProps) {
   const [items, setItems] = useState<PlaylistWithTrack[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,7 +63,8 @@ export default function ProfilePlaylistsSection({
         let targetUsername = username || "";
         if (!isMeView && targetUsername && isUuidLike(targetUsername)) {
           try {
-            const profile = await profileService.getPublicProfile(targetUsername);
+            const profile =
+              await profileService.getPublicProfile(targetUsername);
             targetUsername = profile.username || targetUsername;
           } catch {
             // fallback to route param if resolve fails
@@ -72,7 +78,11 @@ export default function ProfilePlaylistsSection({
 
         const withTracks = await Promise.all(
           playlists.map(async (playlist) => {
-            const tracksRes = await playlistService.getPlaylistTracks(playlist.id, 1, 20);
+            const tracksRes = await playlistService.getPlaylistTracks(
+              playlist.id,
+              1,
+              20,
+            );
             const tracks = tracksRes?.data ?? [];
             return { playlist, tracks };
           }),
@@ -96,9 +106,34 @@ export default function ProfilePlaylistsSection({
   }, [isMeView, username]);
 
   const content = useMemo(() => {
-    if (loading) return <p data-testid="profile-playlists-loading" className="py-10 text-sm text-zinc-400">Loading playlists...</p>;
-    if (error) return <p data-testid="profile-playlists-error" className="py-10 text-sm text-red-400">{error}</p>;
-    if (items.length === 0) return <p data-testid="profile-playlists-empty" className="py-10 text-sm text-zinc-400">No playlists yet.</p>;
+    if (loading)
+      return (
+        <p
+          data-testid="profile-playlists-loading"
+          className="py-10 text-sm text-zinc-400"
+        >
+          Loading playlists...
+        </p>
+      );
+    if (error)
+      return (
+        <p
+          data-testid="profile-playlists-error"
+          className="py-10 text-sm text-red-400"
+        >
+          {error}
+        </p>
+      );
+    if (items.length === 0) {
+      return hideEmptyState ? null : (
+        <p
+          data-testid="profile-playlists-empty"
+          className="py-10 text-sm text-zinc-400"
+        >
+          No playlists yet.
+        </p>
+      );
+    }
 
     return (
       <div data-testid="profile-playlists-list" className="space-y-8 mt-8">
@@ -111,8 +146,10 @@ export default function ProfilePlaylistsSection({
             artist: ct.track.user.displayName || ct.track.user.username,
             avatarUrl: ct.track.coverUrl ?? null,
             playsCount:
-              (ct.track as { playCount?: number; playsCount?: number }).playCount ??
-              (ct.track as { playCount?: number; playsCount?: number }).playsCount ??
+              (ct.track as { playCount?: number; playsCount?: number })
+                .playCount ??
+              (ct.track as { playCount?: number; playsCount?: number })
+                .playsCount ??
               0,
           }));
           const artistName =
@@ -123,22 +160,33 @@ export default function ProfilePlaylistsSection({
             "Playlist";
           const totalPlays = tracks.reduce((sum, ct) => {
             const trackPlays =
-              (ct.track as { playCount?: number; playsCount?: number }).playCount ??
-              (ct.track as { playCount?: number; playsCount?: number }).playsCount ??
+              (ct.track as { playCount?: number; playsCount?: number })
+                .playCount ??
+              (ct.track as { playCount?: number; playsCount?: number })
+                .playsCount ??
               0;
             return sum + trackPlays;
           }, 0);
 
           return (
-            <div key={playlist.id} data-testid={`profile-playlist-item-${playlist.id}`}>
+            <div
+              key={playlist.id}
+              data-testid={`profile-playlist-item-${playlist.id}`}
+            >
               <SongCard
                 trackId={firstTrack?.track.id ?? ""}
                 entityLinkTo={`/collections/${playlist.id}`}
                 smallCoverOnMobile
                 artistName={artistName}
                 title={playlist.title || "Untitled playlist"}
-                coverUrl={firstTrack?.track.coverUrl ?? playlist.coverUrl ?? trackFallback}
-                timeAgo={formatTimeAgo(playlist.updatedAt || playlist.createdAt)}
+                coverUrl={
+                  firstTrack?.track.coverUrl ??
+                  playlist.coverUrl ??
+                  trackFallback
+                }
+                timeAgo={formatTimeAgo(
+                  playlist.updatedAt || playlist.createdAt,
+                )}
                 contextTag="Playlist"
                 likes={(playlist.likeCount ?? 0).toString()}
                 reposts={(playlist.repostsCount ?? 0).toString()}
@@ -155,6 +203,9 @@ export default function ProfilePlaylistsSection({
     );
   }, [error, items, loading, meDisplayName, meUsername, username]);
 
-  return <div data-testid="profile-playlists-section" className={className}>{content}</div>;
+  return (
+    <div data-testid="profile-playlists-section" className={className}>
+      {content}
+    </div>
+  );
 }
-

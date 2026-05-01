@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod'; 
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Eye, EyeOff, Loader2, ChevronLeft, AlertCircle } from 'lucide-react';
 import { useGoogleLogin } from '@react-oauth/google';
@@ -11,6 +11,8 @@ import { extractErrorMessage } from '../hooks/useAuth';
 import type { SocialProvider } from '../types/auth.types';
 import { checkEmail } from '../services/index';
 import AuthNavbar from '../components/AuthNavbar';
+import CaptchaField from '../components/CaptchaField';
+import { useCaptcha } from '../hooks/useCaptcha';
 import { useDispatch } from 'react-redux';
 import { setUser } from '../../../store/userSlice';
 import type { AppDispatch } from '../../../app/store';
@@ -44,14 +46,16 @@ interface SocialButtonProps {
   borderColor?: string;
   onClick: (provider: SocialProvider) => void;
   disabled?: boolean;
+  testId?: string;
 }
 
 const SocialButton: React.FC<SocialButtonProps> = ({
-  provider, label, icon, bgColor, hoverColor, borderColor, onClick, disabled,
+  provider, label, icon, bgColor, hoverColor, borderColor, onClick, disabled, testId,
 }) => (
   <button
     type="button"
     disabled={disabled}
+    data-testid={testId}
     onClick={() => onClick(provider)}
     className={`sc-auth-button w-full flex items-center justify-center gap-3 px-4 rounded-sm font-semibold text-base transition-colors duration-150 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${bgColor} ${hoverColor} ${borderColor ? `border ${borderColor}` : ''}`}
   >
@@ -92,6 +96,8 @@ const SignInPage: React.FC = () => {
   const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
   const from = (location.state as { from?: Location })?.from?.pathname ?? '/';
+  const getPostLoginRoute = (role?: string) =>
+    role?.toLowerCase() === 'admin' ? '/admin' : from;
   const prefillEmailState = (location.state as { email?: string; prefillStep?: string })?.email ?? '';
   const prefillStep = (location.state as { prefillStep?: string })?.prefillStep ?? '';
 
@@ -109,6 +115,7 @@ const SignInPage: React.FC = () => {
   const [showLinkPassword, setShowLinkPassword] = useState(false);
   const [linkPassword, setLinkPassword] = useState('');
   const [isLinking, setIsLinking] = useState(false);
+  const { honeypot, setHoneypot, isHuman, reset: resetCaptcha } = useCaptcha();
 
   const emailRef = useRef<HTMLInputElement>(null);
   const triggerShake = () => {
@@ -142,7 +149,6 @@ useEffect(() => {
   window.addEventListener('pageshow', handlePageShow);
   return () => window.removeEventListener('pageshow', handlePageShow);
 }, []);
-  // ── Google OAuth ───────────────────────────────────────────────
   const googleLogin = useGoogleLogin({
     onSuccess: async (response) => {
       setApiError(null);
@@ -167,6 +173,8 @@ useEffect(() => {
           };
           storeUser(userPayload);
           dispatch(setUser(userPayload));
+          navigate(getPostLoginRoute(userPayload.role));
+          return;
         }
         navigate(from);
       } catch (error) {
@@ -181,7 +189,6 @@ useEffect(() => {
     },
     flow: 'auth-code',
     redirect_uri: 'postmessage',});
-  // ── Google account linking ─────────────────────────────────────
   const handleGoogleLink = async () => {
     if (!linkingToken || !linkPassword) return;
     setIsLinking(true);
@@ -215,7 +222,10 @@ useEffect(() => {
     setApiError(null);
     setEmailError(null);
     if (step === 'email') { setStep('social'); setEmailInput(''); }
-    if (step === 'password') { setStep('email'); }
+    if (step === 'password') {
+      setStep('email');
+      resetCaptcha();
+    }
   };
 
   const handleEmailContinue = async () => {
@@ -243,13 +253,14 @@ useEffect(() => {
   };
 
   const onSubmit = async (data: SignInFormData) => {
+    if (!isHuman()) { resetCaptcha(); return; }
     setApiError(null);
     setIsSubmitting(true);
     try {
       const res = await login(data);
 
       if (res.user && !res.accessToken) {
-        try { await resendVerification(data.email); } catch { /* silent */ }
+        try { await resendVerification(data.email); } catch { }
         navigate('/verify-email', { state: { email: data.email } });
         return;
       }
@@ -272,6 +283,8 @@ useEffect(() => {
         };
         storeUser(userPayload);
         dispatch(setUser(userPayload));
+        navigate(getPostLoginRoute(userPayload.role));
+        return;
       }
 
       navigate(from);
@@ -285,6 +298,7 @@ useEffect(() => {
         navigate('/signin');
       } else {
         setApiError('This password is incorrect.');
+        resetCaptcha();
       }
     } finally {
       setIsSubmitting(false);
@@ -307,10 +321,11 @@ useEffect(() => {
 
   const isSocialDisabled = socialLoading !== null || isSubmitting || isCheckingEmail;
 
-  const BackButton = ({ onClick }: { onClick: () => void }) => (
+  const BackButton = ({ onClick, testId }: { onClick: () => void; testId?: string }) => (
     <button
       type="button"
       onClick={onClick}
+      data-testid={testId ?? 'back-btn'}
       className="w-9 h-9 rounded-full bg-[#f2f2f2] hover:bg-[#e5e5e5] flex items-center justify-center transition-colors flex-shrink-0"
     >
       <ChevronLeft className="h-5 w-5 text-[#111]" />
@@ -322,7 +337,6 @@ useEffect(() => {
 
       <AuthNavbar onCreateAccount={triggerShake} />
 
-      {/* ── Main ── */}
       <main className="flex-1 flex items-start justify-center px-4 py-14">
         <div className="w-full max-w-[562px]">
           <div className={`${shake ? 'shake' : ''}`}>
@@ -340,7 +354,7 @@ useEffect(() => {
                     <a href="https://soundcloud.com/pages/privacy" target="_blank" rel="noreferrer" className="text-[#0066cc] hover:underline">Privacy Policy</a>.
                   </p>
 
-                  <SocialButton provider="facebook" label="Continue with Facebook" icon={<FacebookIcon />} bgColor="sc-auth-facebook" hoverColor="" onClick={handleSocialLogin} disabled={isSocialDisabled} />
+                  <SocialButton provider="facebook" label="Continue with Facebook" icon={<FacebookIcon />} bgColor="sc-auth-facebook" hoverColor="" onClick={handleSocialLogin} disabled={isSocialDisabled} testId="facebookBtn" />
 
                   <button
                     type="button"
@@ -353,7 +367,7 @@ useEffect(() => {
                     <span>Continue with Google</span>
                   </button>
 
-                  <SocialButton provider="apple" label="Continue with Apple" icon={<AppleIcon />} bgColor="sc-auth-apple" hoverColor="" onClick={handleSocialLogin} disabled={isSocialDisabled} />
+                  <SocialButton provider="apple" label="Continue with Apple" icon={<AppleIcon />} bgColor="sc-auth-apple" hoverColor="" onClick={handleSocialLogin} disabled={isSocialDisabled} testId="appleBtn" />
 
                   {showLinkPassword && (
                     <div className="bg-[#f7f7f7] border border-[#d7d7d7] rounded-sm p-4 flex flex-col gap-3" data-testid="googleLinkPanel">
@@ -392,7 +406,7 @@ useEffect(() => {
                     </div>
                   )}
 
-                  <div className="my-0">
+                  <div className="sc-or-email-divider my-0">
                     <span className="text-[#111] text-lg font-semibold whitespace-nowrap">Or with email</span>
                   </div>
 
@@ -423,7 +437,7 @@ useEffect(() => {
               {step === 'email' && (
                 <div className="p-8" data-testid="emailStep">
                   <div className="flex items-center gap-4 mb-6">
-                    <BackButton onClick={handleBack} />
+                    <BackButton onClick={handleBack} testId="emailBackBtn" />
                     <h1 className="text-[#111] text-base font-bold">Sign in or create an account</h1>
                   </div>
 
@@ -455,17 +469,16 @@ useEffect(() => {
                     data-testid="email-continue-btn"
                     className="sc-auth-primary-action w-full py-3 rounded-sm text-sm font-medium disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2 mb-4"
                   >
-                    {isCheckingEmail ? <><Loader2 className="h-4 w-4 animate-spin" /> Checking…</> : 'Continue'}
+                    {isCheckingEmail ? <><Loader2 className="h-4 w-4 animate-spin" /> Checking...</> : 'Continue'}
                   </button>
                   <a href="https://help.soundcloud.com/hc/en-us/sections/46266771825691" target="_blank" rel="noreferrer" className="text-[#0066cc] text-sm hover:underline">Need help?</a>
                 </div>
               )}
 
-              {/* STEP: password */}
               {step === 'password' && (
                 <div className="p-8" data-testid="password-step">
                   <div className="flex items-center gap-4 mb-6">
-                    <BackButton onClick={handleBack} />
+                    <BackButton onClick={handleBack} testId="passwordBackBtn" />
                     <h1 className="text-[#111] text-base font-bold">Welcome back!</h1>
                   </div>
 
@@ -487,6 +500,7 @@ useEffect(() => {
 
                   <form onSubmit={handleSubmit(onSubmit)} noValidate>
                     <input type="hidden" {...register('email')} value={emailInput} />
+                    <CaptchaField value={honeypot} onChange={setHoneypot} />
                     <div className="relative mb-4">
                       <input
                         type={showPassword ? 'text' : 'password'}
@@ -509,7 +523,7 @@ useEffect(() => {
                       data-testid="submit-btn"
                       className="sc-auth-primary-action w-full py-3 rounded-sm text-sm font-semibold transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer mb-4"
                     >
-                      {isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin text-white" />Signing in…</> : 'Continue'}
+                      {isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin text-white" />Signing in...</> : 'Continue'}
                     </button>
 
                     <Link to="/forgot-password" data-testid="forgot-password-link" className="text-[#0066cc] text-sm hover:underline">Forgot your password?</Link>
@@ -522,7 +536,7 @@ useEffect(() => {
 
           <p className="hidden sm:block text-center text-[#777] text-sm mt-6">
             Don't have an account?{' '}
-            <Link to="/signin" className="text-[#111] hover:underline font-medium">Create one for free</Link>
+            <Link to="/signin" className="text-[#111] hover:underline font-bold">Create one for free</Link>
           </p>
         </div>
       </main>
