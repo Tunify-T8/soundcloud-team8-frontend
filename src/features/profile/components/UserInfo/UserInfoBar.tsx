@@ -9,6 +9,8 @@ import { useEffect, useState } from "react";
 import { followingService } from "../../../following/followingService";
 import { notifySocialGraphUpdated } from "../../socialGraphEvents";
 import { AdminIDDisplay } from "@/features/admin/components/AdminIDDisplay";
+import { conversationService } from "@/features/conversation/conversationService";
+
 
 function ShareOverlay({
   onClose,
@@ -147,6 +149,7 @@ export default function UserInfoBar({
   const [followLoading, setFollowLoading] = useState(false);
   const [blockLoading, setBlockLoading] = useState(false);
   const [showShareOverlay, setShowShareOverlay] = useState(false);
+  const [messageLoading, setMessageLoading] = useState(false);
 
   const navigate = useNavigate();
 
@@ -220,6 +223,18 @@ export default function UserInfoBar({
     }
   };
 
+  const handleMessage = async () => {
+  if (!userId || messageLoading) return;
+  setMessageLoading(true);
+  try {
+    const conversationId = await conversationService.createOrGetConversation(userId);
+    navigate(`/messages/${conversationId}`);
+  } catch {
+    // silently fail
+  } finally {
+    setMessageLoading(false);
+  }
+};
   const toggleModal = () => {
     setModal(!modal);
   };
@@ -314,13 +329,19 @@ export default function UserInfoBar({
           {!isMe && (
             <div className="relative group">
               <button
-                data-testid="profile-messages-btn"
-                type="button"
-                title="Messages"
-                className="inline-flex shrink-0 items-center justify-center rounded-sm bg-zinc-800 px-2 py-1.5 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:px-3 sm:py-2 sm:text-sm"
-              >
-                <FaEnvelope />
-              </button>
+  data-testid="profile-messages-btn"
+  type="button"
+  title="Messages"
+  onClick={handleMessage}
+  disabled={messageLoading || !userId}
+  className="inline-flex shrink-0 items-center justify-center rounded-sm bg-zinc-800 px-2 py-1.5 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:px-3 sm:py-2 sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  {messageLoading ? (
+    <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+  ) : (
+    <FaEnvelope />
+  )}
+</button>
             </div>
           )}
           <div className="relative">
