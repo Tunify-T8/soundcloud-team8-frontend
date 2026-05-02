@@ -303,9 +303,9 @@ describe('SearchResultItem — CollectionResult props (album)', () => {
     );
   });
 
-  it('generates exactly 5 placeholder tracks', () => {
+  it('generates exactly 3 placeholder tracks', () => {
     render(<SearchResultItem result={mockAlbum} />);
-    expect(screen.getByTestId('ac-trackCount')).toHaveTextContent('5');
+    expect(screen.getByTestId('ac-trackCount')).toHaveTextContent('3');
   });
 });
 
@@ -330,19 +330,18 @@ describe('SearchResultItem — CollectionResult props (playlist)', () => {
 
 describe('SearchResultItem — placeholder track structure', () => {
   it('placeholder tracks use collection id as prefix', () => {
-    // Verify via AlbumCard mock that tracks array is passed (count = 5)
     render(<SearchResultItem result={mockAlbum} />);
-    expect(screen.getByTestId('ac-trackCount')).toHaveTextContent('5');
+    expect(screen.getByTestId('ac-trackCount')).toHaveTextContent('3');
   });
 
-  it('renders a fresh set of 5 tracks for a different collection', () => {
+  it('renders a fresh set of 3 tracks for a different collection', () => {
     const other: CollectionSearchResult = {
       ...mockAlbum,
       id: 'other-99',
       title: 'Other',
     };
     render(<SearchResultItem result={other} />);
-    expect(screen.getByTestId('ac-trackCount')).toHaveTextContent('5');
+    expect(screen.getByTestId('ac-trackCount')).toHaveTextContent('3');
   });
 });
 
