@@ -149,9 +149,18 @@ export default function CreatePlaylistOverlay({
 
   return (
     <>
-      <div className="fixed inset-0 z-70 bg-white/40" onClick={onClose} />
+      <div
+        className="fixed inset-0 z-70 bg-white/40"
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
+      />
       <button
-        onClick={onClose}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
         className="fixed right-6 top-6 z-72 flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800 text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white"
         aria-label="Close create playlist overlay"
       >
@@ -160,7 +169,10 @@ export default function CreatePlaylistOverlay({
 
       <div
         className="fixed inset-0 z-71 overflow-y-auto hide-scrollbar"
-        onClick={onClose}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
       >
         <div className="flex min-h-full items-start justify-center px-0 py-0 sm:px-4 sm:py-24">
           <div
@@ -190,7 +202,7 @@ export default function CreatePlaylistOverlay({
                   value={filterQuery}
                   onChange={(e) => setFilterQuery(e.target.value)}
                   placeholder="Filter playlists"
-                  className="w-full rounded-sm border border-zinc-300 bg-[#ffffff] px-3 py-2 text-sm text-[#111] outline-none placeholder:text-zinc-500 focus:border-zinc-500"
+                  className="w-full rounded-sm border border-zinc-800 bg-[#2f2f2f] px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-400 focus:border-zinc-600"
                 />
 
                 <div className="mt-4 space-y-2">
@@ -206,26 +218,37 @@ export default function CreatePlaylistOverlay({
                         key={playlist.id}
                         className="flex items-center justify-between rounded-sm bg-[#0b0b0b] px-3 py-2"
                       >
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-bold text-white">
-                            {playlist.title}
-                          </p>
-                          <p className="truncate text-xs text-zinc-400">
-                            {playlist.trackCount} tracks
-                          </p>
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className="h-10 w-10 shrink-0 overflow-hidden rounded-sm bg-zinc-800">
+                            {playlist.coverUrl ? (
+                              <img
+                                src={playlist.coverUrl}
+                                alt={playlist.title}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : null}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-bold text-white">
+                              {playlist.title}
+                            </p>
+                            <p className="truncate text-xs text-zinc-400">
+                              {playlist.trackCount} tracks
+                            </p>
+                          </div>
                         </div>
                         <button
-                          className="rounded-sm bg-zinc-800 px-3 py-1.5 text-xs font-bold text-white hover:bg-zinc-700 disabled:opacity-60"
+                          className="rounded-sm bg-zinc-700 px-4 py-1.5 text-xs font-bold text-white hover:bg-zinc-600 disabled:opacity-60"
                           disabled={addingToPlaylistId === playlist.id}
                           onClick={() => handleAddToPlaylist(playlist.id)}
                         >
                           {addingToPlaylistId === playlist.id
                             ? "Adding..."
                             : addToPlaylistSuccess === playlist.id
-                              ? "Added!"
+                              ? "Added"
                               : addToPlaylistError === playlist.id
                                 ? "Failed"
-                                : "Add to Playlist"}
+                                : "Add"}
                         </button>
                       </div>
                     ))}
@@ -240,14 +263,14 @@ export default function CreatePlaylistOverlay({
             ) : (
               <>
                 <div className="mt-4">
-                  <label className="text-[15px] font-semibold text-zinc-200">
+                  <label className="text-[14px] font-semibold text-zinc-200">
                     Playlist title<span className="text-red-500"> *</span>
                   </label>
                   <input
                     value={playlistTitle}
                     onChange={(e) => setPlaylistTitle(e.target.value)}
                     onBlur={() => setTitleTouched(true)}
-                    className={`mt-1 w-full rounded-sm border ${!isTitleValid && titleTouched ? "border-red-500" : "border-zinc-300"} bg-[#ffffff] px-3 py-2 text-sm text-[#111] outline-none focus:border-zinc-500`}
+                    className={`mt-2 w-full rounded-sm border ${!isTitleValid && titleTouched ? "border-red-500" : "border-zinc-800"} bg-[#2f2f2f] px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-400 focus:border-zinc-600`}
                     required
                     aria-invalid={!isTitleValid && titleTouched}
                     aria-describedby="playlist-title-error"
@@ -255,19 +278,19 @@ export default function CreatePlaylistOverlay({
                   {!isTitleValid && titleTouched && (
                     <div
                       id="playlist-title-error"
-                      className="mt-1 text-red-400 text-xs"
+                      className="mt-2 text-red-400 text-xs"
                     >
                       Playlist title is required.
                     </div>
                   )}
                 </div>
 
-                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex flex-wrap items-center gap-4 text-[15px]">
+                <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap items-center gap-4 text-[14px]">
                     <span className="font-semibold text-zinc-200">
                       Privacy:
                     </span>
-                    <label className="flex cursor-pointer items-center gap-2">
+                    <label className="flex cursor-pointer items-center gap-2 text-white">
                       <input
                         type="radio"
                         checked={privacy === "public"}
@@ -276,7 +299,7 @@ export default function CreatePlaylistOverlay({
                       />
                       <span className="font-semibold">Public</span>
                     </label>
-                    <label className="flex cursor-pointer items-center gap-2">
+                    <label className="flex cursor-pointer items-center gap-2 text-white">
                       <input
                         type="radio"
                         checked={privacy === "private"}
@@ -287,27 +310,27 @@ export default function CreatePlaylistOverlay({
                     </label>
                   </div>
 
-                  <div className="flex flex-col gap-1">
+                  <div className="flex flex-col items-end gap-1">
                     <button
                       type="button"
                       disabled={!canSave}
-                      className="min-h-[44px] rounded-sm bg-white px-4 py-2 text-[13px] font-bold text-black disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-0 sm:px-2 sm:py-1"
+                      className="min-h-[40px] rounded-sm bg-white px-5 py-2 text-[13px] font-bold text-black disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-0"
                       onClick={handleCreatePlaylist}
                     >
                       {creating ? "Saving..." : "Save"}
                     </button>
                     {error && (
-                      <div className="text-red-400 text-sm">{error}</div>
+                      <div className="text-red-400 text-xs">{error}</div>
                     )}
                     {success && (
-                      <div className="text-green-400 text-sm">{success}</div>
+                      <div className="text-green-400 text-xs">{success}</div>
                     )}
                   </div>
                 </div>
 
-                <div className="mt-6 flex items-start justify-between gap-3">
+                <div className="mt-6 flex items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="h-9 w-9 shrink-0 overflow-hidden rounded-sm bg-zinc-700">
+                    <div className="h-10 w-10 shrink-0 overflow-hidden rounded-sm bg-zinc-800">
                       {track.coverUrl ? (
                         <img
                           src={track.coverUrl}
@@ -317,10 +340,10 @@ export default function CreatePlaylistOverlay({
                       ) : null}
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate text-[12px] font-semibold text-zinc-300">
+                      <p className="truncate text-[12px] font-semibold text-zinc-400">
                         {track.artist}
                       </p>
-                      <p className="truncate text-[13px] font-bold">
+                      <p className="truncate text-[13px] font-bold text-white">
                         {track.title}
                       </p>
                     </div>

@@ -14,7 +14,10 @@ export default function ShareOverlay({
   return (
     <div
       className="fixed inset-0 z-[120] flex items-start justify-center bg-white/40 px-4 pt-28"
-      onClick={onClose}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClose();
+      }}
     >
       <button
         onClick={onClose}
