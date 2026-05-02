@@ -10,7 +10,7 @@ export const AuthInput = forwardRef<HTMLInputElement, AuthInputProps>(
     return (
       <div className="flex flex-col gap-1.5">
         {label && (
-          <label htmlFor={id} className="text-white/70 text-xs font-medium uppercase tracking-wider">
+          <label htmlFor={id} className="text-white/70 text-xs font-medium uppercase tracking-wider" data-testid={id ? `${id}-label` : 'authInput-label'}>
             {label}
           </label>
         )}
@@ -32,7 +32,7 @@ export const AuthInput = forwardRef<HTMLInputElement, AuthInputProps>(
           {...props}
         />
         {error && (
-          <p className="text-red-400 text-xs mt-0.5" role="alert">
+          <p className="text-red-400 text-xs mt-0.5" role="alert" data-testid={id ? `${id}-error` : 'authInput-error'}>
             {error}
           </p>
         )}

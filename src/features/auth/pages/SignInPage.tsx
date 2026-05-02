@@ -161,7 +161,7 @@ useEffect(() => {
           setSocialLoading(null);
           return;
         }
-        storeTokens(res.accessToken, res.refreshToken, 900);
+        storeTokens(res.accessToken, res.refreshToken, res.expiresIn ?? 3600);
         if (res.user) {
           const userPayload = {
             id: res.user.id,
@@ -195,7 +195,7 @@ useEffect(() => {
     setApiError(null);
     try {
       const res = await googleLink(linkingToken, linkPassword);
-      storeTokens(res.accessToken, res.refreshToken, res.expiresIn ?? 900);
+      storeTokens(res.accessToken, res.refreshToken, res.expiresIn ?? 3600);
       if (res.user) {
         const userPayload = {
           id: res.user.id,
@@ -270,7 +270,7 @@ useEffect(() => {
         return;
       }
 
-      storeTokens(res.accessToken, res.refreshToken, res.expiresIn ?? 900);
+      storeTokens(res.accessToken, res.refreshToken, res.expiresIn ?? 3600);
 
       if (res.user) {
         const userPayload = {
@@ -295,7 +295,7 @@ useEffect(() => {
         msg.toLowerCase().includes('user not found') ||
         msg.toLowerCase().includes('email not found');
       if (isNotFound) {
-        navigate('/signin');
+        navigate('/create-account', { state: { email: data.email } });
       } else {
         setApiError('This password is incorrect.');
         resetCaptcha();
@@ -344,14 +344,14 @@ useEffect(() => {
 
               {step === 'social' && (
                 <div data-testid="socialStep" className="px-7 py-8 sm:p-8 flex flex-col gap-[21px]">
-                  <h1 className="sc-auth-title font-bold text-left leading-tight">
+                  <h1 className="sc-auth-title font-bold text-left leading-tight" data-testid="socialTitle">
                     Sign in or create an account
                   </h1>
-                  <p className="sc-auth-copy text-lg leading-snug text-left">
+                  <p className="sc-auth-copy text-lg leading-snug text-left" data-testid="termsText">
                     By clicking any of the &quot;Continue&quot; buttons below, you agree to SoundCloud&apos;s{' '}
-                    <a href="https://soundcloud.com/terms-of-use" target="_blank" rel="noreferrer" className="text-[#0066cc] hover:underline">Terms of Use</a>{' '}
+                    <a href="https://soundcloud.com/terms-of-use" target="_blank" rel="noreferrer" className="text-[#0066cc] hover:underline" data-testid="termsLink">Terms of Use</a>{' '}
                     and acknowledge our{' '}
-                    <a href="https://soundcloud.com/pages/privacy" target="_blank" rel="noreferrer" className="text-[#0066cc] hover:underline">Privacy Policy</a>.
+                    <a href="https://soundcloud.com/pages/privacy" target="_blank" rel="noreferrer" className="text-[#0066cc] hover:underline" data-testid="privacyLink">Privacy Policy</a>.
                   </p>
 
                   <SocialButton provider="facebook" label="Continue with Facebook" icon={<FacebookIcon />} bgColor="sc-auth-facebook" hoverColor="" onClick={handleSocialLogin} disabled={isSocialDisabled} testId="facebookBtn" />
@@ -406,7 +406,7 @@ useEffect(() => {
                     </div>
                   )}
 
-                  <div className="sc-or-email-divider my-0">
+                  <div className="sc-or-email-divider my-0" data-testid="orDivider">
                     <span className="text-[#111] text-lg font-semibold whitespace-nowrap">Or with email</span>
                   </div>
 
@@ -429,7 +429,7 @@ useEffect(() => {
                     Continue
                   </button>
                   <div className="text-left">
-                    <a href="https://help.soundcloud.com/hc/en-us/sections/46266771825691" target="_blank" rel="noreferrer" className="text-[#0066cc] text-lg font-medium hover:underline">Need help?</a>
+                    <a href="https://help.soundcloud.com/hc/en-us/sections/46266771825691" target="_blank" rel="noreferrer" className="text-[#0066cc] text-lg font-medium hover:underline" data-testid="socialNeedHelpLink">Need help?</a>
                   </div>
                 </div>
               )}
@@ -438,7 +438,7 @@ useEffect(() => {
                 <div className="p-8" data-testid="emailStep">
                   <div className="flex items-center gap-4 mb-6">
                     <BackButton onClick={handleBack} testId="emailBackBtn" />
-                    <h1 className="text-[#111] text-base font-bold">Sign in or create an account</h1>
+                    <h1 className="text-[#111] text-base font-bold" data-testid="emailStepTitle">Sign in or create an account</h1>
                   </div>
 
                   <div className="relative mb-1">
@@ -471,7 +471,7 @@ useEffect(() => {
                   >
                     {isCheckingEmail ? <><Loader2 className="h-4 w-4 animate-spin" /> Checking...</> : 'Continue'}
                   </button>
-                  <a href="https://help.soundcloud.com/hc/en-us/sections/46266771825691" target="_blank" rel="noreferrer" className="text-[#0066cc] text-sm hover:underline">Need help?</a>
+                  <a href="https://help.soundcloud.com/hc/en-us/sections/46266771825691" target="_blank" rel="noreferrer" className="text-[#0066cc] text-sm hover:underline" data-testid="emailNeedHelpLink">Need help?</a>
                 </div>
               )}
 
@@ -479,7 +479,7 @@ useEffect(() => {
                 <div className="p-8" data-testid="password-step">
                   <div className="flex items-center gap-4 mb-6">
                     <BackButton onClick={handleBack} testId="passwordBackBtn" />
-                    <h1 className="text-[#111] text-base font-bold">Welcome back!</h1>
+                    <h1 className="text-[#111] text-base font-bold" data-testid="passwordStepTitle">Welcome back!</h1>
                   </div>
 
                   {emailExistsAlert && (
@@ -493,9 +493,9 @@ useEffect(() => {
                     </div>
                   )}
 
-                  <div className="mb-4">
+                  <div className="mb-4" data-testid="passwordEmailDisplay">
                     <p className="text-[#666] text-xs mb-1">Your email address or profile URL</p>
-                    <p className="text-[#111] text-sm font-medium">{emailInput}</p>
+                    <p className="text-[#111] text-sm font-medium" data-testid="displayedEmail">{emailInput}</p>
                   </div>
 
                   <form onSubmit={handleSubmit(onSubmit)} noValidate>
@@ -534,9 +534,9 @@ useEffect(() => {
             </div>
           </div>
 
-          <p className="hidden sm:block text-center text-[#777] text-sm mt-6">
+          <p className="hidden sm:block text-center text-[#777] text-sm mt-6" data-testid="footerText">
             Don't have an account?{' '}
-            <Link to="/signin" className="text-[#111] hover:underline font-bold">Create one for free</Link>
+            <Link to="/signin" className="text-[#111] hover:underline font-bold" data-testid="createAccountLink">Create one for free</Link>
           </p>
         </div>
       </main>

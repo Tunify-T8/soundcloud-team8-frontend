@@ -7,7 +7,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import AuthNavbar from '../components/AuthNavbar';
 import { ChevronLeft, Loader2 } from 'lucide-react';
 import { verifyEmail, resendVerification } from '../services/index';
-import { storeTokens , storeUser } from '../utils/token.utils';
+import { storeTokens, storeUser } from '../utils/token.utils';
 import { extractErrorMessage } from '../hooks/useAuth';
 import { useDispatch } from 'react-redux';
 import { setUser } from '../../../store/userSlice';
@@ -67,7 +67,7 @@ const VerifyEmailPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       const res = await verifyEmail(email, fullCode);
-      storeTokens(res.accessToken, res.refreshToken, 900);
+      storeTokens(res.accessToken, res.refreshToken, res.expiresIn);
       if (res.user) {
         const userPayload = {
           id: res.user.id,
@@ -127,14 +127,14 @@ const VerifyEmailPage: React.FC = () => {
                 >
                   <ChevronLeft className="h-5 w-5 text-[#111]" />
                 </button>
-                <h1 className="text-[#111] text-base font-bold">Verify your email</h1>
+                <h1 className="text-[#111] text-base font-bold" data-testid="pageTitle">Verify your email</h1>
               </div>
 
-              <p className="text-[#666] text-sm leading-relaxed mb-2">
+              <p className="text-[#666] text-sm leading-relaxed mb-2" data-testid="sentCodeText">
                 We sent a 6-character code to
               </p>
-              <p className="text-[#111] text-sm font-semibold mb-6 break-all">{email}</p>
-              <p className="text-[#777] text-xs mb-6 leading-relaxed">
+              <p className="text-[#111] text-sm font-semibold mb-6 break-all" data-testid="emailAddress">{email}</p>
+              <p className="text-[#777] text-xs mb-6 leading-relaxed" data-testid="instructionsText">
                 Enter the code below to verify your account. The code expires after a short time.
               </p>
 

@@ -67,6 +67,7 @@ export function SocialAuthButton({
     <button
       type="button"
       disabled={disabled || isLoading}
+      data-testid={`${provider}AuthBtn`}
       className={`
         w-full flex items-center justify-center gap-3
         px-4 py-3 rounded-full
@@ -77,7 +78,7 @@ export function SocialAuthButton({
       {...props}
     >
       {config.icon}
-      <span>{isLoading ? 'Connecting...' : config.label}</span>
+      <span data-testid={`${provider}AuthBtnLabel`}>{isLoading ? 'Connecting...' : config.label}</span>
     </button>
   );
 }

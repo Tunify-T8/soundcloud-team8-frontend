@@ -6,8 +6,7 @@ const passwordSchema = z
   .min(8, 'Password must be at least 8 characters')
   .regex(/[A-Z]/, 'Must contain at least one uppercase letter')
   .regex(/[a-z]/, 'Must contain at least one lowercase letter')
-  .regex(/[0-9]/, 'Must contain at least one number')
-  .regex(/[^A-Za-z0-9]/, 'Must contain at least one special character');
+  .regex(/[0-9]/, 'Must contain at least one number');
 
 // ── Sign In ───────────────────────────────────────────────────
 export const signInSchema = z.object({
@@ -37,8 +36,8 @@ export const signUpSchema = z
     gender: z.string().refine(
   (val) => ['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY'].includes(val),
   { message: 'Please select a gender' }
-   ),
-    date_of_birth: z.string().min(1, 'Date of birth is required'),
+   ).optional(),
+    date_of_birth: z.string().min(1, 'Date of birth is required').optional(),
     agreeToTerms: z.boolean().refine((val) => val === true, {
       message: 'You must agree to the terms',
     }),
@@ -64,10 +63,6 @@ export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
 export const resetPasswordSchema = z.object({
   token: z.string().min(1, 'Token is required'),
   newPassword: passwordSchema,
-  confirmPassword: z.string().min(1, 'Please confirm your password'),
-}).refine((data) => data.newPassword === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ['confirmPassword'],
 });
 
 export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
