@@ -17,6 +17,7 @@ vi.mock('react-router-dom', async () => {
 
 vi.mock('../services/index', () => ({
   forgotPassword: vi.fn().mockResolvedValue({ message: 'Reset email sent.' }),
+  checkEmail: vi.fn().mockResolvedValue({ exists: true }),
 }));
 
 import { forgotPassword } from '../services/index';
