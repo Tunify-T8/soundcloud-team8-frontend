@@ -143,6 +143,7 @@ export default function UserInfoBar({
   const [modal, setModal] = useState(false);
   const [showMoreActions, setShowMoreActions] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [blockLoading, setBlockLoading] = useState(false);
   const [showShareOverlay, setShowShareOverlay] = useState(false);
@@ -152,14 +153,24 @@ export default function UserInfoBar({
   useEffect(() => {
     if (isMe || !userId) return;
 
+    let cancelled = false;
+
     followingService
       .getFollowStatus(userId)
       .then((status) => {
+        if (cancelled) return;
         setIsFollowing(status.isFollowing);
+        setIsBlocked(status.isBlocked ?? false);
       })
       .catch(() => {
+        if (cancelled) return;
         setIsFollowing(false);
+        setIsBlocked(false);
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [isMe, userId]);
 
   const handleFollowToggle = async () => {
@@ -170,22 +181,18 @@ export default function UserInfoBar({
       ? Math.max(0, previousFollowersCount - 1)
       : previousFollowersCount + 1;
 
-    // Step 1: Update UI immediately (optimistic update)
     setIsFollowing(!isFollowing);
     onFollowersChange?.(newFollowersCount);
 
     setFollowLoading(true);
     try {
-      // Step 2: Sync with backend
       if (isFollowing) {
         await followingService.unfollowUser(userId);
       } else {
         await followingService.followUser(userId);
       }
-
       notifySocialGraphUpdated();
     } catch {
-      // Step 3: If API call fails, revert the changes
       setIsFollowing(isFollowing);
       onFollowersChange?.(previousFollowersCount);
     } finally {
@@ -193,12 +200,18 @@ export default function UserInfoBar({
     }
   };
 
-  const handleBlock = async () => {
+  const handleBlockToggle = async () => {
     if (!userId || blockLoading) return;
 
     setBlockLoading(true);
     try {
-      await followingService.blockUser(userId);
+      if (isBlocked) {
+        await followingService.unblockUser(userId);
+        setIsBlocked(false);
+      } else {
+        await followingService.blockUser(userId);
+        setIsBlocked(true);
+      }
       notifySocialGraphUpdated();
       onProfileUpdated?.();
       setShowMoreActions(false);
@@ -331,13 +344,19 @@ export default function UserInfoBar({
                 <button
                   data-testid="profile-block-btn"
                   type="button"
-                  title="Block"
-                  onClick={handleBlock}
+                  title={isBlocked ? "Unblock" : "Block"}
+                  onClick={handleBlockToggle}
                   disabled={blockLoading || !userId}
                   className="inline-flex items-center gap-2 w-auto whitespace-nowrap text-left text-white font-bold text-[14px] px-3 py-2 hover:text-zinc-500 transition-colors cursor-pointer"
                 >
                   <FiSlash />
-                  {blockLoading ? "Blocking..." : `Block ${menuTargetName}`}
+                  {blockLoading
+                    ? isBlocked
+                      ? "Unblocking..."
+                      : "Blocking..."
+                    : isBlocked
+                    ? `Unblock ${menuTargetName}`
+                    : `Block ${menuTargetName}`}
                 </button>
                 <button
                   data-testid="profile-report-btn"
