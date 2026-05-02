@@ -8,11 +8,11 @@ type DiscoverSectionProps = {
 
 export function DiscoverSection({ title, tracks }: DiscoverSectionProps) {
   return (
-    <section className="mb-8 sm:mb-10">
+    <section className="mb-12 sm:mb-14">
       <h2 className="mb-3 text-[18px] font-bold tracking-tight text-white sm:text-[22px]">
         {title}
       </h2>
-      <DiscoverTrackCarousel tracks={tracks} />
+      <DiscoverTrackCarousel tracks={tracks} queueId={title} />
     </section>
   );
 }

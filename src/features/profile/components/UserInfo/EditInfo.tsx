@@ -30,6 +30,7 @@ export default function EditInfo({
   onClick,
   onSaved,
   displayName,
+  username,
   avatarUrl,
   country,
   city,
@@ -41,6 +42,7 @@ export default function EditInfo({
   onClick: () => void;
   onSaved?: () => void;
   displayName?: string;
+  username?: string;
   avatarUrl?: string;
   country?: string;
   city?: string;
@@ -59,6 +61,7 @@ export default function EditInfo({
   };
 }) {
   const initialDisplayName = displayName ?? "";
+  const initialUsername = username ?? "";
   const initialCountry = country ?? "";
   const initialCity = city ?? "";
   const initialBio = bio ?? "";
@@ -93,6 +96,7 @@ export default function EditInfo({
   const normalizedInitialLinks = normalizeLinks(initialLinks);
 
   const [displayNameState, setDisplayNameState] = useState(initialDisplayName);
+  const [usernameState, setUsernameState] = useState(initialUsername);
   const [countryState, setCountryState] = useState(initialCountry);
   const [cityState, setCityState] = useState(initialCity);
   const [bioState, setBioState] = useState(initialBio);
@@ -113,6 +117,7 @@ export default function EditInfo({
 
   const hasChanges =
     displayNameState !== initialDisplayName ||
+    usernameState !== initialUsername ||
     countryState !== initialCountry ||
     cityState !== initialCity ||
     bioState !== initialBio ||
@@ -133,9 +138,11 @@ export default function EditInfo({
     try {
       const location =
         [cityState, countryState].filter(Boolean).join(", ") || null;
+      const normalizedUsername = usernameState.trim();
 
       await profileService.updateMeProfile({
         displayName: displayNameState || undefined,
+        username: normalizedUsername || undefined,
         bio: bioState || null,
         location,
         visibility: visibilityState,
@@ -190,8 +197,13 @@ export default function EditInfo({
 
         <div className="grid gap-8 lg:grid-cols-[220px_1fr]">
           <div className="flex flex-col">
-            <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full bg-gray-300 overflow-hidden">
-              <Avatar avatarUrl={avatarUrl} displayName={displayName} />
+            <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full bg-gray-300 overflow-visible">
+              <Avatar
+                avatarUrl={avatarUrl}
+                displayName={displayName}
+                isMe
+                variant="edit"
+              />
             </div>
           </div>
 
@@ -205,6 +217,18 @@ export default function EditInfo({
                 onChange={(e) => setDisplayNameState(e.target.value)}
                 className="w-full rounded-sm border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white outline-none focus:border-zinc-500"
                 placeholder="Enter display name"
+              />
+            </div>
+
+            <div className="mt-4">
+              <label className="mb-2 block text-sm font-bold text-white">
+                Username
+              </label>
+              <input
+                value={usernameState}
+                onChange={(e) => setUsernameState(e.target.value)}
+                className="w-full rounded-sm border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white outline-none focus:border-zinc-500"
+                placeholder="Enter username"
               />
             </div>
 

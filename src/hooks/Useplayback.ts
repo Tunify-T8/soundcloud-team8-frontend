@@ -17,10 +17,18 @@ export function usePlayback({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const streamExpiryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const trackIdRef = useRef(trackId);
+  const autoPlayRef = useRef(autoPlay);
+  const suppressPauseStatusRef = useRef(false);
+  const completionReportedRef = useRef(false);
 
   useEffect(() => {
     trackIdRef.current = trackId;
+    completionReportedRef.current = false;
   }, [trackId]);
+
+  useEffect(() => {
+    autoPlayRef.current = autoPlay;
+  }, [autoPlay]);
 
   const [bundle, setBundle] = useState<playbackBundle | null>(null);
   const [status, setStatus] = useState<playerStatus>("idle");
@@ -30,6 +38,8 @@ export function usePlayback({
   const [volume, setVolumeState] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [buffered, setBuffered] = useState(0);
+  const [endedCount, setEndedCount] = useState(0);
+  const endHandledRef = useRef(false);
 
   const access = usePlaybackAccessibility(bundle);
 
@@ -57,6 +67,7 @@ export function usePlayback({
           const fresh = await playbackService.requestStreamUrl(currentTrackId);
           const wasPlaying = !audio.paused;
           const resumeTime = audio.currentTime;
+          suppressPauseStatusRef.current = true;
           audio.src = fresh.stream.url;
           audio.load();
           audio.addEventListener(
@@ -80,12 +91,31 @@ export function usePlayback({
     (streamUrl: string, expiresInSeconds: number) => {
       const audio = audioRef.current;
       if (!audio) return;
+      audio.autoplay = autoPlayRef.current;
+      audio.addEventListener(
+        "canplay",
+        () => {
+          if (!autoPlayRef.current) return;
+          audio.play().catch(() => {});
+        },
+        { once: true },
+      );
+      suppressPauseStatusRef.current = true;
       audio.src = streamUrl;
       audio.load();
       scheduleRefreshRef.current?.(expiresInSeconds);
     },
     [],
   );
+
+  const reportCompletionOnce = useCallback((completedTrackId: string) => {
+    if (!completedTrackId || completionReportedRef.current) return;
+
+    completionReportedRef.current = true;
+    void playbackService.reportCompleted(completedTrackId).catch(() => {
+      completionReportedRef.current = false;
+    });
+  }, []);
 
   // ── Load track ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -96,6 +126,7 @@ export function usePlayback({
     }
 
     let cancelled = false;
+    endHandledRef.current = false;
     setStatus("loading");
     setError(null);
     setCurrentTime(0);
@@ -106,12 +137,21 @@ export function usePlayback({
         if (offlineSrc) {
           const audio = audioRef.current;
           if (!audio) return;
+          audio.autoplay = autoPlayRef.current;
+          audio.addEventListener(
+            "canplay",
+            () => {
+              if (!autoPlayRef.current) return;
+              audio.play().catch(() => {});
+            },
+            { once: true },
+          );
+          suppressPauseStatusRef.current = true;
           audio.src = offlineSrc;
           audio.load();
           setBundle(null);
           setBuffered(0);
           setStatus("ready");
-          if (autoPlay) audio.play().catch(() => {});
           return;
         }
 
@@ -149,7 +189,7 @@ export function usePlayback({
         }
 
         setStatus("ready");
-        if (autoPlay) audioRef.current?.play().catch(() => {});
+        if (autoPlayRef.current) audioRef.current?.play().catch(() => {});
       } catch (err: unknown) {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : "Failed to load track.");
@@ -163,28 +203,40 @@ export function usePlayback({
       cancelled = true;
       if (streamExpiryRef.current) clearTimeout(streamExpiryRef.current);
       if (audioRef.current) {
+        audioRef.current.autoplay = false;
+        suppressPauseStatusRef.current = true;
         audioRef.current.pause();
         audioRef.current.src = "";
         audioRef.current.load();
       }
     };
-  }, [trackId, privateToken, autoPlay, attachStream, offlineSrc]);
+  }, [trackId, privateToken, attachStream, offlineSrc]);
 
   // ── Audio event listeners ─────────────────────────────────────────────────
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
+    const finishPlayback = () => {
+      if (endHandledRef.current) return;
+      endHandledRef.current = true;
+      audio.pause();
+      if (duration > 0) {
+        audio.currentTime = duration;
+        setCurrentTime(duration);
+      }
+      setStatus("paused");
+      setEndedCount((prev) => prev + 1);
+      if (trackId) {
+        playbackService.reportCompleted(trackId);
+      }
+    };
+
     const onTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
 
       if (duration > 0 && audio.currentTime >= duration) {
-        audio.pause();
-        audio.currentTime = duration;
-        setStatus("paused");
-        if (trackId) {
-          playbackService.reportCompleted(trackId);
-        }
+        finishPlayback();
         return;
       }
 
@@ -212,15 +264,22 @@ export function usePlayback({
       setMediaDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
     };
 
-    const onPlay = () => setStatus("playing");
-    const onPause = () => setStatus("paused");
-
-    const onEnded = () => {
-      setStatus("paused");
-      if (trackId) {
-        playbackService.reportCompleted(trackId);
+    const onPlay = () => {
+      suppressPauseStatusRef.current = false;
+      if (duration <= 0 || audio.currentTime < duration) {
+        endHandledRef.current = false;
       }
+      setStatus("playing");
     };
+    const onPause = () => {
+      if (suppressPauseStatusRef.current) {
+        suppressPauseStatusRef.current = false;
+        return;
+      }
+      setStatus("paused");
+    };
+
+    const onEnded = () => finishPlayback();
 
     const onError = () => {
       setStatus("error");
@@ -244,15 +303,23 @@ export function usePlayback({
       audio.removeEventListener("ended", onEnded);
       audio.removeEventListener("error", onError);
     };
-  }, [trackId, access, duration]);
+  }, [trackId, access, duration, reportCompletionOnce]);
 
   // ── Controls ──────────────────────────────────────────────────────────────
   const play = useCallback(() => {
-    audioRef.current?.play().catch(() => {});
+    if (!audioRef.current) return;
+    autoPlayRef.current = true;
+    audioRef.current.autoplay = true;
+    suppressPauseStatusRef.current = false;
+    audioRef.current.play().catch(() => {});
   }, []);
 
   const pause = useCallback(() => {
-    audioRef.current?.pause();
+    if (!audioRef.current) return;
+    autoPlayRef.current = false;
+    audioRef.current.autoplay = false;
+    suppressPauseStatusRef.current = false;
+    audioRef.current.pause();
   }, []);
 
   const seek = useCallback(
@@ -268,6 +335,7 @@ export function usePlayback({
         );
       }
 
+      endHandledRef.current = false;
       audio.currentTime = target;
     },
     [access],
@@ -296,6 +364,7 @@ export function usePlayback({
     volume,
     isMuted,
     buffered,
+    endedCount,
     previewSecondsRemaining,
     play,
     pause,

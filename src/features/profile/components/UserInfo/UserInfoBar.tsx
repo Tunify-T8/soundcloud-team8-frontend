@@ -8,6 +8,7 @@ import { Upload, BarChart2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { followingService } from "../../../following/followingService";
 import { notifySocialGraphUpdated } from "../../socialGraphEvents";
+import { AdminIDDisplay } from "@/features/admin/components/AdminIDDisplay";
 
 function ShareOverlay({
   onClose,
@@ -165,7 +166,7 @@ export default function UserInfoBar({
     if (!userId || followLoading) return;
 
     const previousFollowersCount = followersCount ?? 0;
-    const newFollowersCount = isFollowing 
+    const newFollowersCount = isFollowing
       ? Math.max(0, previousFollowersCount - 1)
       : previousFollowersCount + 1;
 
@@ -210,7 +211,7 @@ export default function UserInfoBar({
     setModal(!modal);
   };
 
-  const menuTargetName = (username?.trim() || displayName?.trim() || "user");
+  const menuTargetName = username?.trim() || displayName?.trim() || "user";
   const sharePathTarget = userId?.trim() || username?.trim() || "";
   const shareUrl =
     typeof window === "undefined"
@@ -289,6 +290,14 @@ export default function UserInfoBar({
             <Upload size={14} />
             <span>Share</span>
           </button>
+          {userId && (
+            <AdminIDDisplay
+              id={userId}
+              label="Profile ID"
+              variant="badge"
+              className="ml-3"
+            />
+          )}
           {!isMe && (
             <div className="relative group">
               <button
@@ -361,6 +370,7 @@ export default function UserInfoBar({
           onClick={toggleModal}
           onSaved={onProfileUpdated}
           displayName={displayName}
+          username={username}
           avatarUrl={avatarUrl}
           country={country}
           city={city}
@@ -379,4 +389,3 @@ export default function UserInfoBar({
     </div>
   );
 }
-

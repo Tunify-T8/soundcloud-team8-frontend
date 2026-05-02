@@ -4,10 +4,18 @@ import {
   Download, Pencil, ListPlus, CircleDollarSign, SlidersHorizontal, Share2, TrendingUp, Link, Trash2, X
 } from "lucide-react";
 import type { Track } from "@/shared/types/Track";
-import { trackService } from "../trackService";
 import { usePlayer } from "@/features/playerUI/context/usePlayer";
+import { useSubscription } from "@/hooks/useSubscription";
+import { playbackService } from "@/features/player-core/Playbackservice";
+import { trackService } from "../trackService";
+import CreatePlaylistOverlay from "@/features/library/tabs/playlists/components/CreatePlaylistOverlay";
 import amplify from "@/assets/amplify.png";
 import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
+import TrackDeleteConfirmModal from "./TrackDeleteConfirmModal";
+import {
+  MasteringEligibilityModal,
+  PremiumComingSoonModal,
+} from "@/features/premium/components/TrackActionModals";
 
 function formatDate(raw: string): string {
   const d = new Date(raw);
@@ -24,154 +32,112 @@ function formatDuration(seconds: number | string | null | undefined): string {
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
-function DeleteConfirmModal({
-  track,
-  onCancel,
-  onDeleted,
-}: {
-  track: Track;
-  onCancel: () => void;
-  onDeleted: (id: string) => void;
-}) {
-  const [loading, setLoading] = useState(false);
-
-  const handleDelete = async () => {
-    setLoading(true);
-    try {
-      await trackService.deleteTrack(track.id);
-      onDeleted(track.id);
-    } catch (e) {
-      console.error("Failed to delete track:", e);
-      setLoading(false);
-    }
-  };
+function AmplifyModal({ onClose, isArtistPro }: { onClose: () => void; isArtistPro: boolean }) {
+  const proTheme = isArtistPro;
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/60 z-50" onClick={onCancel} />
+      <div
+        className={proTheme ? "fixed inset-0 z-50 bg-black/55 backdrop-blur-[2px]" : "fixed inset-0 z-50"}
+        style={proTheme ? undefined : { background: "rgba(246, 235, 235, 0.58)" }}
+        onClick={onClose}
+      />
       <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none px-4">
-        <div data-testid="delete-confirm-modal" className="bg-[#111] border border-zinc-800 rounded-xl w-full max-w-[540px] p-6 sm:p-8 pointer-events-auto shadow-2xl">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-white text-lg sm:text-xl font-bold">Permanently delete this track?</h2>
-            <button
-              data-testid="delete-modal-close-btn"
-              onClick={onCancel}
-              className="w-7 h-7 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center text-zinc-400 hover:text-white transition-colors flex-shrink-0"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="flex items-center gap-4 mb-6">
-            <div className="relative w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 bg-zinc-700 rounded flex items-center justify-center overflow-hidden">
-              {track.thumbnailUrl ? (
-                <img src={track.thumbnailUrl} alt={track.title} className="w-full h-full object-cover" />
-              ) : (
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="white">
-                  <polygon points="2,0 14,7 2,14" />
-                </svg>
-              )}
-              {track.isPrivate && (
-                <div className="absolute -bottom-1 -right-1 bg-zinc-900 rounded-full p-0.5">
-                  <Lock className="w-3 h-3 text-zinc-400" />
-                </div>
-              )}
-            </div>
-            <span className="text-white font-semibold text-sm sm:text-base truncate">{track.title}</span>
-          </div>
-          <p className="text-zinc-400 text-sm mb-8 leading-relaxed">
-            Removing this track is irreversible. You will lose all the plays, likes, and comments for this track with no way to get them back.
-          </p>
-          <div className="flex items-center justify-end gap-3">
-            <button
-              data-testid="delete-modal-cancel-btn"
-              onClick={onCancel}
-              className="px-5 py-2.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-semibold transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              data-testid="delete-modal-confirm-btn"
-              onClick={handleDelete}
-              disabled={loading}
-              className="px-5 py-2.5 rounded-full bg-red-500 hover:bg-red-600 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
-            >
-              {loading ? "Deleting..." : "Delete forever"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
-
-function AmplifyModal({ onClose }: { onClose: () => void }) {
-  return (
-    <>
-      <div className="fixed inset-0 z-50" style={{ background: "rgba(246, 235, 235, 0.58)" }} onClick={onClose} />
-      <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none px-4">
-        <div data-testid="amplify-modal" className="bg-black rounded-2xl w-full max-w-[820px] overflow-hidden pointer-events-auto shadow-2xl relative">
+        <div
+          data-testid="amplify-modal"
+          className={`rounded-2xl w-full max-w-[820px] overflow-hidden pointer-events-auto shadow-2xl relative border ${
+            proTheme ? "bg-[#1c1608] border-[#d4b253]/40" : "bg-black border-transparent"
+          }`}
+        >
 
           <button
             data-testid="amplify-modal-close-btn"
             onClick={onClose}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-zinc-700 hover:bg-zinc-600 flex items-center justify-center text-zinc-300 hover:text-white transition-colors z-10"
+            className={`absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-colors z-10 ${
+              proTheme
+                ? "bg-[#d4b253] hover:bg-[#e1c36a] text-[#281f07]"
+                : "bg-zinc-700 hover:bg-zinc-600 text-zinc-300 hover:text-white"
+            }`}
           >
             <X className="w-4 h-4" />
           </button>
 
-          <div className="flex flex-col sm:flex-row items-start justify-between px-6 sm:px-10 pt-8 sm:pt-10 pb-4 gap-6">
+          <div className={`flex flex-col sm:flex-row items-start justify-between px-6 sm:px-10 pt-8 sm:pt-10 pb-4 gap-6 ${proTheme ? "bg-[linear-gradient(135deg,rgba(212,178,83,0.18),rgba(28,22,8,0.15))]" : ""}`}>
             <div className="flex-1">
-              <h2 className="text-white text-2xl sm:text-3xl font-bold leading-tight mb-4">
-                Reach more listeners with Artist Pro
-              </h2>
-              <p className="text-zinc-400 text-sm mb-4 leading-relaxed">
-                In order to be eligible, you must have an Artist or Artist Pro subscription.
-              </p>
-              <p className="text-zinc-300 text-sm leading-relaxed">
-                With an Artist Pro subscription you can have this track analyzed and recommended to reach{" "}
-                <span className="text-white font-bold">100+ plays by listeners on SoundCloud.</span>
-              </p>
+              {isArtistPro ? (
+                <>
+                  <h2 className="text-[#f7e6ad] text-2xl sm:text-3xl font-bold leading-tight mb-4">
+                    You can now Amplify with Artist-Pro
+                  </h2>
+                  <p className="text-[#f7e6ad]/90 text-sm leading-relaxed">
+                    Coming Soon, you'll be the first to know!
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-white text-2xl sm:text-3xl font-bold leading-tight mb-4">
+                    Reach more listeners with Artist Pro
+                  </h2>
+                  <p className="text-zinc-400 text-sm mb-4 leading-relaxed">
+                    In order to be eligible, you must have an Artist or Artist Pro subscription.
+                  </p>
+                  <p className="text-zinc-300 text-sm leading-relaxed">
+                    With an Artist Pro subscription you can have this track analyzed and recommended to reach{" "}
+                    <span className="text-white font-bold">100+ plays by listeners on SoundCloud.</span>
+                  </p>
+                </>
+              )}
             </div>
-            <div className="w-full sm:w-64 h-36 sm:h-44 flex-shrink-0 rounded-xl overflow-hidden bg-zinc-800 flex items-center justify-center">
+            <div className={`w-full sm:w-64 h-36 sm:h-44 flex-shrink-0 rounded-xl overflow-hidden flex items-center justify-center ${proTheme ? "bg-[#d4b253]/20 ring-1 ring-[#d4b253]/35 shadow-[0_0_0_1px_rgba(212,178,83,0.15),0_20px_40px_rgba(0,0,0,0.35)]" : "bg-zinc-800"}`}>
               <img src={amplify} alt="Artist Pro" className="w-full h-full object-cover" />
             </div>
           </div>
 
           <div className="px-6 sm:px-10 pb-6">
-            <div className="bg-zinc-800/60 rounded-xl p-5 sm:p-6">
-              <p className="text-white text-sm font-bold mb-4">Upgrade to Artist Pro to get:</p>
-              <ul className="space-y-3">
-                {[
-                  "Unlimited track recommendations",
-                  "Unlimited uploads + replace tracks",
-                  "Unlimited track distribution",
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-zinc-300 text-sm">
-                    <span className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0">
-                      <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                        <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
+            <div className={`rounded-xl p-5 sm:p-6 ${proTheme ? "bg-[#d4b253]/15 border border-[#d4b253]/30" : "bg-zinc-800/60"}`}>
+              {isArtistPro ? (
+                <p className="text-[#f7e6ad] text-sm leading-relaxed font-medium">
+                  Amplify access is coming soon for Artist Pro members.
+                </p>
+              ) : (
+                <>
+                  <p className="text-white text-sm font-bold mb-4">Upgrade to Artist Pro to get:</p>
+                  <ul className="space-y-3">
+                    {[
+                      "Unlimited track recommendations",
+                      "Unlimited uploads + replace tracks",
+                      "Unlimited track distribution",
+                    ].map((item) => (
+                      <li key={item} className="flex items-center gap-3 text-zinc-300 text-sm">
+                        <span className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                          <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                            <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </span>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center justify-start gap-4 px-6 sm:px-10 pb-8 sm:pb-10">
-            <ArtistProUpgradeButton
-              data-testid="amplify-modal-unlock-btn"
-              className="px-6 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold transition-colors tracking-tight"
-            >
-              Unlock with Artist Pro
-            </ArtistProUpgradeButton>
+          <div className="flex items-center justify-end gap-4 px-6 sm:px-10 pb-8 sm:pb-10">
+            {!isArtistPro ? (
+              <ArtistProUpgradeButton
+                data-testid="amplify-modal-unlock-btn"
+                className="px-6 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold transition-colors tracking-tight"
+              >
+                Unlock with Artist Pro
+              </ArtistProUpgradeButton>
+            ) : null}
             <button
               data-testid="amplify-modal-later-btn"
               onClick={onClose}
-              className="px-6 py-2.5 text-white text-sm font-semibold hover:text-zinc-300 transition-colors"
+              className={proTheme ? "px-6 py-2.5 text-[#f7e6ad] text-sm font-semibold hover:text-white transition-colors" : "px-6 py-2.5 text-white text-sm font-semibold hover:text-zinc-300 transition-colors"}
             >
-              Maybe later
+              OK
             </button>
           </div>
         </div>
@@ -185,7 +151,6 @@ interface TrackCardProps {
   isSelected?: boolean;
   onSelect?: (id: string) => void;
   onEdit?: (id: string) => void;
-  onAddToPlaylist?: (id: string) => void;
   onMonetize?: (id: string) => void;
   onMaster?: (id: string) => void;
   onDistribute?: (id: string) => void;
@@ -238,7 +203,6 @@ export default function TrackCard({
   isSelected = false,
   onSelect,
   onEdit,
-  onAddToPlaylist,
   onMonetize,
   onMaster,
   onDistribute,
@@ -252,24 +216,47 @@ export default function TrackCard({
   const [dropdownUp, setDropdownUp] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showAmplifyModal, setShowAmplifyModal] = useState(false);
+  const [showPlaylistOverlay, setShowPlaylistOverlay] = useState(false);
   const [amplifyHovered, setAmplifyHovered] = useState(false);
+  const [downloadState, setDownloadState] = useState<"idle" | "loading" | "done">("idle");
+  const [premiumActionModal, setPremiumActionModal] = useState<"monetization" | "distribution" | null>(null);
+  const [showMasteringModal, setShowMasteringModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const downloadDoneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { isArtistPro } = useSubscription();
+  const fallbackDownload = onDownload;
 
   const { currentTrack, isPlaying, setCurrentTrack, setIsPlaying } = usePlayer();
   const isThisTrack = currentTrack?.id === track.id;
   const playing = isThisTrack && isPlaying;
 
-  const handlePlayToggle = (e: React.MouseEvent) => {
+  const handlePlayToggle = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isThisTrack) {
       setIsPlaying(!isPlaying);
     } else {
+      let playableTrack = track;
+
+      if (
+        track.isPrivate &&
+        (!track.privateToken || !track.audioUrl)
+      ) {
+        try {
+          playableTrack = await trackService.getTrackDetails(track.id);
+        } catch {
+          playableTrack = track;
+        }
+      }
+
       setCurrentTrack({
-        id: track.id,
-        title: track.title,
-        artist: track.artist,
-        duration: 0,
+        id: playableTrack.id,
+        title: playableTrack.title,
+        artist: playableTrack.artist,
+        thumbnailUrl: playableTrack.thumbnailUrl ?? undefined,
+        artworkUrl: playableTrack.thumbnailUrl ?? undefined,
+        privateToken: playableTrack.privateToken ?? undefined,
+        duration: playableTrack.duration ?? 0,
       });
       setIsPlaying(true);
     }
@@ -277,6 +264,87 @@ export default function TrackCard({
 
   const fmt = (val: number | null | undefined) =>
     val === null || val === 0 || val === undefined ? "-" : val.toString();
+
+  const openExternalWindow = (url: string) => {
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const handleMonetize = () => {
+    setMenuOpen(false);
+    if (onMonetize) {
+      onMonetize(track.id);
+      return;
+    }
+    setPremiumActionModal("monetization");
+  };
+
+  const handleMaster = () => {
+    setMenuOpen(false);
+    if (onMaster) {
+      onMaster(track.id);
+      return;
+    }
+    setShowMasteringModal(true);
+  };
+
+  const handleDistribute = () => {
+    setMenuOpen(false);
+    if (onDistribute) {
+      onDistribute(track.id);
+      return;
+    }
+    if (isArtistPro) {
+      setPremiumActionModal("distribution");
+      return;
+    }
+    openExternalWindow("/distribution/soundcloud");
+  };
+
+  const handleInsights = () => {
+    setMenuOpen(false);
+    if (onTrackInsights) {
+      onTrackInsights(track.id);
+      return;
+    }
+    window.location.assign("/me/insights/overview");
+  };
+
+  useEffect(() => {
+    return () => {
+      if (downloadDoneTimerRef.current) {
+        clearTimeout(downloadDoneTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleDownloadTrack = async () => {
+    if (!track.id || downloadState === "loading") return;
+
+    try {
+      setDownloadState("loading");
+      const streamData = await playbackService.requestStreamUrl(track.id);
+      const audioResponse = await fetch(streamData.stream.url);
+      const audioBlob = await audioResponse.blob();
+      const objectUrl = URL.createObjectURL(audioBlob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = `${track.title || "track"}.${streamData.stream.format === "hls" ? "m3u8" : "mp3"}`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+
+      setDownloadState("done");
+      if (downloadDoneTimerRef.current) clearTimeout(downloadDoneTimerRef.current);
+      downloadDoneTimerRef.current = setTimeout(() => {
+        setDownloadState("idle");
+      }, 1400);
+    } catch (error) {
+      console.error("Download failed:", error);
+      setDownloadState("idle");
+      fallbackDownload?.(track.id);
+    }
+  };
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -439,35 +507,22 @@ export default function TrackCard({
               ${dropdownUp ? "bottom-full mb-1" : "top-full mt-1"}`}
           >
             <MenuItem icon={<Pencil className="w-4 h-4" />} label="Edit" onClick={() => { onEdit?.(track.id); setMenuOpen(false); }} />
-            <MenuItem icon={<ListPlus className="w-4 h-4" />} label="Add to playlist" onClick={() => { onAddToPlaylist?.(track.id); setMenuOpen(false); }} />
+            <MenuItem icon={<ListPlus className="w-4 h-4" />} label="Add to playlist" onClick={() => { setShowPlaylistOverlay(true); setMenuOpen(false); }} />
             {/* Amplify in menu on mobile */}
             <div className="sm:hidden">
               <MenuItem icon={<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1L9 6H14L10 9.5L11.5 14L7 11L2.5 14L4 9.5L0 6H5L7 1Z" fill="currentColor" /></svg>} label="Amplify" onClick={() => { setShowAmplifyModal(true); setMenuOpen(false); }} />
             </div>
             <div className="my-1 border-t border-zinc-700" />
-            <MenuItem icon={<CircleDollarSign className="w-4 h-4" />} label="Monetize" onClick={() => { onMonetize?.(track.id); setMenuOpen(false); }} />
-            <MenuItem icon={<SlidersHorizontal className="w-4 h-4" />} label="Master" onClick={() => { onMaster?.(track.id); setMenuOpen(false); }} />
-            <MenuItem icon={<Share2 className="w-4 h-4" />} label="Distribute" onClick={() => { onDistribute?.(track.id); setMenuOpen(false); }} />
-            <MenuItem icon={<TrendingUp className="w-4 h-4" />} label="Track insights" onClick={() => { onTrackInsights?.(track.id); setMenuOpen(false); }} />
+            <MenuItem icon={<CircleDollarSign className="w-4 h-4" />} label="Monetize" onClick={handleMonetize} />
+            <MenuItem icon={<SlidersHorizontal className="w-4 h-4" />} label="Master" onClick={handleMaster} />
+            <MenuItem icon={<Share2 className="w-4 h-4" />} label="Distribute" onClick={handleDistribute} />
+            <MenuItem icon={<TrendingUp className="w-4 h-4" />} label="Track insights" onClick={handleInsights} />
             <MenuItem
               icon={<Download className="w-4 h-4" />}
               label="Download file"
               onClick={async () => {
                 setMenuOpen(false);
-                if (track.audioUrl) {
-                  try {
-                    const a = document.createElement("a");
-                    a.href = track.audioUrl;
-                    a.download = `${track.title}.mp3`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                  } catch (e) {
-                    console.error("Download failed:", e);
-                  }
-                } else {
-                  onDownload?.(track.id);
-                }
+                await handleDownloadTrack();
               }}
             />
             <MenuItem icon={<Link className="w-4 h-4" />} label="Copy link" onClick={() => { onCopyLink?.(track.id); setMenuOpen(false); }} />
@@ -478,11 +533,23 @@ export default function TrackCard({
       </div>
 
       {showAmplifyModal && (
-        <AmplifyModal onClose={() => setShowAmplifyModal(false)} />
+        <AmplifyModal onClose={() => setShowAmplifyModal(false)} isArtistPro={isArtistPro} />
+      )}
+
+      {premiumActionModal && (
+        <PremiumComingSoonModal
+          featureLabel={premiumActionModal === "distribution" ? "Distribution" : "Monetization"}
+          isArtistPro={isArtistPro}
+          onClose={() => setPremiumActionModal(null)}
+        />
+      )}
+
+      {showMasteringModal && (
+        <MasteringEligibilityModal onClose={() => setShowMasteringModal(false)} />
       )}
 
       {showDeleteModal && (
-        <DeleteConfirmModal
+        <TrackDeleteConfirmModal
           track={track}
           onCancel={() => setShowDeleteModal(false)}
           onDeleted={(id) => {
@@ -490,6 +557,54 @@ export default function TrackCard({
             onDelete?.(id);
           }}
         />
+      )}
+
+      {showPlaylistOverlay && (
+        <CreatePlaylistOverlay
+          isOpen={showPlaylistOverlay}
+          onClose={() => setShowPlaylistOverlay(false)}
+          track={{
+            id: track.id,
+            title: track.title,
+            artist: track.artist,
+            coverUrl: track.thumbnailUrl || "",
+          }}
+          defaultCoverUrl={track.thumbnailUrl || ""}
+          autoAddTrackId={track.id}
+        />
+      )}
+
+      {downloadState !== "idle" && (
+        <div className="fixed inset-0 z-[140] flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/45 backdrop-blur-[1px]" />
+          <div className="relative w-full max-w-[420px] rounded-2xl border border-zinc-700 bg-[#121212] px-6 py-5 shadow-2xl">
+            <div className="flex items-start gap-4">
+              <div
+                className={`mt-0.5 flex h-10 w-10 items-center justify-center rounded-full ${
+                  downloadState === "done" ? "bg-emerald-500/20 text-emerald-400" : "bg-indigo-500/20 text-indigo-300"
+                }`}
+              >
+                {downloadState === "done" ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ) : (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-white">
+                  {downloadState === "done" ? "Done" : "Downloading your file shortly..."}
+                </p>
+                <p className={`mt-1 text-xs leading-relaxed ${downloadState === "done" ? "text-emerald-400" : "text-zinc-400"}`}>
+                  {downloadState === "done"
+                    ? "Your browser has started downloading the track."
+                    : "We’re preparing the stream URL and starting the download."}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

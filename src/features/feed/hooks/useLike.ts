@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { feedService } from '../feedservice';
+import { notifyTrackLikeChanged } from '@/features/engagement/engagementEvents';
 
 /**
  * Manages like/unlike state for a single track with optimistic updates.
@@ -21,10 +22,16 @@ export function useLike(
 
   const toggleLike = async () => {
     const newIsLiked = !isLiked;
+    const nextLikesCount = Math.max(0, likesCount + (newIsLiked ? 1 : -1));
 
     // Step 1: Update UI immediately — no waiting for the server
     setIsLiked(newIsLiked);
-    setLikesCount((prev) => (newIsLiked ? prev + 1 : prev - 1));
+    setLikesCount(nextLikesCount);
+    notifyTrackLikeChanged({
+      trackId,
+      isLiked: newIsLiked,
+      likesCount: nextLikesCount,
+    });
 
     try {
       // Step 2: Sync with backend in the background
@@ -36,7 +43,12 @@ export function useLike(
     } catch {
       // Step 3: If the API call fails, revert to what it was before
       setIsLiked(!newIsLiked);
-      setLikesCount((prev) => (newIsLiked ? prev - 1 : prev + 1));
+      setLikesCount(likesCount);
+      notifyTrackLikeChanged({
+        trackId,
+        isLiked,
+        likesCount,
+      });
     }
   };
 

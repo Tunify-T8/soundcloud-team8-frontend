@@ -9,6 +9,7 @@ export interface TrackMeta {
   recentlyPlayedArtworkUrl?: string;
   recentlyPlayedEntityType?: "track" | "playlist" | "album";
   recentlyPlayedLinkTo?: string;
+  privateToken?: string;
   /**
    * When set, the player skips the stream API and plays this
    * blob URL directly. Used for downloaded/offline tracks.
@@ -22,6 +23,7 @@ export interface PlayerContextValue {
   progress: number;
   pendingSeek: { trackId: string; progress: number } | null;
   setCurrentTrack: (track: TrackMeta) => void;
+  syncCurrentTrack: (track: TrackMeta) => void;
   setIsPlaying: (v: boolean) => void;
   setProgress: (v: number) => void;
   requestSeek: (trackId: string, progress: number) => void;

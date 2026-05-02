@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import TrackCard from "./TrackCard";
 import EditTrackDrawer from "./EditTrackDrawer";
+import CreatePlaylistOverlay from "@/features/library/tabs/playlists/components/CreatePlaylistOverlay";
 import type { Track } from "../../../shared/types/Track";
 import { Pencil, PlusSquare } from "lucide-react";
 
@@ -12,11 +13,61 @@ interface TrackListProps {
 
 export default function TrackList({ tracks, onDelete, onUpdate }: TrackListProps) {
   const [selectedTracks, setSelectedTracks] = useState<string[]>([]);
-  const [editingTrack, setEditingTrack] = useState<Track | null>(null);
+  const [editingTrackIds, setEditingTrackIds] = useState<string[] | null>(null);
+  const [editingTrackIndex, setEditingTrackIndex] = useState(0);
+  const [editingMode, setEditingMode] = useState<"single" | "bulk" | null>(null);
+  const [showPlaylistOverlay, setShowPlaylistOverlay] = useState(false);
 
   const validTracks = tracks.filter((track) => track != null && track.id != null);
   const allSelected = selectedTracks.length === validTracks.length && validTracks.length > 0;
   const someSelected = selectedTracks.length > 0;
+  const selectedTrackRecords = useMemo(
+    () => validTracks.filter((track) => selectedTracks.includes(track.id)),
+    [selectedTracks, validTracks],
+  );
+  const editingTrack = useMemo(() => {
+    if (!editingTrackIds || editingTrackIds.length === 0) return null;
+    const activeId = editingTrackIds[editingTrackIndex];
+    return tracks.find((track) => track.id === activeId) ?? null;
+  }, [editingTrackIds, editingTrackIndex, tracks]);
+
+  const startEditSession = (trackIds: string[], mode: "single" | "bulk") => {
+    const uniqueIds = Array.from(new Set(trackIds.filter(Boolean)));
+    if (uniqueIds.length === 0) return;
+    setEditingTrackIds(uniqueIds);
+    setEditingTrackIndex(0);
+    setEditingMode(mode);
+  };
+
+  const closeEditSession = () => {
+    setEditingTrackIds(null);
+    setEditingTrackIndex(0);
+    setEditingMode(null);
+  };
+
+  const handleEditSelected = () => {
+    if (!selectedTrackRecords.length) return;
+    startEditSession(selectedTrackRecords.map((track) => track.id), "bulk");
+  };
+
+  const handlePlaylistSelected = () => {
+    if (!selectedTrackRecords.length) return;
+    setShowPlaylistOverlay(true);
+  };
+
+  const handleTrackSaved = () => {
+    if (!editingTrackIds) return;
+
+    if (editingTrackIndex < editingTrackIds.length - 1) {
+      setEditingTrackIndex((current) => current + 1);
+      return;
+    }
+
+    closeEditSession();
+    if (editingMode === "bulk") {
+      setSelectedTracks([]);
+    }
+  };
 
   const handleSelectAll = () => {
     if (allSelected) {
@@ -63,10 +114,20 @@ export default function TrackList({ tracks, onDelete, onUpdate }: TrackListProps
               <span className="text-white text-xs font-bold tracking-wide">
                 {selectedTracks.length} SELECTED
               </span>
-              <button data-testid="track-list-bulk-edit" className="text-zinc-400 hover:text-white transition-colors">
+              <button
+                data-testid="track-list-bulk-edit"
+                onClick={handleEditSelected}
+                disabled={!selectedTrackRecords.length}
+                className="text-zinc-400 hover:text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+              >
                 <Pencil className="w-4 h-4" />
               </button>
-              <button data-testid="track-list-bulk-add-playlist" className="text-zinc-400 hover:text-white transition-colors">
+              <button
+                data-testid="track-list-bulk-add-playlist"
+                onClick={handlePlaylistSelected}
+                disabled={!selectedTrackRecords.length}
+                className="text-zinc-400 hover:text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+              >
                 <PlusSquare className="w-4 h-4" />
               </button>
             </div>
@@ -109,7 +170,9 @@ export default function TrackList({ tracks, onDelete, onUpdate }: TrackListProps
                 onSelect={handleSelectTrack}
                 onEdit={(id) => {
                   const found = tracks.find((t) => t.id === id) ?? null;
-                  setEditingTrack(found);
+                  if (found) {
+                    startEditSession([found.id], "single");
+                  }
                 }}
                 onDelete={onDelete}
               />
@@ -120,9 +183,26 @@ export default function TrackList({ tracks, onDelete, onUpdate }: TrackListProps
 
       {editingTrack && (
         <EditTrackDrawer
+          key={`${editingTrack.id}-${editingTrackIndex}`}
           track={editingTrack}
-          onClose={() => setEditingTrack(null)}
+          onClose={closeEditSession}
           onUpdate={onUpdate}
+          onSaved={handleTrackSaved}
+        />
+      )}
+
+      {showPlaylistOverlay && selectedTrackRecords[0] && (
+        <CreatePlaylistOverlay
+          isOpen={showPlaylistOverlay}
+          onClose={() => setShowPlaylistOverlay(false)}
+          track={{
+            id: selectedTrackRecords[0].id,
+            title: selectedTrackRecords[0].title,
+            artist: selectedTrackRecords[0].artist,
+            coverUrl: selectedTrackRecords[0].thumbnailUrl || "",
+          }}
+          defaultCoverUrl={selectedTrackRecords[0].thumbnailUrl || ""}
+          selectedTrackIds={selectedTrackRecords.map((track) => track.id)}
         />
       )}
     </div>

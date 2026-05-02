@@ -7,6 +7,7 @@ export const PlayerContext = createContext<PlayerContextValue>({
   progress: 0,
   pendingSeek: null,
   setCurrentTrack: () => {},
+  syncCurrentTrack: () => {},
   setIsPlaying: () => {},
   setProgress: () => {},
   requestSeek: () => {},

@@ -60,7 +60,7 @@ export function ArtistsToWatchSection({
             key={artist.id}
             to={`/${artist.id}`}
             data-testid={`artists-to-watch-item-${artist.id}`}
-            className="flex w-24 shrink-0 flex-col items-center sm:w-36"
+            className="group flex w-24 shrink-0 flex-col items-center sm:w-36"
           >
             <div className="relative h-16 w-16 overflow-hidden rounded-full bg-zinc-800 sm:h-28 sm:w-28">
               <img
@@ -71,8 +71,9 @@ export function ArtistsToWatchSection({
                   event.currentTarget.onerror = null;
                   event.currentTarget.src = imageFallback;
                 }}
-                className="h-full w-full object-cover"
+                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
+              <div className="absolute inset-0 rounded-full bg-black/30 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
             </div>
 
             <div className="mt-3 flex w-full items-center justify-center gap-1.5 sm:mt-4">

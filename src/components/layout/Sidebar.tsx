@@ -11,6 +11,7 @@ import UpgradeModal from "@/features/premium/components/UpgradeModal";
 import { api } from "../../features/auth/services/api";
 import avatarFallback from "@/assets/avatar.png";
 import { notifySocialGraphUpdated } from "../../features/profile/socialGraphEvents";
+import { notifyTrackLikeChanged } from "@/features/engagement/engagementEvents";
 import amplifyImg from "@/assets/amplifytool.png";
 import replaceImg from "@/assets/replace.png";
 import distributeImg from "@/assets/distribute.png";
@@ -43,16 +44,64 @@ type ArtistTool = {
 
 const artistToolRows: ArtistTool[][] = [
   [
-    { id: "amplify", label: "Amplify", imageSrc: amplifyImg, badge: "plus", hoverTheme: "purple" },
-    { id: "replace", label: "Replace", imageSrc: replaceImg, badge: "plus", hoverTheme: "purple" },
-    { id: "distribute", label: "Distribute", imageSrc: distributeImg, badge: "plus", hoverTheme: "purple" },
-    { id: "master", label: "Master", imageSrc: masterImg, badge: "plus", hoverTheme: "purple" },
+    {
+      id: "amplify",
+      label: "Amplify",
+      imageSrc: amplifyImg,
+      badge: "plus",
+      hoverTheme: "purple",
+    },
+    {
+      id: "replace",
+      label: "Replace",
+      imageSrc: replaceImg,
+      badge: "plus",
+      hoverTheme: "purple",
+    },
+    {
+      id: "distribute",
+      label: "Distribute",
+      imageSrc: distributeImg,
+      badge: "plus",
+      hoverTheme: "purple",
+    },
+    {
+      id: "master",
+      label: "Master",
+      imageSrc: masterImg,
+      badge: "plus",
+      hoverTheme: "purple",
+    },
   ],
   [
-    { id: "monetize", label: "Monetize", imageSrc: monetizeImg, badge: "plus", hoverTheme: "purple" },
-    { id: "spotlight", label: "Spotlight", imageSrc: spotlightImg, badge: "plus", hoverTheme: "purple" },
-    { id: "top-fans", label: "Top fans", imageSrc: topFansImg, badge: "star", hoverTheme: "gold" },
-    { id: "comments", label: "Comments", imageSrc: commentsImg, badge: "star", hoverTheme: "gold" },
+    {
+      id: "monetize",
+      label: "Monetize",
+      imageSrc: monetizeImg,
+      badge: "plus",
+      hoverTheme: "purple",
+    },
+    {
+      id: "spotlight",
+      label: "Spotlight",
+      imageSrc: spotlightImg,
+      badge: "plus",
+      hoverTheme: "purple",
+    },
+    {
+      id: "top-fans",
+      label: "Top fans",
+      imageSrc: topFansImg,
+      badge: "star",
+      hoverTheme: "gold",
+    },
+    {
+      id: "comments",
+      label: "Comments",
+      imageSrc: commentsImg,
+      badge: "star",
+      hoverTheme: "gold",
+    },
   ],
 ];
 
@@ -63,9 +112,13 @@ export default function SideBar() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [likedTracks, setLikedTracks] = useState<LikedTrack[]>([]);
+  const [likedTracksCount, setLikedTracksCount] = useState(0);
   const [likesLoading, setLikesLoading] = useState(true);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [pendingFollowId, setPendingFollowId] = useState<string | null>(null);
+  const [followedSuggestedArtistIds, setFollowedSuggestedArtistIds] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   const handleArtistToolClick = () => {
     setUpgradeOpen(true);
@@ -84,7 +137,9 @@ export default function SideBar() {
       const items: SuggestedArtist[] = await Promise.all(
         rawItems.map(async (artist) => {
           try {
-            const profileRes = await api.get(`/users/${encodeURIComponent(artist.id)}`);
+            const profileRes = await api.get(
+              `/users/${encodeURIComponent(artist.id)}`,
+            );
             return {
               ...artist,
               tracksUploadedCount: Number(
@@ -107,18 +162,17 @@ export default function SideBar() {
           params: { page: 1, limit: 20 },
         });
         const fallbackItems = (fallbackRes.data?.items ?? []).map(
-          (artist: Record<string, unknown>) =>
-            ({
-              id: String(artist.id ?? ""),
-              username: String(artist.username ?? ""),
-              avatarUrl: (artist.avatarUrl as string | null) ?? null,
-              coverUrl: null,
-              role: "ARTIST" as const,
-              isCertified: Boolean(artist.isCertified),
-              followersCount: Number(artist.followersCount ?? 0),
-              isFollowing: false,
-              tracksUploadedCount: Number(artist.tracksCount ?? 0),
-                }),
+          (artist: Record<string, unknown>) => ({
+            id: String(artist.id ?? ""),
+            username: String(artist.username ?? ""),
+            avatarUrl: (artist.avatarUrl as string | null) ?? null,
+            coverUrl: null,
+            role: "ARTIST" as const,
+            isCertified: Boolean(artist.isCertified),
+            followersCount: Number(artist.followersCount ?? 0),
+            isFollowing: false,
+            tracksUploadedCount: Number(artist.tracksCount ?? 0),
+          }),
         );
         setSuggestedUsers(fallbackItems);
       } else {
@@ -132,14 +186,21 @@ export default function SideBar() {
   };
 
   const handleSuggestedArtistFollow = async (artistId: string) => {
+    if (pendingFollowId === artistId) return;
+
     setPendingFollowId(artistId);
+    setFollowedSuggestedArtistIds((prev) => new Set(prev).add(artistId));
 
     try {
       await followingService.followUser(artistId);
-      setSuggestedUsers((prev) => prev.filter((artist) => artist.id !== artistId));
       notifySocialGraphUpdated();
     } catch (err) {
       console.error("Failed to follow suggested artist", err);
+      setFollowedSuggestedArtistIds((prev) => {
+        const next = new Set(prev);
+        next.delete(artistId);
+        return next;
+      });
     } finally {
       setPendingFollowId((current) => (current === artistId ? null : current));
     }
@@ -150,24 +211,57 @@ export default function SideBar() {
   }, []);
 
   useEffect(() => {
-    feedService
-      .getMyLikes(4)
-      .then(setLikedTracks)
-      .finally(() => setLikesLoading(false));
+    let isMounted = true;
+
+    const loadLikes = async () => {
+      setLikesLoading(true);
+      try {
+        const firstPage = await feedService.getMyLikesPage(1, 4);
+        let totalCount = firstPage.items.length;
+
+        if (firstPage.hasMore) {
+          const secondPage = await feedService.getMyLikesPage(2, 4);
+          totalCount += secondPage.items.length;
+        }
+
+        if (isMounted) {
+          setLikedTracks(firstPage.items);
+          setLikedTracksCount(totalCount);
+        }
+      } catch {
+        if (isMounted) {
+          setLikedTracks([]);
+          setLikedTracksCount(0);
+        }
+      } finally {
+        if (isMounted) {
+          setLikesLoading(false);
+        }
+      }
+    };
+
+    void loadLikes();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (
     <header data-testid="sidebar" className="flex flex-col justify-end mt-2">
       <div className="ml-auto flex flex-col w-[310px] mr-6">
-
-        <div data-testid="artist-tools-section" className="w-full rounded-none bg-transparent px-0 py-4">
+        <div
+          data-testid="artist-tools-section"
+          className="w-full rounded-none bg-transparent px-0 py-4"
+        >
           <div
             data-testid="artist-tools-toggle"
             onClick={() => setOpen(!open)}
             className="mb-6 flex cursor-pointer items-center justify-between border-b border-zinc-800 pb-5"
           >
             <span className="text-[18px] font-bold tracking-tight text-white">
-              {canAccessBasicArtistTools ? "YOU NOW HAVE ACCESS TO ARTIST TOOLS" : "ARTIST TOOLS"}
+              {canAccessBasicArtistTools
+                ? "YOU NOW HAVE ACCESS TO ARTIST TOOLS"
+                : "ARTIST TOOLS"}
             </span>
             <IoChevronDown
               size={22}
@@ -235,15 +329,24 @@ export default function SideBar() {
 
           <div className="flex flex-col gap-3">
             {loading ? (
-              <div data-testid="suggested-artists-loading" className="text-gray-400 text-xs">
+              <div
+                data-testid="suggested-artists-loading"
+                className="text-gray-400 text-xs"
+              >
                 Loading...
               </div>
             ) : error ? (
-              <div data-testid="suggested-artists-error" className="text-red-400 text-xs">
+              <div
+                data-testid="suggested-artists-error"
+                className="text-red-400 text-xs"
+              >
                 {error}
               </div>
             ) : suggestedUsers.length === 0 ? (
-              <div data-testid="suggested-artists-empty" className="text-gray-400 text-xs">
+              <div
+                data-testid="suggested-artists-empty"
+                className="text-gray-400 text-xs"
+              >
                 No suggestions found.
               </div>
             ) : (
@@ -253,7 +356,10 @@ export default function SideBar() {
                   data-testid={`suggested-artist-${artist.id}`}
                   className="flex items-center justify-between"
                 >
-                  <Link to={`/${artist.id}`} className="group flex items-center gap-3">
+                  <Link
+                    to={`/${artist.id}`}
+                    className="group flex items-center gap-3"
+                  >
                     <img
                       src={artist.avatarUrl || avatarFallback}
                       alt={artist.username}
@@ -285,11 +391,18 @@ export default function SideBar() {
                   <button
                     data-testid={`suggested-artist-follow-btn-${artist.id}`}
                     type="button"
-                    disabled={pendingFollowId === artist.id}
+                    disabled={
+                      pendingFollowId === artist.id ||
+                      followedSuggestedArtistIds.has(artist.id)
+                    }
                     onClick={() => handleSuggestedArtistFollow(artist.id)}
-                    className="font-semibold rounded px-5 py-1.5 text-sm transition disabled:opacity-60 bg-white text-black hover:bg-gray-100"
+                    className="font-semibold rounded px-5 py-1.5 text-sm transition bg-white text-black hover:bg-gray-100 disabled:bg-white disabled:text-black disabled:opacity-100"
                   >
-                    {pendingFollowId === artist.id ? "Following..." : "Follow"}
+                    {followedSuggestedArtistIds.has(artist.id)
+                      ? "Followed"
+                      : pendingFollowId === artist.id
+                        ? "Following..."
+                        : "Follow"}
                   </button>
                 </div>
               ))
@@ -300,14 +413,15 @@ export default function SideBar() {
         <div data-testid="likes-section" className="mb-6">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-extrabold text-white tracking-wide uppercase">
-              {likedTracks.length > 0 ? `${likedTracks.length} LIKES` : "LIKES"}
+              {likedTracksCount > 0 ? `${likedTracksCount} LIKES` : "LIKES"}
             </span>
-            <button
+            <Link
               data-testid="likes-view-all-btn"
+              to="/me/likes"
               className="text-xs text-gray-400 hover:underline"
             >
               View all
-            </button>
+            </Link>
           </div>
 
           {likesLoading ? (
@@ -325,12 +439,23 @@ export default function SideBar() {
                   key={track.id}
                   track={track}
                   onUnlike={(id) =>
-                    setLikedTracks((prev) => prev.filter((t) => t.id !== id))
+                    setLikedTracks((prev) => {
+                      const next = prev.filter((t) => t.id !== id);
+                      if (next.length !== prev.length) {
+                        setLikedTracksCount((count) => Math.max(0, count - 1));
+                      }
+                      return next;
+                    })
                   }
                   onReLike={(id) =>
-                    setLikedTracks((prev) =>
-                      prev.some((t) => t.id === id) ? prev : [...prev, track]
-                    )
+                    setLikedTracks((prev) => {
+                      const exists = prev.some((t) => t.id === id);
+                      if (!exists) {
+                        setLikedTracksCount((count) => count + 1);
+                        return [...prev, track];
+                      }
+                      return prev;
+                    })
                   }
                 />
               ))}
@@ -382,23 +507,41 @@ export default function SideBar() {
 
         <div className="mt-6 text-zinc-400">
           <div className="text-[14px]">
-            <a href="#" className="hover:text-zinc-300">Legal</a>
+            <a href="#" className="hover:text-zinc-300">
+              Legal
+            </a>
             <span> · </span>
-            <a href="#" className="hover:text-zinc-300">Privacy</a>
+            <a href="#" className="hover:text-zinc-300">
+              Privacy
+            </a>
             <span> · </span>
-            <a href="#" className="hover:text-zinc-300">Cookie Policy</a>
+            <a href="#" className="hover:text-zinc-300">
+              Cookie Policy
+            </a>
             <span> · </span>
-            <a href="#" className="hover:text-zinc-300">Cookie Manager</a>
+            <a href="#" className="hover:text-zinc-300">
+              Cookie Manager
+            </a>
             <span> · </span>
-            <a href="#" className="hover:text-zinc-300">Imprint</a>
+            <a href="#" className="hover:text-zinc-300">
+              Imprint
+            </a>
             <span> · </span>
-            <a href="#" className="hover:text-zinc-300">Artist Resources</a>
+            <a href="#" className="hover:text-zinc-300">
+              Artist Resources
+            </a>
             <span> · </span>
-            <a href="#" className="hover:text-zinc-300">Newsroom</a>
+            <a href="#" className="hover:text-zinc-300">
+              Newsroom
+            </a>
             <span> · </span>
-            <a href="#" className="hover:text-zinc-300">Charts</a>
+            <a href="#" className="hover:text-zinc-300">
+              Charts
+            </a>
             <span> · </span>
-            <a href="#" className="hover:text-zinc-300">Transparency Reports</a>
+            <a href="#" className="hover:text-zinc-300">
+              Transparency Reports
+            </a>
           </div>
           <div className="mt-7 text-[13px] leading-none">
             <span className="font-semibold text-white">Language:</span>{" "}
@@ -475,7 +618,9 @@ function Tool({ tool, onClick, showUpgradeHover }: ToolProps) {
 
       {showUpgradeHover && (
         <div className="absolute inset-x-0 bottom-0 translate-y-full transition-transform duration-200 group-hover:translate-y-0">
-          <div className={`flex h-11 items-center justify-center text-[13px] font-black ${hoverBarClasses}`}>
+          <div
+            className={`flex h-11 items-center justify-center text-[13px] font-black ${hoverBarClasses}`}
+          >
             Upgrade
           </div>
         </div>
@@ -502,20 +647,40 @@ function LikedTrackRow({
     if (isLiked) {
       setIsLiked(false);
       onUnlike(track.id);
+      notifyTrackLikeChanged({
+        trackId: track.id,
+        isLiked: false,
+        likesCount: Math.max(0, track.likesCount - 1),
+      });
       try {
         await feedService.unlikeTrack(track.id);
       } catch {
         setIsLiked(true);
         onReLike(track.id);
+        notifyTrackLikeChanged({
+          trackId: track.id,
+          isLiked: true,
+          likesCount: track.likesCount,
+        });
       }
     } else {
       setIsLiked(true);
       onReLike(track.id);
+      notifyTrackLikeChanged({
+        trackId: track.id,
+        isLiked: true,
+        likesCount: track.likesCount + 1,
+      });
       try {
         await feedService.likeTrack(track.id);
       } catch {
         setIsLiked(false);
         onUnlike(track.id);
+        notifyTrackLikeChanged({
+          trackId: track.id,
+          isLiked: false,
+          likesCount: track.likesCount,
+        });
       }
     }
   };

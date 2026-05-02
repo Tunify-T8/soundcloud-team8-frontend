@@ -60,6 +60,10 @@ export async function getListeningHistory(
   return response.data;
 }
 
+export async function clearListeningHistory(): Promise<void> {
+  await api.delete("/tracks/me/listening-history");
+}
+
 /** Maps API HistoryTrack → local TrackItem used by TrackRow / SongCard */
 export function mapHistoryToTrackItem(h: HistoryTrack) {
   return {

@@ -22,5 +22,6 @@ export interface Track {
   plays: number | null;
   isHD?: boolean;
   isPrivate?: boolean;
+  privateToken?: string | null;
   thumbnailUrl: string | null;
 }

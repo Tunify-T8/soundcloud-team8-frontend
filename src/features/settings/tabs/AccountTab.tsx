@@ -4,6 +4,7 @@ import { CheckCircle, ChevronDown, ChevronUp, Info } from "lucide-react";
 import { FaApple, FaFacebookF } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import SettingsSection from "../components/shared/SettingsSection";
+import DeleteAccountModal from "../components/DeleteAccountModal";
 import { useSettings } from "../hooks/useSettings";
 import { useTheme } from "../hooks/useTheme";
 import type { Theme } from "../types/settings.types";
@@ -117,12 +118,13 @@ export default function AccountTab() {
   const { theme, setTheme } = useTheme();
   const { isEmailFormOpen, setIsEmailFormOpen } = useSettings();
   const [emailInput, setEmailInput] = useState("");
-  const [unconfirmedEmail, setUnconfirmedEmail] = useState("asmahanbettarhsvdcba@gmail.com");
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState("");
   const [month, setMonth] = useState("June");
   const [day, setDay] = useState("1");
   const [year, setYear] = useState("1999");
   const [gender, setGender] = useState("");
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const submitEmail = () => {
     if (emailInput.trim()) setUnconfirmedEmail(emailInput.trim());
@@ -226,13 +228,13 @@ export default function AccountTab() {
           </button>
         </div>
         <div className="flex flex-wrap gap-3">
-          <button type="button" data-testid="social-add-facebook" className="flex items-center gap-3 rounded-sm bg-[#1457d9] px-4 py-2 text-sm font-black text-white">
+          <button type="button" data-testid="social-add-facebook" className="settings-social-facebook flex items-center gap-3 rounded-sm px-4 py-2 text-sm font-black">
             <FaFacebookF /> Add Facebook account
           </button>
-          <button type="button" data-testid="social-add-google" className="flex items-center gap-3 rounded-sm bg-white/10 px-4 py-2 text-sm font-black text-white">
+          <button type="button" data-testid="social-add-google" className="settings-social-google flex items-center gap-3 rounded-sm px-4 py-2 text-sm font-black">
             <FcGoogle /> Add Google account
           </button>
-          <button type="button" data-testid="social-add-apple" className="flex items-center gap-3 rounded-sm bg-white px-4 py-2 text-sm font-black text-[var(--sc-bg)]">
+          <button type="button" data-testid="social-add-apple" className="settings-social-apple flex items-center gap-3 rounded-sm px-4 py-2 text-sm font-black">
             <FaApple /> Add Apple account
           </button>
         </div>
@@ -339,9 +341,19 @@ export default function AccountTab() {
         </div>
       </SettingsSection>
 
-      <button type="button" data-testid="delete-account-button" className="font-black text-pink-600 hover:underline">
+      <button
+        type="button"
+        data-testid="delete-account-button"
+        onClick={() => setIsDeleteModalOpen(true)}
+        className="font-black text-pink-600 hover:underline"
+      >
         Delete account
       </button>
+
+      <DeleteAccountModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+      />
     </div>
   );
 }
