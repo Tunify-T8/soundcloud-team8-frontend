@@ -14,7 +14,7 @@ export default function AllTabPage() {
   return (
     <div data-testid="profile-all-tab-page" className="w-full">
       <div data-testid="profile-all-tab-content" className="w-full">
-        <Spotlight isMe={true} />
+        <Spotlight isMe={isMeView} />
         <ProfileTracksSection
           username={username}
           isMeView={isMeView}
