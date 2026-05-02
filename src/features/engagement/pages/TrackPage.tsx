@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Heart, Repeat2,
   Users, Flag, Info, Music2,
@@ -15,6 +15,7 @@ import { makeCommentAvatar, formatTimestamp } from '../components/CommentsSectio
 import { usePlayer }           from '@/features/playerUI/context/usePlayer';
 import { api }                 from '../../auth/services/api';
 import { waveGenerators }      from '@/components/Waveforms';
+import { AdminIDDisplay }      from '@/features/admin/components/AdminIDDisplay';
 import { followingService }    from '../../following/followingService';
 
 
@@ -67,6 +68,23 @@ const mapTrackCommentsToWaveform = (comments: ApiComment[]): WaveformComment[] =
     body:      c.text,
     timestamp: typeof c.timestamp === 'number' ? c.timestamp : 0,
   }));
+
+const copyTextToClipboard = async (value: string) => {
+  if (navigator?.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  const helper = document.createElement('textarea');
+  helper.value = value;
+  helper.setAttribute('readonly', 'true');
+  helper.style.position = 'absolute';
+  helper.style.left = '-9999px';
+  document.body.appendChild(helper);
+  helper.select();
+  document.execCommand('copy');
+  document.body.removeChild(helper);
+};
 
 const Waveform = ({
   onSeek, comments, waveformSeed, isThisTrack, playerProgress, duration,
@@ -166,7 +184,7 @@ const ShareModal = ({ title, onClose }: { title: string; onClose: () => void }) 
   const [copied, setCopied] = useState(false);
   const link = window.location.href;
   const copy = () => {
-    navigator.clipboard.writeText(link).then(() => {
+    copyTextToClipboard(link).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
@@ -205,21 +223,26 @@ const ShareModal = ({ title, onClose }: { title: string; onClose: () => void }) 
 
 const TrackPage = () => {
   const { trackId } = useParams<{ trackId: string }>();
+  const navigate = useNavigate();
   const [waveformComments, setWaveformComments] = useState<WaveformComment[]>([]);
   const [track, setTrack]                         = useState<Track | null>(null);
   const [trackLoading, setLoading]                = useState(true);
   const [error, setError]                         = useState<string | null>(null);
   const [showShare, setShowShare]                 = useState(false);
+  const [showCopyToast, setShowCopyToast]         = useState(false);
   const [fansTab, setFansTab]                     = useState<'top' | 'first'>('top');
   const [isFollowingArtist, setIsFollowingArtist] = useState(false);
   const [artistFollowers, setArtistFollowers]     = useState(0);
+  const [artistTracksCount, setArtistTracksCount] = useState(0);
   const [artistUsername, setArtistUsername]       = useState('');
   const [followLoading, setFollowLoading]         = useState(false);
+  const copyToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const {
     currentTrack,
     isPlaying,
     progress: playerProgress,
+    syncCurrentTrack,
     setCurrentTrack,
     setIsPlaying,
     requestSeek,
@@ -229,6 +252,14 @@ const TrackPage = () => {
     counts, isLiked, isReposted,
     loading: engLoading, toggleLike, toggleRepost,
   } = useEngagement(trackId ?? '');
+
+  useEffect(() => {
+    return () => {
+      if (copyToastTimerRef.current) {
+        clearTimeout(copyToastTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!trackId) return;
@@ -242,28 +273,26 @@ const TrackPage = () => {
   const artistId = trackUser?.userId ?? (track as any)?.artistId ?? null;
 
   useEffect(() => {
-    if (trackUser) {
-      setIsFollowingArtist(Boolean(trackUser.isFollowing));
-      setArtistFollowers(trackUser.followersCount ?? 0);
-      if (typeof trackUser.username === 'string' && trackUser.username.trim()) {
-        setArtistUsername(trackUser.username);
-        return;
+  if (!artistId) return;
+  api.get(`/users/${artistId}`)
+    .then(res => {
+      setIsFollowingArtist(res.data.isFollowing ?? false);
+      setArtistFollowers(res.data.followersCount ?? 0);
+      setArtistUsername(res.data.username ?? '');
+      // If tracksCount is 0 or missing, fetch separately
+      if (res.data.tracksCount) {
+        setArtistTracksCount(res.data.tracksCount);
+      } else {
+        return api.get(`/users/${artistId}/tracks?page=1&limit=1`);
       }
-    }
-
-    if (!artistId) return;
-
-    api.get(`/users/${artistId}`)
-      .then(res => {
-        if (typeof res.data?.username === 'string' && res.data.username.trim()) {
-          setArtistUsername(res.data.username);
-        }
-        setIsFollowingArtist(res.data.isFollowing ?? false);
-        setArtistFollowers(res.data.followersCount ?? 0);
-      })
-      .catch(() => {});
-  }, [artistId, trackUser]);
-
+    })
+    .then(res => {
+      if (res?.data?.total) setArtistTracksCount(res.data.total);
+      else if (res?.data?.totalCount) setArtistTracksCount(res.data.totalCount);
+      else if (res?.data?.tracksCount) setArtistTracksCount(res.data.tracksCount);
+    })
+    .catch(() => {});
+}, [artistId]);
 
   useEffect(() => {
     if (!trackId) return;
@@ -277,6 +306,24 @@ const TrackPage = () => {
   const handleCommentsUpdate = useCallback((comments: ApiComment[]) => {
     setWaveformComments(mapTrackCommentsToWaveform(comments));
   }, []);
+
+  const handleCopyLink = async () => {
+    if (!trackId) return;
+
+    const shareUrl = `${window.location.origin}/tracks/${trackId}`;
+
+    try {
+      await copyTextToClipboard(shareUrl);
+      setShowCopyToast(true);
+      if (copyToastTimerRef.current) clearTimeout(copyToastTimerRef.current);
+      copyToastTimerRef.current = setTimeout(() => {
+        setShowCopyToast(false);
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to copy track link:', error);
+    }
+  };
+
   if (trackLoading) return <div className="p-8 text-white">Loading...</div>;
   if (error || !track) return <div className="p-8 text-red-400">{error ?? 'Track not found'}</div>;
 
@@ -284,27 +331,29 @@ const TrackPage = () => {
   const duration      = (track as any).durationSeconds ?? 184;
   const artworkSrc    = (track as any).artworkUrl ?? '';
   const ownerInit     = artistName.slice(0, 2).toUpperCase();
-  const artistAvatar  = trackUser?.avatarUrl ?? makeOwnerAvatar(ownerInit, 88);
+  const artistAvatarSrc =
+    trackUser?.avatarUrl ??
+    (track as any)?.artistAvatarUrl ??
+    (track as any)?.owner?.avatarUrl ??
+    (track as any)?.artists?.[0]?.avatarUrl ??
+    null;
+  const artistAvatar  = artistAvatarSrc || makeOwnerAvatar(ownerInit, 88);
   const artistRouteId = artistId || artistUsername || trackUser?.username || '';
   const tracksCount   = trackUser?.tracksUploadedCount ?? 28;
   //const currentUserId = localStorage.getItem('userId') ?? '';
 
   const currentUserId = (() => {
-  try {
-    const token = localStorage.getItem('sc_access_token') ?? '';
-    return token ? JSON.parse(atob(token.split('.')[1]))?.sub ?? '' : '';
-  } catch { return ''; }
-})();
+    try {
+      const token = localStorage.getItem('sc_access_token') ?? '';
+      return token ? JSON.parse(atob(token.split('.')[1]))?.sub ?? '' : '';
+    } catch { return ''; }
+  })();
   const waveformSeed  = 3;
 
-  // FIX 1: Compare against trackId (URL string) not track.id (API may return number).
-  // Same pattern SongCard uses: currentTrack?.id === trackId (both strings).
   const isThisTrack   = currentTrack != null && String(currentTrack.id) === String(trackId);
   const currentTime   = isThisTrack ? playerProgress * duration : 0;
   const pageIsPlaying = isThisTrack && isPlaying;
 
-  // FIX 2: Use trackId (string from useParams) as the id, not track.id (API number).
-  // Also include audioUrl so the player actually has something to load.
   const trackObj = {
     id:           trackId!,
     title:        track.title,
@@ -315,22 +364,20 @@ const TrackPage = () => {
     duration,
   };
 
-  // FIX 3: Guard on trackId (not track.id) — consistent with trackObj.id above.
   const handlePlayPause = () => {
     if (!trackId) return;
     if (isThisTrack) {
       setIsPlaying(!isPlaying);
     } else {
-      setCurrentTrack(trackObj);
+      syncCurrentTrack(trackObj);
       setIsPlaying(true);
     }
   };
 
-  // FIX 4: requestSeek must use the same id that was passed to setCurrentTrack (trackId).
   const handleSeek = (ratio: number) => {
     if (!trackId) return;
     if (!isThisTrack) {
-      setCurrentTrack(trackObj);
+      syncCurrentTrack(trackObj);
       setIsPlaying(true);
     }
     requestSeek(trackId, ratio);
@@ -357,25 +404,47 @@ const TrackPage = () => {
     }
   };
 
+  const handleArtistTracksClick = () => {
+    if (artistId && artistUsername) {
+      navigate(`/${artistUsername}`, { state: { userId: artistId } });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#111] text-white">
       {showShare && <ShareModal title={track.title} onClose={() => setShowShare(false)} />}
 
-      <div className="max-w-6xl mx-auto">
+      {showCopyToast ? (
+        <div className="fixed right-6 top-6 z-[140]">
+          <div className="flex max-w-[360px] items-center gap-3 rounded-[4px] border border-zinc-500 bg-[#2f2f2f] px-4 py-2.5 text-white shadow-xl">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-400 text-[11px] font-black text-black">
+              ✓
+            </span>
+            <div className="text-[13px] font-semibold leading-tight">
+              Track link copied to the clipboard!
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="mx-auto max-w-[1360px] px-4 sm:px-6">
 
         {/* ── HERO ── */}
         <div
-          className="relative w-full flex overflow-hidden"
-          style={{ background: 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 60%, #111 100%)', minHeight: '220px' }}
+          className="relative mt-5 flex w-full overflow-hidden rounded-sm"
+          style={{
+            background: "linear-gradient(90deg, #b78885 0%, #9f8594 50%, #697299 100%)",
+            minHeight: "220px",
+          }}
         >
           {/* Left: play + meta + waveform */}
-          <div className="flex-1 flex flex-col px-6 pt-6 pb-4 min-w-0">
+          <div className="flex min-w-0 flex-1 flex-col px-6 pt-6 pb-4 sm:px-8 sm:pt-8">
 
-            <div className="flex items-start gap-4 mb-5">
+            <div className="mb-6 flex items-start gap-4">
               {/* Play/Pause */}
               <button
                 onClick={handlePlayPause}
-                className="w-12 h-12 rounded-full bg-black flex items-center justify-center hover:scale-105 transition-transform shrink-0 shadow-lg"
+                className="sc-track-hero-play flex h-12 w-12 shrink-0 items-center justify-center rounded-full shadow-lg transition-transform hover:scale-105 sm:h-16 sm:w-16"
                 aria-label={pageIsPlaying ? 'Pause' : 'Play'}
               >
                 {pageIsPlaying ? (
@@ -390,12 +459,18 @@ const TrackPage = () => {
                 )}
               </button>
 
-              <div className="flex-1 min-w-0">
-                <h1 className="text-xl font-bold leading-tight truncate text-white">{track.title}</h1>
-                <p className="text-sm text-zinc-300 truncate mt-0.5">{artistName}</p>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-col items-start gap-2">
+                  <h1 className="block max-w-full truncate bg-black px-3 py-1 text-2xl font-bold leading-tight text-white sm:text-4xl lg:text-[54px] lg:leading-none">
+                    {track.title}
+                  </h1>
+                  <p className="block max-w-full truncate bg-black px-3 py-1 text-base font-semibold text-zinc-300 sm:text-xl">
+                    {artistName}
+                  </p>
+                </div>
               </div>
 
-              <span className="text-xs text-zinc-400 shrink-0 mt-1">
+              <span className="mt-1 shrink-0 text-xs font-semibold text-white sm:text-[13px]">
                 {new Date((track as any).createdAt ?? '')
                   .toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
               </span>
@@ -413,7 +488,7 @@ const TrackPage = () => {
           </div>
 
           {/* Right: artwork flush top */}
-          <div className="w-[220px] h-[220px] shrink-0 self-start">
+          <div className="hidden h-[220px] w-[220px] shrink-0 self-start overflow-hidden rounded-[10px] md:mr-6 md:mt-6 md:block lg:mr-8 lg:mt-8 lg:h-[340px] lg:w-[340px]">
             {artworkSrc ? (
               <img src={artworkSrc} alt={track.title} className="w-full h-full object-cover" />
             ) : (
@@ -425,8 +500,8 @@ const TrackPage = () => {
         </div>
 
         {/* ── ACTION BAR ── */}
-        <div className="bg-[#1a1a1a] border-b border-[hsl(0,0%,13%)]">
-          <div className="flex items-center gap-2 px-6 py-2.5 flex-wrap">
+        <div className="border-b border-[hsl(0,0%,13%)] bg-[#181818]">
+          <div className="flex flex-wrap items-center gap-2 px-6 py-3 sm:px-8">
 
             <button
               onClick={toggleLike}
@@ -458,13 +533,19 @@ const TrackPage = () => {
               <Share2 size={12} />
             </button>
 
-            <button className="flex items-center gap-1.5 text-[hsl(0,0%,50%)] hover:text-white text-[11px] px-2 py-1 rounded border border-[hsl(0,0%,18%)] hover:border-[hsl(0,0%,35%)] transition">
+            <button
+              onClick={handleCopyLink}
+              disabled={!trackId}
+              className="flex items-center gap-1.5 text-[hsl(0,0%,50%)] hover:text-white text-[11px] px-2 py-1 rounded border border-[hsl(0,0%,18%)] hover:border-[hsl(0,0%,35%)] transition disabled:opacity-60"
+            >
               <Copy size={12} />
             </button>
 
             <button className="flex items-center gap-1.5 text-[hsl(0,0%,50%)] hover:text-white text-[11px] px-2 py-1 rounded border border-[hsl(0,0%,18%)] hover:border-[hsl(0,0%,35%)] transition">
               <MoreHorizontal size={12} />
             </button>
+
+            {trackId && <AdminIDDisplay id={trackId} label="Track ID" variant="badge" />}
 
             <div className="flex-1" />
 
@@ -490,11 +571,19 @@ const TrackPage = () => {
 
           {/* Artist sidebar */}
           <aside className="w-44 shrink-0 px-5 py-6 border-r border-[hsl(0,0%,13%)] flex flex-col items-center gap-3">
-            <div className="w-[88px] h-[88px] rounded-full overflow-hidden ring-2 ring-zinc-700">
+            <div
+              className="w-[88px] h-[88px] rounded-full overflow-hidden ring-2 ring-zinc-700 cursor-pointer hover:ring-orange-500 transition"
+              onClick={handleArtistTracksClick}
+            >
               <img src={artistAvatar} alt={artistName} className="w-full h-full object-cover" />
             </div>
             <div className="text-center">
-              <p className="text-sm font-semibold text-white leading-tight">{artistName}</p>
+              <p
+                className="text-sm font-semibold text-white leading-tight cursor-pointer hover:text-zinc-300 transition"
+                onClick={handleArtistTracksClick}
+              >
+                {artistName}
+              </p>
               <p className="text-[11px] text-zinc-500 mt-1 flex items-center justify-center gap-2">
                 {artistRouteId ? (
                   <Link to={`/${artistRouteId}/followers`} className="flex items-center gap-0.5 hover:text-white transition">
@@ -508,27 +597,18 @@ const TrackPage = () => {
                   </span>
                 )}
                 <span className="text-zinc-700">·</span>
-                {artistRouteId ? (
-                  <Link to={`/${artistRouteId}/tracks`} className="flex items-center gap-0.5 hover:text-white transition">
-                    <Music2 className="w-2.5 h-2.5" />
-                    {tracksCount.toLocaleString()}
-                  </Link>
-                ) : (
-                  <span className="flex items-center gap-0.5">
-                    <Music2 className="w-2.5 h-2.5" />
-                    {tracksCount.toLocaleString()}
-                  </span>
-                )}
+                <button
+                  onClick={handleArtistTracksClick}
+                  className="hover:text-white transition"
+                >
+                  {artistTracksCount} 
+                </button>
               </p>
             </div>
             <button
               onClick={handleFollowArtist}
               disabled={followLoading}
-              className={`w-full py-1.5 rounded border text-xs font-medium transition disabled:opacity-50 ${
-                isFollowingArtist
-                  ? 'border-orange-500 text-orange-400 hover:border-red-400 hover:text-red-400'
-                  : 'border-zinc-600 text-white hover:border-white hover:bg-white/5'
-              }`}
+              className="w-full rounded bg-white px-5 py-1.5 text-sm font-semibold text-black transition hover:bg-gray-100 disabled:opacity-60"
             >
               {isFollowingArtist ? 'Following' : 'Follow'}
             </button>

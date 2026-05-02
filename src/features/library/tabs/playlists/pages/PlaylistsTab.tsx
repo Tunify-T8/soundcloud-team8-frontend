@@ -4,6 +4,7 @@ import { playlistService } from "../../../libraryService";
 import type { CollectionPreview, CollectionPrivacy } from "../../../types";
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
+import { usePlayContext } from "@/hooks/usePlayContext";
 
 const COLS = 6;
 
@@ -24,7 +25,9 @@ function PlaylistCard({
 }: {
   item: PlaylistGridItem;
   forceLiked?: boolean;
-}) {
+})
+
+{
   return (
     <Link to={`/collections/${item.id}`} className="block cursor-pointer group">
       <div className="w-full aspect-square rounded-sm overflow-hidden mb-2 relative bg-[#282828]">

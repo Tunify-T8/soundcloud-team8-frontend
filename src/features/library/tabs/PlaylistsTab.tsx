@@ -1,9 +1,12 @@
 import type { CollectionItem } from "../types";
+import { usePlayContext } from "@/hooks/usePlayContext";
+
 
 const COLS = 6;
 const playlists: CollectionItem[] = [];
 
 function PlaylistCard({ item }: { item: CollectionItem }) {
+  usePlayContext({contextType:"playlist" , contextId : item.id ?? ""});
   return (
     <div className="cursor-pointer group">
       <div className="w-full aspect-square rounded-sm overflow-hidden mb-2 relative bg-[#282828]">

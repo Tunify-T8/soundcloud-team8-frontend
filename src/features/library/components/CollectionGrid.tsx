@@ -6,13 +6,26 @@ interface CollectionGridProps {
   items: CollectionItem[];
   title: string;
   showBrowse?: boolean;
+  hoverVariant?: "play" | "dim";
 }
 
-export default function CollectionGrid({ items, title, showBrowse = false }: CollectionGridProps) {
+export default function CollectionGrid({
+  items,
+  title,
+  showBrowse = false,
+  hoverVariant = "play",
+}: CollectionGridProps) {
   return (
     <section className="mb-8" data-testid="collection-grid">
       <div className="flex items-center justify-between mb-4">
-        {title && <h2 className="text-white font-bold text-sm" data-testid="collection-grid-title">{title}</h2>}
+        {title && (
+          <h2
+            className="text-white font-bold text-sm"
+            data-testid="collection-grid-title"
+          >
+            {title}
+          </h2>
+        )}
         {showBrowse && (
           <Link
             to="/home"
@@ -30,6 +43,15 @@ export default function CollectionGrid({ items, title, showBrowse = false }: Col
             title={item.title}
             subtitle={item.subtitle ?? ""}
             coverUrl={item.coverUrl}
+            entityType={item.entityType}
+            trackArtist={item.subtitle}
+            linkTo={
+              item.linkTo ??
+              (item.entityType === "playlist" || item.entityType === "album"
+                ? `/collections/${item.id}`
+                : `/tracks/${item.id}`)
+            }
+            hoverVariant={hoverVariant}
           />
         ))}
       </div>

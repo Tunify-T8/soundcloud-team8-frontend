@@ -3,6 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import AuthNavbar from '../components/AuthNavbar';
+import CaptchaField from '../components/CaptchaField';
+import { useCaptcha } from '../hooks/useCaptcha';
 import { Eye, EyeOff, Loader2, ChevronLeft } from 'lucide-react';
 
 import { signUpSchema, type SignUpFormData } from '../schemas/auth.schemas';
@@ -39,6 +41,7 @@ const SignUpPage: React.FC = () => {
   const [dobDay, setDobDay] = useState('');
   const [dobYear, setDobYear] = useState('');
   const [gender, setGender] = useState('');
+  const { honeypot, setHoneypot, isHuman, reset: resetCaptcha } = useCaptcha();
 
   const isPasswordReady =
     passwordValue.length >= 8 &&
@@ -107,6 +110,10 @@ const SignUpPage: React.FC = () => {
 
   const handleProfileContinue = async () => {
     if (!isProfileReady) return;
+    if (!isHuman()) {
+      resetCaptcha();
+      return;
+    }
     setApiError(null);
     setIsSubmitting(true);
     try {
@@ -127,59 +134,59 @@ const SignUpPage: React.FC = () => {
       navigate('/verify-email', { state: { email: emailToUse } });
     } catch (error) {
       setApiError(extractErrorMessage(error));
+      resetCaptcha();
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const selectClass = "w-full bg-white text-black text-sm px-3 py-3 rounded-sm border border-[#555] focus:outline-none focus:border-[#888] appearance-none cursor-pointer";
+  const selectClass = "w-full bg-[#f2f2f2] text-[#111] text-sm px-3 py-3 rounded-sm border border-[#e5e5e5] focus:outline-none focus:border-[#999] appearance-none cursor-pointer";
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] flex flex-col" data-testid="signup-page">
+    <div className="soundcloud-auth-page min-h-screen flex flex-col" data-testid="signup-page">
 
       <AuthNavbar />
 
-      <main className="flex-1 flex items-start sm:items-center justify-center px-0 sm:px-4 py-0 sm:py-10">
-        <div className="w-full sm:max-w-[480px]">
-          <div className="sm:border sm:border-[#3a3a3a] sm:rounded-sm sm:p-[3px] sm:bg-[#111]">
-            <div className="sm:border sm:border-[#555] sm:rounded-sm bg-[#181818] sm:min-h-[520px]">
+      <main className="flex-1 flex items-start justify-center px-4 py-14">
+        <div className="w-full max-w-[562px]">
+          <div className="sc-auth-card rounded-sm bg-white">
 
               {signUpStep === 'password' && (
-                <div className="px-6 py-8 sm:p-8" data-testid="password-step">
+                <div className="px-7 py-8 sm:p-8" data-testid="password-step">
                   <div className="flex items-center gap-4 mb-6">
                     <button
                       type="button"
                       onClick={() => navigate('/signin')}
                       data-testid="back-btn"
-                      className="w-9 h-9 rounded-full bg-[#2a2a2a] hover:bg-[#3a3a3a] flex items-center justify-center transition-colors flex-shrink-0"
+                      className="w-9 h-9 rounded-full bg-[#f2f2f2] hover:bg-[#e5e5e5] flex items-center justify-center transition-colors flex-shrink-0"
                     >
-                      <ChevronLeft className="h-5 w-5 text-white" />
+                      <ChevronLeft className="h-5 w-5 text-[#111]" />
                     </button>
-                    <h1 className="text-white text-base font-bold">Create an account</h1>
+                    <h1 className="text-[#111] text-base font-bold">Create an account</h1>
                   </div>
 
                   {apiError && (
-                    <div role="alert" className="mb-4 px-4 py-3 bg-[#2a1a1a] border border-red-500/40 rounded text-red-400 text-sm">
+                    <div role="alert" data-testid="api-error" className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
                       {apiError}
                     </div>
                   )}
 
                   {prefillEmail ? (
                     <div className="mb-4">
-                      <p className="text-[#aaa] text-xs mb-1">Your email address</p>
-                      <p className="text-white text-sm font-medium" data-testid="email-display">{prefillEmail}</p>
+                      <p className="text-[#666] text-xs mb-1">Your email address</p>
+                      <p className="text-[#111] text-sm font-medium" data-testid="email-display">{prefillEmail}</p>
                     </div>
                   ) : (
                     <div className="mb-4">
-                      <label className="block text-[#aaa] text-xs mb-1.5">Your email address</label>
+                      <label className="block text-[#666] text-xs mb-1.5">Your email address</label>
                       <input
                         type="email"
                         {...register('email')}
                         placeholder="you@example.com"
                         data-testid="email-input"
-                        className={`w-full bg-[#2a2a2a] border rounded-sm px-4 py-3 text-white text-sm placeholder-[#666] focus:outline-none transition-colors ${errors.email ? 'border-red-500' : 'border-[#444] focus:border-[#888]'}`}
+                        className={`w-full bg-[#f2f2f2] border rounded-sm px-4 py-3 text-[#111] text-sm placeholder-[#777] focus:outline-none transition-colors ${errors.email ? 'border-red-500' : 'border-[#e5e5e5] focus:border-[#999]'}`}
                       />
-                      {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email.message}</p>}
+                      {errors.email && <p className="text-red-500 text-xs mt-1" data-testid="email-error">{errors.email.message}</p>}
                     </div>
                   )}
 
@@ -190,21 +197,21 @@ const SignUpPage: React.FC = () => {
                       onChange={(e) => setPasswordValue(e.target.value)}
                       placeholder="Choose a password (min. 8 characters)"
                       data-testid="password-input"
-                      className="w-full bg-[#2a2a2a] border border-[#444] rounded-sm px-4 py-3 pr-10 text-white text-sm placeholder-[#666] focus:outline-none focus:border-[#888] transition-colors"
+                      className="w-full bg-[#f2f2f2] border border-[#e5e5e5] rounded-sm px-4 py-3 pr-10 text-[#111] text-sm placeholder-[#777] focus:outline-none focus:border-[#999] transition-colors"
                       autoComplete="new-password"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
                       data-testid="toggle-password-btn"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#777] hover:text-white"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#777] hover:text-[#111]"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
 
                   {passwordValue.length > 0 && (
-                    <div data-testid="password-rules" className="bg-[#1a1a1a] border border-[#333] rounded-sm px-4 py-3 flex flex-col gap-1.5">
+                    <div data-testid="password-rules" className="bg-[#f7f7f7] border border-[#d7d7d7] rounded-sm px-4 py-3 flex flex-col gap-1.5">
                       {[
                         { label: 'At least 8 characters', met: passwordValue.length >= 8 },
                         { label: 'At least one uppercase letter', met: /[A-Z]/.test(passwordValue) },
@@ -213,14 +220,14 @@ const SignUpPage: React.FC = () => {
                         { label: 'At least one special character', met: /[^A-Za-z0-9]/.test(passwordValue) },
                       ].map((rule) => (
                         <div key={rule.label} className="flex items-center gap-2">
-                          <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 ${rule.met ? 'bg-green-500' : 'bg-[#444]'}`}>
+                          <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 ${rule.met ? 'bg-green-500' : 'bg-[#d7d7d7]'}`}>
                             {rule.met && (
                               <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                               </svg>
                             )}
                           </div>
-                          <span className={`text-xs ${rule.met ? 'text-green-400' : 'text-[#888]'}`}>
+                          <span className={`text-xs ${rule.met ? 'text-green-600' : 'text-[#777]'}`}>
                             {rule.label}
                           </span>
                         </div>
@@ -235,8 +242,8 @@ const SignUpPage: React.FC = () => {
                     data-testid="password-continue-btn"
                     className={`w-full py-3 rounded-sm text-sm font-semibold transition-all flex items-center justify-center gap-2 mb-4 ${
                       isPasswordReady
-                        ? 'bg-white hover:bg-gray-100 text-black cursor-pointer'
-                        : 'bg-[#333] text-[#888] cursor-not-allowed border border-[#444]'
+                        ? 'sc-auth-primary-action cursor-pointer'
+                        : 'sc-auth-primary-action cursor-not-allowed'
                     }`}
                   >
                     Continue
@@ -246,21 +253,21 @@ const SignUpPage: React.FC = () => {
               )}
 
               {signUpStep === 'profile' && (
-                <div className="px-6 py-8 sm:p-8" data-testid="profile-step">
+                <div className="px-7 py-8 sm:p-8" data-testid="profile-step">
                   <div className="flex items-center gap-4 mb-6">
                     <button
                       type="button"
                       onClick={() => { setSignUpStep('password'); setApiError(null); }}
                       data-testid="profile-back-btn"
-                      className="w-9 h-9 rounded-full bg-[#2a2a2a] hover:bg-[#3a3a3a] flex items-center justify-center transition-colors flex-shrink-0"
+                      className="w-9 h-9 rounded-full bg-[#f2f2f2] hover:bg-[#e5e5e5] flex items-center justify-center transition-colors flex-shrink-0"
                     >
-                      <ChevronLeft className="h-5 w-5 text-white" />
+                      <ChevronLeft className="h-5 w-5 text-[#111]" />
                     </button>
-                    <h1 className="text-white text-base font-bold">Tell us more about you</h1>
+                    <h1 className="text-[#111] text-base font-bold">Tell us more about you</h1>
                   </div>
 
                   {apiError && (
-                    <div role="alert" className="mb-4 px-4 py-3 bg-[#2a1a1a] border border-red-500/40 rounded text-red-400 text-sm">
+                    <div role="alert" data-testid="api-error" className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
                       {apiError}
                     </div>
                   )}
@@ -268,25 +275,25 @@ const SignUpPage: React.FC = () => {
                   <div className="flex flex-col gap-4">
 
                     <div>
-                      <div className={`bg-[#2a2a2a] border rounded-sm px-4 pt-2 pb-2 ${displayNameError ? 'border-red-500' : 'border-[#555] focus-within:border-[#888]'} transition-colors`}>
-                        <label className="block text-[#aaa] text-xs mb-0.5">Display name</label>
+                      <div className={`bg-[#f2f2f2] border rounded-sm px-4 pt-2 pb-2 ${displayNameError ? 'border-red-500' : 'border-[#e5e5e5] focus-within:border-[#999]'} transition-colors`}>
+                        <label className="block text-[#666] text-xs mb-0.5">Display name</label>
                         <input
                           type="text"
                           value={displayName}
                           onChange={(e) => handleDisplayNameChange(e.target.value)}
                           data-testid="display-name-input"
-                          className="w-full bg-transparent text-white text-sm focus:outline-none placeholder-[#666]"
+                          className="w-full bg-transparent text-[#111] text-sm focus:outline-none placeholder-[#777]"
                           placeholder="Your display name"
                         />
                       </div>
                       {displayNameError
-                        ? <p className="text-red-400 text-xs mt-1" data-testid="display-name-error">{displayNameError}</p>
+                        ? <p className="text-red-500 text-xs mt-1" data-testid="display-name-error">{displayNameError}</p>
                         : <p className="text-[#777] text-xs mt-1">Letters, numbers, and underscores only.</p>
                       }
                     </div>
 
                     <div>
-                      <p className="text-white text-sm font-medium mb-2">Date of birth <span className="text-[#aaa] font-normal">(required)</span></p>
+                      <p className="text-[#111] text-sm font-medium mb-2">Date of birth <span className="text-[#666] font-normal">(required)</span></p>
                       <div className="grid grid-cols-3 gap-2">
                         <div className="relative">
                             <select value={dobMonth} onChange={(e) => setDobMonth(e.target.value)} data-testid="dob-month-select" className={selectClass}>                            <option value="" disabled>Month</option>
@@ -318,14 +325,13 @@ const SignUpPage: React.FC = () => {
                       <p className="text-[#777] text-xs mt-1">Your date of birth is used to verify your age and is not shared publicly.</p>
                     </div>
 
-                    {/* Gender */}
                     <div>
                       <div className="relative">
                         <select
                           value={gender}
                           onChange={(e) => setGender(e.target.value)}
                           data-testid="gender-select"
-                          className={`w-full bg-[#2a2a2a] border text-sm px-4 py-3 rounded-sm focus:outline-none transition-colors appearance-none cursor-pointer ${gender === '' ? 'text-[#666] border-[#555]' : 'text-white border-[#555]'} focus:border-[#888]`}
+                          className={`w-full bg-[#f2f2f2] border text-sm px-4 py-3 rounded-sm focus:outline-none transition-colors appearance-none cursor-pointer ${gender === '' ? 'text-[#777] border-[#e5e5e5]' : 'text-[#111] border-[#e5e5e5]'} focus:border-[#999]`}
                         >
                           <option value="" disabled>Gender (required)</option>
                           <option value="MALE">Male</option>
@@ -337,6 +343,8 @@ const SignUpPage: React.FC = () => {
                       </div>
                     </div>
 
+                    <CaptchaField value={honeypot} onChange={setHoneypot} />
+
                     <button
                       type="button"
                       onClick={handleProfileContinue}
@@ -344,12 +352,12 @@ const SignUpPage: React.FC = () => {
                       data-testid="profile-continue-btn"
                       className={`w-full py-3 rounded-sm text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
                         isProfileReady && !isSubmitting
-                          ? 'bg-white hover:bg-gray-100 text-black cursor-pointer'
-                          : 'bg-[#333] text-[#888] cursor-not-allowed border border-[#444]'
+                          ? 'sc-auth-primary-action cursor-pointer'
+                          : 'sc-auth-primary-action cursor-not-allowed'
                       }`}
                     >
                       {isSubmitting
-                        ? <><Loader2 className="h-4 w-4 animate-spin" />Creating account…</>
+                        ? <><Loader2 className="h-4 w-4 animate-spin" />Creating account...</>
                         : 'Continue'
                       }
                     </button>
@@ -358,12 +366,11 @@ const SignUpPage: React.FC = () => {
                 </div>
               )}
 
-            </div>
           </div>
 
           <p className="hidden sm:block text-center text-[#777] text-sm mt-6">
             Already have an account?{' '}
-            <Link to="/signin" className="text-white hover:underline font-medium">Sign in</Link>
+            <Link to="/signin" className="text-[#111] hover:underline font-bold">Sign in</Link>
           </p>
         </div>
       </main>

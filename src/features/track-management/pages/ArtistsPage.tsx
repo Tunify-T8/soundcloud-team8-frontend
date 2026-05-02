@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from "react";
-import { Search, Upload, Plus, Globe, DollarSign, SlidersHorizontal, ArrowUpDown, BarChart, Users, Gift } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Search, Plus, Globe, DollarSign, SlidersHorizontal, ArrowUpDown } from "lucide-react";
 import TrackList from "../components/TrackList";
 import ArtistsNavbar from "../components/ArtistsNavbar";
 import ArtistsSidebar from "../components/ArtistsSidebar";
@@ -19,7 +19,9 @@ import pandoraImg from "@/assets/pandora.png";
 import vinylImg from "@/assets/vinyl.png";
 import commentsImg from "@/assets/comment_bubbles.png";
 import { BenefitsSection } from "../components/BenefitsSection";
-import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
+import UploadQuotaBanner from "@/features/upload/components/UploadQuotaBanner";
+import type { UploadQuota } from "@/features/upload/components/UploadQuotaBanner";
+import SubscriptionBadge from "@/features/premium/components/SubscriptionBadge";
 
 import insightsImg from "@/assets/insights.png";
 import earningsImg from "@/assets/monetize.png";
@@ -28,28 +30,116 @@ import benefitsImg from "@/assets/benefits.png";
 import fansHoverImg from "@/assets/top_fans_hover.png";
 import benefitsHoverImg from "@/assets/benefits_hover.png";
 
+import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
+import { useMe } from "@/features/profile/context/useMe";
+import { usePlayContext } from "@/hooks/usePlayContext";
+import { useSubscription } from "@/hooks/useSubscription";
+
+const PLAN_LIMITS = {
+  free: 10,
+  artist: 180,
+  "artist-pro": null,
+} as const;
+
+function buildQuotaFromPlan(
+  tier: "free" | "artist" | "artist-pro",
+  uploadedMinutesUsed: number,
+): UploadQuota {
+  const uploadMinutesLimit = PLAN_LIMITS[tier];
+  const uploadMinutesRemaining =
+    uploadMinutesLimit === null
+      ? null
+      : Math.max(0, Number((uploadMinutesLimit - uploadedMinutesUsed).toFixed(1)));
+
+  return {
+    tier,
+    uploadMinutesLimit,
+    uploadMinutesUsed: uploadedMinutesUsed,
+    uploadMinutesRemaining,
+    canReplaceFiles: tier !== "free",
+    canScheduleRelease: tier !== "free",
+    canAccessAdvancedTab: tier !== "free",
+  };
+}
+
 export function UploadBanner() {
+  const [quota, setQuota] = useState<UploadQuota | null>(null);
+  const [quotaLoading, setQuotaLoading] = useState(true);
+  const { tier, isArtistPro } = useSubscription();
+
+  useEffect(() => {
+    let mounted = true;
+
+    trackService
+      .getUploadedTracks()
+      .catch(() => [])
+      .then((tracks) => {
+        if (!mounted) return;
+        const totalDurationSeconds = tracks.reduce(
+          (sum, track) => sum + (Number(track.duration) || 0),
+          0,
+        );
+        const uploadedMinutesUsed = Number((totalDurationSeconds / 60).toFixed(1));
+
+        setQuota(buildQuotaFromPlan(tier, uploadedMinutesUsed));
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setQuota(buildQuotaFromPlan("free", 0));
+      })
+      .finally(() => {
+        if (mounted) setQuotaLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [tier]);
+
   return (
-    <div data-testid="upload-banner" className="bg-[hsl(0,0%,11%)] border-b border-[hsl(0,0%,18%)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-4 sm:px-8 py-3 shrink-0">
-      <div className="flex items-center gap-3 flex-wrap">
-        <Upload className="w-4 h-4 text-[hsl(0,0%,60%)] shrink-0" />
-        <span className="text-white text-sm font-medium tracking-tighter">0% of uploads used</span>
-        <div data-testid="upload-banner-progress-bar" className="w-32 sm:w-44 h-1.5 bg-[hsl(0,0%,23%)] rounded-full overflow-hidden">
-          <div className="h-full bg-[hsl(0,0%,50%)] rounded-full" style={{ width: "0%" }} />
+    isArtistPro && !quotaLoading ? (
+      <div className="px-3 sm:px-6 pt-5">
+        <div className="bg-gradient-to-r from-[#f6e9b1] via-[#f2d57a] to-[#f6e9b1] border-b border-[#e2c76b] px-4 sm:px-8 py-3 rounded-sm">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <SubscriptionBadge tier="artist-pro" size={24} />
+              <span className="text-[#5b4210] text-sm sm:text-base font-black tracking-tight">
+                Enjoy Uploading Freely. Unlimitedly.
+              </span>
+            </div>
+            <span className="text-[#7a5b16] text-xs sm:text-sm font-semibold">
+              Total Uploaded Minutes: {quota?.uploadMinutesUsed ?? 0} / Unlimited
+            </span>
+          </div>
         </div>
-        <span className="text-[hsl(0,100%,99%)] text-sm font-semibold">0 of 180 minutes</span>
       </div>
-      <ArtistProUpgradeButton
-        data-testid="upload-banner-unlimited-btn"
-        className="self-end sm:self-auto bg-black text-white text-sm font-bold tracking-tighter px-5 py-2 rounded-full hover:bg-[hsl(0,0%,20%)] transition-colors whitespace-nowrap"
-      >
-        Get unlimited uploads
-      </ArtistProUpgradeButton>
-    </div>
+    ) : (
+      <UploadQuotaBanner
+        quota={quota}
+        loading={quotaLoading}
+      />
+    )
   );
 }
 
-function StudioHeader() {
+type Analytics = { plays: number; likes: number; reposts: number; comments: number };
+
+function StudioHeader({ analytics, tracks }: { analytics: Analytics | null; tracks: Track[] }) {
+  const fmt = (val: number | null | undefined) =>
+    val === null || val === undefined ? "-" : String(val);
+
+  // If backend analytics are not available, compute totals from individual tracks when possible.
+  const computed = tracks && tracks.length > 0
+    ? {
+        plays: tracks.reduce((s, t) => s + (t.plays ?? 0), 0),
+        likes: tracks.reduce((s, t) => s + (t.likes ?? 0), 0),
+        reposts: tracks.reduce((s, t) => s + (t.reposts ?? 0), 0),
+        comments: tracks.reduce((s, t) => s + (t.comments ?? 0), 0),
+      }
+    : null;
+
+  const display = analytics ?? computed;
+
   return (
     <div data-testid="studio-header" className="bg-[hsl(0,0%,7%)] border border-[hsl(0,0%,17%)] rounded-md mx-3 sm:mx-6 mt-5 mb-6 px-4 sm:px-7 py-5 sm:py-6">
       <div className="flex items-baseline gap-3 mb-5 sm:mb-6 flex-wrap">
@@ -59,25 +149,21 @@ function StudioHeader() {
 
       {/* Stats row — scrolls horizontally on very small screens */}
       <div className="flex items-center overflow-x-auto pb-1 -mb-1 scrollbar-none">
-        <div className="flex items-center shrink-0">
+          <div className="flex items-center shrink-0">
           <div className="flex flex-col gap-1 pr-5 sm:pr-7">
-            <span className="text-white text-xl sm:text-2xl font-semibold tabular-nums">0</span>
+            <span className="text-white text-xl sm:text-2xl font-semibold tabular-nums">{display ? fmt(display.plays) : "-"}</span>
             <span className="text-[hsl(0,0%,42%)] text-xs whitespace-nowrap">SC plays</span>
           </div>
           <div className="flex flex-col gap-1 px-5 sm:px-7 border-l border-[hsl(0,0%,20%)]">
-            <span className="text-white text-xl sm:text-2xl font-semibold tabular-nums">0</span>
+            <span className="text-white text-xl sm:text-2xl font-semibold tabular-nums">{display ? fmt(display.reposts) : "-"}</span>
             <span className="text-[hsl(0,0%,42%)] text-xs whitespace-nowrap">Reposts</span>
           </div>
           <div className="flex flex-col gap-1 px-5 sm:px-7 border-l border-[hsl(0,0%,20%)]">
-            <span className="text-white text-xl sm:text-2xl font-semibold tabular-nums">0</span>
-            <span className="text-[hsl(0,0%,42%)] text-xs whitespace-nowrap">Downloads</span>
-          </div>
-          <div className="flex flex-col gap-1 px-5 sm:px-7 border-l border-[hsl(0,0%,20%)]">
-            <span className="text-white text-xl sm:text-2xl font-semibold tabular-nums">0</span>
+            <span className="text-white text-xl sm:text-2xl font-semibold tabular-nums">{display ? fmt(display.likes) : "-"}</span>
             <span className="text-[hsl(0,0%,42%)] text-xs whitespace-nowrap">Likes</span>
           </div>
           <div className="flex flex-col gap-1 pl-5 sm:pl-7 border-l border-[hsl(0,0%,20%)]">
-            <span className="text-white text-xl sm:text-2xl font-semibold tabular-nums">0</span>
+            <span className="text-white text-xl sm:text-2xl font-semibold tabular-nums">{display ? fmt(display.comments) : "-"}</span>
             <span className="text-[hsl(0,0%,42%)] text-xs whitespace-nowrap">Comments</span>
           </div>
         </div>
@@ -394,10 +480,14 @@ function CommentsTab() {
 const TABS = ["SoundCloud Tracks", "Distribution", "Vinyl Records", "Comments"];
 
 export default function ArtistsPage() {
+  const { me } = useMe();
+  usePlayContext({ contextType: "profile", contextId: me?.id ?? "" });
+
   const [activeTab, setActiveTab] = useState("SoundCloud Tracks");
   const [searchQuery, setSearchQuery] = useState("");
   const [visibilityFilter, setVisibilityFilter] = useState<"all" | "public" | "private">("all");
   const [tracks, setTracks] = useState<Track[]>([]);
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
 
   const handleUpdate = (updatedTrack: Track) => {
     setTracks(prev =>
@@ -416,6 +506,26 @@ export default function ArtistsPage() {
       }
     };
     fetchTracks();
+  }, []);
+
+  // Try to fetch aggregated analytics from backend. If the endpoint is
+  // unavailable, we leave `analytics` null so the header will compute
+  // totals from individual tracks (or show "-" if no data).
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const a = await trackService.getMyAnalytics();
+        if (!mounted) return;
+        setAnalytics(a);
+      } catch (err) {
+        // Endpoint may not exist yet; keep analytics as null to allow
+        // fallback computation or a dash in the UI.
+        if (!mounted) return;
+        setAnalytics(null);
+      }
+    })();
+    return () => { mounted = false; };
   }, []);
 
   const filteredTracks = useMemo(() => {
@@ -448,7 +558,7 @@ export default function ArtistsPage() {
         <UploadBanner />
 
         <div className="flex-1 overflow-y-auto overflow-x-visible">
-          <StudioHeader />
+          <StudioHeader analytics={analytics} tracks={tracks} />
 
           {/* Tabs — horizontally scrollable on mobile */}
           <div data-testid="artists-page-tabs" className="flex items-center gap-0 border-b border-[hsl(0,0%,17%)] px-3 sm:px-6 mb-5 overflow-x-auto scrollbar-none">

@@ -79,6 +79,36 @@ export type SearchResult =
   | UserSearchResult
   | CollectionSearchResult;
 
+export interface AutocompleteTrackResult {
+  id: string;
+  type: "track";
+  title: string;
+  artist: string;
+  coverUrl?: string | null;
+}
+
+export interface AutocompleteUserResult {
+  id: string;
+  type: "user";
+  username: string;
+  displayName: string | null;
+  avatarUrl?: string | null;
+}
+
+export interface AutocompleteCollectionResult {
+  id: string;
+  type: "collection";
+  title: string;
+  artist: string;
+  coverUrl?: string | null;
+}
+
+export interface AutocompleteResults {
+  tracks: AutocompleteTrackResult[];
+  users: AutocompleteUserResult[];
+  collections: AutocompleteCollectionResult[];
+}
+
 export type FilterType =
   | "everything"
   | "tracks"
@@ -95,4 +125,14 @@ export interface LikedTrack {
   repostsCount: number;
   commentsCount: number;
   playsCount: number;
+}
+
+export interface SuggestedArtist {
+  id: string;
+  username: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  followersCount: number;
+  isCertified: boolean;
+  isFollowing: boolean;
 }

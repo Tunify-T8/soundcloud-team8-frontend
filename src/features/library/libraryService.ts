@@ -60,6 +60,10 @@ export async function getListeningHistory(
   return response.data;
 }
 
+export async function clearListeningHistory(): Promise<void> {
+  await api.delete("/tracks/me/listening-history");
+}
+
 /** Maps API HistoryTrack → local TrackItem used by TrackRow / SongCard */
 export function mapHistoryToTrackItem(h: HistoryTrack) {
   return {
@@ -255,6 +259,22 @@ export const playlistService = {
     try {
       const response = await api.get<GetUserCollectionsResponse>(
         `/users/${encodeURIComponent(username)}/playlists`,
+        { params: { page, limit } },
+      );
+      return response.data;
+    } catch {
+      return null;
+    }
+  },
+
+  async getUserAlbums(
+    username: string,
+    page = 1,
+    limit = 20,
+  ): Promise<GetUserCollectionsResponse | null> {
+    try {
+      const response = await api.get<GetUserCollectionsResponse>(
+        `/users/${encodeURIComponent(username)}/albums`,
         { params: { page, limit } },
       );
       return response.data;

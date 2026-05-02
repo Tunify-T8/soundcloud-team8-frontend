@@ -1,21 +1,27 @@
 import { SiSoundcloud } from "react-icons/si";
+import { Link } from "react-router-dom";
 import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
 
-export default function UploadSuccessScreen() {
+export default function UploadSuccessScreen({ trackId }: { trackId: string }) {
   return (
     <div className="min-h-screen bg-[#111111] text-white flex flex-col font-sans" data-testid="upload-success-page">
 
       {/* Header */}
       <header className="flex items-center justify-between px-8 py-4 border-b border-[#222]" data-testid="success-header">
-        <a href="/" className="hover:opacity-80 transition">
+        <Link to="/discover" className="hover:opacity-80 transition">
           <SiSoundcloud size={36} color="white" />
-        </a>
-        <button className="text-[#888] hover:text-white transition" data-testid="success-close-btn">
+        </Link>
+        <Link
+          to="/discover"
+          className="text-[#888] hover:text-white transition"
+          data-testid="success-close-btn"
+          aria-label="Close upload success"
+        >
           <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18"/>
             <line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
-        </button>
+        </Link>
       </header>
 
       {/* Content */}
@@ -70,9 +76,14 @@ export default function UploadSuccessScreen() {
           <div className="pt-2">
             <h1 className="text-[36px] font-bold text-white mb-3" data-testid="success-heading">Saved to SoundCloud.</h1>
             <p className="text-[15px] text-[#aaa] mb-6">Congratulations! Your tracks are now on SoundCloud.</p>
-            <button className="border border-white text-white px-6 py-2 rounded-full text-[14px] font-semibold hover:bg-white hover:text-black transition" data-testid="view-track-btn">
+            <Link
+              to={trackId ? `/tracks/${trackId}` : "#"}
+              className="inline-flex border border-white text-white px-6 py-2 rounded-full text-[14px] font-semibold hover:bg-white hover:text-black transition"
+              data-testid="view-track-btn"
+              aria-disabled={!trackId}
+            >
               View track
-            </button>
+            </Link>
 
             <div className="mt-16">
               <h2 className="text-[28px] font-bold text-white mb-3" data-testid="distribute-heading">Distribute to more streaming services?</h2>

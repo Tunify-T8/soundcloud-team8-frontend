@@ -1,4 +1,5 @@
-import { Play, GripVertical } from "lucide-react";
+import { Pause, Play, GripVertical } from "lucide-react";
+import { useState } from "react";
 import {
   DndContext,
   closestCenter,
@@ -16,6 +17,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import trackFallback from "@/assets/track.jpg";
 import type { CollectionTrack } from "@/features/library/types";
 
 function formatCompactNumber(value?: number) {
@@ -26,30 +28,50 @@ function formatCompactNumber(value?: number) {
 interface TrackListProps {
   tracks: CollectionTrack[];
   onReorder?: (newTracks: CollectionTrack[]) => void;
+  currentTrackId?: string;
+  isPlaying?: boolean;
+  onPlayTrack?: (track: CollectionTrack) => void;
 }
 
 interface SortableTrackRowProps {
   ct: CollectionTrack;
   index: number;
   draggable: boolean;
+  currentTrackId?: string;
+  isPlaying?: boolean;
+  onPlayTrack?: (track: CollectionTrack) => void;
 }
 
-const SortableTrackRow: React.FC<SortableTrackRowProps> = ({ ct, index, draggable }) => {
+const SortableTrackRow: React.FC<SortableTrackRowProps> = ({
+  ct,
+  index,
+  draggable,
+  currentTrackId,
+  isPlaying = false,
+  onPlayTrack,
+}) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: ct.track.id, disabled: !draggable });
+  const [hovered, setHovered] = useState(false);
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
+  const isCurrentTrack = currentTrackId === ct.track.id;
+  const showPause = isCurrentTrack && isPlaying;
 
   return (
     <li
       ref={setNodeRef}
       style={style}
       data-testid={`playlist-track-row-${ct.track.id}`}
-      className="flex items-center justify-between gap-3 px-2 py-2.5 transition hover:bg-zinc-900/60"
+      className={`flex items-center justify-between gap-3 px-2 py-2.5 transition hover:bg-zinc-900/60 ${
+        isCurrentTrack ? "bg-zinc-800/80" : ""
+      }`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       <div className="flex min-w-0 items-center gap-3">
         {draggable && (
@@ -64,11 +86,27 @@ const SortableTrackRow: React.FC<SortableTrackRowProps> = ({ ct, index, draggabl
             <GripVertical size={14} />
           </button>
         )}
-        <img
-          src={ct.track.coverUrl || "/default-cover.png"}
-          alt={ct.track.title}
-          className="h-7 w-7 shrink-0 object-cover"
-        />
+        <button
+          type="button"
+          onClick={() => onPlayTrack?.(ct)}
+          className="group relative h-7 w-7 shrink-0 overflow-hidden"
+          aria-label={showPause ? "Pause track" : "Play track"}
+        >
+          <img
+            src={ct.track.coverUrl || trackFallback}
+            alt={ct.track.title}
+            className="h-7 w-7 object-cover"
+          />
+          <div
+            className={`absolute inset-0 flex items-center justify-center bg-black/55 transition-opacity ${
+              showPause || hovered ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-black">
+              {showPause ? <Pause size={11} fill="currentColor" /> : <Play size={11} fill="currentColor" />}
+            </div>
+          </div>
+        </button>
         <p className="truncate text-[13px] font-semibold leading-none text-zinc-100">
           <span className="text-zinc-500 font-bold">{index + 1}</span>
           <span className="text-zinc-500 font-bold">. </span>
@@ -76,7 +114,7 @@ const SortableTrackRow: React.FC<SortableTrackRowProps> = ({ ct, index, draggabl
             {ct.track.user.displayName || ct.track.user.username}
           </span>
           <span className="text-zinc-300"> . </span>
-          <span>{ct.track.title}</span>
+          <span className={isCurrentTrack ? "text-[#F94C00]" : ""}>{ct.track.title}</span>
         </p>
       </div>
 
@@ -93,7 +131,13 @@ const SortableTrackRow: React.FC<SortableTrackRowProps> = ({ ct, index, draggabl
   );
 };
 
-const TrackList: React.FC<TrackListProps> = ({ tracks, onReorder }) => {
+const TrackList: React.FC<TrackListProps> = ({
+  tracks,
+  onReorder,
+  currentTrackId,
+  isPlaying,
+  onPlayTrack,
+}) => {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -120,7 +164,15 @@ const TrackList: React.FC<TrackListProps> = ({ tracks, onReorder }) => {
       >
         <ul data-testid="playlist-track-list">
           {tracks.map((ct, i) => (
-            <SortableTrackRow key={ct.track.id} ct={ct} index={i} draggable={draggable} />
+            <SortableTrackRow
+              key={ct.track.id}
+              ct={ct}
+              index={i}
+              draggable={draggable}
+              currentTrackId={currentTrackId}
+              isPlaying={isPlaying}
+              onPlayTrack={onPlayTrack}
+            />
           ))}
         </ul>
       </SortableContext>

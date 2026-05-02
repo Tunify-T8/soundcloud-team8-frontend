@@ -17,6 +17,7 @@ const mockAddTrack      = vi.fn();
 const mockRemoveTrack   = vi.fn();
 const mockToggleShuffle = vi.fn();
 const mockToggleRepeat  = vi.fn();
+const mockSetRepeatMode = vi.fn();
 const mockSetCurrentTrack = vi.fn();
 const mockSetIsPlaying    = vi.fn();
 const mockSetProgress     = vi.fn();
@@ -44,6 +45,7 @@ const baseQueue: useQueueReturn = {
   totalCount:     1,
   hasNext:        false,
   hasPrev:        false,
+  activeContext:  null,
   loadQueue:      mockLoadQueue,
   next:           mockNext,
   prev:           mockPrev,
@@ -52,6 +54,7 @@ const baseQueue: useQueueReturn = {
   jumpTo:         mockJumpTo,
   toggleShuffle:  mockToggleShuffle,
   toggleRepeat:   mockToggleRepeat,
+  setRepeatMode:  mockSetRepeatMode,
   clearQueue:     mockClearQueue,
 };
 

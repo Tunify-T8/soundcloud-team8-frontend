@@ -1,21 +1,25 @@
-import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { Search, Music, Disc, BadgeCheck } from 'lucide-react';
-import { useDebounce } from '@/hooks/useDebounce';
-import { feedService } from '@/features/feed/feedservice';
-import type { RootState } from '@/app/store';
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { Search, Music, Disc, BadgeCheck } from "lucide-react";
+import { useDebounce } from "@/hooks/useDebounce";
+import { feedService } from "@/features/feed/feedservice";
+import type { RootState } from "@/app/store";
 import type {
-  SearchResult,
-  TrackSearchResult,
-  UserSearchResult,
-  CollectionSearchResult,
-} from '../../features/feed/type';
-import avatarFallback from '@/assets/avatar.png';
+  AutocompleteResults,
+  AutocompleteTrackResult,
+  AutocompleteUserResult,
+  AutocompleteCollectionResult,
+} from "../../features/feed/type";
+import avatarFallback from "@/assets/avatar.png";
 
 export default function SearchBar() {
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<AutocompleteResults>({
+    tracks: [],
+    users: [],
+    collections: [],
+  });
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -27,18 +31,24 @@ export default function SearchBar() {
   useEffect(() => {
     if (!debouncedQuery.trim()) {
       setTimeout(() => {
-        setResults([]);
+        setResults({ tracks: [], users: [], collections: [] });
         setIsLoading(false);
         setIsOpen(false);
       }, 0);
       return;
     }
-    setTimeout(() => { setIsLoading(true); }, 0);
+    if (debouncedQuery.trim().length > 50) {
+      setIsOpen(false);
+      setIsLoading(false);
+      return;
+    }
+    setTimeout(() => {
+      setIsLoading(true);
+    }, 0);
     feedService
-      .search(debouncedQuery)
+      .searchAutocomplete(debouncedQuery)
       .then((data) => {
-        const sorted = [...data].sort((a, b) => b.score - a.score);
-        setResults(sorted);
+        setResults(data);
         setIsOpen(true);
       })
       .finally(() => setIsLoading(false));
@@ -46,64 +56,82 @@ export default function SearchBar() {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
+    if (e.key === "Escape") {
       setIsOpen(false);
     }
-    if (e.key === 'Enter' && query.trim()) {
+    if (e.key === "Enter" && query.trim()) {
       setIsOpen(false);
-      setQuery('');
-      if (currentUser && query.trim().toLowerCase() === currentUser.username.toLowerCase()) {
-        navigate('/me');
+      setQuery("");
+      if (
+        currentUser &&
+        query.trim().toLowerCase() === currentUser.username.toLowerCase()
+      ) {
+        navigate("/me");
       } else {
         navigate(`/search?q=${encodeURIComponent(query.trim())}`);
       }
     }
   };
 
-  const handleSelect = (result: SearchResult) => {
+  const handleSelect = (
+    result:
+      | AutocompleteTrackResult
+      | AutocompleteUserResult
+      | AutocompleteCollectionResult,
+  ) => {
     setIsOpen(false);
-    setQuery('');
-    if (result.type === 'user') {
+    setQuery("");
+    if (result.type === "user") {
       if (currentUser && result.username === currentUser.username) {
-        navigate('/me');
+        navigate("/me");
       } else {
         navigate(`/${result.id}`);
       }
-    } else if (result.type === 'track') {
+    } else if (result.type === "track") {
       navigate(`/tracks/${result.id}`);
     } else {
       navigate(`/collections/${result.id}`);
     }
   };
 
-  const tracks      = results.filter((r): r is TrackSearchResult      => r.type === 'track');
-  const users       = results.filter((r): r is UserSearchResult        => r.type === 'user');
-  const collections = results.filter(
-    (r): r is CollectionSearchResult => r.type === 'album' || r.type === 'playlist',
-  );
+  const { tracks, users, collections } = results;
+  const hasResults =
+    tracks.length > 0 || users.length > 0 || collections.length > 0;
 
   return (
-    <div ref={containerRef} className="relative w-full" data-testid="search-bar-container">
+    <div
+      ref={containerRef}
+      className="relative w-full"
+      data-testid="search-bar-container"
+    >
       <div className="relative flex items-center">
-        <Search size={14} className="absolute left-3 text-gray-400 pointer-events-none" />
+        <Search
+          size={14}
+          className="absolute left-3 text-gray-400 pointer-events-none"
+        />
         <input
           data-testid="search-input"
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
-          onFocus={() => { if (results.length > 0) setIsOpen(true); }}
+          onFocus={() => {
+            if (results.length > 0) setIsOpen(true);
+          }}
           placeholder="Search"
-          className="w-full bg-[#333] text-white text-sm placeholder-gray-400 rounded-full pl-8 pr-4 py-1.5 outline-none focus:bg-[#444] transition-colors"
+          className="w-full bg-[#333] text-white text-sm placeholder-gray-300 pl-8 pr-4 py-1.5 outline-none focus:bg-[#444] transition-colors"
         />
       </div>
 
@@ -113,13 +141,19 @@ export default function SearchBar() {
           className="absolute top-full left-0 right-0 mt-1 bg-[#1a1a1a] border border-[hsl(0,0%,20%)] rounded-md shadow-2xl z-50 max-h-[480px] overflow-y-auto"
         >
           {isLoading && (
-            <div data-testid="search-loading" className="px-4 py-3 text-sm text-gray-400">
+            <div
+              data-testid="search-loading"
+              className="px-4 py-3 text-sm text-gray-400"
+            >
               Searching...
             </div>
           )}
 
-          {!isLoading && results.length === 0 && (
-            <div data-testid="search-no-results" className="px-4 py-3 text-sm text-gray-400">
+          {!isLoading && !hasResults && (
+            <div
+              data-testid="search-no-results"
+              className="px-4 py-3 text-sm text-gray-400"
+            >
               No results for "{debouncedQuery}"
             </div>
           )}
@@ -133,25 +167,28 @@ export default function SearchBar() {
                   testId={`search-track-${track.id}`}
                   onClick={() => handleSelect(track)}
                 >
-                  <Thumbnail src={track.coverUrl} fallback={<Music size={14} className="text-gray-500" />} />
+                  <Thumbnail
+                    src={track.coverUrl ?? null}
+                    fallback={<Music size={14} className="text-gray-500" />}
+                  />
                   <div className="min-w-0 flex-1">
-                    <p className="text-white text-[13px] font-medium truncate">{track.title}</p>
+                    <p className="text-white text-[13px] font-medium truncate">
+                      {track.title}
+                    </p>
                     <p className="text-gray-400 text-[11px] truncate">
-                      {track.artist}{track.genre ? ` · ${track.genre}` : ''}
+                      {track.artist}
                     </p>
                   </div>
-                  {track.likesCount > 0 && (
-                    <span className="ml-auto text-[10px] text-gray-500 shrink-0">
-                      {track.likesCount.toLocaleString()} likes
-                    </span>
-                  )}
                 </ResultRow>
               ))}
             </section>
           )}
 
           {users.length > 0 && (
-            <section data-testid="search-people-section" className="border-t border-[hsl(0,0%,13%)]">
+            <section
+              data-testid="search-people-section"
+              className="border-t border-[hsl(0,0%,13%)]"
+            >
               <SectionHeader label="People" />
               {users.map((user) => (
                 <ResultRow
@@ -182,11 +219,15 @@ export default function SearchBar() {
                         {user.displayName ?? user.username}
                       </p>
                       {user.isCertified && (
-                        <BadgeCheck size={12} className="text-[hsl(14,90%,58%)] shrink-0" />
+                        <BadgeCheck
+                          size={12}
+                          className="text-[hsl(14,90%,58%)] shrink-0"
+                        />
                       )}
                     </div>
                     <p className="text-gray-400 text-[11px] truncate">
-                      @{user.username} · {user.followersCount.toLocaleString()} followers
+                      @{user.username} ·{" "}
+                      {(user.followersCount ?? 0).toLocaleString()} followers
                     </p>
                   </div>
                 </ResultRow>
@@ -195,7 +236,10 @@ export default function SearchBar() {
           )}
 
           {collections.length > 0 && (
-            <section data-testid="search-collections-section" className="border-t border-[hsl(0,0%,13%)]">
+            <section
+              data-testid="search-collections-section"
+              className="border-t border-[hsl(0,0%,13%)]"
+            >
               <SectionHeader label="Albums & Playlists" />
               {collections.map((col) => (
                 <ResultRow
@@ -203,11 +247,16 @@ export default function SearchBar() {
                   testId={`search-collection-${col.id}`}
                   onClick={() => handleSelect(col)}
                 >
-                  <Thumbnail src={col.coverUrl} fallback={<Disc size={14} className="text-gray-500" />} />
+                  <Thumbnail
+                    src={col.coverUrl ?? null}
+                    fallback={<Disc size={14} className="text-gray-500" />}
+                  />
                   <div className="min-w-0">
-                    <p className="text-white text-[13px] font-medium truncate">{col.title}</p>
-                    <p className="text-gray-400 text-[11px] truncate capitalize">
-                      {col.type} · {col.artist}
+                    <p className="text-white text-[13px] font-medium truncate">
+                      {col.title}
+                    </p>
+                    <p className="text-gray-400 text-[11px] truncate">
+                      {col.artist}
                     </p>
                   </div>
                 </ResultRow>
@@ -248,10 +297,20 @@ function ResultRow({
   );
 }
 
-function Thumbnail({ src, fallback }: { src: string | null; fallback: React.ReactNode }) {
+function Thumbnail({
+  src,
+  fallback,
+}: {
+  src: string | null;
+  fallback: React.ReactNode;
+}) {
   return (
     <div className="w-9 h-9 rounded bg-[hsl(0,0%,12%)] flex items-center justify-center shrink-0 overflow-hidden">
-      {src ? <img src={src} className="w-full h-full object-cover" /> : fallback}
+      {src ? (
+        <img src={src} className="w-full h-full object-cover" />
+      ) : (
+        fallback
+      )}
     </div>
   );
 }

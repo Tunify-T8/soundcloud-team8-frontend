@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { X, Upload, Zap, Share2, RefreshCw, Plus, Star } from "lucide-react";
+import { createPortal } from "react-dom";
 import CheckoutModal from "./CheckoutModal";
 import { subscriptionService } from "@/features/premium/premiumService";
 import type { Plan } from "@/features/premium/premiumService";
@@ -9,8 +10,10 @@ interface UpgradeModalProps {
   onClose: () => void;
 }
 
-function formatPrice(amount: number, currency: string) {
-  return `${currency} ${amount.toFixed(2)}`;
+function formatPrice(amount: number | undefined, currency: string | undefined, fallback: string) {
+  if (!Number.isFinite(amount)) return fallback;
+  const safeCurrency = currency && currency.trim() ? currency : fallback.split(" ")[0] || "EGP";
+  return `${safeCurrency} ${Number(amount).toFixed(2)}`;
 }
 
 export default function UpgradeModal({ onClose }: UpgradeModalProps) {
@@ -37,31 +40,51 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
   const artistPlan = plans.find((p) => p.name === "artist");
   const artistProPlan = plans.find((p) => p.name === "artist-pro");
 
-  const artistMonthly = artistPlan ? formatPrice(artistPlan.monthly_price, artistPlan.currency) : "EGP 65.00";
-  const artistYearly = artistPlan ? formatPrice(artistPlan.yearly_price, artistPlan.currency) : "EGP 479.99";
+  const artistMonthly = artistPlan
+    ? formatPrice(artistPlan.monthly_price, artistPlan.currency, "EGP 65.00")
+    : "EGP 65.00";
+  const artistYearly = artistPlan
+    ? formatPrice(artistPlan.yearly_price, artistPlan.currency, "EGP 479.99")
+    : "EGP 479.99";
   const artistYearlyMonthly = artistPlan
-    ? formatPrice(artistPlan.yearly_price / 12, artistPlan.currency)
+    ? formatPrice(
+        Number.isFinite(artistPlan.yearly_price) ? artistPlan.yearly_price / 12 : undefined,
+        artistPlan.currency,
+        "EGP 40.00",
+      )
     : "EGP 40.00";
 
-  const proMonthly = artistProPlan ? formatPrice(artistProPlan.monthly_price, artistProPlan.currency) : "EGP 164.99";
-  const proYearly = artistProPlan ? formatPrice(artistProPlan.yearly_price, artistProPlan.currency) : "EGP 1149.99";
+  const proMonthly = artistProPlan
+    ? formatPrice(artistProPlan.monthly_price, artistProPlan.currency, "EGP 164.99")
+    : "EGP 164.99";
+  const proYearly = artistProPlan
+    ? formatPrice(artistProPlan.yearly_price, artistProPlan.currency, "EGP 1149.99")
+    : "EGP 1149.99";
   const proYearlyMonthly = artistProPlan
-    ? formatPrice(artistProPlan.yearly_price / 12, artistProPlan.currency)
+    ? formatPrice(
+        Number.isFinite(artistProPlan.yearly_price) ? artistProPlan.yearly_price / 12 : undefined,
+        artistProPlan.currency,
+        "EGP 95.83",
+      )
     : "EGP 95.83";
 
+  const modalRoot = typeof document !== "undefined" ? document.body : null;
+
   if (checkoutPlan) {
-    return (
+    const checkoutContent = (
       <CheckoutModal
         plan={checkoutPlan}
         plans={plans}
         onClose={onClose}
       />
     );
+
+    return modalRoot ? createPortal(checkoutContent, modalRoot) : checkoutContent;
   }
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+      className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="relative bg-white w-full max-w-[1000px] max-h-[90vh] overflow-y-auto shadow-2xl animate-in">
@@ -215,6 +238,8 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
       </div>
     </div>
   );
+
+  return modalRoot ? createPortal(modalContent, modalRoot) : modalContent;
 }
 
 interface FeatureRowProps {

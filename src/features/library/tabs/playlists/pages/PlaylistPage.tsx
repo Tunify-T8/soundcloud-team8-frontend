@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { FaApple, FaGooglePlay } from "react-icons/fa";
-import { User } from "lucide-react";
+import { ListMusic, User } from "lucide-react";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/app/store";
+import { usePlayer } from "@/features/playerUI/context/usePlayer";
 import { playlistService } from "../../../libraryService";
 import { profileService } from "@/features/profile/profileService";
 import type { Collection, CollectionTrack } from "../../../types";
@@ -12,6 +13,7 @@ import PlaylistHeader from "../components/PlaylistHeader";
 import TrackList from "../components/TrackList";
 import ActionBar from "../components/ActionBar";
 import EditPlaylistOverlay from "../components/EditPlaylistOverlay";
+import { usePlayContext } from "@/hooks/usePlayContext";
 
 function isUuidLike(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -31,7 +33,17 @@ const PlaylistPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [reorderError, setReorderError] = useState<string | null>(null);
-  const [ownerProfileSlug, setOwnerProfileSlug] = useState<string>("");
+  const [isFollowingOwner, setIsFollowingOwner] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const {
+    currentTrack,
+    isPlaying,
+    progress,
+    setCurrentTrack,
+    setIsPlaying,
+    requestSeek,
+  } = usePlayer();
+  usePlayContext({ contextType: "playlist", contextId: playlist?.id ?? "" });
 
   const fetchData = useCallback(async () => {
     if (!id && !token && !tokenFromQuery) return;
@@ -55,9 +67,16 @@ const PlaylistPage: React.FC = () => {
 
     try {
       const accessToken = token ?? tokenFromQuery;
-      const playlistData = accessToken
-        ? await playlistService.getPlaylistByToken(accessToken)
-        : await playlistService.getPlaylistById(id as string);
+      let playlistData: Collection | null = null;
+      if (accessToken) {
+        playlistData = await playlistService.getPlaylistByToken(accessToken);
+      } else if (id) {
+        playlistData = await playlistService.getPlaylistById(id);
+        if (!playlistData && !isUuidLike(id)) {
+          // Shared/private links can arrive as /collections/:token.
+          playlistData = await playlistService.getPlaylistByToken(id);
+        }
+      }
 
       const playlistId = playlistData?.id;
       const tracksData = playlistId
@@ -85,9 +104,31 @@ const PlaylistPage: React.FC = () => {
     return () => clearTimeout(timeout);
   }, [reorderError]);
 
+  useEffect(() => {
+    let mounted = true;
+
+    const syncFollowStatus = async () => {
+      if (!playlist?.owner?.id || currentUser?.id === playlist.owner.id) return;
+      try {
+        const status = await profileService.getFollowStatus(playlist.owner.id);
+        if (!mounted) return;
+        setIsFollowingOwner(Boolean(status.isFollowing));
+      } catch {
+        if (!mounted) return;
+        setIsFollowingOwner(false);
+      }
+    };
+
+    void syncFollowStatus();
+    return () => {
+      mounted = false;
+    };
+  }, [playlist?.owner?.id, currentUser?.id]);
+
   const handleReorder = useCallback(
     async (newTracks: CollectionTrack[]) => {
-      if (!id) return;
+      const collectionId = playlist?.id;
+      if (!collectionId) return;
       const previousTracks = tracks;
       setTracks(newTracks);
       setReorderError(null);
@@ -96,7 +137,7 @@ const PlaylistPage: React.FC = () => {
       //   return;
       // }
 
-      const ok = await playlistService.reorderTracks(id, {
+      const ok = await playlistService.reorderTracks(collectionId, {
         trackIds: newTracks.map((ct) => ct.track.id),
       });
       if (!ok) {
@@ -104,36 +145,53 @@ const PlaylistPage: React.FC = () => {
         setReorderError("Couldn't save the new track order. Please try again.");
       }
     },
-    [id, tracks],
+    [playlist?.id, tracks],
   );
 
-  useEffect(() => {
-    let isMounted = true;
-    const resolveOwnerSlug = async () => {
-      if (!playlist?.owner) return;
-      const fallbackSlug = playlist.owner.username || playlist.owner.id;
-      if (!fallbackSlug) return;
+  const toPlayerTrack = useCallback((ct: CollectionTrack) => ({
+    id: ct.track.id,
+    title: ct.track.title,
+    artist: ct.track.user.displayName || ct.track.user.username,
+    thumbnailUrl: ct.track.coverUrl ?? undefined,
+    artworkUrl: ct.track.coverUrl ?? undefined,
+    duration: ct.track.durationSeconds || 0,
+    recentlyPlayedTitle: playlist?.title ?? ct.track.title,
+    recentlyPlayedArtworkUrl: playlist?.coverUrl ?? ct.track.coverUrl ?? undefined,
+    recentlyPlayedEntityType: "playlist" as const,
+    recentlyPlayedLinkTo: playlist ? `/collections/${playlist.id}` : `/tracks/${ct.track.id}`,
+  }), [playlist]);
 
-      if (!isUuidLike(fallbackSlug)) {
-        setOwnerProfileSlug(fallbackSlug);
-        return;
-      }
+  const activePlaylistTrack = currentTrack
+    ? tracks.find((item) => item.track.id === currentTrack.id) ?? null
+    : null;
 
-      try {
-        const profile = await profileService.getPublicProfile(playlist.owner.id);
-        if (!isMounted) return;
-        setOwnerProfileSlug(profile.username || fallbackSlug);
-      } catch {
-        if (!isMounted) return;
-        setOwnerProfileSlug(fallbackSlug);
-      }
-    };
+  const handlePlayTrack = useCallback((ct: CollectionTrack) => {
+    if (currentTrack?.id === ct.track.id) {
+      setIsPlaying(!isPlaying);
+      return;
+    }
 
-    void resolveOwnerSlug();
-    return () => {
-      isMounted = false;
-    };
-  }, [playlist]);
+    setCurrentTrack(toPlayerTrack(ct));
+    setIsPlaying(true);
+  }, [currentTrack?.id, isPlaying, setCurrentTrack, setIsPlaying, toPlayerTrack]);
+
+  const handlePlayPlaylist = useCallback(() => {
+    const targetTrack = activePlaylistTrack ?? tracks[0];
+    if (!targetTrack) return;
+    handlePlayTrack(targetTrack);
+  }, [activePlaylistTrack, tracks, handlePlayTrack]);
+
+  const handleSeek = useCallback((ratio: number) => {
+    const targetTrack = activePlaylistTrack ?? tracks[0];
+    if (!targetTrack) return;
+
+    if (currentTrack?.id !== targetTrack.track.id) {
+      setCurrentTrack(toPlayerTrack(targetTrack));
+      setIsPlaying(true);
+    }
+
+    requestSeek(targetTrack.track.id, ratio);
+  }, [activePlaylistTrack, tracks, currentTrack?.id, requestSeek, setCurrentTrack, setIsPlaying, toPlayerTrack]);
 
   if (loading)
     return (
@@ -150,7 +208,26 @@ const PlaylistPage: React.FC = () => {
     );
 
   const isOwner = currentUser?.id === playlist.owner.id;
-  const profileLink = `/${encodeURIComponent(playlist.owner.id)}`;
+  const profileLink = `/${encodeURIComponent(playlist.owner.username || playlist.owner.id)}`;
+  const trackCount = playlist.trackCount ?? tracks.length;
+
+  const handleToggleFollow = async () => {
+    if (isOwner || followLoading) return;
+    setFollowLoading(true);
+    const prev = isFollowingOwner;
+    setIsFollowingOwner(!prev);
+    try {
+      if (prev) {
+        await profileService.unfollowUser(playlist.owner.id);
+      } else {
+        await profileService.followUser(playlist.owner.id);
+      }
+    } catch {
+      setIsFollowingOwner(prev);
+    } finally {
+      setFollowLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -171,6 +248,11 @@ const PlaylistPage: React.FC = () => {
           tracks={tracks}
           onUpdate={() => void fetchData()}
           isMe={isOwner}
+          activeTrack={activePlaylistTrack}
+          isPlaying={Boolean(activePlaylistTrack && isPlaying)}
+          playerProgress={activePlaylistTrack ? progress : 0}
+          onPlayToggle={handlePlayPlaylist}
+          onSeek={handleSeek}
         />
 
         <div className="mt-6 flex flex-col gap-8 lg:flex-row">
@@ -209,12 +291,30 @@ const PlaylistPage: React.FC = () => {
                           playlist.owner?.username}
                       </Link>
                     </div>
-                    <div className="mt-1 flex items-center gap-1 text-sm font-semibold text-zinc-400 lg:mt-2 lg:justify-center">
-                      <User size={12} />
-                      <span className="text-[11px]">
-                        {playlist.owner.followerCount}
+                    <div className="mt-1 flex items-center gap-3 text-sm font-semibold text-zinc-400 lg:mt-2 lg:justify-center">
+                      <span className="flex items-center gap-1">
+                        <User size={12} />
+                        <span className="text-[11px]">{playlist.owner.followerCount}</span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <ListMusic size={12} />
+                        <span className="text-[11px]">{trackCount}</span>
                       </span>
                     </div>
+                    {!isOwner && (
+                      <button
+                        type="button"
+                        onClick={() => void handleToggleFollow()}
+                        disabled={followLoading}
+                        className={`mt-2 min-w-[108px] rounded-sm border px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                          isFollowingOwner
+                            ? "border-zinc-500 bg-transparent text-white hover:border-zinc-300"
+                            : "border-zinc-100 bg-zinc-100 text-[#111] hover:bg-white"
+                        }`}
+                      >
+                        {followLoading ? "..." : isFollowingOwner ? "Following" : "Follow"}
+                      </button>
+                    )}
                   </div>
                 </div>
               </aside>
@@ -223,6 +323,9 @@ const PlaylistPage: React.FC = () => {
                 <TrackList
                   tracks={tracks}
                   onReorder={isOwner ? handleReorder : undefined}
+                  currentTrackId={currentTrack?.id}
+                  isPlaying={isPlaying}
+                  onPlayTrack={handlePlayTrack}
                 />
               </div>
             </div>

@@ -35,7 +35,7 @@ export default function Spotlight({ isMe }: SpotlightSectionProps) {
   };
 
   return (
-    <div className="mt-6 w-full xl:max-w-[calc(100%-23rem)]">
+    <div className="mt-6 w-full">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="text-[20px] font-bold tracking-tight text-white sm:text-[24px]">Spotlight</h2>
 
@@ -74,8 +74,8 @@ export default function Spotlight({ isMe }: SpotlightSectionProps) {
       </div>
 
       {showPromo && (
-        <div className="flex min-w-0 flex-col items-start gap-4 md:flex-row">
-          <div className="h-[180px] w-full max-w-[220px] cursor-pointer rounded sm:h-[200px] sm:w-[200px]">
+        <div className="flex min-w-0 flex-col items-start gap-4 sm:gap-5 md:flex-row">
+          <div className="hidden h-[200px] w-[200px] max-w-[220px] cursor-pointer rounded md:block">
             <img src={spotlightImg} alt="Spotlight" className="w-full h-full object-cover" />
           </div>
 
