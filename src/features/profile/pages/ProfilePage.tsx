@@ -3,7 +3,7 @@ import UserInfoBar from "../components/UserInfo/UserInfoBar";
 import ProfileSideBar from "../components/UserInfo/ProfileSideBar";
 import { Outlet, useParams, useLocation } from "react-router-dom";
 import { profileService } from "../profileService";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useMe } from "../context/useMe";
 import { usePlayContext } from "@/hooks/usePlayContext";
 import type {
@@ -31,13 +31,18 @@ export default function ProfilePage() {
   const [openedFollowing, setOpenedFollowing] = useState<UserFollowing[]>([]);
   const [loading, setLoading] = useState(!!username);
   const [error, setError] = useState<string | null>(null);
+  
   const [followersCount, setFollowersCount] = useState<number | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false); // New state to track the request
+  const isOptimisticRef = useRef(false);
 
   const refreshProfile = useCallback(() => {
     refreshMe();
   }, [refreshMe]);
 
   useEffect(() => {
+    if (isOptimisticRef.current) return;
+
     if (publicUser) {
       setFollowersCount(publicUser.followersCount);
     } else if (me) {
@@ -47,9 +52,6 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!username) return;
-
-    // Prefer UUID from navigation state (avoids backend UUID validation error)
-    // Falls back to username for direct URL access — backend must support it
     const identifier = userIdFromState ?? username;
 
     const fetchProfile = async () => {
@@ -58,6 +60,7 @@ export default function ProfilePage() {
       try {
         const data = await profileService.getPublicProfile(identifier);
         setPublicUser(data);
+        isOptimisticRef.current = false; 
       } catch (err: any) {
         setError(err?.message || "Failed to fetch user");
       } finally {
@@ -69,18 +72,15 @@ export default function ProfilePage() {
 
   useEffect(() => {
     let isMounted = true;
-
     if (isMe) {
       setOpenedFollowing(following);
       return;
     }
-
     const openedUserId = publicUser?.id;
     if (!openedUserId) {
       setOpenedFollowing([]);
       return;
     }
-
     profileService
       .getUserFollowing(openedUserId)
       .then((res) => {
@@ -91,21 +91,18 @@ export default function ProfilePage() {
         if (!isMounted) return;
         setOpenedFollowing([]);
       });
-
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [isMe, publicUser?.id, following]);
 
   useEffect(() => {
+    if (isOptimisticRef.current) return;
+
     let isMounted = true;
     const targetUserId = isMe ? me?.id : publicUser?.id;
-
     if (!targetUserId) {
       setOpenedFollowers([]);
       return;
     }
-
     profileService
       .getUserFollowers(targetUserId)
       .then((res) => {
@@ -116,51 +113,26 @@ export default function ProfilePage() {
         if (!isMounted) return;
         setOpenedFollowers([]);
       });
-
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [isMe, me?.id, publicUser?.id]);
 
   const user = username ? publicUser : me;
 
-  // Register profile context — uses the profile owner's UUID
   usePlayContext({
     contextType: "profile",
     contextId: user?.id ?? "",
   });
 
   if (!username && !me) {
-    return (
-      <div
-        data-testid="profile-page-loading-me"
-        className="min-h-screen bg-[#0b0b0b] text-white"
-      >
-        Loading...
-      </div>
-    );
+    return <div className="min-h-screen bg-[#0b0b0b] text-white">Loading...</div>;
   }
 
   if (loading) {
-    return (
-      <div
-        data-testid="profile-page-loading"
-        className="min-h-screen bg-[#0b0b0b] text-white"
-      >
-        Loading...
-      </div>
-    );
+    return <div className="min-h-screen bg-[#0b0b0b] text-white">Loading...</div>;
   }
 
   if (error || !user) {
-    return (
-      <div
-        data-testid="profile-page-error"
-        className="min-h-screen bg-[#0b0b0b] text-white"
-      >
-        {error || "User not found."}
-      </div>
-    );
+    return <div className="min-h-screen bg-[#0b0b0b] text-white">{error || "User not found."}</div>;
   }
 
   const loc = user.location ?? "";
@@ -168,9 +140,11 @@ export default function ProfilePage() {
   const city = locationParts[0]?.trim() ?? undefined;
   const country = locationParts[1]?.trim() ?? undefined;
 
+  const currentFollowers = followersCount ?? user.followersCount;
+
   const sidebarProps = {
     profileId: user.id,
-    followers: user.followersCount,
+    followers: currentFollowers,
     following: user.followingCount,
     tracks: "tracksCount" in user ? (user as any).tracksCount : 0,
     bio: user.bio ?? undefined,
@@ -208,7 +182,7 @@ export default function ProfilePage() {
           onProfileUpdated={refreshProfile}
         />
 
-        <div data-testid="profile-page-user-info" className="w-full bg-[#0b0b0b] lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-8">
+        <div className="w-full bg-[#0b0b0b] lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-8">
             <div className="lg:col-span-2">
               <UserInfoBar
                 displayName={user.displayName ?? undefined}
@@ -223,25 +197,44 @@ export default function ProfilePage() {
                 isMe={isMe}
                 userId={user.id}
                 onProfileUpdated={refreshProfile}
-                followersCount={followersCount ?? user.followersCount}
-                onFollowersChange={setFollowersCount}
+                followersCount={currentFollowers}
+                // Pass the updating state to UserInfoBar
+                isUpdating={isUpdating} 
+                setIsUpdating={setIsUpdating}
+                onFollowersChange={(newCount) => {
+                  isOptimisticRef.current = true;
+                  
+                  const isNowFollowing = newCount > (followersCount ?? user.followersCount);
+                  
+                  if (isNowFollowing && me) {
+                    setOpenedFollowers(prev => [{
+                      id: me.id,
+                      username: me.username,
+                      avatarUrl: me.avatarUrl ?? "",
+                    } as UserFollower, ...prev]);
+                  } else if (!isNowFollowing && me) {
+                    setOpenedFollowers(prev => prev.filter(f => f.id !== me.id));
+                  }
+
+                  setFollowersCount(newCount);
+                }}
               />
             </div>
 
             <div className="min-w-0">
-              <div data-testid="profile-page-content" className="bg-[#0b0b0b] pb-6 lg:pb-28">
+              <div className="bg-[#0b0b0b] pb-6 lg:pb-28">
                 <Outlet />
               </div>
             </div>
 
-            <div data-testid="profile-sidebar-desktop" className="hidden lg:block">
+            <div className="hidden lg:block">
               <div className="sticky top-6 pt-4">
                 <ProfileSideBar {...sidebarProps} />
               </div>
             </div>
         </div>
 
-        <div data-testid="profile-sidebar-mobile" className="mt-1 lg:hidden">
+        <div className="mt-1 lg:hidden">
           <ProfileSideBar {...sidebarProps} />
         </div>
       </div>

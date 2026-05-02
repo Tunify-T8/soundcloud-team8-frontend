@@ -106,6 +106,8 @@ export default function UserInfoBar({
   userId,
   followersCount,
   onFollowersChange,
+  isUpdating, // Added from ProfilePage
+  setIsUpdating, // Added from ProfilePage
 }: {
   displayName?: string;
   username?: string;
@@ -130,6 +132,8 @@ export default function UserInfoBar({
   userId?: string;
   followersCount?: number;
   onFollowersChange?: (count: number) => void;
+  isUpdating?: boolean;
+  setIsUpdating?: (updating: boolean) => void;
 }) {
   const tabs = [
     { label: "All", path: "." },
@@ -143,7 +147,6 @@ export default function UserInfoBar({
   const [modal, setModal] = useState(false);
   const [showMoreActions, setShowMoreActions] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
-  const [followLoading, setFollowLoading] = useState(false);
   const [blockLoading, setBlockLoading] = useState(false);
   const [showShareOverlay, setShowShareOverlay] = useState(false);
 
@@ -163,18 +166,20 @@ export default function UserInfoBar({
   }, [isMe, userId]);
 
   const handleFollowToggle = async () => {
-    if (!userId || followLoading) return;
+    if (!userId || isUpdating) return;
 
     const previousFollowersCount = followersCount ?? 0;
     const newFollowersCount = isFollowing 
       ? Math.max(0, previousFollowersCount - 1)
       : previousFollowersCount + 1;
 
-    // Step 1: Update UI immediately (optimistic update)
+    // Step 1: Update UI immediately (optimistic)
     setIsFollowing(!isFollowing);
     onFollowersChange?.(newFollowersCount);
+    
+    // Start global loading state
+    setIsUpdating?.(true);
 
-    setFollowLoading(true);
     try {
       // Step 2: Sync with backend
       if (isFollowing) {
@@ -182,14 +187,14 @@ export default function UserInfoBar({
       } else {
         await followingService.followUser(userId);
       }
-
       notifySocialGraphUpdated();
     } catch {
-      // Step 3: If API call fails, revert the changes
+      // Step 3: Revert on error
       setIsFollowing(isFollowing);
       onFollowersChange?.(previousFollowersCount);
     } finally {
-      setFollowLoading(false);
+      // Step 4: End global loading state
+      setIsUpdating?.(false);
     }
   };
 
@@ -251,11 +256,16 @@ export default function UserInfoBar({
               type="button"
               title={isFollowing ? "Following" : "Follow"}
               onClick={handleFollowToggle}
-              disabled={followLoading || !userId}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-sm bg-white px-2 py-1 text-[12px] font-bold text-black hover:text-zinc-500 cursor-pointer sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm"
+              disabled={isUpdating || !userId}
+              // Graying out logic: bg-zinc-700 and text-zinc-500 when updating, otherwise standard white/black
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-sm px-2 py-1 text-[12px] font-bold transition-colors sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm ${
+                isUpdating 
+                  ? "bg-zinc-700 text-zinc-500 cursor-not-allowed" 
+                  : "bg-white text-black hover:text-zinc-600 cursor-pointer"
+              }`}
             >
-              <FaUser />
-              <span>{isFollowing ? "Following" : "Follow"}</span>
+              <FaUser className={isUpdating ? "opacity-50" : ""} />
+              <span>{isUpdating ? "Waiting..." : (isFollowing ? "Following" : "Follow")}</span>
             </button>
           )}
           {isMe && (
