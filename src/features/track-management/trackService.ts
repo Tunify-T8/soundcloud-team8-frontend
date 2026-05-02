@@ -125,6 +125,21 @@ export const trackService = {
   return Array.isArray(data) ? data.map(normalizeTrack) : [];
   },
 
+  /**
+   * Fetch aggregated user analytics (plays, likes, reposts, comments).
+   * Endpoint may not be available in all environments — callers should
+   * handle network errors and missing fields.
+   */
+  async getMyAnalytics(): Promise<{ plays: number; likes: number; reposts: number; comments: number }> {
+    const { data } = await api.get<Record<string, unknown>>("/users/me/analytics");
+    return {
+      plays: typeof data.plays === "number" ? data.plays : Number(data.plays || 0),
+      likes: typeof data.likes === "number" ? data.likes : Number(data.likes || 0),
+      reposts: typeof data.reposts === "number" ? data.reposts : Number(data.reposts || 0),
+      comments: typeof data.comments === "number" ? data.comments : Number(data.comments || 0),
+    };
+  },
+
   async getTrackDetails(id: string): Promise<Track> {
     const { data } = await api.get<ApiTrackShape>(`/tracks/${id}`);
     return normalizeTrack(data);

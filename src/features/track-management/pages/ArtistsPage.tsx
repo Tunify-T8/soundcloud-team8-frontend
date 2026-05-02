@@ -122,7 +122,24 @@ export function UploadBanner() {
   );
 }
 
-function StudioHeader() {
+type Analytics = { plays: number; likes: number; reposts: number; comments: number };
+
+function StudioHeader({ analytics, tracks }: { analytics: Analytics | null; tracks: Track[] }) {
+  const fmt = (val: number | null | undefined) =>
+    val === null || val === undefined ? "-" : String(val);
+
+  // If backend analytics are not available, compute totals from individual tracks when possible.
+  const computed = tracks && tracks.length > 0
+    ? {
+        plays: tracks.reduce((s, t) => s + (t.plays ?? 0), 0),
+        likes: tracks.reduce((s, t) => s + (t.likes ?? 0), 0),
+        reposts: tracks.reduce((s, t) => s + (t.reposts ?? 0), 0),
+        comments: tracks.reduce((s, t) => s + (t.comments ?? 0), 0),
+      }
+    : null;
+
+  const display = analytics ?? computed;
+
   return (
     <div data-testid="studio-header" className="bg-[hsl(0,0%,7%)] border border-[hsl(0,0%,17%)] rounded-md mx-3 sm:mx-6 mt-5 mb-6 px-4 sm:px-7 py-5 sm:py-6">
       <div className="flex items-baseline gap-3 mb-5 sm:mb-6 flex-wrap">
@@ -132,21 +149,21 @@ function StudioHeader() {
 
       {/* Stats row — scrolls horizontally on very small screens */}
       <div className="flex items-center overflow-x-auto pb-1 -mb-1 scrollbar-none">
-        <div className="flex items-center shrink-0">
+          <div className="flex items-center shrink-0">
           <div className="flex flex-col gap-1 pr-5 sm:pr-7">
-            <span className="text-white text-xl sm:text-2xl font-semibold tabular-nums">0</span>
+            <span className="text-white text-xl sm:text-2xl font-semibold tabular-nums">{display ? fmt(display.plays) : "-"}</span>
             <span className="text-[hsl(0,0%,42%)] text-xs whitespace-nowrap">SC plays</span>
           </div>
           <div className="flex flex-col gap-1 px-5 sm:px-7 border-l border-[hsl(0,0%,20%)]">
-            <span className="text-white text-xl sm:text-2xl font-semibold tabular-nums">0</span>
+            <span className="text-white text-xl sm:text-2xl font-semibold tabular-nums">{display ? fmt(display.reposts) : "-"}</span>
             <span className="text-[hsl(0,0%,42%)] text-xs whitespace-nowrap">Reposts</span>
           </div>
           <div className="flex flex-col gap-1 px-5 sm:px-7 border-l border-[hsl(0,0%,20%)]">
-            <span className="text-white text-xl sm:text-2xl font-semibold tabular-nums">0</span>
+            <span className="text-white text-xl sm:text-2xl font-semibold tabular-nums">{display ? fmt(display.likes) : "-"}</span>
             <span className="text-[hsl(0,0%,42%)] text-xs whitespace-nowrap">Likes</span>
           </div>
           <div className="flex flex-col gap-1 pl-5 sm:pl-7 border-l border-[hsl(0,0%,20%)]">
-            <span className="text-white text-xl sm:text-2xl font-semibold tabular-nums">0</span>
+            <span className="text-white text-xl sm:text-2xl font-semibold tabular-nums">{display ? fmt(display.comments) : "-"}</span>
             <span className="text-[hsl(0,0%,42%)] text-xs whitespace-nowrap">Comments</span>
           </div>
         </div>
@@ -470,6 +487,7 @@ export default function ArtistsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [visibilityFilter, setVisibilityFilter] = useState<"all" | "public" | "private">("all");
   const [tracks, setTracks] = useState<Track[]>([]);
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
 
   const handleUpdate = (updatedTrack: Track) => {
     setTracks(prev =>
@@ -488,6 +506,26 @@ export default function ArtistsPage() {
       }
     };
     fetchTracks();
+  }, []);
+
+  // Try to fetch aggregated analytics from backend. If the endpoint is
+  // unavailable, we leave `analytics` null so the header will compute
+  // totals from individual tracks (or show "-" if no data).
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const a = await trackService.getMyAnalytics();
+        if (!mounted) return;
+        setAnalytics(a);
+      } catch (err) {
+        // Endpoint may not exist yet; keep analytics as null to allow
+        // fallback computation or a dash in the UI.
+        if (!mounted) return;
+        setAnalytics(null);
+      }
+    })();
+    return () => { mounted = false; };
   }, []);
 
   const filteredTracks = useMemo(() => {
@@ -520,7 +558,7 @@ export default function ArtistsPage() {
         <UploadBanner />
 
         <div className="flex-1 overflow-y-auto overflow-x-visible">
-          <StudioHeader />
+          <StudioHeader analytics={analytics} tracks={tracks} />
 
           {/* Tabs — horizontally scrollable on mobile */}
           <div data-testid="artists-page-tabs" className="flex items-center gap-0 border-b border-[hsl(0,0%,17%)] px-3 sm:px-6 mb-5 overflow-x-auto scrollbar-none">
