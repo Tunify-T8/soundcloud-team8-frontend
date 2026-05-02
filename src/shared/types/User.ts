@@ -240,10 +240,16 @@ export interface BlockedUser {
 }
 
 export interface BlockedUsersResponse {
-  page: number;
-  limit: number;
-  total: number;
-  blockedUsers: BlockedUser[];
+  data: {
+    blockId: string;
+    blockedAt: string;
+    user: {
+      id: string;
+      username: string;
+      displayName?: string | null;
+      avatarUrl?: string | null;
+    };
+  }[];
 }
 
 // Suggested users (GET /users/me/suggested)
