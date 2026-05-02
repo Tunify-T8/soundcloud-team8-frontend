@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
+
 import CreatePlaylistOverlay from "../components/CreatePlaylistOverlay";
 import { playlistService } from "../../../libraryService";
 
@@ -30,21 +31,27 @@ describe("CreatePlaylistOverlay", () => {
     render(
       <CreatePlaylistOverlay isOpen={false} onClose={vi.fn()} track={baseTrack} />,
     );
+
     expect(screen.queryByText(/create a playlist/i)).not.toBeInTheDocument();
   });
 
-  it("adds track to existing playlist", async () => {
+  it("adds a track to an existing playlist", async () => {
     mockedPlaylistService.getMyCollections.mockResolvedValue({
       data: [{ id: "pl-1", title: "My Playlist", trackCount: 2 }],
-    } as any);
+    } as never);
     mockedPlaylistService.addTrack.mockResolvedValue(true as never);
 
     render(
-      <CreatePlaylistOverlay isOpen onClose={vi.fn()} track={baseTrack} />,
+      <CreatePlaylistOverlay
+        isOpen
+        onClose={vi.fn()}
+        track={baseTrack}
+        autoAddTrackId="track-1"
+      />,
     );
 
-    expect(await screen.findByText("Add to playlist")).toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole("button", { name: /add to playlist/i })[1]);
+    expect(await screen.findByText("My Playlist")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
     await waitFor(() => {
       expect(mockedPlaylistService.addTrack).toHaveBeenCalledWith("pl-1", {
@@ -53,8 +60,8 @@ describe("CreatePlaylistOverlay", () => {
     });
   });
 
-  it("creates a playlist and auto-adds the track", async () => {
-    mockedPlaylistService.getMyCollections.mockResolvedValue({ data: [] } as any);
+  it("creates a playlist and auto-adds the selected track", async () => {
+    mockedPlaylistService.getMyCollections.mockResolvedValue({ data: [] } as never);
     mockedPlaylistService.createCollection.mockResolvedValue({ id: "pl-new" } as never);
     mockedPlaylistService.addTrack.mockResolvedValue(true as never);
 
@@ -67,12 +74,18 @@ describe("CreatePlaylistOverlay", () => {
       />,
     );
 
-    const titleInput = (await screen.findAllByRole("textbox"))[0];
+    const titleInput = screen.getAllByRole("textbox")[0];
     fireEvent.change(titleInput, { target: { value: "Road Mix" } });
     fireEvent.click(screen.getByRole("button", { name: /save/i }));
 
     await waitFor(() => {
-      expect(mockedPlaylistService.createCollection).toHaveBeenCalled();
+      expect(mockedPlaylistService.createCollection).toHaveBeenCalledWith({
+        title: "Road Mix",
+        type: "PLAYLIST",
+        privacy: "public",
+        description: undefined,
+        coverUrl: undefined,
+      });
       expect(mockedPlaylistService.addTrack).toHaveBeenCalledWith("pl-new", {
         trackId: "track-1",
       });

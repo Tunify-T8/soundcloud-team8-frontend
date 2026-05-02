@@ -21,10 +21,12 @@ describe("EditInfo", () => {
     expect(addLinkButton).toBeDefined();
     fireEvent.click(addLinkButton!);
     expect(
-      screen.getByPlaceholderText(/https:\/\/example.com\/your-handle/i),
+      screen.getByPlaceholderText(/web or email address/i),
     ).toBeInTheDocument();
-    expect(screen.getByDisplayValue("INSTAGRAM")).toBeInTheDocument();
-    expect(screen.getByText(/add another link/i)).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Instagram")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /^add link$/i }),
+    ).toBeInTheDocument();
   });
 
   it("calls onClick when Cancel is clicked", () => {

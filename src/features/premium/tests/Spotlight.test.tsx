@@ -19,7 +19,7 @@ describe("Spotlight Component", () => {
   it("shows promo by default", () => {
     render(<Spotlight />);
     expect(
-      screen.getByText("Get more plays with Spotlight")
+      screen.getByText("Get more plays with Spotlight!")
     ).toBeInTheDocument();
   });
 
