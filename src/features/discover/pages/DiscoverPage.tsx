@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import { motion, type Variants } from "framer-motion"; // Imported as type
 import SideBar from "@/components/layout/Sidebar";
 import type {
   DiscoverArtist,
@@ -23,6 +24,35 @@ import type { Track } from "@/shared/types/Track";
 
 const DISCOVER_CACHE_KEY = "discover_page_cache_v1";
 
+// --- Animation Variants ---
+const pageVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15, // Cascades the entrance of each section
+    },
+  },
+};
+
+const sectionVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: "easeOut" },
+  },
+};
+
+const sidebarVariants: Variants = {
+  hidden: { opacity: 0, x: 30 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.6, delay: 0.4, ease: "easeOut" },
+  },
+};
+
 type DiscoverPageCache = {
   discoverTracks: DiscoverTrack[];
   albumTracks: DiscoverTrack[];
@@ -34,7 +64,6 @@ type DiscoverPageCache = {
 
 function readDiscoverCache(): DiscoverPageCache | null {
   if (typeof window === "undefined") return null;
-
   try {
     const raw = window.sessionStorage.getItem(DISCOVER_CACHE_KEY);
     return raw ? (JSON.parse(raw) as DiscoverPageCache) : null;
@@ -45,12 +74,9 @@ function readDiscoverCache(): DiscoverPageCache | null {
 
 function writeDiscoverCache(cache: DiscoverPageCache) {
   if (typeof window === "undefined") return;
-
   try {
     window.sessionStorage.setItem(DISCOVER_CACHE_KEY, JSON.stringify(cache));
-  } catch {
-    // Ignore cache write failures.
-  }
+  } catch {}
 }
 
 const RECENTLY_PLAYED_KEY = "recentlyPlayed";
@@ -65,12 +91,10 @@ type RecentlyPlayedEntry = {
 
 function loadRecentlyPlayedFromStorage(): DiscoverTrack[] {
   if (typeof window === "undefined") return [];
-
   try {
     const raw = localStorage.getItem(RECENTLY_PLAYED_KEY);
     if (!raw) return [];
     const entries = JSON.parse(raw) as RecentlyPlayedEntry[];
-
     return entries
       .filter((entry) => (entry.entityType ?? "track") === "track")
       .map((entry) => ({
@@ -127,11 +151,11 @@ export default function DiscoverPage() {
   const [isLoading, setIsLoading] = useState(!initialCache);
   const [error, setError] = useState<string | null>(null);
   const { me } = useMe();
+  
   usePlayContext({ contextType: "feed", contextId: me?.id ?? "" });
 
   useEffect(() => {
     let isMounted = true;
-
     const fetchDiscoverData = async () => {
       try {
         setError(null);
@@ -146,28 +170,23 @@ export default function DiscoverPage() {
         if (!isMounted) return;
 
         const nextDiscoverTracks =
-          results[0].status === "fulfilled" &&
-          Array.isArray(results[0].value.items)
+          results[0].status === "fulfilled" && Array.isArray(results[0].value.items)
             ? results[0].value.items
             : discoverTracks;
         const nextMadeForYouTracks =
-          results[1].status === "fulfilled" &&
-          Array.isArray(results[1].value.data)
+          results[1].status === "fulfilled" && Array.isArray(results[1].value.data)
             ? results[1].value.data.map(mapRecommendationToDiscoverTrack)
             : madeForYouTracks;
         const nextArtistsToWatchTracks =
-          results[2].status === "fulfilled" &&
-          Array.isArray(results[2].value.items)
+          results[2].status === "fulfilled" && Array.isArray(results[2].value.items)
             ? results[2].value.items
             : artistsToWatchTracks;
         const nextAlbumTracks =
-          results[3].status === "fulfilled" &&
-          Array.isArray(results[3].value.items)
+          results[3].status === "fulfilled" && Array.isArray(results[3].value.items)
             ? results[3].value.items
             : albumTracks;
         const nextTrendingByGenreTracks =
-          results[4].status === "fulfilled" &&
-          Array.isArray(results[4].value.items)
+          results[4].status === "fulfilled" && Array.isArray(results[4].value.items)
             ? results[4].value.items
             : trendingByGenreTracks;
 
@@ -189,53 +208,33 @@ export default function DiscoverPage() {
         if (!isMounted || initialCache) return;
         setError("Could not load discover data.");
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        if (isMounted) setIsLoading(false);
       }
     };
-
     void fetchDiscoverData();
-
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, []);
 
   useEffect(() => {
     let isMounted = true;
-
-    trackService
-      .getUploadedTracks()
-      .then((tracks) => {
-        if (!isMounted) return;
-        const nextUploadedTracks = Array.isArray(tracks) ? tracks : [];
-        setUploadedTracks(nextUploadedTracks);
-        writeDiscoverCache({
-          discoverTracks,
-          albumTracks,
-          madeForYouTracks,
-          trendingByGenreTracks,
-          artistsToWatchTracks,
-          uploadedTracks: nextUploadedTracks,
-        });
-      })
-      .catch(() => {});
-
-    return () => {
-      isMounted = false;
-    };
-  }, [
-    discoverTracks,
-    albumTracks,
-    madeForYouTracks,
-    trendingByGenreTracks,
-    artistsToWatchTracks,
-  ]);
+    trackService.getUploadedTracks().then((tracks) => {
+      if (!isMounted) return;
+      const nextUploadedTracks = Array.isArray(tracks) ? tracks : [];
+      setUploadedTracks(nextUploadedTracks);
+      writeDiscoverCache({
+        discoverTracks,
+        albumTracks,
+        madeForYouTracks,
+        trendingByGenreTracks,
+        artistsToWatchTracks,
+        uploadedTracks: nextUploadedTracks,
+      });
+    }).catch(() => {});
+    return () => { isMounted = false; };
+  }, [discoverTracks, albumTracks, madeForYouTracks, trendingByGenreTracks, artistsToWatchTracks]);
 
   const latestUploadedTrack = useMemo(() => {
     if (uploadedTracks.length === 0) return null;
-
     return [...uploadedTracks].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
     )[0] ?? null;
@@ -244,14 +243,8 @@ export default function DiscoverPage() {
   const discoverSections = [
     { title: "More of what you like", tracks: discoverTracks },
     { title: "Recently Played", tracks: recentlyPlayedTracks },
-    {
-      title: "Albums for you",
-      tracks: albumTracks,
-    },
-    {
-      title: "Made for you",
-      tracks: madeForYouTracks,
-    },
+    { title: "Albums for you", tracks: albumTracks },
+    { title: "Made for you", tracks: madeForYouTracks },
     { title: "Trending by genre", tracks: trendingByGenreTracks },
   ];
 
@@ -261,7 +254,12 @@ export default function DiscoverPage() {
     artistsToWatchTracks.length > 0;
 
   return (
-    <div className="min-h-screen bg-[#0b0b0b] text-white">
+    <motion.div 
+      initial="hidden"
+      animate="visible"
+      variants={pageVariants}
+      className="min-h-screen bg-[#0b0b0b] text-white"
+    >
       <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 px-3 py-4 sm:px-6 sm:py-8 xl:flex-row xl:gap-10 xl:px-8">
         <main className="min-w-0 flex-1 overflow-hidden">
           {isLoading && !hasAnyTracks ? (
@@ -272,65 +270,44 @@ export default function DiscoverPage() {
             <p className="text-zinc-400">No discover tracks yet.</p>
           ) : (
             <>
-              {latestUploadedTrack ? (
-                <LatestUploadSection
-                  track={latestUploadedTrack}
-                  artistName={
-                    me?.displayName || me?.username || latestUploadedTrack.artist
-                  }
-                  onTrackUpdated={(updatedTrack) => {
-                    setUploadedTracks((prev) => {
-                      const nextUploadedTracks = prev.map((track) =>
-                        track.id === updatedTrack.id ? updatedTrack : track,
-                      );
-                      writeDiscoverCache({
-                        discoverTracks,
-                        albumTracks,
-                        madeForYouTracks,
-                        trendingByGenreTracks,
-                        artistsToWatchTracks,
-                        uploadedTracks: nextUploadedTracks,
-                      });
-                      return nextUploadedTracks;
-                    });
-                  }}
-                  onTrackDeleted={(trackId) => {
-                    setUploadedTracks((prev) => {
-                      const nextUploadedTracks = prev.filter(
-                        (track) => track.id !== trackId,
-                      );
-                      writeDiscoverCache({
-                        discoverTracks,
-                        albumTracks,
-                        madeForYouTracks,
-                        trendingByGenreTracks,
-                        artistsToWatchTracks,
-                        uploadedTracks: nextUploadedTracks,
-                      });
-                      return nextUploadedTracks;
-                    });
-                  }}
-                />
-              ) : null}
+              {latestUploadedTrack && (
+                <motion.div variants={sectionVariants}>
+                  <LatestUploadSection
+                    track={latestUploadedTrack}
+                    artistName={me?.displayName || me?.username || latestUploadedTrack.artist}
+                    onTrackUpdated={(updatedTrack) => {
+                      setUploadedTracks((prev) => prev.map((t) => t.id === updatedTrack.id ? updatedTrack : t));
+                    }}
+                    onTrackDeleted={(trackId) => {
+                      setUploadedTracks((prev) => prev.filter((t) => t.id !== trackId));
+                    }}
+                  />
+                </motion.div>
+              )}
+              
               {discoverSections.map((section) => (
-                <DiscoverSection
-                  key={section.title}
-                  title={section.title}
-                  tracks={section.tracks}
-                />
+                <motion.div key={section.title} variants={sectionVariants}>
+                  <DiscoverSection title={section.title} tracks={section.tracks} />
+                </motion.div>
               ))}
-              <ArtistsToWatchSection
-                title="Artists to watch out for"
-                artists={artistsToWatchTracks}
-              />
+
+              <motion.div variants={sectionVariants}>
+                <ArtistsToWatchSection
+                  title="Artists to watch out for"
+                  artists={artistsToWatchTracks}
+                />
+              </motion.div>
             </>
           )}
         </main>
 
-        <aside className="hidden xl:sticky xl:top-6 xl:block xl:h-[calc(100vh-3rem)] xl:w-90 xl:shrink-0 xl:overflow-y-auto xl:pr-2 xl:[scrollbar-width:none] xl:[-ms-overflow-style:none] xl:[&::-webkit-scrollbar]:hidden">
+        <motion.aside 
+          variants={sidebarVariants}
+          className="hidden xl:sticky xl:top-6 xl:block xl:h-[calc(100vh-3rem)] xl:w-90 xl:shrink-0 xl:overflow-y-auto xl:pr-2 xl:[scrollbar-width:none] xl:[-ms-overflow-style:none] xl:[&::-webkit-scrollbar]:hidden"
+        >
           <SideBar />
-        </aside>
+        </motion.aside>
       </div>
-    </div>
+    </motion.div>
   );
 }
