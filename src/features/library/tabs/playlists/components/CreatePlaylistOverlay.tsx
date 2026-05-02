@@ -9,6 +9,7 @@ interface CreatePlaylistOverlayProps {
   track: TrackItem;
   defaultCoverUrl?: string;
   autoAddTrackId?: string;
+  selectedTrackIds?: string[];
 }
 
 export default function CreatePlaylistOverlay({
@@ -17,12 +18,21 @@ export default function CreatePlaylistOverlay({
   track,
   defaultCoverUrl,
   autoAddTrackId,
+  selectedTrackIds,
 }: CreatePlaylistOverlayProps) {
   const [existingPlaylists, setExistingPlaylists] = useState<
     CollectionPreview[]
   >([]);
   const [loadingPlaylists, setLoadingPlaylists] = useState(false);
   const hasPlaylists = existingPlaylists.length > 0;
+  const trackIdsToAdd = useMemo(() => {
+    const ids = selectedTrackIds?.length
+      ? selectedTrackIds
+      : autoAddTrackId
+        ? [autoAddTrackId]
+        : [];
+    return Array.from(new Set(ids.filter(Boolean)));
+  }, [autoAddTrackId, selectedTrackIds]);
 
   const [activeTab, setActiveTab] = useState<"add" | "create">("create");
   const [filterQuery, setFilterQuery] = useState("");
@@ -55,15 +65,17 @@ export default function CreatePlaylistOverlay({
   }, [filterQuery, existingPlaylists]);
 
   const handleAddToPlaylist = async (playlistId: string) => {
-    if (!track?.id) return;
+    if (!trackIdsToAdd.length) return;
     setAddingToPlaylistId(playlistId);
     setAddToPlaylistSuccess(null);
     setAddToPlaylistError(null);
-    const ok = await playlistService.addTrack(playlistId, {
-      trackId: track.id,
-    });
+    const results = await Promise.all(
+      trackIdsToAdd.map((trackId) =>
+        playlistService.addTrack(playlistId, { trackId }),
+      ),
+    );
     setAddingToPlaylistId(null);
-    if (ok) {
+    if (results.every(Boolean)) {
       setAddToPlaylistSuccess(playlistId);
     } else {
       setAddToPlaylistError(playlistId);
@@ -104,9 +116,13 @@ export default function CreatePlaylistOverlay({
       setSuccess("Playlist created!");
       setPlaylistTitle("");
       setTitleTouched(false);
-      // Auto-add track if requested
-      if (autoAddTrackId) {
-        await playlistService.addTrack(res.id, { trackId: autoAddTrackId });
+      // Auto-add track(s) if requested
+      if (trackIdsToAdd.length) {
+        await Promise.all(
+          trackIdsToAdd.map((trackId) =>
+            playlistService.addTrack(res.id, { trackId }),
+          ),
+        );
       }
       // Optionally refresh playlists here
     } else {
@@ -133,8 +149,8 @@ export default function CreatePlaylistOverlay({
       const res = await playlistService.getMyCollections(1, 20, "PLAYLIST");
       if (!mounted) return;
 
-      const playlists = res?.data ?? [];
-      const ownedPlaylists = playlists.filter((playlist) => !playlist.isLiked);
+      const playlists: CollectionPreview[] = res?.data ?? [];
+      const ownedPlaylists = playlists.filter((playlist: CollectionPreview) => !playlist.isLiked);
       setExistingPlaylists(ownedPlaylists);
       setActiveTab(ownedPlaylists.length > 0 ? "add" : "create");
       setLoadingPlaylists(false);

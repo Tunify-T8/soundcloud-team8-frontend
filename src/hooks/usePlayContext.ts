@@ -5,7 +5,9 @@ import type { contextType, repeatMode } from "@/features/player-core/types";
 
 interface UsePlayContextOptions {
   contextType: contextType;
-  contextId: string;
+  // contextId may be undefined while user/profile data is loading —
+  // in that case we should avoid registering an empty playback context.
+  contextId?: string;
   shuffle?: boolean;
   repeat?: repeatMode;
 }
@@ -39,7 +41,10 @@ export function usePlayContext({
   const activeContext = useSelector(selectPlayContext);
 
   // Register this page's context when the page mounts or context IDs change.
+  // If `contextId` is not yet available (e.g. user/profile still loading),
+  // skip registering until a real id is provided.
   useEffect(() => {
+    if (!contextId) return;
     dispatch(setPlayContext({ contextType, contextId, shuffle, repeat }));
   }, [contextType, contextId, shuffle, repeat, dispatch]);
 

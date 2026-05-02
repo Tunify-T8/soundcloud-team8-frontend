@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X, Download, RefreshCw, ChevronDown } from "lucide-react";
 import type { Track } from "../../../shared/types/Track";
 import storefrontImg from "@/assets/storefront.png";
@@ -9,7 +9,19 @@ interface EditTrackDrawerProps {
   track: Track;
   onClose: () => void;
   onUpdate: (updatedTrack: Track) => void;
+  onSaved?: (updatedTrack: Track) => void;
 }
+
+const defaultToggles = {
+  downloads: false,
+  offline: true,
+  rss: true,
+  embed: true,
+  appPlayback: true,
+  comments: true,
+  showComments: true,
+  insights: true,
+};
 
 function InfoIcon() {
   return (
@@ -76,7 +88,7 @@ function Accordion({
   );
 }
 
-export default function EditTrackDrawer({ track, onClose, onUpdate }: EditTrackDrawerProps) {
+export default function EditTrackDrawer({ track, onClose, onUpdate, onSaved }: EditTrackDrawerProps) {
   const [activeTab, setActiveTab] = useState<"details" | "advanced" | "storefront">("details");
   const [artworkFile, setArtworkFile] = useState<File | null>(null);
   const [artworkPreview, setArtworkPreview] = useState<string | null>(null);
@@ -88,16 +100,20 @@ export default function EditTrackDrawer({ track, onClose, onUpdate }: EditTrackD
   const [privacy, setPrivacy] = useState<"public" | "private">(track.visibility ?? "private");
   const [license, setLicense] = useState<"all" | "cc">("all");
 
-  const [toggles, setToggles] = useState({
-    downloads: false,
-    offline: true,
-    rss: true,
-    embed: true,
-    appPlayback: true,
-    comments: true,
-    showComments: true,
-    insights: true,
-  });
+  const [toggles, setToggles] = useState(defaultToggles);
+
+  useEffect(() => {
+    setActiveTab("details");
+    setArtworkFile(null);
+    setArtworkPreview(null);
+    setTitle(track.title);
+    setGenre(track.genre);
+    setTags(track.tags?.join(", ") ?? "");
+    setDescription(track.description ?? "");
+    setPrivacy((track.visibility ?? "private") as "public" | "private");
+    setLicense("all");
+    setToggles(defaultToggles);
+  }, [track]);
 
   type TogglesKey = keyof typeof toggles;
   const setToggle = (key: TogglesKey, val: boolean) =>
@@ -124,12 +140,13 @@ export default function EditTrackDrawer({ track, onClose, onUpdate }: EditTrackD
         artwork: artworkFile,
       });
       onUpdate(updated);
+      if (onSaved) {
+        onSaved(updated);
+        return;
+      }
+      onClose();
      } catch (err: any) {
       console.error("Failed to update track:", err);
-     } 
-     finally 
-    {
-      onClose(); 
      }
   };
 
