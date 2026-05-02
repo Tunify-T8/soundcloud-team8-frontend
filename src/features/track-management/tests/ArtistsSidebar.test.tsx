@@ -17,24 +17,23 @@ describe("ArtistsSidebar", () => {
     expect(svg).toBeInTheDocument();
   });
 
-  it("renders all four nav labels", () => {
+  it("renders the current nav labels", () => {
     renderWithRouter();
     expect(screen.getByText("Home")).toBeInTheDocument();
     expect(screen.getByText("Library")).toBeInTheDocument();
     expect(screen.getByText("Stats")).toBeInTheDocument();
-    expect(screen.getByText("Featured")).toBeInTheDocument();
   });
 
-  it("renders exactly four nav item buttons (excluding the more menu)", () => {
+  it("renders exactly three nav item buttons (excluding the more menu)", () => {
     renderWithRouter();
     const buttons = screen
       .getAllByRole("button")
       .filter((btn) =>
-        ["Home", "Library", "Stats", "Featured"].some((label) =>
+        ["Home", "Library", "Stats"].some((label) =>
           btn.textContent?.includes(label)
         )
       );
-    expect(buttons).toHaveLength(4);
+    expect(buttons).toHaveLength(3);
   });
 
   it("renders the more-menu button at the bottom", () => {

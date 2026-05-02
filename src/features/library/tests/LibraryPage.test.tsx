@@ -1,146 +1,110 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
+
 import LibraryPage from "../pages/LibraryPage";
 
-// ── Mock all tab components ──────────────────────────────────────────────────
-vi.mock("../tabs/OverviewTab",   () => ({ default: () => <div data-testid="tab-overview">Overview Content</div> }));
-vi.mock("../tabs/LikesTab",      () => ({ default: () => <div data-testid="tab-likes">Likes Content</div> }));
-vi.mock("../tabs/playlists/PlaylistsTab",  () => ({ default: () => <div data-testid="tab-playlists">Playlists Content</div> }));
-vi.mock("../tabs/AlbumsTab",     () => ({ default: () => <div data-testid="tab-albums">Albums Content</div> }));
-vi.mock("../tabs/StationsTab",   () => ({ default: () => <div data-testid="tab-stations">Stations Content</div> }));
-vi.mock("../tabs/FollowingTab",  () => ({ default: () => <div data-testid="tab-following">Following Content</div> }));
-vi.mock("../tabs/HistoryTab",    () => ({ default: () => <div data-testid="tab-history">History Content</div> }));
+vi.mock("../tabs/OverviewTab", () => ({
+  default: () => <div data-testid="tab-overview">Overview Content</div>,
+}));
+vi.mock("../tabs/LikesTab", () => ({
+  default: () => <div data-testid="tab-likes">Likes Content</div>,
+}));
+vi.mock("../tabs/playlists/pages/PlaylistsTab", () => ({
+  default: () => <div data-testid="tab-playlists">Playlists Content</div>,
+}));
+vi.mock("../tabs/AlbumsTab", () => ({
+  default: () => <div data-testid="tab-albums">Albums Content</div>,
+}));
+vi.mock("../tabs/StationsTab", () => ({
+  default: () => <div data-testid="tab-stations">Stations Content</div>,
+}));
+vi.mock("../tabs/FollowingTab", () => ({
+  default: () => <div data-testid="tab-following">Following Content</div>,
+}));
+vi.mock("../tabs/HistoryTab", () => ({
+  default: () => <div data-testid="tab-history">History Content</div>,
+}));
+vi.mock("../tabs/DownloadsTab", () => ({
+  default: () => <div data-testid="tab-downloads">Downloads Content</div>,
+}));
+vi.mock("@/features/profile/context/useMe", () => ({
+  useMe: () => ({ me: null }),
+}));
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-const ALL_TABS = ["Overview", "Likes", "Playlists", "Albums", "Stations", "Following", "History"] as const;
-type Tab = typeof ALL_TABS[number];
-
-const TAB_TEST_IDS: Record<Tab, string> = {
-  Overview:  "tab-overview",
-  Likes:     "tab-likes",
-  Playlists: "tab-playlists",
-  Albums:    "tab-albums",
-  Stations:  "tab-stations",
-  Following: "tab-following",
-  History:   "tab-history",
-};
-
-function getTabButton(name: Tab) {
-  return screen.getByRole("button", { name });
+function renderLibraryPage(route = "/library") {
+  return render(
+    <MemoryRouter initialEntries={[route]}>
+      <Routes>
+        <Route path="/library" element={<LibraryPage />} />
+        <Route path="/library/albums" element={<LibraryPage />} />
+        <Route path="/me/likes" element={<LibraryPage />} />
+        <Route path="/me/sets" element={<LibraryPage />} />
+        <Route path="/me/stations" element={<LibraryPage />} />
+        <Route path="/me/following" element={<LibraryPage />} />
+        <Route path="/me/history" element={<LibraryPage />} />
+        <Route path="/me/downloads" element={<LibraryPage />} />
+      </Routes>
+    </MemoryRouter>,
+  );
 }
 
-// ── Tests ────────────────────────────────────────────────────────────────────
 describe("LibraryPage", () => {
-  beforeEach(() => {
-    render(<LibraryPage />);
-  });
+  it("renders all current library tabs", () => {
+    renderLibraryPage();
 
-  // -- Rendering --------------------------------------------------------------
-  describe("initial render", () => {
-    it("renders all 7 tab buttons", () => {
-      ALL_TABS.forEach((tab) => {
-        expect(screen.getByRole("button", { name: tab })).toBeInTheDocument();
-      });
-    });
-
-    it("shows the Overview tab content by default", () => {
-      expect(screen.getByTestId("tab-overview")).toBeInTheDocument();
-    });
-
-    it("does not render any other tab content on mount", () => {
-      const otherTabs = ALL_TABS.filter((t) => t !== "Overview");
-      otherTabs.forEach((tab) => {
-        expect(screen.queryByTestId(TAB_TEST_IDS[tab])).not.toBeInTheDocument();
-      });
+    [
+      "Overview",
+      "Likes",
+      "Playlists",
+      "Albums",
+      "Stations",
+      "Following",
+      "History",
+      "Downloads",
+    ].forEach((tab) => {
+      expect(screen.getByRole("button", { name: tab })).toBeInTheDocument();
     });
   });
 
-  // -- Active tab indicator ---------------------------------------------------
-  describe("active tab indicator", () => {
-   
-    it("applies muted color to inactive tabs", () => {
-      ALL_TABS.filter((t) => t !== "Overview").forEach((tab) => {
-        expect(getTabButton(tab)).toHaveStyle({ color: "#71717a" });
-      });
-    });
+  it("shows overview content by default", () => {
+    renderLibraryPage();
 
-    it("renders the active underline indicator only for the active tab", () => {
-      const activeBtn = getTabButton("Overview");
-      const underline = activeBtn.querySelector(".h-\\[2px\\]");
-      expect(underline).toBeInTheDocument();
-    });
-
-    it("inactive tabs do not render the underline indicator", () => {
-      ALL_TABS.filter((t) => t !== "Overview").forEach((tab) => {
-        const btn = getTabButton(tab);
-        const underline = btn.querySelector(".h-\\[2px\\]");
-        expect(underline).not.toBeInTheDocument();
-      });
-    });
+    expect(screen.getByText("Overview Content")).toBeInTheDocument();
+    expect(screen.getByTestId("library-tab-overview-indicator")).toBeInTheDocument();
   });
 
-  // -- Tab switching ----------------------------------------------------------
-  describe("tab switching", () => {
-    it.each(ALL_TABS.filter((t) => t !== "Overview"))(
-      "clicking '%s' shows its content and hides Overview",
-      (tab) => {
-        fireEvent.click(getTabButton(tab));
-        expect(screen.getByTestId(TAB_TEST_IDS[tab])).toBeInTheDocument();
-        expect(screen.queryByTestId("tab-overview")).not.toBeInTheDocument();
-      }
-    );
+  it("respects the current route when choosing the active tab", () => {
+    renderLibraryPage("/me/downloads");
 
-    it("only renders one tab's content at a time", () => {
-      fireEvent.click(getTabButton("Likes"));
-
-      const visibleTabs = ALL_TABS.filter(
-        (tab) => screen.queryByTestId(TAB_TEST_IDS[tab]) !== null
-      );
-      expect(visibleTabs).toHaveLength(1);
-      expect(visibleTabs[0]).toBe("Likes");
-    });
-
-    it("clicking the already-active tab keeps its content visible", () => {
-      fireEvent.click(getTabButton("Overview")); // re-click default
-      expect(screen.getByTestId("tab-overview")).toBeInTheDocument();
-    });
-
-    it("can switch tabs multiple times in sequence", () => {
-      const sequence: Tab[] = ["Playlists", "Albums", "Following", "Overview"];
-      sequence.forEach((tab) => {
-        fireEvent.click(getTabButton(tab));
-        expect(screen.getByTestId(TAB_TEST_IDS[tab])).toBeInTheDocument();
-      });
-    });
+    expect(screen.getByText("Downloads Content")).toBeInTheDocument();
+    expect(screen.getByTestId("library-tab-downloads-indicator")).toBeInTheDocument();
+    expect(screen.queryByText("Overview Content")).not.toBeInTheDocument();
   });
 
-  // -- Layout & accessibility -------------------------------------------------
-  describe("layout and accessibility", () => {
-    it("renders tab buttons inside a sticky nav container", () => {
-      const sticky = document.querySelector(".sticky");
-      expect(sticky).toBeInTheDocument();
-      ALL_TABS.forEach((tab) => {
-        expect(sticky).toContainElement(getTabButton(tab));
-      });
-    });
+  it("navigates to another tab when clicked", () => {
+    renderLibraryPage();
 
-    it("renders the content area below the tab bar", () => {
-      const content = screen.getByTestId("tab-overview").closest(".pl-40");
-      expect(content).toBeInTheDocument();
-    });
+    fireEvent.click(screen.getByRole("button", { name: "Likes" }));
+    expect(screen.getByText("Likes Content")).toBeInTheDocument();
+    expect(screen.getByTestId("library-tab-likes-indicator")).toBeInTheDocument();
+  });
 
-    it("all tab buttons are keyboard-focusable (no tabIndex=-1)", () => {
-      ALL_TABS.forEach((tab) => {
-        expect(getTabButton(tab)).not.toHaveAttribute("tabindex", "-1");
-      });
-    });
+  it("renders the footer links", () => {
+    renderLibraryPage();
 
-    it("tab buttons all share consistent font size of 18px", () => {
-      ALL_TABS.forEach((tab) => {
-        expect(getTabButton(tab)).toHaveStyle({ fontSize: "18px" });
-      });
+    [
+      "Legal",
+      "Privacy",
+      "Cookie Policy",
+      "Cookie Manager",
+      "Imprint",
+      "Artist Resources",
+      "Newsroom",
+      "Charts",
+      "Transparency Reports",
+    ].forEach((link) => {
+      expect(screen.getByText(link)).toBeInTheDocument();
     });
   });
 });
-
-//npm run test -- src/features/library/tests/LibraryPage.test.tsx

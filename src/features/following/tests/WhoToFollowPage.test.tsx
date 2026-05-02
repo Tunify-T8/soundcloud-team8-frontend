@@ -2,12 +2,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import WhoToFollowPage from "../pages/WhoToFollowPage";
 import { followingService } from "../followingService";
+import { feedService } from "@/features/feed/feedservice";
 import { notifySocialGraphUpdated } from "../../profile/socialGraphEvents";
 
 vi.mock("../followingService", () => ({
   followingService: {
-    getSuggestedUsers: vi.fn(),
     followUser: vi.fn(),
+  },
+}));
+
+vi.mock("@/features/feed/feedservice", () => ({
+  feedService: {
+    getSuggestedArtists: vi.fn(),
   },
 }));
 
@@ -24,7 +30,7 @@ vi.mock("../components/UserCard", () => ({
   ),
 }));
 
-const mockedGetSuggestedUsers = vi.mocked(followingService.getSuggestedUsers);
+const mockedGetSuggestedArtists = vi.mocked(feedService.getSuggestedArtists);
 const mockedFollowUser = vi.mocked(followingService.followUser);
 const mockedNotify = vi.mocked(notifySocialGraphUpdated);
 
@@ -38,7 +44,7 @@ afterEach(() => {
 
 describe("WhoToFollowPage", () => {
   it("shows loading while suggestions are pending", () => {
-    mockedGetSuggestedUsers.mockReturnValue(new Promise(() => {}));
+    mockedGetSuggestedArtists.mockReturnValue(new Promise(() => {}));
 
     render(<WhoToFollowPage />);
 
@@ -46,15 +52,10 @@ describe("WhoToFollowPage", () => {
   });
 
   it("renders suggestions and removes a user after following", async () => {
-    mockedGetSuggestedUsers.mockResolvedValue({
-      page: 1,
-      limit: 10,
-      total: 2,
-      users: [
-        { id: "user-1", username: "wavequeen", avatarUrl: null, coverUrl: null, role: "ARTIST", mutualFollowersCount: 2, tracksUploadedCount: 7, followersCount: 101, followingCount: 5 },
-        { id: "user-2", username: "bassline", avatarUrl: null, coverUrl: null, role: "LISTENER", mutualFollowersCount: 0, tracksUploadedCount: 0, followersCount: 12, followingCount: 3 },
-      ],
-    });
+    mockedGetSuggestedArtists.mockResolvedValue([
+      { id: "user-1", username: "wavequeen", avatarUrl: null, displayName: null, followersCount: 101, isCertified: false, isFollowing: false },
+      { id: "user-2", username: "bassline", avatarUrl: null, displayName: null, followersCount: 12, isCertified: false, isFollowing: false },
+    ]);
     mockedFollowUser.mockResolvedValue(undefined);
 
     render(<WhoToFollowPage />);
@@ -66,7 +67,7 @@ describe("WhoToFollowPage", () => {
     expect(screen.getByText("wavequeen")).toBeInTheDocument();
     expect(screen.getByText("bassline")).toBeInTheDocument();
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Follow" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "follow" })[0]);
 
     await waitFor(() => {
       expect(mockedFollowUser).toHaveBeenCalledWith("user-1");
@@ -76,7 +77,7 @@ describe("WhoToFollowPage", () => {
   });
 
   it("shows empty state when no suggestions are available", async () => {
-    mockedGetSuggestedUsers.mockResolvedValue({ page: 1, limit: 10, total: 0, users: [] });
+    mockedGetSuggestedArtists.mockResolvedValue([]);
 
     render(<WhoToFollowPage />);
 

@@ -1,6 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import DiscoverPage from "../../pages/DiscoverPage";
+import { renderWithProviders } from "@/test/renderWithProviders";
 import {
   getDiscoverTracks,
   getRecommendations,
@@ -17,6 +19,20 @@ vi.mock("../../discoverService", () => ({
   getTrendingTracks: vi.fn(),
 }));
 
+vi.mock("@/features/track-management/trackService", () => ({
+  trackService: {
+    getUploadedTracks: vi.fn().mockResolvedValue([]),
+  },
+}));
+
+vi.mock("@/features/profile/context/useMe", () => ({
+  useMe: () => ({ me: { id: "me-1", username: "nada" } }),
+}));
+
+vi.mock("@/hooks/usePlayContext", () => ({
+  usePlayContext: vi.fn(),
+}));
+
 vi.mock("@/components/layout/Sidebar", () => ({
   default: () => <div data-testid="sidebar">Sidebar</div>,
 }));
@@ -30,7 +46,7 @@ const mockedGetTrendingTracks = vi.mocked(getTrendingTracks);
 const mockDiscoverResponse = {
   items: [
     {
-      id: "6e0a1fa3-dae1-4b20-aef0-8cc2a2cd7955",
+      id: "track-1",
       title: "Rock Revolution",
       artist: "Jazz Artist",
       coverUrl: "https://example.com/rock-revolution-cover.jpg",
@@ -38,16 +54,6 @@ const mockDiscoverResponse = {
       durationSeconds: 199,
       genre: "Rock",
       createdAt: "2026-03-31T22:01:29.583Z",
-    },
-    {
-      id: "4a6b2d9f-1a95-4c97-9b77-6c8cb4b5402d",
-      title: "Midnight Current",
-      artist: "Ava Mix",
-      coverUrl: "https://example.com/midnight-current-cover.jpg",
-      waveformUrl: "https://example.com/midnight-current-waveform.png",
-      durationSeconds: 214,
-      genre: "Electronic",
-      createdAt: "2026-04-01T19:20:10.000Z",
     },
   ],
   page: 1,
@@ -59,29 +65,9 @@ const mockDiscoverResponse = {
 const mockRecommendationsResponse = {
   data: [
     {
-      trackId: "6e0a1fa3-dae1-4b20-aef0-8cc2a2cd7955",
+      trackId: "track-2",
       artistId: "artist-1",
       artistAvatarUrl: "https://example.com/artist-1.jpg",
-      artistIsCertified: false,
-      title: "Rock Revolution",
-      artist: "Jazz Artist",
-      genre: "Rock",
-      durationInSeconds: 199,
-      coverUrl: "https://example.com/rock-revolution-cover.jpg",
-      waveformUrl: "https://example.com/rock-revolution-waveform.png",
-      numberOfComments: 0,
-      numberOfLikes: 0,
-      numberOfReposts: 0,
-      numberOfListens: 0,
-      isLiked: false,
-      isReposted: false,
-      reason: "Because you like Rock",
-      reasonType: "GENRE",
-    },
-    {
-      trackId: "4a6b2d9f-1a95-4c97-9b77-6c8cb4b5402d",
-      artistId: "artist-2",
-      artistAvatarUrl: "https://example.com/artist-2.jpg",
       artistIsCertified: false,
       title: "Midnight Current",
       artist: "Ava Mix",
@@ -113,13 +99,6 @@ const mockSuggestedArtistsResponse = {
       followersCount: 5550000,
       isVerified: true,
     },
-    {
-      id: "artist-2",
-      name: "Stranger Things",
-      avatarUrl: "https://example.com/stranger-things.jpg",
-      followersCount: 2475,
-      isVerified: false,
-    },
   ],
   page: 1,
   limit: 10,
@@ -129,82 +108,43 @@ const mockSuggestedArtistsResponse = {
 describe("DiscoverPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedGetDiscoverTracks.mockResolvedValue(mockDiscoverResponse);
-    mockedGetRecommendations.mockResolvedValue(mockRecommendationsResponse);
-    mockedGetSuggestedArtists.mockResolvedValue(mockSuggestedArtistsResponse);
-    mockedGetTrendingAlbums.mockResolvedValue(mockDiscoverResponse);
-    mockedGetTrendingTracks.mockResolvedValue(mockDiscoverResponse);
+    sessionStorage.clear();
+    localStorage.clear();
+    mockedGetDiscoverTracks.mockResolvedValue(mockDiscoverResponse as never);
+    mockedGetRecommendations.mockResolvedValue(mockRecommendationsResponse as never);
+    mockedGetSuggestedArtists.mockResolvedValue(mockSuggestedArtistsResponse as never);
+    mockedGetTrendingAlbums.mockResolvedValue(mockDiscoverResponse as never);
+    mockedGetTrendingTracks.mockResolvedValue(mockDiscoverResponse as never);
   });
 
-  it("renders all discover section titles", async () => {
-    render(<DiscoverPage />);
+  it("renders the main discover sections and sidebar", async () => {
+    renderWithProviders(<DiscoverPage />);
 
-    expect(
-      await screen.findByRole("heading", { name: "More of what you like" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Recently Played" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Trending by genre" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Albums for you" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Made for you" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Artists to watch out for" }),
-    ).toBeInTheDocument();
-  });
-
-  it("renders sidebar", async () => {
-    render(<DiscoverPage />);
-
+    expect(await screen.findByRole("heading", { name: "More of what you like" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Recently Played" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Albums for you" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Made for you" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Trending by genre" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Artists to watch out for" })).toBeInTheDocument();
     expect(screen.getByTestId("sidebar")).toBeInTheDocument();
-    expect(
-      await screen.findByRole("heading", { name: "More of what you like" }),
-    ).toBeInTheDocument();
   });
 
-  it("renders discover tracks from API response", async () => {
-    render(<DiscoverPage />);
+  it("renders tracks returned from the API", async () => {
+    renderWithProviders(<DiscoverPage />);
 
-    expect(
-      (await screen.findAllByText("Rock Revolution")).length,
-    ).toBeGreaterThan(0);
+    expect((await screen.findAllByText("Rock Revolution")).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Midnight Current").length).toBeGreaterThan(0);
   });
 
-  it("renders an empty state when API returns no items", async () => {
-    const emptyDiscoverResponse = {
-      ...mockDiscoverResponse,
-      items: [],
-    };
+  it("renders the empty state when all sources return no items", async () => {
+    mockedGetDiscoverTracks.mockResolvedValueOnce({ ...mockDiscoverResponse, items: [] } as never);
+    mockedGetRecommendations.mockResolvedValueOnce({ ...mockRecommendationsResponse, data: [] } as never);
+    mockedGetSuggestedArtists.mockResolvedValueOnce({ ...mockSuggestedArtistsResponse, items: [] } as never);
+    mockedGetTrendingAlbums.mockResolvedValueOnce({ ...mockDiscoverResponse, items: [] } as never);
+    mockedGetTrendingTracks.mockResolvedValueOnce({ ...mockDiscoverResponse, items: [] } as never);
 
-    const emptyRecommendationsResponse = {
-      ...mockRecommendationsResponse,
-      data: [],
-    };
+    renderWithProviders(<DiscoverPage />);
 
-    mockedGetRecommendations.mockResolvedValueOnce({
-      ...emptyRecommendationsResponse,
-    });
-    mockedGetDiscoverTracks.mockResolvedValueOnce({
-      ...emptyDiscoverResponse,
-    });
-    mockedGetSuggestedArtists.mockResolvedValueOnce({
-      ...mockSuggestedArtistsResponse,
-      items: [],
-    });
-    mockedGetTrendingAlbums.mockResolvedValueOnce({ ...emptyDiscoverResponse });
-    mockedGetTrendingTracks.mockResolvedValueOnce({ ...emptyDiscoverResponse });
-
-    render(<DiscoverPage />);
-
-    expect(
-      await screen.findByText("No discover tracks yet."),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("No discover tracks yet.")).toBeInTheDocument();
   });
 });

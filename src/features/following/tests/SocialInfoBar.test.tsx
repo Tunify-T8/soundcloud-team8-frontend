@@ -18,7 +18,7 @@ describe("SocialInfoBar", () => {
     expect(screen.getByTestId("social-info-bar")).toBeInTheDocument();
     expect(screen.getByTestId("avatar-image")).toHaveAttribute("src", "https://cdn.example.com/alice.jpg");
     expect(screen.getByTestId("social-info-title")).toHaveTextContent("Followers of Alice");
-    expect(screen.getByTestId("nav-likes")).toHaveAttribute("href", "/alice");
+    expect(screen.getByTestId("nav-likes")).toHaveAttribute("href", "/alice/likes");
     expect(screen.getByTestId("nav-following")).toHaveAttribute("href", "/alice/following");
     expect(screen.getByTestId("nav-followers")).toHaveAttribute("href", "/alice/followers");
   });

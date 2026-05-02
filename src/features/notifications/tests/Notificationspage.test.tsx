@@ -240,7 +240,7 @@ describe("NotificationsPage", () => {
       renderPage();
 
       const link = await screen.findByRole("link", { name: "alice" });
-      expect(link).toHaveAttribute("href", "/users/user-42");
+      expect(link).toHaveAttribute("href", "/user-42");
     });
   });
 
