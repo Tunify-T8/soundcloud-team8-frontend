@@ -113,13 +113,7 @@ function extractPlaylistTracks(collection: CollectionSearchResult): SearchPlayli
     });
   }
 
-  return Array.from({ length: 3 }, (_, i) => ({
-    id: `${collection.id}-t${i + 1}`,
-    number: i + 1,
-    title: `Track ${i + 1}`,
-    artist: collection.artist,
-    playsCount: 0,
-  }));
+  return [];
 }
 
 function CollectionResult({ collection }: { collection: CollectionSearchResult }) {
@@ -127,7 +121,7 @@ function CollectionResult({ collection }: { collection: CollectionSearchResult }
 
   useEffect(() => {
     let isMounted = true;
-    if (collection.type !== 'playlist') return;
+    if (collection.type !== 'playlist' && collection.type !== 'album') return;
 
     const loadTracks = async () => {
       try {
