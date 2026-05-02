@@ -3,6 +3,14 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import VerifyEmailPage from '../pages/VerifyEmailPage';
 
+vi.mock('react-redux', () => ({
+  useDispatch: () => vi.fn(),
+}));
+
+vi.mock('../../../store/userSlice', () => ({
+  setUser: (payload: unknown) => ({ type: 'user/setUser', payload }),
+}));
+
 const mockNavigate = vi.fn();
 
 vi.mock('react-router-dom', async () => {
@@ -24,6 +32,7 @@ vi.mock('../services/index', () => ({
 
 vi.mock('../utils/token.utils', () => ({
   storeTokens: vi.fn(),
+  storeUser: vi.fn(),
   getAccessToken: vi.fn(),
   getRefreshToken: vi.fn(),
   clearTokens: vi.fn(),

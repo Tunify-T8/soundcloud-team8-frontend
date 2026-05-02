@@ -52,6 +52,7 @@ vi.mock('../services/index', () => ({
 
 vi.mock('../utils/token.utils', () => ({
   storeTokens: vi.fn(),
+  storeUser: vi.fn(),
 }));
 
 vi.mock('../hooks/useAuth', () => ({

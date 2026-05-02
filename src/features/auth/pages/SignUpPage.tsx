@@ -162,7 +162,7 @@ const SignUpPage: React.FC = () => {
                     >
                       <ChevronLeft className="h-5 w-5 text-[#111]" />
                     </button>
-                    <h1 className="text-[#111] text-base font-bold">Create an account</h1>
+                    <h1 className="text-[#111] text-base font-bold" data-testid="createAccountTitle">Create an account</h1>
                   </div>
 
                   {apiError && (
@@ -248,7 +248,7 @@ const SignUpPage: React.FC = () => {
                   >
                     Continue
                   </button>
-                  <a href="https://help.soundcloud.com/hc/en-us/sections/46266771825691" target="_blank" rel="noreferrer" className="text-[#0066cc] text-sm hover:underline">Need help?</a>
+                  <a href="https://help.soundcloud.com/hc/en-us/sections/46266771825691" target="_blank" rel="noreferrer" className="text-[#0066cc] text-sm hover:underline" data-testid="passwordStepHelpLink">Need help?</a>
                 </div>
               )}
 
@@ -263,7 +263,7 @@ const SignUpPage: React.FC = () => {
                     >
                       <ChevronLeft className="h-5 w-5 text-[#111]" />
                     </button>
-                    <h1 className="text-[#111] text-base font-bold">Tell us more about you</h1>
+                    <h1 className="text-[#111] text-base font-bold" data-testid="profileTitle">Tell us more about you</h1>
                   </div>
 
                   {apiError && (
@@ -361,16 +361,16 @@ const SignUpPage: React.FC = () => {
                         : 'Continue'
                       }
                     </button>
-                    <a href="https://help.soundcloud.com/hc/en-us/sections/46266771825691" target="_blank" rel="noreferrer" className="text-[#0066cc] text-sm hover:underline">Need help?</a>
+                    <a href="https://help.soundcloud.com/hc/en-us/sections/46266771825691" target="_blank" rel="noreferrer" className="text-[#0066cc] text-sm hover:underline" data-testid="profileStepHelpLink">Need help?</a>
                   </div>
                 </div>
               )}
 
           </div>
 
-          <p className="hidden sm:block text-center text-[#777] text-sm mt-6">
+          <p className="hidden sm:block text-center text-[#777] text-sm mt-6" data-testid="signupFooterText">
             Already have an account?{' '}
-            <Link to="/signin" className="text-[#111] hover:underline font-bold">Sign in</Link>
+            <Link to="/signin" className="text-[#111] hover:underline font-bold" data-testid="signupSignInLink">Sign in</Link>
           </p>
         </div>
       </main>
