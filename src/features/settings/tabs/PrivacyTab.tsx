@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import SettingsSection from "../components/shared/SettingsSection";
 import SettingsToggle from "../components/shared/SettingsToggle";
 import { useSettings } from "../hooks/useSettings";
 import { profileService } from "../../profile/profileService";
+import { followingService } from "../../following/followingService";
 import type { BlockedUser } from "@/shared/types/User";
 
 const privacyTestIds: Record<string, string> = {
@@ -16,32 +18,49 @@ export default function PrivacyTab() {
   const { privacySettings, togglePrivacySetting } = useSettings();
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
   const [isLoadingBlockedUsers, setIsLoadingBlockedUsers] = useState(true);
+  const [unblockingId, setUnblockingId] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     let isMounted = true;
 
     profileService
       .getBlockedUsers()
-      .then((data) => {
+      .then((res) => {
         if (isMounted) {
-          setBlockedUsers(data.blockedUsers ?? []);
+          const mapped: BlockedUser[] = (res.data ?? []).map((item: any) => ({
+            id: item.user.id,
+            username: item.user.username,
+            avatarUrl: item.user.avatarUrl ?? null,
+            blockedAt: item.blockedAt,
+          }));
+          setBlockedUsers(mapped);
         }
       })
       .catch(() => {
-        if (isMounted) {
-          setBlockedUsers([]);
-        }
+        if (isMounted) setBlockedUsers([]);
       })
       .finally(() => {
-        if (isMounted) {
-          setIsLoadingBlockedUsers(false);
-        }
+        if (isMounted) setIsLoadingBlockedUsers(false);
       });
 
     return () => {
       isMounted = false;
     };
   }, []);
+
+  const handleUnblock = async (userId: string) => {
+    if (unblockingId) return;
+    setUnblockingId(userId);
+    try {
+      await followingService.unblockUser(userId);
+      setBlockedUsers((prev) => prev.filter((u) => u.id !== userId));
+    } catch {
+      // silently fail — user stays in list
+    } finally {
+      setUnblockingId(null);
+    }
+  };
 
   return (
     <div data-testid="settings-privacy-tab">
@@ -67,29 +86,51 @@ export default function PrivacyTab() {
 
       <SettingsSection title="Blocked users" data-testid="settings-section-blocked-users">
         {isLoadingBlockedUsers ? (
-          <p className="font-semibold text-white" data-testid="settings-blocked-users-loading">Loading blocked users...</p>
+          <p className="font-semibold text-white" data-testid="settings-blocked-users-loading">
+            Loading blocked users...
+          </p>
         ) : blockedUsers.length > 0 ? (
           <div className="space-y-3" data-testid="settings-blocked-users-list">
             {blockedUsers.map((user) => (
               <div
                 key={user.id}
-                className="flex items-center gap-3 rounded-sm bg-[var(--sc-surface)] px-3 py-2 text-white"
+                className="flex items-center justify-between gap-3 rounded-sm bg-[var(--sc-surface)] px-3 py-2"
                 data-testid={`settings-blocked-user-${user.id}`}
               >
-                <img
-                  src={user.avatarUrl ?? "https://i.pravatar.cc/100"}
-                  alt={user.username}
-                  className="h-9 w-9 rounded-full object-cover"
-                />
-                <div>
-                  <p className="font-black text-white">{user.username}</p>
-                  <p className="text-xs text-zinc-400">Blocked</p>
-                </div>
+                {/* Clickable user info → routes to profile */}
+                <button
+                  type="button"
+                  onClick={() => navigate(`/${user.id}`)}
+                  className="flex min-w-0 items-center gap-3 text-left hover:opacity-80 transition-opacity"
+                >
+                  <img
+                    src={user.avatarUrl ?? "https://i.pravatar.cc/100"}
+                    alt={user.username}
+                    className="h-9 w-9 shrink-0 rounded-full object-cover"
+                  />
+                  <div className="min-w-0">
+                    <p className="truncate font-black text-white">{user.username}</p>
+                    <p className="text-xs text-zinc-400">Blocked</p>
+                  </div>
+                </button>
+
+                {/* Unblock button */}
+                <button
+                  type="button"
+                  onClick={() => handleUnblock(user.id)}
+                  disabled={unblockingId === user.id}
+                  className="shrink-0 rounded-sm bg-zinc-700 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-zinc-600 disabled:opacity-50 cursor-pointer"
+                  data-testid={`settings-unblock-btn-${user.id}`}
+                >
+                  {unblockingId === user.id ? "Unblocking..." : "Unblock"}
+                </button>
               </div>
             ))}
           </div>
         ) : (
-          <p className="font-semibold text-white" data-testid="settings-blocked-users-empty">You have not blocked any users.</p>
+          <p className="font-semibold text-white" data-testid="settings-blocked-users-empty">
+            You have not blocked any users.
+          </p>
         )}
       </SettingsSection>
 
