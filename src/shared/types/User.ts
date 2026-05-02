@@ -228,8 +228,7 @@ export interface MutualFriendsResponse {
 // Follow status (GET /users/{userId}/follow-status)
 export interface FollowStatus {
   isFollowing: boolean;
-  isFollowedBy: boolean;
-  isMutual: boolean;
+  isBlocked: boolean;
 }
 
 // Blocked users (GET /users/me/blocked-users)
