@@ -26,9 +26,9 @@ describe("UpgradeModal", () => {
 
   it("calls onClose when clicking backdrop", () => {
     const onClose = vi.fn();
-    const { container } = render(<UpgradeModal onClose={onClose} />);
+    render(<UpgradeModal onClose={onClose} />);
 
-    const backdrop = container.firstChild as HTMLElement;
+    const backdrop = document.querySelector(".fixed.inset-0") as HTMLElement;
     fireEvent.click(backdrop);
 
     expect(onClose).toHaveBeenCalled();

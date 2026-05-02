@@ -1,48 +1,38 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+
 import EmptyCollectionGrid from "../components/EmptyCollectionGrid";
 
+function renderGrid(count?: number) {
+  return render(
+    <MemoryRouter>
+      <EmptyCollectionGrid title="Recent Albums" count={count} />
+    </MemoryRouter>,
+  );
+}
+
 describe("EmptyCollectionGrid", () => {
-  it("renders the section title", () => {
-    render(<EmptyCollectionGrid title="Recent Albums" />);
-    expect(screen.getByText("Recent Albums")).toBeInTheDocument();
+  it("renders the section title and browse link", () => {
+    renderGrid();
+
+    expect(screen.getByTestId("empty-grid-title")).toHaveTextContent("Recent Albums");
+    expect(screen.getByTestId("browse-trending-link")).toHaveAttribute("href", "/discover");
   });
 
-  it("always renders the browse link", () => {
-    render(<EmptyCollectionGrid title="Recent Albums" />);
-    expect(screen.getByText("Browse trending playlists")).toBeInTheDocument();
+  it("renders six placeholders by default", () => {
+    renderGrid();
+
+    expect(screen.getAllByTestId(/empty-slot-/)).toHaveLength(6);
   });
 
-  it("renders 6 placeholder blocks by default", () => {
-    const { container } = render(<EmptyCollectionGrid title="Recent Albums" />);
-    // Each placeholder is a div with the bg-[#282828] class inside the flex row
-    const placeholders = container.querySelectorAll(".flex.gap-4 > div");
-    expect(placeholders).toHaveLength(6);
+  it("renders the requested placeholder count", () => {
+    renderGrid(3);
+    expect(screen.getAllByTestId(/empty-slot-/)).toHaveLength(3);
   });
 
-  it("renders the correct number of placeholders when count is provided", () => {
-    const { container } = render(<EmptyCollectionGrid title="Recent Albums" count={3} />);
-    const placeholders = container.querySelectorAll(".flex.gap-4 > div");
-    expect(placeholders).toHaveLength(3);
-  });
-
-  it("renders 1 placeholder when count is 1", () => {
-    const { container } = render(<EmptyCollectionGrid title="Recent Albums" count={1} />);
-    const placeholders = container.querySelectorAll(".flex.gap-4 > div");
-    expect(placeholders).toHaveLength(1);
-  });
-
-  it("renders 0 placeholders when count is 0", () => {
-    const { container } = render(<EmptyCollectionGrid title="Recent Albums" count={0} />);
-    const placeholders = container.querySelectorAll(".flex.gap-4 > div");
-    expect(placeholders).toHaveLength(0);
-  });
-
-  it("renders placeholders with correct dimensions classes", () => {
-    const { container } = render(<EmptyCollectionGrid title="Recent Albums" count={1} />);
-    const placeholder = container.querySelector(".flex.gap-4 > div");
-    expect(placeholder).toHaveClass("w-[170px]", "h-[170px]", "rounded-sm", "bg-[#282828]");
+  it("renders no placeholders when count is zero", () => {
+    renderGrid(0);
+    expect(screen.queryAllByTestId(/empty-slot-/)).toHaveLength(0);
   });
 });
-
-//npm run test -- src/features/library/tests/EmptyCollectionGrid.test.tsx

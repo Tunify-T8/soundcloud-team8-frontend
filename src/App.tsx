@@ -54,7 +54,7 @@ import AdminUsersPage from "./features/admin/pages/AdminUsersPage";
 import SettingsPage from "./features/settings/SettingsPage";
 import VerificationPage from "./features/settings/VerificationPage";
 import SoundCloudLanding from "./features/landing/pages/landingPage";
-import PlanCard from "./features/premium/pages/PlanCard";
+import PlanCard from "./features/premium/components/PlanCard";
 
 const router = createBrowserRouter([
   // 1. PUBLIC ROUTES (Guests only)

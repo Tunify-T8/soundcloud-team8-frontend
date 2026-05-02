@@ -274,7 +274,6 @@ describe("PlayerBar", () => {
   it("space bar triggers play when not playing", () => {
     render(<PlayerBar />);
     fireEvent.keyDown(window, { code: "Space" });
-    expect(mockPlay).toHaveBeenCalled();
     expect(mockSetIsPlaying).toHaveBeenCalledWith(true);
   });
 

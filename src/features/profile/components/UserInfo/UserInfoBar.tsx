@@ -9,6 +9,8 @@ import { useEffect, useState } from "react";
 import { followingService } from "../../../following/followingService";
 import { notifySocialGraphUpdated } from "../../socialGraphEvents";
 import { AdminIDDisplay } from "@/features/admin/components/AdminIDDisplay";
+import { conversationService } from "@/features/conversation/conversationService";
+
 
 function ShareOverlay({
   onClose,
@@ -143,23 +145,35 @@ export default function UserInfoBar({
   const [modal, setModal] = useState(false);
   const [showMoreActions, setShowMoreActions] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [blockLoading, setBlockLoading] = useState(false);
   const [showShareOverlay, setShowShareOverlay] = useState(false);
+  const [messageLoading, setMessageLoading] = useState(false);
 
   const navigate = useNavigate();
 
   useEffect(() => {
     if (isMe || !userId) return;
 
+    let cancelled = false;
+
     followingService
       .getFollowStatus(userId)
       .then((status) => {
+        if (cancelled) return;
         setIsFollowing(status.isFollowing);
+        setIsBlocked(status.isBlocked ?? false);
       })
       .catch(() => {
+        if (cancelled) return;
         setIsFollowing(false);
+        setIsBlocked(false);
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [isMe, userId]);
 
   const handleFollowToggle = async () => {
@@ -170,22 +184,18 @@ export default function UserInfoBar({
       ? Math.max(0, previousFollowersCount - 1)
       : previousFollowersCount + 1;
 
-    // Step 1: Update UI immediately (optimistic update)
     setIsFollowing(!isFollowing);
     onFollowersChange?.(newFollowersCount);
 
     setFollowLoading(true);
     try {
-      // Step 2: Sync with backend
       if (isFollowing) {
         await followingService.unfollowUser(userId);
       } else {
         await followingService.followUser(userId);
       }
-
       notifySocialGraphUpdated();
     } catch {
-      // Step 3: If API call fails, revert the changes
       setIsFollowing(isFollowing);
       onFollowersChange?.(previousFollowersCount);
     } finally {
@@ -193,12 +203,18 @@ export default function UserInfoBar({
     }
   };
 
-  const handleBlock = async () => {
+  const handleBlockToggle = async () => {
     if (!userId || blockLoading) return;
 
     setBlockLoading(true);
     try {
-      await followingService.blockUser(userId);
+      if (isBlocked) {
+        await followingService.unblockUser(userId);
+        setIsBlocked(false);
+      } else {
+        await followingService.blockUser(userId);
+        setIsBlocked(true);
+      }
       notifySocialGraphUpdated();
       onProfileUpdated?.();
       setShowMoreActions(false);
@@ -207,6 +223,18 @@ export default function UserInfoBar({
     }
   };
 
+  const handleMessage = async () => {
+  if (!userId || messageLoading) return;
+  setMessageLoading(true);
+  try {
+    const conversationId = await conversationService.createOrGetConversation(userId);
+    navigate(`/messages/${conversationId}`);
+  } catch {
+    // silently fail
+  } finally {
+    setMessageLoading(false);
+  }
+};
   const toggleModal = () => {
     setModal(!modal);
   };
@@ -301,13 +329,19 @@ export default function UserInfoBar({
           {!isMe && (
             <div className="relative group">
               <button
-                data-testid="profile-messages-btn"
-                type="button"
-                title="Messages"
-                className="inline-flex shrink-0 items-center justify-center rounded-sm bg-zinc-800 px-2 py-1.5 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:px-3 sm:py-2 sm:text-sm"
-              >
-                <FaEnvelope />
-              </button>
+  data-testid="profile-messages-btn"
+  type="button"
+  title="Messages"
+  onClick={handleMessage}
+  disabled={messageLoading || !userId}
+  className="inline-flex shrink-0 items-center justify-center rounded-sm bg-zinc-800 px-2 py-1.5 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:px-3 sm:py-2 sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  {messageLoading ? (
+    <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+  ) : (
+    <FaEnvelope />
+  )}
+</button>
             </div>
           )}
           <div className="relative">
@@ -331,13 +365,19 @@ export default function UserInfoBar({
                 <button
                   data-testid="profile-block-btn"
                   type="button"
-                  title="Block"
-                  onClick={handleBlock}
+                  title={isBlocked ? "Unblock" : "Block"}
+                  onClick={handleBlockToggle}
                   disabled={blockLoading || !userId}
                   className="inline-flex items-center gap-2 w-auto whitespace-nowrap text-left text-white font-bold text-[14px] px-3 py-2 hover:text-zinc-500 transition-colors cursor-pointer"
                 >
                   <FiSlash />
-                  {blockLoading ? "Blocking..." : `Block ${menuTargetName}`}
+                  {blockLoading
+                    ? isBlocked
+                      ? "Unblocking..."
+                      : "Blocking..."
+                    : isBlocked
+                    ? `Unblock ${menuTargetName}`
+                    : `Block ${menuTargetName}`}
                 </button>
                 <button
                   data-testid="profile-report-btn"
