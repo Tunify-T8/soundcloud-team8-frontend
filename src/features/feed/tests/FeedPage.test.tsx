@@ -1,10 +1,11 @@
 import React from "react";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import FeedPage from "../pages/FeedPage";
 import { feedService } from "../feedservice";
 import { Genre } from "@/shared/types/Genre";
-import type { FeedItem, FeedResponse } from "@/shared/types/Feed";
+import type { FeedItem, FeedResponse } from "../type";
 
 vi.mock("../feedservice", () => ({
   feedService: {
@@ -60,6 +61,14 @@ const makeFeedResponse = (items: FeedItem[]): FeedResponse => ({
   hasMore: false,
 });
 
+function renderFeedPage() {
+  return render(
+    <MemoryRouter>
+      <FeedPage />
+    </MemoryRouter>,
+  );
+}
+
 describe("FeedPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -72,7 +81,7 @@ describe("FeedPage", () => {
   it("shows loading state while feed request is pending", () => {
     mockedGetFeed.mockReturnValue(new Promise(() => {}));
 
-    render(<FeedPage />);
+    renderFeedPage();
 
     expect(screen.getByText("Loading feed...")).toBeInTheDocument();
   });
@@ -100,7 +109,7 @@ describe("FeedPage", () => {
       ]),
     );
 
-    render(<FeedPage />);
+    renderFeedPage();
 
     await waitFor(() => {
       expect(mockedGetFeed).toHaveBeenCalledTimes(1);
@@ -145,7 +154,7 @@ describe("FeedPage", () => {
       ]),
     );
 
-    render(<FeedPage />);
+    renderFeedPage();
 
     await waitFor(() => {
       expect(screen.getByText(/Original Post/i)).toBeInTheDocument();
@@ -164,7 +173,7 @@ describe("FeedPage", () => {
   it("shows empty state when feed has no items", async () => {
     mockedGetFeed.mockResolvedValue(makeFeedResponse([]));
 
-    render(<FeedPage />);
+    renderFeedPage();
 
     await waitFor(() => {
       expect(screen.getByText("Nothing to show here yet.")).toBeInTheDocument();
@@ -174,7 +183,7 @@ describe("FeedPage", () => {
   it("shows empty state when service returns null", async () => {
     mockedGetFeed.mockResolvedValue(null);
 
-    render(<FeedPage />);
+    renderFeedPage();
 
     await waitFor(() => {
       expect(screen.getByText("Nothing to show here yet.")).toBeInTheDocument();
@@ -184,7 +193,7 @@ describe("FeedPage", () => {
   it("shows error state when service rejects", async () => {
     mockedGetFeed.mockRejectedValue(new Error("network down"));
 
-    render(<FeedPage />);
+    renderFeedPage();
 
     await waitFor(() => {
       expect(screen.getByText("Failed to load feed")).toBeInTheDocument();

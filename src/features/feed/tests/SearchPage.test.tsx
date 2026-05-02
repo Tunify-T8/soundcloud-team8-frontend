@@ -14,6 +14,9 @@ import type {
 vi.mock('../feedservice', () => ({
   feedService: {
     search: vi.fn(),
+    searchTracks: vi.fn(),
+    searchPeople: vi.fn(),
+    searchCollections: vi.fn(),
   },
 }));
 
@@ -100,6 +103,9 @@ function renderWithQuery(query = '', path = '/search') {
 describe('SearchPage — filter sidebar', () => {
   beforeEach(() => {
     vi.mocked(feedService.search).mockResolvedValue([]);
+    vi.mocked(feedService.searchTracks).mockResolvedValue([]);
+    vi.mocked(feedService.searchPeople).mockResolvedValue([]);
+    vi.mocked(feedService.searchCollections).mockResolvedValue([]);
   });
 
   it('renders all five filter buttons', async () => {
@@ -127,19 +133,18 @@ describe('SearchPage — filter sidebar', () => {
     expect(screen.getByText('Everything').className).not.toMatch(/bg-white/);
   });
 
-  it('calls feedService.search with correct type when filter changes', async () => {
+  it('calls searchTracks when Tracks filter is selected', async () => {
     renderWithQuery('jazz');
     await waitFor(() => screen.getByText('Tracks'));
     fireEvent.click(screen.getByText('Tracks'));
     await waitFor(() => {
-      expect(feedService.search).toHaveBeenCalledWith('jazz', 'track');
+      expect(feedService.searchTracks).toHaveBeenCalledWith('jazz');
     });
   });
 
-  it('calls feedService.search without type when "Everything" is selected', async () => {
+  it('calls feedService.search when Everything filter is selected', async () => {
     renderWithQuery('jazz');
     await waitFor(() => screen.getByText('Tracks'));
-    // Switch away first, then back to Everything
     fireEvent.click(screen.getByText('Tracks'));
     fireEvent.click(screen.getByText('Everything'));
     await waitFor(() => {
@@ -149,30 +154,30 @@ describe('SearchPage — filter sidebar', () => {
     });
   });
 
-  it('uses "user" type when People filter is selected', async () => {
+  it('calls searchPeople when People filter is selected', async () => {
     renderWithQuery('artist');
     await waitFor(() => screen.getByText('People'));
     fireEvent.click(screen.getByText('People'));
     await waitFor(() => {
-      expect(feedService.search).toHaveBeenCalledWith('artist', 'user');
+      expect(feedService.searchPeople).toHaveBeenCalledWith('artist');
     });
   });
 
-  it('uses "album" type when Albums filter is selected', async () => {
+  it('calls searchCollections when Albums filter is selected', async () => {
     renderWithQuery('rock');
     await waitFor(() => screen.getByText('Albums'));
     fireEvent.click(screen.getByText('Albums'));
     await waitFor(() => {
-      expect(feedService.search).toHaveBeenCalledWith('rock', 'album');
+      expect(feedService.searchCollections).toHaveBeenCalledWith('rock');
     });
   });
 
-  it('uses "playlist" type when Playlists filter is selected', async () => {
+  it('calls searchCollections when Playlists filter is selected', async () => {
     renderWithQuery('chill');
     await waitFor(() => screen.getByText('Playlists'));
     fireEvent.click(screen.getByText('Playlists'));
     await waitFor(() => {
-      expect(feedService.search).toHaveBeenCalledWith('chill', 'playlist');
+      expect(feedService.searchCollections).toHaveBeenCalledWith('chill');
     });
   });
 
@@ -204,7 +209,6 @@ describe('SearchPage — heading and query display', () => {
 
 describe('SearchPage — loading state', () => {
   it('shows "Searching..." while the request is in flight', async () => {
-    // Never resolves during this test
     vi.mocked(feedService.search).mockReturnValue(new Promise(() => {}));
     renderWithQuery('hip hop');
     await waitFor(() => {
@@ -366,17 +370,15 @@ describe('SearchPage — refetch on query change', () => {
   it('calls feedService.search again when the query changes', async () => {
     vi.mocked(feedService.search).mockResolvedValue([]);
 
-    // First render with query "a"
     const { unmount } = renderWithQuery('a');
     await waitFor(() => {
-      expect(feedService.search).toHaveBeenCalledWith('a', undefined);
+      expect(feedService.search).toHaveBeenCalledWith('a');
     });
     unmount();
 
-    // Re-render with query "b"
     renderWithQuery('b');
     await waitFor(() => {
-      expect(feedService.search).toHaveBeenCalledWith('b', undefined);
+      expect(feedService.search).toHaveBeenCalledWith('b');
     });
   });
 });
