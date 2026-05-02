@@ -86,8 +86,8 @@ describe('adminServices', () => {
     });
     expect(api.post).toHaveBeenNthCalledWith(2, '/admin/users/user-1/unsuspend');
     expect(api.post).toHaveBeenNthCalledWith(3, '/admin/users/user-1/ban');
-    expect(api.patch).toHaveBeenNthCalledWith(1, '/admin/tracks/track-1/hide');
-    expect(api.patch).toHaveBeenNthCalledWith(2, '/admin/tracks/track-1/unhide');
-    expect(api.delete).toHaveBeenNthCalledWith(1, '/admin/tracks/track-1');
+    expect(api.patch).toHaveBeenNthCalledWith(1, '/admin/content/tracks/track-1/hide');
+    expect(api.patch).toHaveBeenNthCalledWith(2, '/admin/content/tracks/track-1/unhide');
+    expect(api.delete).toHaveBeenNthCalledWith(1, '/admin/content/tracks/track-1');
   });
 });

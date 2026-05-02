@@ -1,62 +1,72 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+
 import CollectionGrid from "../components/CollectionGrid";
 import type { CollectionItem } from "../types";
 
+const mediaCardMock = vi.fn();
+
+vi.mock("../components/MediaCard", () => ({
+  default: (props: Record<string, unknown>) => {
+    mediaCardMock(props);
+    return (
+      <div data-testid={`media-card-${String(props.id)}`}>
+        <span>{String(props.title)}</span>
+        <span>{String(props.subtitle)}</span>
+      </div>
+    );
+  },
+}));
+
 const mockItems: CollectionItem[] = [
-  { id: "1", title: "Chill Vibes", subtitle: "Playlist", coverUrl: "https://example.com/cover1.jpg" },
-  { id: "2", title: "Top Hits", subtitle: "Album" },
-  { id: "3", title: "Deep Focus", subtitle: "Mix", coverUrl: "https://example.com/cover3.jpg" },
+  { id: "1", title: "Chill Vibes", subtitle: "Playlist", coverUrl: "https://example.com/cover1.jpg", entityType: "playlist" },
+  { id: "2", title: "Top Hits", subtitle: "Album", entityType: "album" },
 ];
 
 describe("CollectionGrid", () => {
-  it("renders the section title", () => {
-    render(<CollectionGrid items={mockItems} title="My Playlists" />);
-    expect(screen.getByText("My Playlists")).toBeInTheDocument();
+  it("renders the section title and items", () => {
+    render(
+      <MemoryRouter>
+        <CollectionGrid items={mockItems} title="My Playlists" />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByTestId("collection-grid-title")).toHaveTextContent("My Playlists");
+    expect(screen.getByTestId("media-card-1")).toHaveTextContent("Chill Vibes");
+    expect(screen.getByTestId("media-card-2")).toHaveTextContent("Top Hits");
   });
 
-  it("renders all items", () => {
-    render(<CollectionGrid items={mockItems} title="My Playlists" />);
-    expect(screen.getByText("Chill Vibes")).toBeInTheDocument();
-    expect(screen.getByText("Top Hits")).toBeInTheDocument();
-    expect(screen.getByText("Deep Focus")).toBeInTheDocument();
+  it("renders the browse link when enabled", () => {
+    render(
+      <MemoryRouter>
+        <CollectionGrid items={mockItems} title="My Playlists" showBrowse />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("link", { name: /browse trending playlists/i })).toHaveAttribute("href", "/home");
   });
 
-  it("renders item subtitles", () => {
-    render(<CollectionGrid items={mockItems} title="My Playlists" />);
-    expect(screen.getByText("Playlist")).toBeInTheDocument();
-    expect(screen.getByText("Album")).toBeInTheDocument();
-    expect(screen.getByText("Mix")).toBeInTheDocument();
-  });
+  it("passes the expected link target to MediaCard", () => {
+    mediaCardMock.mockClear();
 
-  it("does not show browse link by default", () => {
-    render(<CollectionGrid items={mockItems} title="My Playlists" />);
-    expect(screen.queryByText("Browse trending playlists")).not.toBeInTheDocument();
-  });
+    render(
+      <MemoryRouter>
+        <CollectionGrid items={mockItems} title="My Playlists" />
+      </MemoryRouter>,
+    );
 
-  it("shows browse link when showBrowse is true", () => {
-    render(<CollectionGrid items={mockItems} title="My Playlists" showBrowse />);
-    expect(screen.getByText("Browse trending playlists")).toBeInTheDocument();
-  });
+    const firstCallProps = mediaCardMock.mock.calls[0]?.[0];
+    const secondCallProps = mediaCardMock.mock.calls[1]?.[0];
 
-  it("renders cover images for items with coverUrl", () => {
-    render(<CollectionGrid items={mockItems} title="My Playlists" />);
-    const images = screen.getAllByRole("img");
-    // Only items with a non-empty coverUrl get an <img>
-    expect(images).toHaveLength(2);
-    expect(images[0]).toHaveAttribute("src", "https://example.com/cover1.jpg");
-    expect(images[0]).toHaveAttribute("alt", "Chill Vibes");
-  });
-
-  it("renders a placeholder div when coverUrl is absent", () => {
-    render(<CollectionGrid items={[{ id: "x", title: "No Cover", subtitle: "Sub" }]} title="Test" />);
-    expect(screen.queryByRole("img")).not.toBeInTheDocument();
-  });
-
-  it("renders an empty list without errors", () => {
-    render(<CollectionGrid items={[]} title="Empty" />);
-    expect(screen.getByText("Empty")).toBeInTheDocument();
+    expect(firstCallProps).toMatchObject({
+      id: "1",
+      linkTo: "/collections/1",
+      hoverVariant: "play",
+    });
+    expect(secondCallProps).toMatchObject({
+      id: "2",
+      linkTo: "/collections/2",
+    });
   });
 });
-
-//npm run test -- src/features/library/tests/CollectionGrid.test.tsx

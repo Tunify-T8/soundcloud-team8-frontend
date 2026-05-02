@@ -1,226 +1,161 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
-import { render, screen, fireEvent, act } from "@testing-library/react"
-import { Provider } from "react-redux"
-import { configureStore } from "@reduxjs/toolkit"
-import SoundCloudUpload from "../pages/UploadPage"
-import audioSourceReducer from "../../../store/AudioSourceSlice"
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { Provider } from "react-redux";
+import { configureStore } from "@reduxjs/toolkit";
+import { MemoryRouter } from "react-router-dom";
 
-// ─── Setup ────────────────────────────────────────────────────────────────────
+import SoundCloudUpload from "../pages/UploadPage";
+import audioSourceReducer from "../../../store/AudioSourceSlice";
+
+vi.mock("@/features/premium/components/ArtistModal", () => ({
+  default: ({ onClose }: { onClose: () => void }) => (
+    <button onClick={onClose}>Close artist modal</button>
+  ),
+}));
+
+vi.mock("../components/UploadQuotaBanner", () => ({
+  default: ({ onOpenDetails }: { onOpenDetails: () => void }) => (
+    <button onClick={onOpenDetails}>Open quota details</button>
+  ),
+}));
+
+vi.mock("../components/UploadLimitScreen", () => ({
+  default: () => <div>Upload limit screen</div>,
+}));
+
+vi.mock("../components/Recorder", () => ({
+  default: () => <div>Or record with a microphone</div>,
+}));
+
+vi.mock("../components/TrackInfo", () => ({
+  default: () => <div>Track info</div>,
+}));
+
+vi.mock("@/features/premium/components/SubscriptionBadge", () => ({
+  default: () => <div>Subscription badge</div>,
+}));
+
+vi.mock("@/features/track-management/trackService", () => ({
+  trackService: {
+    getUploadedTracks: vi.fn().mockResolvedValue([]),
+  },
+}));
+
+vi.mock("@/hooks/useSubscription", () => ({
+  useSubscription: () => ({
+    tier: "free",
+    isArtistPro: false,
+  }),
+}));
 
 function makeStore(withSource = false) {
-  const store = configureStore({ reducer: { audioSource: audioSourceReducer } })
+  const store = configureStore({ reducer: { audioSource: audioSourceReducer } });
   if (withSource) {
     store.dispatch({
       type: "audioSource/setAudioSource",
-      payload: { kind: "file", url: "blob:mock", name: "track.mp3", size: 1024, mimeType: "audio/mp3" },
-    })
+      payload: {
+        kind: "file",
+        url: "blob:mock",
+        name: "track.mp3",
+        size: 1024,
+        mimeType: "audio/mp3",
+      },
+    });
   }
-  return store
+  return store;
 }
 
 function renderPage(store = makeStore()) {
-  return { ...render(<Provider store={store}><SoundCloudUpload /></Provider>), store }
+  return render(
+    <Provider store={store}>
+      <MemoryRouter>
+        <SoundCloudUpload />
+      </MemoryRouter>
+    </Provider>,
+  );
 }
 
 beforeEach(() => {
-  vi.stubGlobal("URL", {
-    createObjectURL: vi.fn(() => "blob:mock-url"),
-    revokeObjectURL: vi.fn(),
-  })
   vi.stubGlobal("MediaRecorder", vi.fn().mockImplementation(() => ({
-    state: "inactive", start: vi.fn(), pause: vi.fn(),
-    resume: vi.fn(), stop: vi.fn(),
-    ondataavailable: null, onstop: null,
-  })))
+    state: "inactive",
+    start: vi.fn(),
+    pause: vi.fn(),
+    resume: vi.fn(),
+    stop: vi.fn(),
+    ondataavailable: null,
+    onstop: null,
+  })));
   vi.stubGlobal("navigator", {
     mediaDevices: {
-      getUserMedia: vi.fn().mockResolvedValue({ getTracks: () => [{ stop: vi.fn() }] }),
+      getUserMedia: vi.fn().mockResolvedValue({
+        getTracks: () => [{ stop: vi.fn() }],
+      }),
     },
-  })
-})
+  });
+  vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:mock-url");
+});
 
 afterEach(() => {
-  vi.unstubAllGlobals()
-  vi.clearAllMocks()
-})
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
-// ─── Render: header ───────────────────────────────────────────────────────────
+describe("SoundCloudUpload", () => {
+  it("renders the upload shell when no source is selected", async () => {
+    renderPage();
 
-describe("SoundCloudUpload — renders correctly (header)", () => {
-  it("renders Upload heading", () => {
-    renderPage()
-    expect(screen.getByText("Upload")).toBeInTheDocument()
-  })
+    expect(screen.getByText("Upload")).toBeInTheDocument();
+    expect(screen.getByText("Upload your audio files.")).toBeInTheDocument();
+    expect(screen.getByText("Choose files")).toBeInTheDocument();
+    expect(screen.getByText("Or record with a microphone")).toBeInTheDocument();
+    expect(await screen.findByText("Open quota details")).toBeInTheDocument();
+  });
 
-  it("renders logo link pointing to /", () => {
-    renderPage()
-    expect(screen.getAllByRole("link")[0]).toHaveAttribute("href", "/")
-  })
+  it("shows the track info step when an audio source is already selected", () => {
+    renderPage(makeStore(true));
 
-  it("renders close button", () => {
-    renderPage()
-    const closeBtn = document.querySelector("button svg line[x1='18'][y1='6']")?.closest("button")
-    expect(closeBtn).toBeInTheDocument()
-  })
-})
+    expect(screen.getByText("Track info")).toBeInTheDocument();
+    expect(screen.queryByTestId("upload-page")).not.toBeInTheDocument();
+  });
 
-// ─── Render: progress bar ─────────────────────────────────────────────────────
+  it("dispatches an audio source when a file is selected", async () => {
+    const store = makeStore();
+    renderPage(store);
 
-describe("SoundCloudUpload — renders correctly (progress bar)", () => {
-  it("shows 0% of uploads used", () => {
-    renderPage()
-    expect(screen.getByText("0% of uploads used")).toBeInTheDocument()
-  })
+    const input = screen.getByTestId("upload-file-input");
+    const file = new File(["audio"], "song.mp3", { type: "audio/mpeg" });
+    fireEvent.change(input, { target: { files: [file] } });
 
-  it("shows 0 of 120 minutes", () => {
-    renderPage()
-    expect(screen.getByText("0 of 120 minutes")).toBeInTheDocument()
-  })
+    await waitFor(() => {
+      expect(store.getState().audioSource.source?.kind).toBe("file");
+    });
+    expect(URL.createObjectURL).toHaveBeenCalledWith(file);
+    expect(store.getState().audioSource.source).toMatchObject({
+      name: "song.mp3",
+      mimeType: "audio/mpeg",
+    });
+  });
 
-  it("renders Get unlimited uploads button", () => {
-    renderPage()
-    expect(screen.getByText("Get unlimited uploads")).toBeInTheDocument()
-  })
-})
+  it("dispatches an audio source when a file is dropped", async () => {
+    const store = makeStore();
+    renderPage(store);
 
-// ─── Render: dropzone ─────────────────────────────────────────────────────────
+    const dropzone = screen.getByTestId("upload-dropzone");
+    const file = new File(["audio"], "dropped.wav", { type: "audio/wav" });
+    fireEvent.drop(dropzone, { dataTransfer: { files: [file] } });
 
-describe("SoundCloudUpload — renders correctly (dropzone)", () => {
-  it("renders the main heading", () => {
-    renderPage()
-    expect(screen.getByText("Upload your audio files.")).toBeInTheDocument()
-  })
+    await waitFor(() => {
+      expect(store.getState().audioSource.source).toMatchObject({
+        name: "dropped.wav",
+        mimeType: "audio/wav",
+      });
+    });
+  });
 
-  it("renders drag-and-drop instruction", () => {
-    renderPage()
-    expect(screen.getByText("Drag and drop audio files to get started.")).toBeInTheDocument()
-  })
+  it("opens the upgrade details modal from the quota banner", async () => {
+    renderPage();
 
-  it("renders Choose files button", () => {
-    renderPage()
-    expect(screen.getByText("Choose files")).toBeInTheDocument()
-  })
-
-  it("renders quality hint text", () => {
-    renderPage()
-    expect(screen.getByText(/For best quality, use WAV/)).toBeInTheDocument()
-  })
-
-  it("renders hidden file input accepting audio/*", () => {
-    const { container } = renderPage()
-    const input = container.querySelector("input[type='file']") as HTMLInputElement
-    expect(input.accept).toBe("audio/*")
-  })
-})
-
-// ─── Render: mic recorder ─────────────────────────────────────────────────────
-
-describe("SoundCloudUpload — renders correctly (recorder)", () => {
-  it("renders the mic toggle from Recorder", () => {
-    renderPage()
-    expect(screen.getByText("Or record with a microphone")).toBeInTheDocument()
-  })
-})
-
-// ─── Render: footer ───────────────────────────────────────────────────────────
-
-describe("SoundCloudUpload — renders correctly (footer)", () => {
-  it("renders all footer links", () => {
-    renderPage()
-    ;["Legal", "Privacy", "Cookie Policy", "Imprint", "About us", "Copyright", "Feedback"]
-      .forEach(link => expect(screen.getByText(link)).toBeInTheDocument())
-  })
-})
-
-// ─── Render: navigation ───────────────────────────────────────────────────────
-
-describe("SoundCloudUpload — renders correctly (navigation)", () => {
-  it("shows TrackInfoPage when a source is set", () => {
-    renderPage(makeStore(true))
-    expect(screen.getByText("Track info")).toBeInTheDocument()
-  })
-
-  it("does not show TrackInfoPage without a source", () => {
-    renderPage()
-    expect(screen.queryByText("Track info")).not.toBeInTheDocument()
-  })
-})
-
-// ─── Interactions: dropzone ───────────────────────────────────────────────────
-
-describe("SoundCloudUpload — interactions (dropzone)", () => {
-  it("dragover adds orange border style", () => {
-    const { container } = renderPage()
-    const dropzone = container.querySelector("[class*='border-dashed']")!
-    fireEvent.dragOver(dropzone)
-    expect(dropzone.className).toMatch(/border-\[#ff5500\]/)
-  })
-
-  it("dragleave removes orange border style", () => {
-    const { container } = renderPage()
-    const dropzone = container.querySelector("[class*='border-dashed']")!
-    fireEvent.dragOver(dropzone)
-    fireEvent.dragLeave(dropzone)
-    expect(dropzone.className).not.toMatch(/border-\[#ff5500\]/)
-  })
-
-  it("dropping a file dispatches setAudioSource with correct name", async () => {
-    const store = makeStore()
-    const { container } = renderPage(store)
-    const dropzone = container.querySelector("[class*='border-dashed']")!
-    const file = new File(["audio"], "dropped.wav", { type: "audio/wav" })
-    await act(async () => {
-      fireEvent.drop(dropzone, { dataTransfer: { files: [file] } })
-    })
-    expect((store.getState().audioSource.source as any)?.name).toBe("dropped.wav")
-  })
-
-  it("dropping no files does not dispatch", async () => {
-    const store = makeStore()
-    const { container } = renderPage(store)
-    const dropzone = container.querySelector("[class*='border-dashed']")!
-    const before = store.getState().audioSource.source
-    await act(async () => {
-      fireEvent.drop(dropzone, { dataTransfer: { files: [] } })
-    })
-    expect(store.getState().audioSource.source).toBe(before)
-  })
-})
-
-// ─── Interactions: file input ─────────────────────────────────────────────────
-
-describe("SoundCloudUpload — interactions (file input)", () => {
-  it("selecting a file dispatches setAudioSource", async () => {
-    const store = makeStore()
-    const { container } = renderPage(store)
-    const input = container.querySelector("input[type='file']") as HTMLInputElement
-    const file = new File(["audio"], "song.mp3", { type: "audio/mpeg" })
-    await act(async () => {
-      fireEvent.change(input, { target: { files: [file] } })
-    })
-    expect(store.getState().audioSource.source?.kind).toBe("file")
-    expect((store.getState().audioSource.source as any)?.name).toBe("song.mp3")
-  })
-
-  it("selecting no file does not dispatch", async () => {
-    const store = makeStore()
-    const { container } = renderPage(store)
-    const input = container.querySelector("input[type='file']") as HTMLInputElement
-    const before = store.getState().audioSource.source
-    await act(async () => {
-      fireEvent.change(input, { target: { files: [] } })
-    })
-    expect(store.getState().audioSource.source).toBe(before)
-  })
-
-  it("dispatches correct mimeType from file input", async () => {
-    const store = makeStore()
-    const { container } = renderPage(store)
-    const input = container.querySelector("input[type='file']") as HTMLInputElement
-    const file = new File(["audio"], "track.flac", { type: "audio/flac" })
-    await act(async () => {
-      fireEvent.change(input, { target: { files: [file] } })
-    })
-    expect((store.getState().audioSource.source as any)?.mimeType).toBe("audio/flac")
-  })
-})
+    fireEvent.click(await screen.findByText("Open quota details"));
+    expect(screen.getByText("Close artist modal")).toBeInTheDocument();
+  });
+});

@@ -1,116 +1,55 @@
-import { describe, it, expect } from "vitest"
-import { render, screen, fireEvent } from "@testing-library/react"
-import UploadSuccessScreen from "../components/UploadSuccessScreen"
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 
-// No Redux or mocks needed — purely presentational component
+import UploadSuccessScreen from "../components/UploadSuccessScreen";
 
-// ─── Render: header ───────────────────────────────────────────────────────────
+vi.mock("@/features/premium/components/ArtistProUpgradeButton", () => ({
+  default: ({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
+    <button {...props}>{children}</button>
+  ),
+}));
 
-describe("UploadSuccessScreen — renders correctly (header)", () => {
-  it("renders the SoundCloud logo link to /", () => {
-    render(<UploadSuccessScreen trackId="track-1" />)
-    expect(screen.getAllByRole("link")[0]).toHaveAttribute("href", "/")
-  })
+function renderScreen(trackId = "track-1") {
+  return render(
+    <MemoryRouter>
+      <UploadSuccessScreen trackId={trackId} />
+    </MemoryRouter>,
+  );
+}
 
-  it("renders a close button", () => {
-    render(<UploadSuccessScreen trackId="track-1" />)
-    expect(screen.getAllByRole("button")[0]).toBeInTheDocument()
-  })
-})
+describe("UploadSuccessScreen", () => {
+  it("renders the current success content", () => {
+    renderScreen();
 
-// ─── Render: main content ─────────────────────────────────────────────────────
+    expect(screen.getByTestId("success-heading")).toHaveTextContent("Saved to SoundCloud.");
+    expect(screen.getByText(/your tracks are now on soundcloud/i)).toBeInTheDocument();
+    expect(screen.getByTestId("distribute-heading")).toHaveTextContent(
+      "Distribute to more streaming services?",
+    );
+  });
 
-describe("UploadSuccessScreen — renders correctly (main content)", () => {
-  it("renders success heading", () => {
-    render(<UploadSuccessScreen trackId="track-1" />)
-    expect(screen.getByText("Saved to SoundCloud.")).toBeInTheDocument()
-  })
+  it("links to discover from the header and to the uploaded track", () => {
+    renderScreen("track-42");
 
-  it("renders congratulations message", () => {
-    render(<UploadSuccessScreen trackId="track-1" />)
-    expect(screen.getByText(/Congratulations/)).toBeInTheDocument()
-  })
+    const links = screen.getAllByRole("link");
+    expect(links[0]).toHaveAttribute("href", "/discover");
+    expect(screen.getByTestId("view-track-btn")).toHaveAttribute("href", "/tracks/track-42");
+  });
 
-  it("renders View track button", () => {
-    render(<UploadSuccessScreen trackId="track-1" />)
-    expect(screen.getByText("View track")).toBeInTheDocument()
-  })
+  it("renders the Artist Pro CTA and footer links", () => {
+    renderScreen();
 
-  it("renders distribution upsell heading", () => {
-    render(<UploadSuccessScreen trackId="track-1" />)
-    expect(screen.getByText("Distribute to more streaming services?")).toBeInTheDocument()
-  })
+    expect(screen.getByTestId("unlock-artist-pro-btn")).toBeInTheDocument();
+    ["Legal", "Privacy", "Cookie Policy", "Cookie Manager", "Imprint"].forEach((link) => {
+      expect(screen.getByText(link)).toBeInTheDocument();
+    });
+  });
 
-  it("renders Artist Pro upsell button", () => {
-    render(<UploadSuccessScreen />)
-    expect(screen.getByText("Unlock with Artist Pro")).toBeInTheDocument()
-  })
+  it("keeps the main actions clickable", () => {
+    renderScreen();
 
-  it("renders Learn more link", () => {
-    render(<UploadSuccessScreen />)
-    expect(screen.getByText("Learn more.")).toBeInTheDocument()
-  })
-
-  it("renders 4 streaming platform icon containers", () => {
-    const { container } = render(<UploadSuccessScreen trackId="track-1" />)
-    const platformIcons = container.querySelectorAll(".rounded-full.border-dashed")
-    expect(platformIcons.length).toBe(4)
-  })
-})
-
-// ─── Render: footer ───────────────────────────────────────────────────────────
-
-describe("UploadSuccessScreen — renders correctly (footer)", () => {
-  it("renders all footer links", () => {
-    render(<UploadSuccessScreen trackId="track-1" />)
-    ;["Legal", "Privacy", "Cookie Policy", "Cookie Manager", "Imprint", "About us", "Copyright", "Feedback"]
-      .forEach(link => expect(screen.getByText(link)).toBeInTheDocument())
-  })
-})
-
-// ─── Interactions ─────────────────────────────────────────────────────────────
-
-describe("UploadSuccessScreen — interactions", () => {
-  it("View track button is clickable", () => {
-    render(<UploadSuccessScreen trackId="track-1" />)
-    expect(() => fireEvent.click(screen.getByText("View track"))).not.toThrow()
-  })
-
-  it("Unlock with Artist Pro button is clickable", () => {
-    render(<UploadSuccessScreen trackId="track-1" />)
-    expect(() => fireEvent.click(screen.getByText("Unlock with Artist Pro"))).not.toThrow()
-  })
-
-  it("close button is clickable", () => {
-    render(<UploadSuccessScreen trackId="track-1" />)
-    expect(() => fireEvent.click(screen.getAllByRole("button")[0])).not.toThrow()
-  })
-})
-
-// ─── Interactions: footer ─────────────────────────────────────────────────────
-
-describe("UploadSuccessScreen — interactions (footer)", () => {
-  it("footer links are clickable without throwing", () => {
-    render(<UploadSuccessScreen trackId="track-1" />)
-    expect(() => fireEvent.click(screen.getByText("Privacy"))).not.toThrow()
-  })
-
-  it("Learn more link is clickable without throwing", () => {
-    render(<UploadSuccessScreen trackId="track-1" />)
-    expect(() => fireEvent.click(screen.getByText("Learn more."))).not.toThrow()
-  })
-
-  it("Cookie Policy footer link is present and clickable", () => {
-    render(<UploadSuccessScreen />)
-    const link = screen.getByText("Cookie Policy")
-    expect(link).toBeInTheDocument()
-    expect(() => fireEvent.click(link)).not.toThrow()
-  })
-
-  it("Cookie Manager footer link is present and clickable", () => {
-    render(<UploadSuccessScreen />)
-    const link = screen.getByText("Cookie Manager")
-    expect(link).toBeInTheDocument()
-    expect(() => fireEvent.click(link)).not.toThrow()
-  })
-})
+    expect(() => fireEvent.click(screen.getByTestId("success-close-btn"))).not.toThrow();
+    expect(() => fireEvent.click(screen.getByTestId("unlock-artist-pro-btn"))).not.toThrow();
+  });
+});

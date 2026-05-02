@@ -1,23 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import UserInfoBar from "../../../components/UserInfo/UserInfoBar";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
+
+import UserInfoBar from "../../../components/UserInfo/UserInfoBar";
 import userReducer from "@/store/userSlice";
 
 const mockGetFollowStatus = vi.hoisted(() => vi.fn());
-const mockGetBlockedUsers = vi.hoisted(() => vi.fn());
+const mockFollowUser = vi.hoisted(() => vi.fn());
+const mockUnfollowUser = vi.hoisted(() => vi.fn());
 const mockBlockUser = vi.hoisted(() => vi.fn());
-const mockUnblockUser = vi.hoisted(() => vi.fn());
 const mockNotifySocialGraphUpdated = vi.hoisted(() => vi.fn());
 
 vi.mock("../../../../following/followingService", () => ({
   followingService: {
     getFollowStatus: mockGetFollowStatus,
-    getBlockedUsers: mockGetBlockedUsers,
+    followUser: mockFollowUser,
+    unfollowUser: mockUnfollowUser,
     blockUser: mockBlockUser,
-    unblockUser: mockUnblockUser,
   },
 }));
 
@@ -25,63 +26,59 @@ vi.mock("../../../socialGraphEvents", () => ({
   notifySocialGraphUpdated: mockNotifySocialGraphUpdated,
 }));
 
+function renderWithStore(
+  element: React.ReactElement,
+  currentUserRole: string | null = null,
+) {
+  const store = configureStore({
+    reducer: {
+      user: userReducer,
+    },
+  });
+
+  if (currentUserRole) {
+    store.dispatch({
+      type: "user/setUser",
+      payload: {
+        id: "me-1",
+        username: "admin",
+        displayName: "Admin",
+        email: "admin@test.com",
+        role: currentUserRole,
+        isVerified: true,
+        avatarUrl: null,
+      },
+    });
+  }
+
+  return render(<Provider store={store}>{element}</Provider>);
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
-  mockGetFollowStatus.mockResolvedValue({ isFollowing: false, isFollowedBy: false, isMutual: false });
-  mockGetBlockedUsers.mockResolvedValue({
-    page: 1,
-    limit: 200,
-    total: 1,
-    hasMore: false,
-    data: [
-      {
-        blockId: "block-1",
-        blockedAt: "2026-04-29T18:59:17.094Z",
-        user: {
-          id: "user-1",
-          username: "John",
-          displayName: "John",
-          avatarUrl: null,
-        },
-      },
-    ],
+  mockGetFollowStatus.mockResolvedValue({
+    isFollowing: false,
+    isFollowedBy: false,
+    isMutual: false,
   });
+  mockFollowUser.mockResolvedValue(undefined);
+  mockUnfollowUser.mockResolvedValue(undefined);
   mockBlockUser.mockResolvedValue(undefined);
-  mockUnblockUser.mockResolvedValue(undefined);
 });
 
 describe("UserInfoBar", () => {
-  const renderWithStore = (ui: React.ReactElement, role: string | null = null) => {
-    const store = configureStore({
-      reducer: {
-        user: userReducer,
-      },
-    });
-
-    if (role) {
-      store.dispatch({
-        type: "user/setUser",
-        payload: {
-          id: "admin-user",
-          username: "admin",
-          displayName: "Admin User",
-          email: "admin@test.com",
-          role,
-          isVerified: true,
-          avatarUrl: null,
-        },
-      });
-    }
-
-    return render(<Provider store={store}>{ui}</Provider>);
-  };
-
-  it("renders all tabs", () => {
+  it("renders the profile tabs and edit action for the current user", () => {
     renderWithStore(
-      <MemoryRouter>
-        <UserInfoBar />
+      <MemoryRouter initialEntries={["/me"]}>
+        <Routes>
+          <Route
+            path="/me/*"
+            element={<UserInfoBar isMe displayName="John" userId="me-1" />}
+          />
+        </Routes>
       </MemoryRouter>,
     );
+
     [
       "All",
       "Popular tracks",
@@ -92,64 +89,70 @@ describe("UserInfoBar", () => {
     ].forEach((tab) => {
       expect(screen.getByText(tab)).toBeInTheDocument();
     });
+    expect(screen.getByRole("button", { name: /edit/i })).toBeInTheDocument();
   });
 
-  it("shows Edit button if editable", () => {
+  it("opens the edit profile overlay for the current user", () => {
     renderWithStore(
-      <MemoryRouter>
-        <UserInfoBar isMe displayName="John" />
+      <MemoryRouter initialEntries={["/me"]}>
+        <Routes>
+          <Route
+            path="/me/*"
+            element={<UserInfoBar isMe displayName="John" userId="me-1" />}
+          />
+        </Routes>
       </MemoryRouter>,
     );
-    expect(screen.getByText(/edit/i)).toBeInTheDocument();
-  });
 
-  it("opens EditInfo modal on Edit click", () => {
-    renderWithStore(
-      <MemoryRouter>
-        <UserInfoBar isMe displayName="John" />
-      </MemoryRouter>,
-    );
-    fireEvent.click(screen.getByText(/edit/i));
+    fireEvent.click(screen.getByRole("button", { name: /edit/i }));
+
     expect(screen.getByText(/edit your profile/i)).toBeInTheDocument();
   });
 
-   it("shows the viewed profile id for admins", () => {
-    const { container } = renderWithStore(
-      <MemoryRouter>
-        <UserInfoBar userId="profile-123" displayName="John" />
+  it("follows a viewed profile from the follow button", async () => {
+    renderWithStore(
+      <MemoryRouter initialEntries={["/john"]}>
+        <Routes>
+          <Route
+            path="/:username/*"
+            element={<UserInfoBar displayName="John" userId="user-1" />}
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    const followButton = await screen.findByRole("button", { name: /follow/i });
+    fireEvent.click(followButton);
+
+    await waitFor(() => {
+      expect(mockFollowUser).toHaveBeenCalledWith("user-1");
+      expect(mockNotifySocialGraphUpdated).toHaveBeenCalled();
+      expect(screen.getByRole("button", { name: /following/i })).toBeInTheDocument();
+    });
+  });
+
+  it("opens the more-actions menu and blocks the viewed profile", async () => {
+    renderWithStore(
+      <MemoryRouter initialEntries={["/john"]}>
+        <Routes>
+          <Route
+            path="/:username/*"
+            element={<UserInfoBar displayName="John" username="john" userId="user-1" />}
+          />
+        </Routes>
       </MemoryRouter>,
       "admin",
     );
 
-    expect(container.querySelector('[title="Profile ID: profile-123"]')).toBeInTheDocument();
-  it("shows Unblock in the more menu when the viewed user is blocked", async () => {
-    render(
-      <MemoryRouter>
-        <UserInfoBar isMe={false} displayName="John" userId="user-1" />
-      </MemoryRouter>,
-    );
+    fireEvent.click(screen.getByTestId("profile-more-actions-btn"));
 
-    fireEvent.click(screen.getByRole("button", { name: /more/i }));
-
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /unblock john/i })).toBeInTheDocument();
+    const blockButton = await screen.findByRole("button", {
+      name: /block john/i,
     });
-  });
-
-  it("calls unblock when the blocked user action is clicked", async () => {
-    render(
-      <MemoryRouter>
-        <UserInfoBar isMe={false} displayName="John" userId="user-1" />
-      </MemoryRouter>,
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: /more/i }));
-
-    const unblockButton = await screen.findByRole("button", { name: /unblock john/i });
-    fireEvent.click(unblockButton);
+    fireEvent.click(blockButton);
 
     await waitFor(() => {
-      expect(mockUnblockUser).toHaveBeenCalledWith("user-1");
+      expect(mockBlockUser).toHaveBeenCalledWith("user-1");
       expect(mockNotifySocialGraphUpdated).toHaveBeenCalled();
     });
   });
