@@ -5,7 +5,7 @@ import { socketSingleton } from "@/features/conversation/hooks/useSocket";
 import { feedService } from "@/features/feed/feedservice";
 import { useDebounce } from "@/hooks/useDebounce";
 import type { User } from "@/features/conversation/types";
-
+import { useBlockedUserIds } from "@/features/conversation/hooks/useBlockedUserIds";
 
 
 type ShareOverlayProps = {
@@ -72,10 +72,13 @@ function MessageTab({
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [sendSuccess, setSendSuccess] = useState(false);
+  const blockedIds = useBlockedUserIds();
 
   const { results: suggestions, isLoading: searchLoading } = useUserSearch(
-    selectedUser ? "" : toQuery,
-  );
+  selectedUser ? "" : toQuery,
+);
+
+const filteredSuggestions = suggestions.filter((u) => !blockedIds.has(u.id));
 
   async function handleSend() {
     if (!selectedUser) {
@@ -205,9 +208,9 @@ function MessageTab({
         )}
 
         {/* Suggestions dropdown */}
-        {!selectedUser && suggestions.length > 0 && (
+        {!selectedUser && filteredSuggestions.length > 0 && (
           <ul className="absolute left-0 right-0 z-20 mt-1 max-h-44 overflow-y-auto rounded-[3px] border border-zinc-600 bg-zinc-800 shadow-2xl">
-            {suggestions.map((user) => (
+            {filteredSuggestions.map((user) => (
               <li key={user.id}>
                 <button
                   type="button"
@@ -239,7 +242,7 @@ function MessageTab({
         {!selectedUser &&
           !searchLoading &&
           toQuery.trim().length > 0 &&
-          suggestions.length === 0 && (
+          filteredSuggestions.length === 0 && (
             <p className="mt-1 text-xs text-zinc-500">No users found.</p>
           )}
       </div>

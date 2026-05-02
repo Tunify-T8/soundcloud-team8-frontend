@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useFollowingSuggestions } from "../hooks/useFollowingSuggestions";
 import { conversationService } from "../conversationService";
 import type { User } from "../types";
+import { useBlockedUserIds } from "../hooks/useBlockedUserIds";
+
 
 type NewMessageDialogProps = {
   isOpen: boolean;
@@ -11,22 +13,6 @@ type NewMessageDialogProps = {
   onConversationCreated?: (conversationId: string) => void;
 };
 
-/**
- * Creates a new conversation via REST, then navigates to it.
- *
- * The first message is intentionally NOT sent here any more. The previous
- * approach created a second useSocket instance which raced against the
- * ChatWindow socket — the pending message often never flushed because
- * the ad-hoc socket hadn't authenticated yet.
- *
- * Instead we:
- *  1. Create the conversation via REST (POST /users/me/conversations)
- *  2. Navigate to /messages/:conversationId
- *  3. ChatWindow mounts, its shared socket joins the room, user types there
- *
- * If you want to pre-fill the input you can pass initialText through
- * router state and let ChatWindow read location.state.
- */
 export default function NewMessageDialog({
   isOpen,
   onClose,
@@ -40,6 +26,9 @@ export default function NewMessageDialog({
 
   const { suggestions, isLoading: suggestionsLoading } =
     useFollowingSuggestions(selectedUser ? "" : toQuery);
+
+  const blockedIds = useBlockedUserIds();
+  const filteredSuggestions = suggestions.filter((u) => !blockedIds.has(u.id));
 
   function handleSelect(user: User) {
     setSelectedUser(user);
@@ -131,9 +120,9 @@ export default function NewMessageDialog({
                 <p className="mt-1 text-xs text-zinc-400">Searching…</p>
               )}
 
-              {!selectedUser && suggestions.length > 0 && (
+              {!selectedUser && filteredSuggestions.length > 0 && (
                 <ul className="absolute left-0 right-0 z-10 mt-1 max-h-48 overflow-y-auto rounded-md border border-zinc-600 bg-zinc-800 shadow-lg">
-                  {suggestions.map((user) => (
+                  {filteredSuggestions.map((user) => (
                     <li key={user.id}>
                       <button
                         type="button"

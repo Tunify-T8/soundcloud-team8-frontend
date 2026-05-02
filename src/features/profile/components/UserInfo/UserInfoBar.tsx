@@ -149,21 +149,28 @@ export default function UserInfoBar({
   const [blockLoading, setBlockLoading] = useState(false);
   const [showShareOverlay, setShowShareOverlay] = useState(false);
   const [messageLoading, setMessageLoading] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
 
   const navigate = useNavigate();
 
   useEffect(() => {
     if (isMe || !userId) return;
 
-    followingService
-      .getFollowStatus(userId)
-      .then((status) => {
-        setIsFollowing(status.isFollowing);
-      })
-      .catch(() => {
-        setIsFollowing(false);
-      });
-  }, [isMe, userId]);
+    Promise.all([
+    followingService.getFollowStatus(userId),
+    followingService.getBlockedUsers(1, 100),
+  ])
+    .then(([status, blockedData]) => {
+      setIsFollowing(status.isFollowing);
+      setIsBlocked(
+        blockedData.blockedUsers.some((u) => u.id === userId)
+      );
+    })
+    .catch(() => {
+      setIsFollowing(false);
+      setIsBlocked(false);
+    });
+}, [isMe, userId]);
 
   const handleFollowToggle = async () => {
     if (!userId || followLoading) return;
@@ -216,8 +223,11 @@ export default function UserInfoBar({
   try {
     const conversationId = await conversationService.createOrGetConversation(userId);
     navigate(`/messages/${conversationId}`);
-  } catch {
-    // silently fail
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "";
+    if (msg.toLowerCase().includes("block")) {
+      alert("You cannot message this user.");
+    }
   } finally {
     setMessageLoading(false);
   }
@@ -313,14 +323,14 @@ export default function UserInfoBar({
               className="ml-3"
             />
           )}
-          {!isMe && (
+          {!isMe && !isBlocked && (
             <div className="relative group">
               <button
   data-testid="profile-messages-btn"
   type="button"
   title="Messages"
   onClick={handleMessage}
-  disabled={messageLoading || !userId}
+  disabled={messageLoading || !userId || isBlocked}
   className="inline-flex shrink-0 items-center justify-center rounded-sm bg-zinc-800 px-2 py-1.5 text-[12px] font-bold text-white hover:text-zinc-500 cursor-pointer sm:px-3 sm:py-2 sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
 >
   {messageLoading ? (
