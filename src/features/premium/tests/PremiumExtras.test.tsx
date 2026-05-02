@@ -7,7 +7,7 @@ import ArtistProUpgradeButton from "../components/ArtistProUpgradeButton";
 import PaymentFailedBanner from "../components/PaymentFailedBanner";
 import PaymentSuccessModal from "../components/PaymentSuccessModal";
 import { PremiumComingSoonModal, MasteringEligibilityModal } from "../components/TrackActionModals";
-import PlanCard from "../pages/PlanCard";
+import PlanCard from "../components/PlanCard";
 import PromoPage from "../pages/PromoPage";
 import Mastering from "../pages/Mastering";
 import InsightsOverviewPage from "@/features/insights/components/InsightsOverviewPage";
