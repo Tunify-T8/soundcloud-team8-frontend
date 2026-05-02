@@ -1,8 +1,20 @@
 import { useState, useRef, useEffect } from "react";
-import { Heart, UserPlus, MoreHorizontal, Repeat2, Share2, Link, ListEnd, ListPlus, Radio } from "lucide-react";
+import {
+  Heart,
+  UserPlus,
+  MoreHorizontal,
+  Repeat2,
+  Share2,
+  Link,
+  ListEnd,
+  ListPlus,
+  Radio,
+} from "lucide-react";
 import SongCard from "@/components/ui/SongCard";
 import type { TrackItem } from "../types";
 import { usePlayer } from "@/features/playerUI/context/usePlayer";
+import ShareOverlay from "@/components/ui/ShareOverlay";
+import CreatePlaylistOverlay from "@/features/library/tabs/playlists/components/CreatePlaylistOverlay";
 
 interface TrackRowProps {
   track: TrackItem;
@@ -10,7 +22,7 @@ interface TrackRowProps {
   isLiked?: boolean;
   onUnlike?: (trackId: string) => Promise<void>;
 }
-  const MENU_ITEMS = [
+const MENU_ITEMS = [
   { label: "Repost", icon: Repeat2 },
   { label: "Share", icon: Share2 },
   { label: "Copy Link", icon: Link },
@@ -19,11 +31,22 @@ interface TrackRowProps {
   { label: "Station", icon: Radio },
 ];
 
-export default function TrackRow({ track, view = "list", isLiked = false, onUnlike }: TrackRowProps) {
-  const { currentTrack, isPlaying, setCurrentTrack, setIsPlaying } = usePlayer();
+export default function TrackRow({
+  track,
+  view = "list",
+  isLiked = false,
+  onUnlike,
+}: TrackRowProps) {
+  const { currentTrack, isPlaying, setCurrentTrack, setIsPlaying } =
+    usePlayer();
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuAbove, setMenuAbove] = useState(false);
   const [unliking, setUnliking] = useState(false);
+  const [showShareOverlay, setShowShareOverlay] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
+  const [showPlaylistOverlay, setShowPlaylistOverlay] = useState(false);
+  const [isCopying, setIsCopying] = useState(false);
+  const [showCopyToast, setShowCopyToast] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
 
@@ -65,6 +88,47 @@ export default function TrackRow({ track, view = "list", isLiked = false, onUnli
     } finally {
       setUnliking(false);
     }
+  };
+
+  const buildShareUrl = () => {
+    if (typeof window === "undefined") return "";
+    if (!track.id) return window.location.href;
+    return `${window.location.origin}/tracks/${track.id}`;
+  };
+
+  const showCopiedMessage = () => {
+    setShowCopyToast(true);
+    window.setTimeout(() => {
+      setShowCopyToast(false);
+    }, 2200);
+  };
+
+  const handleCopyLink = async () => {
+    if (isCopying) return;
+    setIsCopying(true);
+    const nextShareUrl = buildShareUrl();
+    if (nextShareUrl) {
+      await navigator.clipboard.writeText(nextShareUrl);
+      showCopiedMessage();
+    }
+    setIsCopying(false);
+  };
+
+  const handleMenuAction = (label: string) => {
+    if (label === "Share") {
+      const nextShareUrl = buildShareUrl();
+      if (nextShareUrl) {
+        setShareUrl(nextShareUrl);
+        setShowShareOverlay(true);
+      }
+    }
+    if (label === "Copy Link") {
+      void handleCopyLink();
+    }
+    if (label === "Add to Playlist") {
+      setShowPlaylistOverlay(true);
+    }
+    setMenuOpen(false);
   };
 
   if (view === "grid") {
@@ -144,16 +208,19 @@ export default function TrackRow({ track, view = "list", isLiked = false, onUnli
             {menuOpen && (
               <div
                 data-testid={`track-dropdown-${track.id}`}
-                className={`absolute right-0 ${menuAbove ? "bottom-full mb-2" : "top-full mt-2"} w-52 bg-[#1a1a1a] border border-zinc-800 rounded shadow-2xl z-50 py-1`}
+                className={`absolute left-0 ${menuAbove ? "bottom-full mb-1" : "top-full mt-1"} z-50 min-w-[180px] overflow-visible rounded-md border border-[hsl(0,0%,18%)] bg-[#0b0b0b] py-0.5 shadow-2xl`}
               >
                 {MENU_ITEMS.map(({ label, icon: Icon }) => (
                   <button
                     key={label}
                     data-testid={`track-menu-${label.toLowerCase().replace(/ /g, "-")}-${track.id}`}
-                    onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white hover:bg-zinc-800 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleMenuAction(label);
+                    }}
+                    className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-[13px] font-semibold text-white hover:text-zinc-500"
                   >
-                    <Icon size={15} className="text-zinc-400 shrink-0" />
+                    <Icon size={14} className="text-zinc-300 shrink-0" />
                     {label}
                   </button>
                 ))}
@@ -162,8 +229,46 @@ export default function TrackRow({ track, view = "list", isLiked = false, onUnli
           </div>
         </div>
 
-        <p data-testid={`track-title-${track.id}`} className="text-white text-xs font-bold truncate">{track.title}</p>
-        <p data-testid={`track-artist-${track.id}`} className="text-zinc-400 text-xs truncate">{track.artist}</p>
+        <p
+          data-testid={`track-title-${track.id}`}
+          className="text-white text-xs font-bold truncate"
+        >
+          {track.title}
+        </p>
+        <p
+          data-testid={`track-artist-${track.id}`}
+          className="text-zinc-400 text-xs truncate"
+        >
+          {track.artist}
+        </p>
+        {showShareOverlay && (
+          <ShareOverlay
+            onClose={() => setShowShareOverlay(false)}
+            shareUrl={shareUrl}
+          />
+        )}
+        {showCopyToast && (
+          <div className="fixed right-6 top-6 z-[140]">
+            <div className="flex max-w-[360px] items-center gap-3 rounded-[4px] border border-zinc-500 bg-[#2f2f2f] px-4 py-2.5 text-white shadow-xl">
+              <div className="text-emerald-400 text-lg">✓</div>
+              <div className="text-[13px] font-semibold leading-tight">
+                Link has been copied to the clipboard!
+              </div>
+            </div>
+          </div>
+        )}
+        <CreatePlaylistOverlay
+          isOpen={showPlaylistOverlay}
+          onClose={() => setShowPlaylistOverlay(false)}
+          track={{
+            id: track.id,
+            title: track.title,
+            artist: track.artist,
+            coverUrl: track.coverUrl ?? "",
+          }}
+          defaultCoverUrl={track.coverUrl ?? ""}
+          autoAddTrackId={track.id}
+        />
       </div>
     );
   }
