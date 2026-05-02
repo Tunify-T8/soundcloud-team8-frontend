@@ -31,6 +31,7 @@ import fansHoverImg from "@/assets/top_fans_hover.png";
 import benefitsHoverImg from "@/assets/benefits_hover.png";
 
 import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
+import { PremiumComingSoonModal } from "@/features/premium/components/TrackActionModals";
 import { useMe } from "@/features/profile/context/useMe";
 import { usePlayContext } from "@/hooks/usePlayContext";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -482,12 +483,14 @@ const TABS = ["SoundCloud Tracks", "Distribution", "Vinyl Records", "Comments"];
 export default function ArtistsPage() {
   const { me } = useMe();
   usePlayContext({ contextType: "profile", contextId: me?.id ?? "" });
+  const { isArtistPro } = useSubscription();
 
   const [activeTab, setActiveTab] = useState("SoundCloud Tracks");
   const [searchQuery, setSearchQuery] = useState("");
   const [visibilityFilter, setVisibilityFilter] = useState<"all" | "public" | "private">("all");
   const [tracks, setTracks] = useState<Track[]>([]);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [premiumActionModal, setPremiumActionModal] = useState<"distribution" | "monetization" | null>(null);
 
   const handleUpdate = (updatedTrack: Track) => {
     setTracks(prev =>
@@ -547,6 +550,24 @@ export default function ArtistsPage() {
     setTracks((prev) => prev.filter((t) => t.id !== id));
   };
 
+  const openPromoWindow = (path: string) => {
+    window.open(path, "_blank", "noopener,noreferrer");
+  };
+
+  const handleTrackAction = (action: "distribution" | "monetization" | "master") => {
+    if (action === "master") {
+      window.location.assign("/mastering");
+      return;
+    }
+
+    if (isArtistPro) {
+      setPremiumActionModal(action);
+      return;
+    }
+
+    openPromoWindow(action === "distribution" ? "/distribution/soundcloud" : "/monetization/soundcloud");
+  };
+
   return (
     <div className="flex min-h-screen bg-black text-white font-sans">
       <div className="hidden sm:block">
@@ -584,13 +605,14 @@ export default function ArtistsPage() {
               <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                 {[
                   { icon: Plus, label: "Upload or drop tracks", to: "/upload" },
-                  { icon: Globe, label: "Distribute tracks", to: null },
-                  { icon: DollarSign, label: "Monetize tracks", to: null },
-                  { icon: SlidersHorizontal, label: "Master track audio", to: null },
-                ].map(({ icon: Icon, label, to }) => {
+                  { icon: Globe, label: "Distribute tracks", to: null, action: () => handleTrackAction("distribution") },
+                  { icon: DollarSign, label: "Monetize tracks", to: null, action: () => handleTrackAction("monetization") },
+                  { icon: SlidersHorizontal, label: "Master track audio", to: null, action: () => handleTrackAction("master") },
+                ].map(({ icon: Icon, label, to, action }) => {
                   const btn = (
                     <button
                       key={label}
+                      onClick={action}
                       className="flex items-center gap-2 bg-[hsl(0,0%,16%)] hover:bg-[hsl(0,0%,21%)] border border-[hsl(0,0%,26%)] text-white text-xs sm:text-sm font-medium px-3 sm:px-4 py-2 sm:py-2.5 rounded transition-colors"
                     >
                       <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
@@ -659,6 +681,14 @@ export default function ArtistsPage() {
           {activeTab === "Comments" && <CommentsTab />}
         </div>
       </div>
+
+      {premiumActionModal && (
+        <PremiumComingSoonModal
+          featureLabel={premiumActionModal === "distribution" ? "Distribution" : "Monetization"}
+          isArtistPro={isArtistPro}
+          onClose={() => setPremiumActionModal(null)}
+        />
+      )}
     </div>
   );
 }
