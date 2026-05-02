@@ -12,6 +12,10 @@ import CreatePlaylistOverlay from "@/features/library/tabs/playlists/components/
 import amplify from "@/assets/amplify.png";
 import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
 import TrackDeleteConfirmModal from "./TrackDeleteConfirmModal";
+import {
+  MasteringEligibilityModal,
+  PremiumComingSoonModal,
+} from "@/features/premium/components/TrackActionModals";
 
 function formatDate(raw: string): string {
   const d = new Date(raw);
@@ -215,6 +219,8 @@ export default function TrackCard({
   const [showPlaylistOverlay, setShowPlaylistOverlay] = useState(false);
   const [amplifyHovered, setAmplifyHovered] = useState(false);
   const [downloadState, setDownloadState] = useState<"idle" | "loading" | "done">("idle");
+  const [premiumActionModal, setPremiumActionModal] = useState<"monetization" | "distribution" | null>(null);
+  const [showMasteringModal, setShowMasteringModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const downloadDoneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -258,6 +264,50 @@ export default function TrackCard({
 
   const fmt = (val: number | null | undefined) =>
     val === null || val === 0 || val === undefined ? "-" : val.toString();
+
+  const openExternalWindow = (url: string) => {
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const handleMonetize = () => {
+    setMenuOpen(false);
+    if (onMonetize) {
+      onMonetize(track.id);
+      return;
+    }
+    setPremiumActionModal("monetization");
+  };
+
+  const handleMaster = () => {
+    setMenuOpen(false);
+    if (onMaster) {
+      onMaster(track.id);
+      return;
+    }
+    setShowMasteringModal(true);
+  };
+
+  const handleDistribute = () => {
+    setMenuOpen(false);
+    if (onDistribute) {
+      onDistribute(track.id);
+      return;
+    }
+    if (isArtistPro) {
+      setPremiumActionModal("distribution");
+      return;
+    }
+    openExternalWindow("/distribution/soundcloud");
+  };
+
+  const handleInsights = () => {
+    setMenuOpen(false);
+    if (onTrackInsights) {
+      onTrackInsights(track.id);
+      return;
+    }
+    window.location.assign("/me/insights/overview");
+  };
 
   useEffect(() => {
     return () => {
@@ -463,10 +513,10 @@ export default function TrackCard({
               <MenuItem icon={<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1L9 6H14L10 9.5L11.5 14L7 11L2.5 14L4 9.5L0 6H5L7 1Z" fill="currentColor" /></svg>} label="Amplify" onClick={() => { setShowAmplifyModal(true); setMenuOpen(false); }} />
             </div>
             <div className="my-1 border-t border-zinc-700" />
-            <MenuItem icon={<CircleDollarSign className="w-4 h-4" />} label="Monetize" onClick={() => { onMonetize?.(track.id); setMenuOpen(false); }} />
-            <MenuItem icon={<SlidersHorizontal className="w-4 h-4" />} label="Master" onClick={() => { onMaster?.(track.id); setMenuOpen(false); }} />
-            <MenuItem icon={<Share2 className="w-4 h-4" />} label="Distribute" onClick={() => { onDistribute?.(track.id); setMenuOpen(false); }} />
-            <MenuItem icon={<TrendingUp className="w-4 h-4" />} label="Track insights" onClick={() => { onTrackInsights?.(track.id); setMenuOpen(false); }} />
+            <MenuItem icon={<CircleDollarSign className="w-4 h-4" />} label="Monetize" onClick={handleMonetize} />
+            <MenuItem icon={<SlidersHorizontal className="w-4 h-4" />} label="Master" onClick={handleMaster} />
+            <MenuItem icon={<Share2 className="w-4 h-4" />} label="Distribute" onClick={handleDistribute} />
+            <MenuItem icon={<TrendingUp className="w-4 h-4" />} label="Track insights" onClick={handleInsights} />
             <MenuItem
               icon={<Download className="w-4 h-4" />}
               label="Download file"
@@ -484,6 +534,18 @@ export default function TrackCard({
 
       {showAmplifyModal && (
         <AmplifyModal onClose={() => setShowAmplifyModal(false)} isArtistPro={isArtistPro} />
+      )}
+
+      {premiumActionModal && (
+        <PremiumComingSoonModal
+          featureLabel={premiumActionModal === "distribution" ? "Distribution" : "Monetization"}
+          isArtistPro={isArtistPro}
+          onClose={() => setPremiumActionModal(null)}
+        />
+      )}
+
+      {showMasteringModal && (
+        <MasteringEligibilityModal onClose={() => setShowMasteringModal(false)} />
       )}
 
       {showDeleteModal && (

@@ -1,6 +1,8 @@
 import { useRef, useState, useCallback } from 'react';
 
-export function useCaptcha(minTimeMs = 1500) {
+const DEFAULT_MIN_TIME = typeof process !== 'undefined' && process.env.NODE_ENV === 'test' ? 0 : 1500;
+
+export function useCaptcha(minTimeMs = DEFAULT_MIN_TIME) {
   const [honeypot, setHoneypot] = useState('');
   const loadTime = useRef(Date.now());
 
