@@ -208,6 +208,7 @@ const router = createBrowserRouter([
         path: "/:username",
         element: <ProfilePage />,
         children: [
+          { path: "", element: <AllTabPage /> },
           { path: "popular-tracks", element: <PopularTracksPage /> },
           { path: "tracks", element: <ProfileTracksPage /> },
           { path: "albums", element: <AlbumsPage /> },

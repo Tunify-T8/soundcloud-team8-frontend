@@ -175,7 +175,7 @@ export default function ProfilePage() {
           username={user.username}
           country={country}
           city={city}
-          isCertified={isMeProfile(user) ? user.isCertified : false}
+          isCertified={user.isCertified ?? false}
           avatarUrl={user.avatarUrl || ""}
           coverUrl={user.coverUrl || ""}
           isMe={isMe}
