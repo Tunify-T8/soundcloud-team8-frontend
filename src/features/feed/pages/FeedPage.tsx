@@ -119,8 +119,7 @@ const feedItemVariants: Variants = {
     y: 0,
     transition: {
       duration: 0.25,
-      ease: "easeOut",
-    },
+    ease:"linear"    },
   },
 };
 
