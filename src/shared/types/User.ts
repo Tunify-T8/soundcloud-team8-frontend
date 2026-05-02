@@ -69,6 +69,7 @@ export interface PublicUserProfile {
   location?: string | null;
   avatarUrl?: string | null;
   coverUrl?: string | null;
+  isCertified?: boolean;
   followersCount: number;
   followingCount: number;
   tracksUploadedCount: number;
