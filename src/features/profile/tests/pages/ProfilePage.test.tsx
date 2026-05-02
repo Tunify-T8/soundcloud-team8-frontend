@@ -13,31 +13,38 @@ import playContextReducer from "@/store/playContextSlice";
 const mockGetPublicProfile = vi.fn();
 const mockGetUserFollowers = vi.fn();
 const mockGetUserFollowing = vi.fn();
+const mockUsePlayContext = vi.fn();
+const mockRefresh = vi.fn();
 
-vi.mock("@/features/profile/context/useMe", () => ({
+const mockMe = {
+  id: "me-1",
+  username: "nada",
+  displayName: "Nada",
+  location: "Cairo, Egypt",
+  isCertified: true,
+  avatarUrl: "",
+  coverUrl: "",
+  followersCount: 10,
+  followingCount: 5,
+  role: "listener" as const,
+  bio: "My bio",
+  visibility: "public",
+};
+
+const mockSocialAccounts: [] = [];
+const mockFollowing: [] = [];
+
+vi.mock("../../context/useMe", () => ({
   useMe: () => ({
-    me: {
-      id: "me-1",
-      username: "nada",
-      displayName: "Nada",
-      location: "Cairo, Egypt",
-      isCertified: true,
-      avatarUrl: "",
-      coverUrl: "",
-      followersCount: 10,
-      followingCount: 5,
-      role: "listener",
-      bio: "My bio",
-      visibility: "public",
-    },
-    socialAccounts: [],
-    following: [],
-    refresh: vi.fn(),
+    me: mockMe,
+    socialAccounts: mockSocialAccounts,
+    following: mockFollowing,
+    refresh: mockRefresh,
   }),
 }));
 
 vi.mock("@/hooks/usePlayContext", () => ({
-  usePlayContext: vi.fn(),
+  usePlayContext: (...args: unknown[]) => mockUsePlayContext(...args),
 }));
 
 vi.mock("../../profileService", () => ({
@@ -49,11 +56,19 @@ vi.mock("../../profileService", () => ({
 }));
 
 vi.mock("../../components/Header/Header", () => ({
-  default: ({ username }: { username: string }) => <div data-testid="profile-header">{username}</div>,
+  default: ({ username }: { username: string }) => (
+    <div data-testid="profile-header">{username}</div>
+  ),
 }));
 
 vi.mock("../../components/UserInfo/UserInfoBar", () => ({
-  default: ({ username }: { username: string }) => <div data-testid="user-info-bar">{username}</div>,
+  default: ({
+    username,
+    isMe,
+  }: {
+    username: string;
+    isMe?: boolean;
+  }) => <div data-testid="user-info-bar">{`${username}-${String(isMe)}`}</div>,
 }));
 
 vi.mock("../../components/UserInfo/ProfileSideBar", () => ({
@@ -84,18 +99,22 @@ describe("ProfilePage", () => {
   }
 
   beforeEach(() => {
-    mockGetPublicProfile.mockReset();
-    mockGetUserFollowers.mockReset();
-    mockGetUserFollowing.mockReset();
+    vi.clearAllMocks();
     mockGetUserFollowers.mockResolvedValue({ followers: [] });
     mockGetUserFollowing.mockResolvedValue({ following: [] });
   });
 
-  it("renders the signed-in user's profile when no username param is present", () => {
+  it("renders the signed-in user's profile when no username param is present", async () => {
     renderProfilePage("/me");
 
     expect(screen.getByTestId("profile-header")).toHaveTextContent("nada");
+    expect(screen.getByTestId("user-info-bar")).toHaveTextContent("nada-true");
     expect(screen.getAllByTestId("profile-sidebar")).toHaveLength(2);
+    expect(mockGetUserFollowers).toHaveBeenCalledWith("me-1");
+    expect(mockUsePlayContext).toHaveBeenCalledWith({
+      contextType: "profile",
+      contextId: "me-1",
+    });
   });
 
   it("renders a public profile when a username route is provided", async () => {
@@ -115,7 +134,26 @@ describe("ProfilePage", () => {
 
     renderProfilePage("/alice");
 
-    expect(await screen.findByTestId("profile-header")).toHaveTextContent("alice");
+    expect(await screen.findByTestId("profile-header")).toHaveTextContent(
+      "alice",
+    );
+    expect(screen.getByTestId("user-info-bar")).toHaveTextContent("alice-false");
     expect(mockGetPublicProfile).toHaveBeenCalledWith("alice");
+    expect(mockGetUserFollowers).toHaveBeenCalledWith("user-2");
+    expect(mockGetUserFollowing).toHaveBeenCalledWith("user-2");
+    expect(mockUsePlayContext).toHaveBeenCalledWith({
+      contextType: "profile",
+      contextId: "user-2",
+    });
+  });
+
+  it("renders an error state when loading a public profile fails", async () => {
+    mockGetPublicProfile.mockRejectedValue(new Error("Failed to fetch user"));
+
+    renderProfilePage("/ghost");
+
+    expect(await screen.findByTestId("profile-page-error")).toHaveTextContent(
+      "Failed to fetch user",
+    );
   });
 });
