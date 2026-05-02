@@ -43,6 +43,8 @@ import LibraryPage from "./features/library/pages/LibraryPage";
 import NotificationsPage from "./features/notifications/pages/NotificationPage";
 import InsightsOverviewPage from "./features/insights/components/InsightsOverviewPage";
 import PlansPage from "./features/premium/pages/PlansPage";
+import PromoPage from "./features/premium/pages/PromoPage";
+import Mastering from "./features/premium/pages/Mastering";
 import AllTabPage from "./features/profile/pages/UserInfoBar/AllTabPage";
 import { AdPopup } from "./features/premium/components/AdPopUp";
 import AdminDashboardPage from "./features/admin/pages/AdminDashboardPage";
@@ -204,6 +206,9 @@ const router = createBrowserRouter([
       { path: "/me/insights/overview", element: <InsightsOverviewPage /> },
       { path: "/me/insights/all-platforms", element: <InsightsOverviewPage /> },
       { path: "/me/insights/fanz", element: <InsightsOverviewPage /> },
+      { path: "/distribution/soundcloud", element: <PromoPage /> },
+      { path: "/monetization/soundcloud", element: <PromoPage /> },
+      { path: "/mastering", element: <Mastering /> },
       {
         path: "/:username",
         element: <ProfilePage />,
