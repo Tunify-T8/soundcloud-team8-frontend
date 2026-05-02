@@ -138,7 +138,7 @@ export default function SearchBar() {
       {isOpen && (
         <div
           data-testid="search-dropdown"
-          className="absolute top-full left-0 right-0 mt-1 bg-[#1a1a1a] border border-[hsl(0,0%,20%)] rounded-md shadow-2xl z-50 max-h-[480px] overflow-y-auto"
+          className="absolute top-full left-0 right-0 mt-1 bg-[#1a1a1a] border border-[hsl(0,0%,20%)] rounded-md shadow-2xl z-50 max-h-[480px] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         >
           {isLoading && (
             <div
@@ -160,7 +160,7 @@ export default function SearchBar() {
 
           {tracks.length > 0 && (
             <section data-testid="search-tracks-section">
-              <SectionHeader label="Tracks" />
+              <SectionHeader label="Tracks" testId="search-section-tracks-header" />
               {tracks.map((track) => (
                 <ResultRow
                   key={track.id}
@@ -169,6 +169,8 @@ export default function SearchBar() {
                 >
                   <Thumbnail
                     src={track.coverUrl ?? null}
+                    alt={track.title}
+                    testId={`track-thumbnail-${track.id}`}
                     fallback={<Music size={14} className="text-gray-500" />}
                   />
                   <div className="min-w-0 flex-1">
@@ -189,7 +191,7 @@ export default function SearchBar() {
               data-testid="search-people-section"
               className="border-t border-[hsl(0,0%,13%)]"
             >
-              <SectionHeader label="People" />
+              <SectionHeader label="People" testId="search-section-people-header" />
               {users.map((user) => (
                 <ResultRow
                   key={user.id}
@@ -240,7 +242,7 @@ export default function SearchBar() {
               data-testid="search-collections-section"
               className="border-t border-[hsl(0,0%,13%)]"
             >
-              <SectionHeader label="Albums & Playlists" />
+              <SectionHeader label="Albums & Playlists" testId="search-section-collections-header" />
               {collections.map((col) => (
                 <ResultRow
                   key={col.id}
@@ -249,6 +251,8 @@ export default function SearchBar() {
                 >
                   <Thumbnail
                     src={col.coverUrl ?? null}
+                    alt={col.title}
+                    testId={`collection-thumbnail-${col.id}`}
                     fallback={<Disc size={14} className="text-gray-500" />}
                   />
                   <div className="min-w-0">
@@ -269,9 +273,12 @@ export default function SearchBar() {
   );
 }
 
-function SectionHeader({ label }: { label: string }) {
+function SectionHeader({ label, testId }: { label: string; testId?: string }) {
   return (
-    <div className="px-4 py-2 text-[10px] uppercase tracking-widest text-gray-500 font-semibold bg-[hsl(0,0%,13%)]">
+    <div
+      data-testid={testId}
+      className="px-4 py-2 text-[10px] uppercase tracking-widest text-gray-500 font-semibold bg-[hsl(0,0%,13%)]"
+    >
       {label}
     </div>
   );
@@ -299,15 +306,24 @@ function ResultRow({
 
 function Thumbnail({
   src,
+  alt = "",
   fallback,
+  testId,
 }: {
   src: string | null;
+  alt?: string;
   fallback: React.ReactNode;
+  testId?: string;
 }) {
   return (
     <div className="w-9 h-9 rounded bg-[hsl(0,0%,12%)] flex items-center justify-center shrink-0 overflow-hidden">
       {src ? (
-        <img src={src} className="w-full h-full object-cover" />
+        <img
+          src={src}
+          alt={alt}
+          data-testid={testId}
+          className="w-full h-full object-cover"
+        />
       ) : (
         fallback
       )}

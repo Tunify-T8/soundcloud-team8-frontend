@@ -293,14 +293,17 @@ export const feedService = {
         tracks: (data.tracks ?? []).map((item: any) => ({
           ...item,
           type: "track",
+          coverUrl: item.coverUrl ?? item.artworkUrl ?? item.cover ?? item.artwork?.url ?? null,
         })),
         users: (data.users ?? []).map((item: any) => ({
           ...item,
           type: "user",
+          avatarUrl: item.avatarUrl ?? item.avatar ?? item.profileImage ?? item.photo ?? null,
         })),
         collections: (data.collections ?? []).map((item: any) => ({
           ...item,
           type: "collection",
+          coverUrl: item.coverUrl ?? item.artworkUrl ?? item.cover ?? item.artwork?.url ?? null,
         })),
       };
     } catch {
