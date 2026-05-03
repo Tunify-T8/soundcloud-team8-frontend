@@ -548,8 +548,12 @@ const handleSignOut = async () => {
             </div>
           </div>
 
-          <div className="md:hidden flex items-center gap-3">
-            <Link to="/messages" className="relative text-zinc-400 hover:text-white" aria-label="Messages">
+          <div className="ml-auto md:hidden flex shrink-0 items-center gap-1.5">
+            <Link
+              to="/messages"
+              className="relative inline-flex h-9 w-9 items-center justify-center text-zinc-400 hover:text-white"
+              aria-label="Messages"
+            >
               <Mail size={18} />
               {unreadMessages > 0 && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full text-[9px] font-black text-white flex items-center justify-center leading-none pointer-events-none">
@@ -560,7 +564,7 @@ const handleSignOut = async () => {
             <button
               type="button"
               onClick={() => setMobileMenuOpen((v) => !v)}
-              className="text-zinc-300 hover:text-white"
+              className="inline-flex h-9 w-9 items-center justify-center text-zinc-300 hover:text-white"
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             >
               {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}

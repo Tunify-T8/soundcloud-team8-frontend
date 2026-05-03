@@ -59,9 +59,9 @@ export default function LikesTab() {
   const totalSlots = Math.ceil(Math.max(filteredTracks.length, 1) / COLS) * COLS;
   return (
     <div data-testid="likes-tab">
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-white font-bold text-sm">Hear the tracks you've liked:</h2>
-        <div className="flex items-center gap-3">
+        <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto sm:justify-end">
           <span className="text-zinc-400 text-xs">View</span>
           <button
             data-testid="likes-grid-view-btn"
@@ -91,7 +91,7 @@ export default function LikesTab() {
             placeholder="Filter"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="bg-[#282828] border border-zinc-700 rounded-sm px-3 py-1.5 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 w-64"
+            className="w-full sm:w-64 bg-[#282828] border border-zinc-700 rounded-sm px-3 py-1.5 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500"
           />
         </div>
       </div>
@@ -109,7 +109,7 @@ export default function LikesTab() {
           You have not liked any tracks yet
         </p>
       ) : view === "grid" ? (
-        <div className="grid grid-cols-6 gap-4" data-testid="likes-grid">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6" data-testid="likes-grid">
           {Array.from({ length: totalSlots }).map((_, i) => {
             const track = filteredTracks[i];
             return track ? (

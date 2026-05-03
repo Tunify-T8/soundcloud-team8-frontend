@@ -37,11 +37,11 @@ export default function PlaylistsTab() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-white font-bold text-sm">Hear your own playlists and the playlists you've liked:</h2>
         <input
           placeholder="Filter"
-          className="bg-[#282828] border border-zinc-700 rounded-sm px-3 py-1 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 w-64"
+          className="w-full sm:w-64 bg-[#282828] border border-zinc-700 rounded-sm px-3 py-1 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
         />
       </div>
 
@@ -50,7 +50,7 @@ export default function PlaylistsTab() {
             You have not liked any playlists yet
           </p>
         ) : (
-          <div className="grid grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
         {Array.from({ length: totalSlots }).map((_, i) => {
           const item = playlists[i];
           return item ? (
