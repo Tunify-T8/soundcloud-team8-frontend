@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { adminServices } from '../services/adminServices';
+import type { EntityInfo } from '../services/adminServices';
 import type {
   ModerationAction,
   ReportDetail,
@@ -49,6 +50,78 @@ const getEntityLabel = (entityType?: ReportedEntityType | null) => {
   return entityType.charAt(0) + entityType.slice(1).toLowerCase();
 };
 
+const truncateId = (id?: string | null): string => {
+  if (!id) return '—';
+  return `${id.slice(0, 8)}…`;
+};
+
+/** Returns a human-readable primary label for the entity (track title, username, comment excerpt). */
+const getEntityPrimaryLabel = (entityInfo: EntityInfo | null): string | null => {
+  if (!entityInfo) return null;
+  switch (entityInfo.type) {
+    case 'TRACK':
+      return entityInfo.data.title;
+    case 'USER':
+      return entityInfo.data.displayName ?? entityInfo.data.username;
+    case 'COMMENT':
+      return entityInfo.data.body.length > 80
+        ? `${entityInfo.data.body.slice(0, 80)}…`
+        : entityInfo.data.body;
+  }
+};
+
+/** Returns a secondary label (artist name, username, comment author). */
+const getEntitySecondaryLabel = (entityInfo: EntityInfo | null): string | null => {
+  if (!entityInfo) return null;
+  switch (entityInfo.type) {
+    case 'TRACK':
+      return entityInfo.data.artistName ?? null;
+    case 'USER':
+      return entityInfo.data.username !== getEntityPrimaryLabel(entityInfo)
+        ? `@${entityInfo.data.username}`
+        : null;
+    case 'COMMENT':
+      return entityInfo.data.authorUsername ? `by @${entityInfo.data.authorUsername}` : null;
+  }
+};
+
+/**
+ * Executes the content/user moderation action that corresponds to the chosen
+ * dropdown value.  This is called automatically inside handleSubmitReview so
+ * the admin never has to trigger the action separately.
+ */
+async function dispatchModerationAction(
+  entityType: ReportedEntityType,
+  entityId: string,
+  action: ModerationAction,
+  suspendReason?: string,
+): Promise<void> {
+  switch (action) {
+    case 'HIDE':
+      if (entityType === 'TRACK') await adminServices.content.hideTrack(entityId);
+      else if (entityType === 'COMMENT') await adminServices.content.hideComment(entityId);
+      // USER entity has no "hide" – silently no-op so the report still saves.
+      break;
+
+    case 'REMOVE':
+      if (entityType === 'TRACK') await adminServices.content.deleteTrack(entityId);
+      else if (entityType === 'COMMENT') await adminServices.content.deleteComment(entityId);
+      break;
+
+    case 'SUSPEND_USER':
+      if (entityType === 'USER') {
+        await adminServices.users.suspend(entityId, {
+          reason: suspendReason?.trim() || 'Suspended via moderation report',
+        });
+      }
+      break;
+
+    case 'NONE':
+    default:
+      break;
+  }
+}
+
 const AdminReportsPage = () => {
   type ReviewStatus = Exclude<ReportStatus, 'PENDING'>;
 
@@ -56,6 +129,8 @@ const AdminReportsPage = () => {
   const [reasons, setReasons] = useState<ReportReason[]>([]);
   const [selectedReport, setSelectedReport] = useState<ReportDetail | null>(null);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const [entityInfo, setEntityInfo] = useState<EntityInfo | null>(null);
+  const [loadingEntityInfo, setLoadingEntityInfo] = useState(false);
   const [loadingQueue, setLoadingQueue] = useState(true);
   const [loadingReasons, setLoadingReasons] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -126,9 +201,11 @@ const AdminReportsPage = () => {
     setQueuePage(1);
   }, [statusFilter, entityFilter, reasonFilter, pageSize]);
 
+  // ── Load report detail + fetch the reported entity info in parallel ──────────
   useEffect(() => {
     if (!selectedReportId) {
       setSelectedReport(null);
+      setEntityInfo(null);
       setAdminNote('');
       setReviewAction('NONE');
       setReviewStatus('RESOLVED');
@@ -138,6 +215,7 @@ const AdminReportsPage = () => {
     const loadDetail = async () => {
       setLoadingDetail(true);
       setDetailError(null);
+      setEntityInfo(null);
 
       try {
         const detail = await adminServices.reports.getById(selectedReportId);
@@ -145,6 +223,15 @@ const AdminReportsPage = () => {
         setReviewStatus(detail.status === 'REJECTED' ? 'REJECTED' : 'RESOLVED');
         setReviewAction(detail.actionTaken ?? 'NONE');
         setAdminNote(detail.adminNote ?? '');
+
+        // Kick off entity info fetch without blocking the detail render
+        if (detail.reportedEntityId) {
+          setLoadingEntityInfo(true);
+          adminServices.entities
+            .getEntityInfo(detail.reportedEntityType, detail.reportedEntityId)
+            .then((info) => setEntityInfo(info))
+            .finally(() => setLoadingEntityInfo(false));
+        }
       } catch {
         setSelectedReport(null);
         setDetailError('Failed to load report details.');
@@ -182,18 +269,37 @@ const AdminReportsPage = () => {
     setSelectedReportId(reportId);
   };
 
+  // ── Submit review + automatically dispatch the chosen moderation action ──────
   const handleSubmitReview = async () => {
-    if (!selectedReportId) return;
+    if (!selectedReportId || !selectedReport) return;
 
     setSubmitting(true);
     setError(null);
 
     try {
+      // 1. Execute the content/user moderation action first so that if it
+      //    fails the report status is not updated and the admin can retry.
+      if (reviewAction !== 'NONE') {
+        if (!selectedReport.reportedEntityId) {
+          setError('Cannot dispatch action: reported entity ID is missing.');
+          return;
+        }
+        await dispatchModerationAction(
+          selectedReport.reportedEntityType,
+          selectedReport.reportedEntityId,
+          reviewAction,
+          adminNote,
+        );
+      }
+
+      // 2. Persist the review decision on the report record.
       await adminServices.reports.review(selectedReportId, {
         status: reviewStatus,
         adminNote: adminNote.trim() || null,
         actionTaken: reviewAction,
       });
+
+      // 3. Refresh the queue and reload the detail.
       setReloadToken((value) => value + 1);
       const refreshed = await adminServices.reports.getById(selectedReportId);
       setSelectedReport(refreshed);
@@ -201,7 +307,7 @@ const AdminReportsPage = () => {
       setReviewAction(refreshed.actionTaken ?? 'NONE');
       setAdminNote(refreshed.adminNote ?? '');
     } catch {
-      setError('Failed to update the report.');
+      setError('Failed to update the report. Check the action and try again.');
     } finally {
       setSubmitting(false);
     }
@@ -210,6 +316,10 @@ const AdminReportsPage = () => {
   const summaryMessage = pagination.totalCount
     ? `Showing ${reports.length} of ${pagination.totalCount} reports`
     : 'No reports found';
+
+  // Derived entity labels for the detail panel
+  const entityPrimary = getEntityPrimaryLabel(entityInfo);
+  const entitySecondary = getEntitySecondaryLabel(entityInfo);
 
   return (
     <div className="px-4 md:px-8 py-6 md:py-8 text-white">
@@ -316,6 +426,7 @@ const AdminReportsPage = () => {
       )}
 
       <div className="grid grid-cols-1 xl:grid-cols-[1.5fr_1fr] gap-5">
+        {/* ── Queue table ───────────────────────────────────────────────────── */}
         <section className="rounded-md border border-zinc-800 bg-zinc-900/70 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
             <div>
@@ -355,8 +466,8 @@ const AdminReportsPage = () => {
                       onClick={() => handleSelectReport(report.id)}
                     >
                       <td className="px-4 py-4">
-                        <div className="font-semibold text-zinc-100">{report.id.slice(0, 8)}...</div>
-                        <div className="text-xs text-zinc-500">{report.reportedEntityId.slice(0, 8)}...</div>
+                        <div className="font-semibold text-zinc-100">{truncateId(report.id)}</div>
+                        <div className="text-xs text-zinc-500">{truncateId(report.reportedEntityId)}</div>
                       </td>
                       <td className="px-4 py-4 text-zinc-200">{getEntityLabel(report.reportedEntityType)}</td>
                       <td className="px-4 py-4 text-zinc-200">{reasonMap.get(report.reasonId) ?? report.reasonId}</td>
@@ -402,8 +513,10 @@ const AdminReportsPage = () => {
           </div>
         </section>
 
+        {/* ── Report detail + review panel ──────────────────────────────────── */}
         <section className="rounded-md border border-zinc-800 bg-zinc-900/70 p-5">
           <h2 className="text-lg font-black tracking-tight mb-3">Report Details</h2>
+
           {!selectedReportId ? (
             <p className="text-zinc-500 text-sm">Select a report to review its full details.</p>
           ) : loadingDetail ? (
@@ -412,6 +525,37 @@ const AdminReportsPage = () => {
             <p className="text-red-300 text-sm">{detailError}</p>
           ) : selectedReport ? (
             <div className="space-y-4">
+
+              {/* ── Reported entity card ─────────────────────────────────────── */}
+              <div className="rounded-md border border-zinc-700 bg-zinc-950/80 p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-zinc-500 mb-2">
+                  Reported {getEntityLabel(selectedReport.reportedEntityType)}
+                </p>
+
+                {loadingEntityInfo ? (
+                  <p className="text-sm text-zinc-500 animate-pulse">Fetching details…</p>
+                ) : entityPrimary ? (
+                  <div>
+                    <p className="text-base font-bold text-zinc-100 leading-snug">{entityPrimary}</p>
+                    {entitySecondary && (
+                      <p className="text-xs text-zinc-400 mt-0.5">{entitySecondary}</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-zinc-400 font-mono break-all">
+                    {selectedReport.reportedEntityId}
+                  </p>
+                )}
+
+                {/* Always show the raw ID beneath the name */}
+                {entityPrimary && (
+                  <p className="mt-1.5 text-[10px] font-mono text-zinc-600 break-all">
+                    {selectedReport.reportedEntityId}
+                  </p>
+                )}
+              </div>
+
+              {/* ── Core report fields ───────────────────────────────────────── */}
               <div className="rounded-md border border-zinc-800 bg-zinc-950/60 p-4 space-y-2">
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-xs uppercase tracking-[0.18em] text-zinc-500">Report ID</span>
@@ -436,7 +580,9 @@ const AdminReportsPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                 <div className="rounded-md border border-zinc-800 bg-zinc-950/60 p-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-zinc-500 mb-1">Reporter</p>
-                  <p className="text-zinc-200 break-all">{selectedReport.reporterId}</p>
+                  <p className="text-zinc-200">
+                    {selectedReport.reporterUsername ?? selectedReport.reporterId}
+                  </p>
                 </div>
                 <div className="rounded-md border border-zinc-800 bg-zinc-950/60 p-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-zinc-500 mb-1">Created</p>
@@ -451,6 +597,7 @@ const AdminReportsPage = () => {
                 </p>
               </div>
 
+              {/* ── Review controls ──────────────────────────────────────────── */}
               <div className="space-y-3 pt-2 border-t border-zinc-800">
                 <div>
                   <p className="text-xs uppercase tracking-[0.18em] text-zinc-500 mb-2">Decision</p>
@@ -481,7 +628,30 @@ const AdminReportsPage = () => {
                 </div>
 
                 <label className="block">
-                  <span className="block text-xs uppercase tracking-[0.18em] text-zinc-500 mb-2">Action taken</span>
+                  <span className="block text-xs uppercase tracking-[0.18em] text-zinc-500 mb-2">
+                    Action taken
+                  </span>
+
+                  {/* Contextual hint: what will actually happen when saved */}
+                  {reviewAction !== 'NONE' && (
+                    <p className="mb-1.5 text-xs text-amber-400/80">
+                      {reviewAction === 'HIDE' && selectedReport.reportedEntityType === 'TRACK' &&
+                        '⚠ Saving will hide this track from the platform.'}
+                      {reviewAction === 'HIDE' && selectedReport.reportedEntityType === 'COMMENT' &&
+                        '⚠ Saving will hide this comment from the platform.'}
+                      {reviewAction === 'HIDE' && selectedReport.reportedEntityType === 'USER' &&
+                        'Hide is not applicable to users — no content action will run.'}
+                      {reviewAction === 'REMOVE' && selectedReport.reportedEntityType === 'TRACK' &&
+                        '⚠ Saving will permanently delete this track.'}
+                      {reviewAction === 'REMOVE' && selectedReport.reportedEntityType === 'COMMENT' &&
+                        '⚠ Saving will permanently delete this comment.'}
+                      {reviewAction === 'SUSPEND_USER' && selectedReport.reportedEntityType === 'USER' &&
+                        '⚠ Saving will suspend this user account.'}
+                      {reviewAction === 'SUSPEND_USER' && selectedReport.reportedEntityType !== 'USER' &&
+                        'Suspend user is only valid for USER reports.'}
+                    </p>
+                  )}
+
                   <select
                     value={reviewAction}
                     onChange={(e) => setReviewAction(e.target.value as ModerationAction)}
@@ -512,7 +682,11 @@ const AdminReportsPage = () => {
                   disabled={submitting}
                   className="w-full rounded-sm border border-orange-500 bg-orange-500/10 px-4 py-2.5 text-sm font-bold text-orange-200 hover:bg-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {submitting ? 'Saving...' : reviewStatus === 'RESOLVED' ? 'Save Resolution' : 'Save Rejection'}
+                  {submitting
+                    ? 'Saving…'
+                    : reviewStatus === 'RESOLVED'
+                    ? 'Save Resolution'
+                    : 'Save Rejection'}
                 </button>
               </div>
             </div>

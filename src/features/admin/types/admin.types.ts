@@ -23,10 +23,11 @@ export interface SubmitReportPayload {
   violationAreas?: ViolationArea[];
 }
 
+
 export interface ReportSummary {
   id: string;
   reportedEntityType: ReportedEntityType;
-  reportedEntityId: string;
+  reportedEntityId: string | undefined;  
   reasonId: string;
   status: ReportStatus;
   createdAt: string;
@@ -34,13 +35,13 @@ export interface ReportSummary {
 
 export interface ReportDetail extends ReportSummary {
   reporterId: string;
+  reporterUsername?: string;      
   details?: string | null;
   reviewedAt?: string | null;
   reviewedByAdminId?: string | null;
   adminNote?: string | null;
   actionTaken: ModerationAction;
 }
-
 export interface GetAdminReportsParams {
   status?: ReportStatus;
   entityType?: ReportedEntityType;

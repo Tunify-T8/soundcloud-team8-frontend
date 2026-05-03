@@ -4,16 +4,115 @@ import type {
   GetAdminReportsParams,
   GetAdminReportsResponse,
   MessageResponse,
+  ModerationAction,
   PlatformSummary,
   ReportDetail,
   ReportReason,
   ReportStats,
+  ReportSummary,
+  ReportedEntityType,
+  ReportStatus,
   SubmitReportPayload,
   SuspendUserPayload,
   TopStats,
   UpdateReportPayload,
   UserModerationOverview,
 } from '../types/admin.types';
+
+// ─── Raw API shapes (what the backend actually returns) ───────────────────────
+
+interface RawReportSummary {
+  id: string;
+  targetType: ReportedEntityType;
+  targetId: string;
+  status: ReportStatus;
+  createdAt: string;
+  reviewedAt: string | null;
+  adminAction: ModerationAction | null;
+  reason: {
+    id: string;
+    label: string;
+  };
+  reporter: {
+    id: string;
+    username: string;
+    displayName: string | null;
+  };
+}
+
+interface RawReportDetail extends RawReportSummary {
+  details?: string | null;
+  reviewedByAdminId?: string | null;
+  adminNote?: string | null;
+}
+
+interface RawGetAdminReportsResponse {
+  data: RawReportSummary[];
+  pagination: {
+    page: number;
+    limit: number;
+    totalCount: number;
+    hasMore: boolean;
+  };
+}
+
+// ─── Entity info shapes ───────────────────────────────────────────────────────
+
+export interface TrackInfo {
+  id: string;
+  title: string;
+  artistName?: string;
+}
+
+export interface UserInfo {
+  id: string;
+  username: string;
+  displayName?: string | null;
+}
+
+export interface CommentInfo {
+  id: string;
+  body: string;
+  authorUsername?: string;
+}
+
+export type EntityInfo =
+  | { type: 'TRACK'; data: TrackInfo }
+  | { type: 'USER'; data: UserInfo }
+  | { type: 'COMMENT'; data: CommentInfo };
+
+// ─── Mappers ──────────────────────────────────────────────────────────────────
+
+function mapReportSummary(raw: RawReportSummary): ReportSummary {
+  return {
+    id: raw.id,
+    reportedEntityType: raw.targetType,
+    reportedEntityId: raw.targetId,
+    reasonId: raw.reason.id,
+    status: raw.status,
+    createdAt: raw.createdAt,
+  };
+}
+
+function mapReportDetail(raw: RawReportDetail): ReportDetail {
+  return {
+    id: raw.id,
+    reportedEntityType: raw.targetType,
+    reportedEntityId: raw.targetId,
+    reasonId: raw.reason.id,
+    status: raw.status,
+    createdAt: raw.createdAt,
+    reporterId: raw.reporter.id,
+    reporterUsername: raw.reporter.username,
+    details: raw.details ?? null,
+    reviewedAt: raw.reviewedAt ?? null,
+    reviewedByAdminId: raw.reviewedByAdminId ?? null,
+    adminNote: raw.adminNote ?? null,
+    actionTaken: raw.adminAction ?? 'NONE',
+  };
+}
+
+// ─── Services ─────────────────────────────────────────────────────────────────
 
 export const adminServices = {
   reports: {
@@ -33,7 +132,7 @@ export const adminServices = {
     },
 
     async getQueue(params: GetAdminReportsParams = {}): Promise<GetAdminReportsResponse> {
-      const { data } = await api.get<GetAdminReportsResponse>('/admin/reports', {
+      const { data } = await api.get<RawGetAdminReportsResponse>('/admin/reports', {
         params: {
           page: params.page ?? 1,
           limit: params.limit ?? 20,
@@ -42,17 +141,67 @@ export const adminServices = {
           reasonId: params.reasonId,
         },
       });
-      return data;
+
+      return {
+        data: data.data.map(mapReportSummary),
+        pagination: data.pagination,
+      };
     },
 
     async getById(reportId: string): Promise<ReportDetail> {
-      const { data } = await api.get<ReportDetail>(`/admin/reports/${reportId}`);
-      return data;
+      const { data } = await api.get<RawReportDetail>(`/admin/reports/${reportId}`);
+      return mapReportDetail(data);
     },
 
     async review(reportId: string, payload: UpdateReportPayload): Promise<string> {
       const { data } = await api.patch<MessageResponse>(`/admin/reports/${reportId}`, payload);
       return data.message;
+    },
+  },
+
+  // ─── Entity lookup (for displaying names in the report detail panel) ─────────
+
+  entities: {
+    async getTrack(trackId: string): Promise<TrackInfo> {
+      const { data } = await api.get<TrackInfo>(`/tracks/${trackId}`);
+      return data;
+    },
+
+    async getUser(userId: string): Promise<UserInfo> {
+      const { data } = await api.get<UserInfo>(`/users/${userId}`);
+      return data;
+    },
+
+    async getComment(commentId: string): Promise<CommentInfo> {
+      const { data } = await api.get<CommentInfo>(`/comments/${commentId}`);
+      return data;
+    },
+
+    /** Fetches whichever entity matches the report's targetType. */
+    async getEntityInfo(
+      entityType: ReportedEntityType,
+      entityId: string,
+    ): Promise<EntityInfo | null> {
+      try {
+        switch (entityType) {
+          case 'TRACK': {
+            const track = await adminServices.entities.getTrack(entityId);
+            return { type: 'TRACK', data: track };
+          }
+          case 'USER': {
+            const user = await adminServices.entities.getUser(entityId);
+            return { type: 'USER', data: user };
+          }
+          case 'COMMENT': {
+            const comment = await adminServices.entities.getComment(entityId);
+            return { type: 'COMMENT', data: comment };
+          }
+          default:
+            return null;
+        }
+      } catch {
+        return null;
+      }
     },
   },
 
