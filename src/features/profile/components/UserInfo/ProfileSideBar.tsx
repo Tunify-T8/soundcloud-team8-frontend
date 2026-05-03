@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   FaFacebook,
   FaTwitter,
@@ -21,8 +21,20 @@ import { followingService } from "../../../following/followingService";
 import avatarFallback from "@/assets/avatar.png";
 import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
 import { useMe } from "@/features/profile/context/useMe";
+import { profileService } from "@/features/profile/profileService";
+import { SOCIAL_GRAPH_UPDATED_EVENT } from "@/features/profile/socialGraphEvents";
 import { feedService } from "@/features/feed/feedservice";
 import type { LikedTrack } from "@/features/feed/type";
+
+type HoverCardState = {
+  username: string;
+  displayName: string;
+  avatarUrl: string;
+  followersCount: number;
+  location: string;
+  isFollowing: boolean;
+  isLoading: boolean;
+};
 
 export default function ProfileSideBar({
   profileId,
@@ -65,6 +77,16 @@ export default function ProfileSideBar({
   const [likedTracks, setLikedTracks] = useState<LikedTrack[]>([]);
   const [likedTracksCount, setLikedTracksCount] = useState(0);
   const [likesLoading, setLikesLoading] = useState(true);
+  const [hoveredFollowerId, setHoveredFollowerId] = useState<string | null>(
+    null,
+  );
+  const [hoverCardByUserId, setHoverCardByUserId] = useState<
+    Record<string, HoverCardState>
+  >({});
+  const [hoverFollowPendingByUserId, setHoverFollowPendingByUserId] = useState<
+    Record<string, boolean>
+  >({});
+  const requestedFollowerIdsRef = useRef<Set<string>>(new Set());
   const { me } = useMe();
 
   useEffect(() => {
@@ -154,7 +176,7 @@ export default function ProfileSideBar({
     };
   }, [followingUsers, me?.id]);
 
-  const visibleFollowerUsers = localFollowerUsers.slice(0, 3);
+  const visibleFollowerUsers = localFollowerUsers.slice(0, 9);
   const visibleFollowingUsers = localFollowingUsers.slice(0, 3);
   const followingCount = localFollowingUsers.length;
   const followersCountLabel = Number(followers ?? 0);
@@ -181,6 +203,100 @@ export default function ProfileSideBar({
     { label: "Following", path: `${userPath}/following`, value: following },
     { label: "Tracks", path: `${userPath}/tracks`, value: tracks },
   ];
+
+  const ensureFollowerHoverCardData = async (user: FollowingUser) => {
+    const userId = user.id;
+    if (!userId || requestedFollowerIdsRef.current.has(userId)) return;
+
+    requestedFollowerIdsRef.current.add(userId);
+
+    setHoverCardByUserId((prev) => ({
+      ...prev,
+      [userId]: prev[userId] ?? {
+        username: user.username,
+        displayName: user.displayName ?? user.username,
+        avatarUrl: user.avatarUrl || avatarFallback,
+        followersCount: Number(user.followersCount ?? 0),
+        location: user.location ?? "",
+        isFollowing: Boolean(user.isFollowing),
+        isLoading: true,
+      },
+    }));
+
+    const profileResult = await profileService
+      .getPublicProfile(userId)
+      .catch(() => null);
+
+    const followResult =
+      me?.id && me.id !== userId
+        ? await profileService
+            .getFollowStatus(userId)
+            .then((s) => s.isFollowing)
+            .catch(() => false)
+        : false;
+
+    setHoverCardByUserId((prev) => {
+      const current = prev[userId];
+      if (!current) return prev;
+
+      return {
+        ...prev,
+        [userId]: {
+          username: profileResult?.username ?? current.username,
+          displayName:
+            profileResult?.displayName?.trim() ||
+            profileResult?.username ||
+            current.displayName,
+          avatarUrl: profileResult?.avatarUrl || current.avatarUrl,
+          followersCount: Number(profileResult?.followersCount ?? 0),
+          location: profileResult?.location ?? "",
+          isFollowing: followResult,
+          isLoading: false,
+        },
+      };
+    });
+  };
+
+  const handleFollowerFollowToggle = async (userId: string) => {
+    if (!userId || hoverFollowPendingByUserId[userId] || me?.id === userId) {
+      return;
+    }
+
+    const card = hoverCardByUserId[userId];
+    if (!card) return;
+
+    setHoverFollowPendingByUserId((prev) => ({ ...prev, [userId]: true }));
+
+    try {
+      if (card.isFollowing) {
+        await profileService.unfollowUser(userId);
+      } else {
+        await profileService.followUser(userId);
+      }
+
+      setHoverCardByUserId((prev) => {
+        const current = prev[userId];
+        if (!current) return prev;
+
+        const nextIsFollowing = !current.isFollowing;
+        return {
+          ...prev,
+          [userId]: {
+            ...current,
+            isFollowing: nextIsFollowing,
+            followersCount: Math.max(
+              0,
+              current.followersCount + (nextIsFollowing ? 1 : -1),
+            ),
+          },
+        };
+      });
+
+      window.dispatchEvent(new Event(SOCIAL_GRAPH_UPDATED_EVENT));
+    } finally {
+      setHoverFollowPendingByUserId((prev) => ({ ...prev, [userId]: false }));
+    }
+  };
 
   return (
     <div className="w-full max-w-none rounded-md px-0 py-3 shadow-sm lg:w-full lg:max-w-[22rem] lg:px-0">
@@ -345,21 +461,91 @@ export default function ProfileSideBar({
             </Link>
           </div>
           <div className="mt-4 flex items-center">
-            {visibleFollowerUsers.map((followingUser, index) => (
-              <Link
-                key={followingUser.id}
-                to={`/${followingUser.id}`}
-                className={`relative block h-12 w-12 overflow-hidden rounded-full border border-zinc-900 bg-zinc-800 ${
-                  index > 0 ? "-ml-2" : ""
-                }`}
-                title={followingUser.displayName ?? followingUser.username}
+            {visibleFollowerUsers.map((followerUser, index) => (
+              <div
+                key={followerUser.id}
+                className={`relative ${index > 0 ? "-ml-2" : ""}`}
+                onMouseEnter={() => {
+                  setHoveredFollowerId(followerUser.id);
+                  void ensureFollowerHoverCardData(followerUser);
+                }}
+                onMouseLeave={() =>
+                  setHoveredFollowerId((prev) =>
+                    prev === followerUser.id ? null : prev,
+                  )
+                }
               >
-                <img
-                  src={followingUser.avatarUrl || avatarFallback}
-                  alt={followingUser.username}
-                  className="h-full w-full object-cover"
-                />
-              </Link>
+                <Link
+                  to={`/${followerUser.id}`}
+                  className="block h-12 w-12 overflow-hidden rounded-full border border-zinc-900 bg-zinc-800"
+                  title={followerUser.displayName ?? followerUser.username}
+                >
+                  <img
+                    src={followerUser.avatarUrl || avatarFallback}
+                    alt={followerUser.username}
+                    className="h-full w-full object-cover"
+                  />
+                </Link>
+
+                {hoveredFollowerId === followerUser.id && (
+                  <div className="absolute left-0 top-14 z-30 w-36 rounded-sm border border-zinc-700 bg-[#07090f] p-2 shadow-2xl sm:w-40">
+                    <div className="absolute left-4 top-0 h-3 w-3 -translate-y-1/2 rotate-45 border-l border-t border-zinc-700 bg-[#07090f]" />
+
+                    <Link
+                      to={`/${followerUser.id}`}
+                      className="flex flex-col items-center"
+                    >
+                      <img
+                        src={
+                          hoverCardByUserId[followerUser.id]?.avatarUrl ||
+                          followerUser.avatarUrl ||
+                          avatarFallback
+                        }
+                        alt={followerUser.username}
+                        className="h-16 w-16 rounded-full object-cover"
+                      />
+                      <p className="mt-1.5 text-sm font-bold text-white sm:text-base">
+                        {hoverCardByUserId[followerUser.id]?.displayName ||
+                          followerUser.displayName ||
+                          followerUser.username}
+                      </p>
+                    </Link>
+
+                    <p className="mt-1.5 flex items-center justify-center gap-1.5 text-zinc-300">
+                      <FaUser className="text-xs" />
+                      <span className="text-xs font-bold">
+                        {(
+                          hoverCardByUserId[followerUser.id]?.followersCount ??
+                          0
+                        ).toLocaleString()}
+                      </span>
+                    </p>
+
+                    <p className="mt-1 text-center text-[11px] font-medium leading-snug text-zinc-400 wrap-break-word sm:text-xs">
+                      {hoverCardByUserId[followerUser.id]?.location ||
+                        "Unknown location"}
+                    </p>
+
+                    {me?.id !== followerUser.id && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void handleFollowerFollowToggle(followerUser.id)
+                        }
+                        disabled={
+                          hoverFollowPendingByUserId[followerUser.id] ||
+                          hoverCardByUserId[followerUser.id]?.isLoading
+                        }
+                        className="mt-2 w-full rounded-sm bg-zinc-700 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-70"
+                      >
+                        {hoverCardByUserId[followerUser.id]?.isFollowing
+                          ? "Following"
+                          : "Follow"}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </div>

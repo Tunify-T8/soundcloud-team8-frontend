@@ -45,6 +45,7 @@ export interface TrackSearchResult {
   coverUrl: string | null;
   likesCount: number;
   playsCount: number;
+  repostsCount: number;
   allowDownloads: boolean;
   createdAt: string;
   score: number;
@@ -60,7 +61,17 @@ export interface UserSearchResult {
   location: string | null;
   isCertified: boolean;
   followersCount: number;
+  displayUrl: string | null;
+  isFollowing: boolean | null;
   score: number;
+}
+
+export interface CollectionTrackPreview {
+  id: string;
+  title: string;
+  artist: string;
+  durationSeconds: number;
+  coverUrl: string | null;
 }
 
 export interface CollectionSearchResult {
@@ -70,6 +81,8 @@ export interface CollectionSearchResult {
   artist: string;
   description: string | null;
   coverUrl: string | null;
+  trackCount: number;
+  trackPreview: CollectionTrackPreview[];
   createdAt: string;
   score: number;
 }

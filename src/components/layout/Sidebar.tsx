@@ -31,7 +31,7 @@ interface SuggestedArtist {
   isCertified: boolean;
   followersCount: number;
   isFollowing: boolean;
-  tracksUploadedCount: number;
+  trackCount: number;
 }
 
 type ArtistTool = {
@@ -142,14 +142,17 @@ export default function SideBar() {
             );
             return {
               ...artist,
-              tracksUploadedCount: Number(
-                profileRes?.data?.tracksUploadedCount ?? 0,
+              trackCount: Number(
+                profileRes?.data?.trackCount ??
+                  profileRes?.data?.tracksUploadedCount ??
+                  artist.trackCount ??
+                  0,
               ),
             };
           } catch {
             return {
               ...artist,
-              tracksUploadedCount: 0,
+              trackCount: Number(artist.trackCount ?? 0),
             };
           }
         }),
@@ -171,7 +174,7 @@ export default function SideBar() {
             isCertified: Boolean(artist.isCertified),
             followersCount: Number(artist.followersCount ?? 0),
             isFollowing: false,
-            tracksUploadedCount: Number(artist.tracksCount ?? 0),
+            trackCount: Number(artist.trackCount ?? artist.tracksCount ?? 0),
           }),
         );
         setSuggestedUsers(fallbackItems);
@@ -383,7 +386,7 @@ export default function SideBar() {
                           className="flex items-center gap-1 hover:text-zinc-200"
                         >
                           <FaMusic size={12} />
-                          {artist.tracksUploadedCount}
+                          {artist.trackCount}
                         </Link>
                       </div>
                     </div>
