@@ -126,7 +126,7 @@ export default function OverviewTab() {
             emptyMessage="You haven't liked any tracks yet"
           />
         ) : (
-          <div className="grid grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
             {Array.from({ length: likedTotalSlots }).map((_, i) => {
               const track = likedTracks[i];
               return track ? (
@@ -159,7 +159,7 @@ export default function OverviewTab() {
             emptyMessage="You have no playlists yet"
           />
         ) : (
-          <div className="grid grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
             {Array.from({ length: playlistTotalSlots }).map((_, i) => {
               const item = playlists[i];
               return item ? (
@@ -194,7 +194,7 @@ export default function OverviewTab() {
             emptyMessage="You haven't liked any albums yet"
           />
         ) : (
-          <div className="grid grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
             {Array.from({ length: albumTotalSlots }).map((_, i) => {
               const item = albums[i];
               return item ? (

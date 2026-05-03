@@ -54,7 +54,7 @@ const { me } = useMe();
 
   return (
     <div>
-      <div className="mb-4 flex items-start justify-between gap-6">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
         <p className="text-white font-bold text-sm">
           Hear what the people you follow have posted:
         </p>
@@ -63,7 +63,7 @@ const { me } = useMe();
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           placeholder="Filter"
-          className="w-64 rounded-sm border border-zinc-700 bg-[#282828] px-3 py-1.5 text-xs text-white placeholder:text-zinc-500 outline-none transition focus:border-zinc-500"
+          className="w-full sm:w-64 rounded-sm border border-zinc-700 bg-[#282828] px-3 py-1.5 text-xs text-white placeholder:text-zinc-500 outline-none transition focus:border-zinc-500"
         />
       </div>
       {visibleFollowing.length === 0 ? (
