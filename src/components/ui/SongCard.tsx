@@ -111,7 +111,7 @@ export default function SongCard({
     setIsPlaying,
     requestSeek,
   } = usePlayer();
-  const { hasOfflineListening } = useSubscription();
+  const { isArtistPro } = useSubscription();
   const { me } = useMe();
   const navigate = useNavigate();
   const { addTrack, currentIndex, currentTrackId } = useQueue();
@@ -235,7 +235,7 @@ export default function SongCard({
   }, [trackId]);
 
   useEffect(() => {
-    if (!trackId || !me?.id || !hasOfflineListening) return;
+    if (!trackId || !me?.id || !isArtistPro) return;
     let mounted = true;
     hasDownload(me.id, trackId)
       .then((exists) => {
@@ -246,7 +246,7 @@ export default function SongCard({
     return () => {
       mounted = false;
     };
-  }, [trackId, me?.id, hasOfflineListening]);
+  }, [trackId, me?.id, isArtistPro]);
 
   useEffect(() => {
     if (!trackId || !me?.id) return;
@@ -381,7 +381,7 @@ export default function SongCard({
   };
 
   async function handleDownload() {
-    if (!hasOfflineListening || !me?.id || downloading || !trackId) return;
+    if (!isArtistPro || !me?.id || downloading || !trackId) return;
 
     if (downloaded) {
       setShowAlreadyDownloaded(true);
@@ -873,18 +873,18 @@ export default function SongCard({
 
                   <div className="my-0.5 border-t border-[hsl(0,0%,15%)]" />
 
-                  <div
-                    className="relative"
+                    <div
+                      className="relative"
                     onMouseEnter={() => {
-                      if (!hasOfflineListening) setShowDownloadTooltip(true);
+                      if (!isArtistPro) setShowDownloadTooltip(true);
                     }}
                     onMouseLeave={() => setShowDownloadTooltip(false)}
                   >
                     <button
                       onClick={handleDownload}
-                      disabled={!hasOfflineListening || downloading}
+                      disabled={!isArtistPro || downloading}
                       className={`flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-[13px] font-semibold transition-colors ${
-                        !hasOfflineListening
+                        !isArtistPro
                           ? "opacity-40 cursor-not-allowed text-zinc-400"
                           : downloaded
                             ? "text-green-400 cursor-default"
@@ -902,7 +902,7 @@ export default function SongCard({
                         <Download
                           size={14}
                           className={
-                            hasOfflineListening
+                            isArtistPro
                               ? "text-zinc-300"
                               : "text-zinc-500"
                           }
@@ -932,7 +932,7 @@ export default function SongCard({
                       </div>
                     )}
 
-                    {showDownloadTooltip && !hasOfflineListening && (
+                    {showDownloadTooltip && !isArtistPro && (
                       <div
                         className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1.5 rounded-md text-[11px] text-white whitespace-nowrap z-50 pointer-events-none"
                         style={{
