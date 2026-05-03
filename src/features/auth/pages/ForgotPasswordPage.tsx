@@ -25,7 +25,7 @@ const ForgotPasswordPage: React.FC = () => {
 
     const parseResult = forgotPasswordSchema.safeParse({ email: trimmedEmail });
     if (!parseResult.success) {
-      setError(parseResult.error.issues[0]?.message ?? 'Please enter a valid email address.');
+      setError('Email is not valid.');
       return;
     }
 
@@ -124,7 +124,7 @@ const ForgotPasswordPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleSendResetLink}
-                    disabled={!email.trim() || isSubmitting}
+                    disabled={isSubmitting}
                     data-testid="sendResetLinkBtn"
                     className="sc-auth-primary-action w-full py-3 rounded-sm text-sm font-semibold transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer mb-3"
                   >
@@ -141,7 +141,7 @@ const ForgotPasswordPage: React.FC = () => {
                   <div className="flex items-center gap-4 mb-6">
                     <button
                       type="button"
-                      onClick={() => navigate(-1)}
+                      onClick={() => setSubmitted(false)}
                       className="w-9 h-9 rounded-full bg-[#f2f2f2] hover:bg-[#e5e5e5] flex items-center justify-center transition-colors flex-shrink-0"
                       aria-label="Go back"
                       data-testid="backToFormBtn"

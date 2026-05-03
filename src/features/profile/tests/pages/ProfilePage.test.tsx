@@ -1,95 +1,159 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { vi } from "vitest";
-import ProfilePage from "../../pages/ProfilePage";
+import { Provider } from "react-redux";
+import { configureStore } from "@reduxjs/toolkit";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import * as profileServiceModule from "../../profileService";
+
+import ProfilePage from "../../pages/ProfilePage";
+import audioSourceReducer from "@/store/AudioSourceSlice";
+import userReducer from "@/store/userSlice";
+import queueReducer from "@/store/queueSlice";
+import playContextReducer from "@/store/playContextSlice";
+
+const mockGetPublicProfile = vi.fn();
+const mockGetUserFollowers = vi.fn();
+const mockGetUserFollowing = vi.fn();
+const mockUsePlayContext = vi.fn();
+const mockRefresh = vi.fn();
+
+const mockMe = {
+  id: "me-1",
+  username: "nada",
+  displayName: "Nada",
+  location: "Cairo, Egypt",
+  isCertified: true,
+  avatarUrl: "",
+  coverUrl: "",
+  followersCount: 10,
+  followingCount: 5,
+  role: "listener" as const,
+  bio: "My bio",
+  visibility: "public",
+};
+
+const mockSocialAccounts: [] = [];
+const mockFollowing: [] = [];
+
+vi.mock("../../context/useMe", () => ({
+  useMe: () => ({
+    me: mockMe,
+    socialAccounts: mockSocialAccounts,
+    following: mockFollowing,
+    refresh: mockRefresh,
+  }),
+}));
+
+vi.mock("@/hooks/usePlayContext", () => ({
+  usePlayContext: (...args: unknown[]) => mockUsePlayContext(...args),
+}));
+
+vi.mock("../../profileService", () => ({
+  profileService: {
+    getPublicProfile: (...args: unknown[]) => mockGetPublicProfile(...args),
+    getUserFollowers: (...args: unknown[]) => mockGetUserFollowers(...args),
+    getUserFollowing: (...args: unknown[]) => mockGetUserFollowing(...args),
+  },
+}));
+
+vi.mock("../../components/Header/Header", () => ({
+  default: ({ username }: { username: string }) => (
+    <div data-testid="profile-header">{username}</div>
+  ),
+}));
+
+vi.mock("../../components/UserInfo/UserInfoBar", () => ({
+  default: ({
+    username,
+    isMe,
+  }: {
+    username: string;
+    isMe?: boolean;
+  }) => <div data-testid="user-info-bar">{`${username}-${String(isMe)}`}</div>,
+}));
+
+vi.mock("../../components/UserInfo/ProfileSideBar", () => ({
+  default: () => <div data-testid="profile-sidebar">Sidebar</div>,
+}));
 
 describe("ProfilePage", () => {
-  it("renders user profile with all sections", async () => {
-    vi.spyOn(
-      profileServiceModule.profileService,
-      "getUserByUsername",
-    ).mockResolvedValue({
-      id: "1",
-      displayName: "Test User",
-      username: "testuser",
-      country: "Testland",
-      city: "Test City",
-      isCertified: true,
-      avatarUrl: "avatar.jpg",
-      coverUrl: "cover.jpg",
-      isMe: true,
-      followersCount: 10,
-      followingCount: 5,
-      tracksCount: 3,
-      bio: "Test bio",
-      socialAccounts: {
-        facebook: "fb",
-        instagram: "ig",
-        twitter: "tw",
-        youtube: "yt",
+  function renderProfilePage(initialEntry = "/me") {
+    const store = configureStore({
+      reducer: {
+        audioSource: audioSourceReducer,
+        user: userReducer,
+        queue: queueReducer,
+        playContext: playContextReducer,
       },
-      role: "user",
-      createdAt: "2024-01-01T00:00:00Z",
     });
-    vi.spyOn(
-      profileServiceModule.profileService,
-      "getCurrentUser",
-    ).mockResolvedValue(null);
-    vi.spyOn(
-      profileServiceModule.profileService,
-      "getFollowing",
-    ).mockResolvedValue([]);
-    render(
-      <MemoryRouter initialEntries={["/profile/testuser"]}>
-        <Routes>
-          <Route path="/profile/:username" element={<ProfilePage />} />
-        </Routes>
-      </MemoryRouter>,
+
+    return render(
+      <Provider store={store}>
+        <MemoryRouter initialEntries={[initialEntry]}>
+          <Routes>
+            <Route path="/me" element={<ProfilePage />} />
+            <Route path="/:username" element={<ProfilePage />} />
+          </Routes>
+        </MemoryRouter>
+      </Provider>,
     );
-    // Wait for loading to finish
-    expect(await screen.findByText("Test User")).toBeInTheDocument();
-    expect(screen.getByText("testuser")).toBeInTheDocument();
-    // Use a function matcher for location
-    expect(
-      screen.getByText((content, node) => {
-        const hasText = (node: Element) =>
-          node.textContent === "Testland, " || node.textContent === "Test City";
-        const nodeHasText = hasText(node as Element);
-        const childrenDontHaveText = Array.from(node?.children || []).every(
-          (child) => !hasText(child as Element),
-        );
-        return nodeHasText && childrenDontHaveText;
-      }),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Test bio")).toBeInTheDocument();
-    expect(screen.getByText(/facebook/i)).toBeInTheDocument();
-    expect(screen.getByText(/instagram/i)).toBeInTheDocument();
-    expect(screen.getByText(/twitter/i)).toBeInTheDocument();
-    expect(screen.getByText(/youtube/i)).toBeInTheDocument();
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetUserFollowers.mockResolvedValue({ followers: [] });
+    mockGetUserFollowing.mockResolvedValue({ following: [] });
   });
 
-  it("shows 'User not found.' if no user", async () => {
-    vi.spyOn(
-      profileServiceModule.profileService,
-      "getUserByUsername",
-    ).mockResolvedValue(null);
-    vi.spyOn(
-      profileServiceModule.profileService,
-      "getCurrentUser",
-    ).mockResolvedValue(null);
-    vi.spyOn(
-      profileServiceModule.profileService,
-      "getFollowing",
-    ).mockResolvedValue([]);
-    render(
-      <MemoryRouter initialEntries={["/profile/unknown"]}>
-        <Routes>
-          <Route path="/profile/:username" element={<ProfilePage />} />
-        </Routes>
-      </MemoryRouter>,
+  it("renders the signed-in user's profile when no username param is present", async () => {
+    renderProfilePage("/me");
+
+    expect(screen.getByTestId("profile-header")).toHaveTextContent("nada");
+    expect(screen.getByTestId("user-info-bar")).toHaveTextContent("nada-true");
+    expect(screen.getAllByTestId("profile-sidebar")).toHaveLength(2);
+    expect(mockGetUserFollowers).toHaveBeenCalledWith("me-1");
+    expect(mockUsePlayContext).toHaveBeenCalledWith({
+      contextType: "profile",
+      contextId: "me-1",
+    });
+  });
+
+  it("renders a public profile when a username route is provided", async () => {
+    mockGetPublicProfile.mockResolvedValue({
+      id: "user-2",
+      username: "alice",
+      displayName: "Alice",
+      location: "Paris, France",
+      isCertified: false,
+      avatarUrl: "",
+      coverUrl: "",
+      followersCount: 12,
+      followingCount: 2,
+      role: "listener",
+      bio: "Public profile",
+    });
+
+    renderProfilePage("/alice");
+
+    expect(await screen.findByTestId("profile-header")).toHaveTextContent(
+      "alice",
     );
-    expect(await screen.findByText("User not found.")).toBeInTheDocument();
+    expect(screen.getByTestId("user-info-bar")).toHaveTextContent("alice-false");
+    expect(mockGetPublicProfile).toHaveBeenCalledWith("alice");
+    expect(mockGetUserFollowers).toHaveBeenCalledWith("user-2");
+    expect(mockGetUserFollowing).toHaveBeenCalledWith("user-2");
+    expect(mockUsePlayContext).toHaveBeenCalledWith({
+      contextType: "profile",
+      contextId: "user-2",
+    });
+  });
+
+  it("renders an error state when loading a public profile fails", async () => {
+    mockGetPublicProfile.mockRejectedValue(new Error("Failed to fetch user"));
+
+    renderProfilePage("/ghost");
+
+    expect(await screen.findByTestId("profile-page-error")).toHaveTextContent(
+      "Failed to fetch user",
+    );
   });
 });

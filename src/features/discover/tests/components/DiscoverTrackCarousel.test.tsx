@@ -1,8 +1,16 @@
-import React from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+
 import { DiscoverTrackCarousel } from "../../components/DiscoverTrackCarousel";
 import type { DiscoverTrack } from "@/features/discover/Discover";
+
+vi.mock("../../components/discoverCard", () => ({
+  DiscoverCard: ({
+    item,
+  }: {
+    item: DiscoverTrack;
+  }) => <div>{item.title}</div>,
+}));
 
 const tracks: DiscoverTrack[] = [
   {
@@ -47,94 +55,56 @@ function getScroller(container: HTMLElement): HTMLElement {
 
 describe("DiscoverTrackCarousel", () => {
   it("renders one card per track", () => {
-    render(<DiscoverTrackCarousel tracks={tracks} />);
+    render(<DiscoverTrackCarousel tracks={tracks} queueId="discover" />);
 
     expect(screen.getByText("Northern Lights")).toBeInTheDocument();
     expect(screen.getByText("Golden Echo")).toBeInTheDocument();
     expect(screen.getByText("Velvet Prayer")).toBeInTheDocument();
   });
 
-  it("scrolls right when right button is clicked", async () => {
+  it("scrolls right when the right button is clicked", async () => {
     const { container } = render(
-      <DiscoverTrackCarousel tracks={tracks} scrollStep={120} />,
+      <DiscoverTrackCarousel tracks={tracks} queueId="discover" scrollStep={120} />,
     );
 
     const scroller = getScroller(container);
     const scrollByMock = vi.fn();
 
-    Object.defineProperty(scroller, "scrollBy", {
-      value: scrollByMock,
-      writable: true,
-    });
-    Object.defineProperty(scroller, "scrollLeft", {
-      value: 0,
-      writable: true,
-      configurable: true,
-    });
-    Object.defineProperty(scroller, "clientWidth", {
-      value: 200,
-      configurable: true,
-    });
-    Object.defineProperty(scroller, "scrollWidth", {
-      value: 600,
-      configurable: true,
-    });
+    Object.defineProperty(scroller, "scrollBy", { value: scrollByMock, writable: true });
+    Object.defineProperty(scroller, "scrollLeft", { value: 0, writable: true, configurable: true });
+    Object.defineProperty(scroller, "clientWidth", { value: 200, configurable: true });
+    Object.defineProperty(scroller, "scrollWidth", { value: 600, configurable: true });
 
     fireEvent.scroll(scroller);
 
     await waitFor(() => {
-      expect(
-        screen.getByRole("button", { name: "Scroll right" }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Scroll right" })).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Scroll right" }));
-
-    expect(scrollByMock).toHaveBeenCalledWith({
-      left: 120,
-      behavior: "smooth",
-    });
+    expect(scrollByMock).toHaveBeenCalledWith({ left: 120, behavior: "smooth" });
   });
 
-  it("scrolls left when left button is clicked", async () => {
+  it("scrolls left when the left button is clicked", async () => {
     const { container } = render(
-      <DiscoverTrackCarousel tracks={tracks} scrollStep={150} />,
+      <DiscoverTrackCarousel tracks={tracks} queueId="discover" scrollStep={150} />,
     );
 
     const scroller = getScroller(container);
     const scrollByMock = vi.fn();
 
-    Object.defineProperty(scroller, "scrollBy", {
-      value: scrollByMock,
-      writable: true,
-    });
-    Object.defineProperty(scroller, "scrollLeft", {
-      value: 80,
-      writable: true,
-      configurable: true,
-    });
-    Object.defineProperty(scroller, "clientWidth", {
-      value: 200,
-      configurable: true,
-    });
-    Object.defineProperty(scroller, "scrollWidth", {
-      value: 600,
-      configurable: true,
-    });
+    Object.defineProperty(scroller, "scrollBy", { value: scrollByMock, writable: true });
+    Object.defineProperty(scroller, "scrollLeft", { value: 80, writable: true, configurable: true });
+    Object.defineProperty(scroller, "clientWidth", { value: 200, configurable: true });
+    Object.defineProperty(scroller, "scrollWidth", { value: 600, configurable: true });
 
     fireEvent.scroll(scroller);
 
     await waitFor(() => {
-      expect(
-        screen.getByRole("button", { name: "Scroll left" }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Scroll left" })).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Scroll left" }));
-
-    expect(scrollByMock).toHaveBeenCalledWith({
-      left: -150,
-      behavior: "smooth",
-    });
+    expect(scrollByMock).toHaveBeenCalledWith({ left: -150, behavior: "smooth" });
   });
 });

@@ -40,7 +40,7 @@ function loadRecentlyPlayedFromStorage(): CollectionItem[] {
 export default function HistoryTab() {
   const { me } = useMe();
   usePlayContext({ contextType: "history", contextId: me?.id ?? "" });
-  const [recentlyPlayed] = useState<CollectionItem[]>(loadRecentlyPlayedFromStorage);
+  const [recentlyPlayed, setRecentlyPlayed] = useState<CollectionItem[]>(loadRecentlyPlayedFromStorage);
   const [tracks, setTracks] = useState<TrackItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -96,7 +96,9 @@ export default function HistoryTab() {
       setIsClearing(true);
       setError(null);
       await clearListeningHistory();
+      localStorage.removeItem(STORAGE_KEY);
       setTracks([]);
+      setRecentlyPlayed([]);
       setHistoryCleared(true);
       setShowPopup(false);
     } catch (err: unknown) {
@@ -110,10 +112,10 @@ export default function HistoryTab() {
 
   return (
     <div data-testid="history-tab">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-white font-bold text-base">Recently played:</h2>
+      <div data-testid="history-header" className="flex items-center justify-between mb-4">
+        <h2 data-testid="history-title" className="text-white font-bold text-base">Recently played:</h2>
         {!historyCleared && (
-          <div className="flex items-center gap-3">
+          <div data-testid="history-controls" className="flex items-center gap-3">
             <div className="relative" ref={popupRef}>
               <button
                 data-testid="history-clear-btn"
@@ -123,7 +125,7 @@ export default function HistoryTab() {
                 Clear all history
               </button>
               {showPopup && (
-                <div className="absolute right-0 top-full mt-2 w-[240px] bg-[#282828] rounded-md px-3 py-3 z-50 shadow-xl">
+                <div data-testid="history-clear-popup" className="absolute right-0 top-full mt-2 w-[240px] bg-[#282828] rounded-md px-3 py-3 z-50 shadow-xl">
                   <div className="absolute -top-1.5 right-3 w-3 h-3 bg-[#282828] rotate-45" />
                   <p className="text-white text-xs leading-snug mb-3">
                     Are you sure you want to clear your entire listening history? You won't be able to undo this action.
@@ -160,10 +162,12 @@ export default function HistoryTab() {
       </div>
 
       {!historyCleared && recentlyPlayed.length > 0 && (
-        <CollectionGrid items={recentlyPlayed} title="" hoverVariant="dim" />
+        <div data-testid="history-recently-played">
+          <CollectionGrid items={recentlyPlayed} title="" hoverVariant="dim" />
+        </div>
       )}
 
-      <h2 className="text-white font-bold text-base mt-8 mb-6">
+      <h2 data-testid="history-tracks-heading" className="text-white font-bold text-base mt-8 mb-6">
         Hear the tracks you've played:
       </h2>
 
@@ -192,7 +196,7 @@ export default function HistoryTab() {
       )}
 
       {!loading && !error && !historyCleared && filteredTracks.length > 0 && (
-        <div className="space-y-4">
+        <div data-testid="history-track-list" className="space-y-4">
           {filteredTracks.map((track) => (
             <TrackRow key={track.id} track={track} />
           ))}

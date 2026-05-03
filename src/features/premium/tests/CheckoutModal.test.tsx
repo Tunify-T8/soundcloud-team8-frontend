@@ -41,12 +41,12 @@ describe("CheckoutModal", () => {
     expect(screen.getByPlaceholderText("Card number")).toBeInTheDocument();
   });
 
-  it("shows validation errors on submit with empty card form", async () => {
+  it("shows validation errors when empty card inputs are blurred", async () => {
     render(<CheckoutModal plan="artist" onClose={() => {}} />);
 
     fireEvent.click(screen.getByText("Card"));
-
-    fireEvent.click(screen.getByText("Buy subscription"));
+    fireEvent.blur(screen.getByPlaceholderText("First name"));
+    fireEvent.blur(screen.getByPlaceholderText("Surname"));
 
     expect(await screen.findByText("Enter the first name on the card")).toBeInTheDocument();
     expect(screen.getByText("Enter the last name on the card")).toBeInTheDocument();

@@ -1059,13 +1059,20 @@ export default function SongCard({
           </div>
         </div>
       ) : null}
-
-      {showShareOverlay && (
-        <ShareOverlay
-          onClose={() => setShowShareOverlay(false)}
-          shareUrl={shareUrl}
-        />
-      )}
+     
+        {showShareOverlay && (
+  <ShareOverlay
+    onClose={() => setShowShareOverlay(false)}
+    shareUrl={shareUrl}
+    track={{
+      id: trackId,
+      title,
+      artist: artistName,
+      coverUrl: coverUrl || undefined,
+      type: "TRACK_UPLOAD",
+    }}
+  />
+)}
     </div>
   );
 }
