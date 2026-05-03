@@ -112,10 +112,10 @@ export default function HistoryTab() {
 
   return (
     <div data-testid="history-tab">
-      <div data-testid="history-header" className="flex items-center justify-between mb-4">
+      <div data-testid="history-header" className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 data-testid="history-title" className="text-white font-bold text-base">Recently played:</h2>
         {!historyCleared && (
-          <div data-testid="history-controls" className="flex items-center gap-3">
+          <div data-testid="history-controls" className="flex w-full flex-wrap items-center gap-3 sm:w-auto sm:justify-end">
             <div className="relative" ref={popupRef}>
               <button
                 data-testid="history-clear-btn"
@@ -155,7 +155,7 @@ export default function HistoryTab() {
               placeholder="Filter"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="bg-[#282828] border border-zinc-700 rounded-sm px-3 py-1.5 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 w-64"
+              className="w-full sm:w-64 bg-[#282828] border border-zinc-700 rounded-sm px-3 py-1.5 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500"
             />
           </div>
         )}

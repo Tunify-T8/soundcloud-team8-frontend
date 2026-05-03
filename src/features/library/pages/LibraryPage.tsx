@@ -67,17 +67,18 @@ export default function LibraryPage() {
         className="border-b border-zinc-800 bg-black"
         data-testid="library-tab-bar"
       >
-        <div className="flex gap-0 pl-40">
+        <div className="overflow-x-auto px-4 sm:px-6 lg:px-12 xl:px-20">
+          <div className="flex min-w-max gap-0">
           {TABS.map((tab) => (
             <button
               key={tab}
               data-testid={`tab-${tab.toLowerCase()}`}
               onClick={() => navigate(TAB_TO_PATH[tab])}
-              className="px-5 py-3 transition-colors relative whitespace-nowrap"
+              className="px-3 py-3 sm:px-4 lg:px-5 transition-colors relative whitespace-nowrap"
               style={{
                 color: activeTab === tab ? "var(--sc-text)" : "var(--sc-text-secondary)",
                 fontWeight: activeTab === tab ? 700 : 600,
-                fontSize: "18px",
+                fontSize: "clamp(15px, 2vw, 18px)",
                 letterSpacing: "-0.01em",
               }}
             >
@@ -90,15 +91,16 @@ export default function LibraryPage() {
               )}
             </button>
           ))}
+          </div>
         </div>
       </div>
 
-      <div className="pl-40 pr-6 pt-6 max-w-6xl" data-testid="library-content">
+      <div className="px-4 sm:px-6 lg:px-12 xl:px-20 pt-6 max-w-7xl" data-testid="library-content">
         {renderTab()}
       </div>
 
       <div
-        className="pl-40 pr-6 pt-12 pb-10 text-xs text-zinc-400"
+        className="px-4 sm:px-6 lg:px-12 xl:px-20 pt-12 pb-10 text-xs text-zinc-400"
         data-testid="library-footer"
       >
         <div className="flex flex-wrap items-center gap-1.5">

@@ -48,14 +48,14 @@ export default function StationsTab() {
 
   return (
     <div data-testid="stations-tab">
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-white font-bold text-sm">Your liked stations:</h2>
         <input
           data-testid="stations-filter-input"
           placeholder="Filter"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="bg-[#282828] border border-zinc-700 rounded-sm px-3 py-1 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 w-64"
+          className="w-full sm:w-64 bg-[#282828] border border-zinc-700 rounded-sm px-3 py-1 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
         />
       </div>
 
@@ -68,7 +68,7 @@ export default function StationsTab() {
           No stations match your filter
         </p>
       ) : (
-        <div className="grid grid-cols-6 gap-4" data-testid="stations-grid">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6" data-testid="stations-grid">
           {Array.from({ length: totalSlots }).map((_, i) => {
             const item = filteredItems[i];
             return item ? (
