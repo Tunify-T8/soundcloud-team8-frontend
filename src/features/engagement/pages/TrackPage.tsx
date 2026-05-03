@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Heart, Repeat2,
-  Users, Flag, Info, Music2,
+  Users, Flag,
   Share2, Copy, MoreHorizontal,
 } from 'lucide-react';
 
@@ -17,6 +17,7 @@ import { api }                 from '../../auth/services/api';
 import { waveGenerators }      from '@/components/Waveforms';
 import { AdminIDDisplay }      from '@/features/admin/components/AdminIDDisplay';
 import { followingService }    from '../../following/followingService';
+import ReportModal             from '@/features/reports/components/ReportModal';
 
 
 interface WaveformComment {
@@ -38,15 +39,6 @@ const makeOwnerAvatar = (text: string, size = 80): string =>
     `text-anchor="middle" dominant-baseline="central" font-family="sans-serif" ` +
     `font-weight="700">${text}</text></svg>`
   )}`;
-
-const MOCK_FANS = [
-  { rank: 1, username: 'momen',          plays: 291, avatarUrl: makeCommentAvatar('MO') },
-  { rank: 2, username: 'Mostafa Sheta',  plays: 170, avatarUrl: makeCommentAvatar('MS') },
-  { rank: 3, username: 'Dalia',          plays: 159, avatarUrl: makeCommentAvatar('DA') },
-  { rank: 4, username: 'User 19494150',  plays: 121, avatarUrl: makeCommentAvatar('U4') },
-  { rank: 5, username: 'Mohamed Ashraf', plays: 111, avatarUrl: makeCommentAvatar('MA') },
-];
-
 
 /* ---------------------------------------------------------------- Waveform */
 
@@ -229,8 +221,8 @@ const TrackPage = () => {
   const [trackLoading, setLoading]                = useState(true);
   const [error, setError]                         = useState<string | null>(null);
   const [showShare, setShowShare]                 = useState(false);
+  const [showReportModal, setShowReportModal]     = useState(false);
   const [showCopyToast, setShowCopyToast]         = useState(false);
-  const [fansTab, setFansTab]                     = useState<'top' | 'first'>('top');
   const [isFollowingArtist, setIsFollowingArtist] = useState(false);
   const [artistFollowers, setArtistFollowers]     = useState(0);
   const [artistTracksCount, setArtistTracksCount] = useState(0);
@@ -243,7 +235,6 @@ const TrackPage = () => {
     isPlaying,
     progress: playerProgress,
     syncCurrentTrack,
-    setCurrentTrack,
     setIsPlaying,
     requestSeek,
   } = usePlayer();
@@ -339,7 +330,6 @@ const TrackPage = () => {
     null;
   const artistAvatar  = artistAvatarSrc || makeOwnerAvatar(ownerInit, 88);
   const artistRouteId = artistId || artistUsername || trackUser?.username || '';
-  const tracksCount   = trackUser?.tracksUploadedCount ?? 28;
   //const currentUserId = localStorage.getItem('userId') ?? '';
 
   const currentUserId = (() => {
@@ -413,6 +403,13 @@ const TrackPage = () => {
   return (
     <div className="min-h-screen bg-[#111] text-white">
       {showShare && <ShareModal title={track.title} onClose={() => setShowShare(false)} />}
+      {showReportModal && trackId && (
+        <ReportModal
+          entityType="TRACK"
+          entityId={trackId}
+          onClose={() => setShowReportModal(false)}
+        />
+      )}
 
       {showCopyToast ? (
         <div className="fixed right-6 top-6 z-[140]">
@@ -612,14 +609,18 @@ const TrackPage = () => {
             >
               {isFollowingArtist ? 'Following' : 'Follow'}
             </button>
-            <button className="flex items-center gap-1 text-[11px] text-zinc-500 hover:text-white transition mt-1">
+            <button
+              type="button"
+              onClick={() => setShowReportModal(true)}
+              className="flex items-center gap-1 text-[11px] text-zinc-500 hover:text-white transition mt-1"
+            >
               <Flag className="w-3 h-3" />
               Report
             </button>
           </aside>
 
           {/* Comments */}
-          <div className="flex-1 min-w-0 border-r border-[hsl(0,0%,13%)]">
+          <div className="min-w-0 flex-1">
             <CommentsSection
               trackId={trackId ?? ''}
               commentCount={counts.comments}
@@ -628,56 +629,6 @@ const TrackPage = () => {
               onCommentsChange={handleCommentsUpdate}
             />
           </div>
-
-          {/* Fans sidebar */}
-          <aside className="w-60 shrink-0 px-5 py-6 space-y-4">
-            <div className="flex items-center gap-1.5">
-              <h3 className="text-xs font-bold text-white uppercase tracking-widest">Fans</h3>
-              <Info className="w-3 h-3 text-zinc-600" />
-            </div>
-            <div className="flex gap-3 text-xs">
-              {(['top', 'first'] as const).map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setFansTab(tab)}
-                  className={`font-medium capitalize transition ${
-                    fansTab === tab ? 'text-white border-b border-white' : 'text-zinc-500 hover:text-white'
-                  }`}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
-            <p className="text-[10px] text-zinc-500 uppercase tracking-wide leading-relaxed">
-              Fans who have played this track the most:
-            </p>
-            <div className="space-y-3">
-              {MOCK_FANS.map(fan => (
-                <div key={fan.rank} className="flex items-center gap-2.5">
-                  <span className="text-xs text-zinc-600 w-3 shrink-0 tabular-nums">{fan.rank}</span>
-                  <img src={fan.avatarUrl} alt={fan.username} className="w-7 h-7 rounded-full object-cover shrink-0" />
-                  <span className="text-xs text-zinc-300 flex-1 truncate">{fan.username}</span>
-                  <span className="text-[11px] text-zinc-500 font-mono shrink-0 tabular-nums">{fan.plays} plays</span>
-                </div>
-              ))}
-            </div>
-            <div className="border-t border-zinc-800 pt-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <img src={makeCommentAvatar('?', 28)} alt="" className="w-7 h-7 rounded-full shrink-0" />
-                <div>
-                  <p className="text-[11px] text-white font-medium">Climb the leaderboard</p>
-                  <p className="text-[10px] text-zinc-500">Complete the steps below:</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-1.5 mt-2">
-                {['Avatar', 'Like', 'Follow', 'Play'].map(a => (
-                  <button key={a} className="py-1.5 rounded border border-zinc-700 text-[10px] text-zinc-400 hover:border-zinc-500 hover:text-white transition col-span-1">
-                    {a}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </aside>
         </div>
       </div>
     </div>
