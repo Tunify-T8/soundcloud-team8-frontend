@@ -10,20 +10,35 @@ import userReducer from "@/store/userSlice";
 const mockGetFollowStatus = vi.hoisted(() => vi.fn());
 const mockFollowUser = vi.hoisted(() => vi.fn());
 const mockUnfollowUser = vi.hoisted(() => vi.fn());
-const mockBlockUser = vi.hoisted(() => vi.fn());
 const mockNotifySocialGraphUpdated = vi.hoisted(() => vi.fn());
+const mockCreateOrGetConversation = vi.hoisted(() => vi.fn());
+const mockConversationBlockUser = vi.hoisted(() => vi.fn());
+const mockConversationUnblockUser = vi.hoisted(() => vi.fn());
 
 vi.mock("../../../../following/followingService", () => ({
   followingService: {
     getFollowStatus: mockGetFollowStatus,
     followUser: mockFollowUser,
     unfollowUser: mockUnfollowUser,
-    blockUser: mockBlockUser,
   },
 }));
 
 vi.mock("../../../socialGraphEvents", () => ({
   notifySocialGraphUpdated: mockNotifySocialGraphUpdated,
+}));
+
+vi.mock("@/features/conversation/conversationService", () => ({
+  conversationService: {
+    createOrGetConversation: mockCreateOrGetConversation,
+    blockUser: mockConversationBlockUser,
+    unblockUser: mockConversationUnblockUser,
+  },
+}));
+
+vi.mock("@/features/reports/components/ReportModal", () => ({
+  default: ({ entityType, entityId }: { entityType: string; entityId: string }) => (
+    <div data-testid="report-modal">{`${entityType}-${entityId}`}</div>
+  ),
 }));
 
 function renderWithStore(
@@ -58,12 +73,13 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockGetFollowStatus.mockResolvedValue({
     isFollowing: false,
-    isFollowedBy: false,
-    isMutual: false,
+    isBlocked: false,
   });
   mockFollowUser.mockResolvedValue(undefined);
   mockUnfollowUser.mockResolvedValue(undefined);
-  mockBlockUser.mockResolvedValue(undefined);
+  mockCreateOrGetConversation.mockResolvedValue("conv-1");
+  mockConversationBlockUser.mockResolvedValue(undefined);
+  mockConversationUnblockUser.mockResolvedValue(undefined);
 });
 
 describe("UserInfoBar", () => {
@@ -150,10 +166,30 @@ describe("UserInfoBar", () => {
       name: /block john/i,
     });
     fireEvent.click(blockButton);
+    fireEvent.click(await screen.findByRole("button", { name: /block john/i }));
 
     await waitFor(() => {
-      expect(mockBlockUser).toHaveBeenCalledWith("user-1");
+      expect(mockCreateOrGetConversation).toHaveBeenCalledWith("user-1");
+      expect(mockConversationBlockUser).toHaveBeenCalledWith("conv-1", false, false);
       expect(mockNotifySocialGraphUpdated).toHaveBeenCalled();
     });
+  });
+
+  it("opens the report modal from the more-actions menu", async () => {
+    renderWithStore(
+      <MemoryRouter initialEntries={["/john"]}>
+        <Routes>
+          <Route
+            path="/:username/*"
+            element={<UserInfoBar displayName="John" username="john" userId="user-1" />}
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByTestId("profile-more-actions-btn"));
+    fireEvent.click(await screen.findByRole("button", { name: /report john/i }));
+
+    expect(await screen.findByTestId("report-modal")).toHaveTextContent("USER-user-1");
   });
 });

@@ -4,7 +4,7 @@ import type { PermissionState } from "../types"
 import { useDispatch } from "react-redux"
 import { setAudioSource } from "../../../store/AudioSourceSlice"
 
-const MAX_SECONDS = 15
+const MAX_SECONDS = 180
 
 export default function Recorder({ setMicOpen, micOpen }: RecorderProps) {
   const dispatch = useDispatch()
