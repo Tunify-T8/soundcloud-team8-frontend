@@ -14,6 +14,7 @@ import albumTemplate from "@/assets/album.png";
 import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
 import CheckoutModal from "@/features/premium/components/CheckoutModal";
 import { usePlayer } from "@/features/playerUI/context/usePlayer";
+import { useSubscription } from "@/hooks/useSubscription";
 
 function readAudioDuration(url: string): Promise<number> {
   return new Promise((resolve) => {
@@ -43,11 +44,15 @@ function readAudioDuration(url: string): Promise<number> {
   });
 }
 
-function Toggle({ enabled, onChange }: ToggleProps) {
+function Toggle({ enabled, onChange, disabled = false }: ToggleProps & { disabled?: boolean }) {
   return (
     <div
-      onClick={() => onChange(!enabled)}
-      className={`relative cursor-pointer flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200 ${enabled ? "bg-[#169b45]" : "bg-[#333]"}`}
+      onClick={() => {
+        if (!disabled) onChange(!enabled);
+      }}
+      className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200 ${
+        disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+      } ${enabled ? "bg-[#169b45]" : "bg-[#333]"}`}
       data-testid="toggle"
     >
       <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all duration-200 ${enabled ? "left-5" : "left-0.5"}`} />
@@ -300,6 +305,7 @@ export default function TrackInfoPage({
   quotaLoading?: boolean
 }) {
   const { currentTrack } = usePlayer();
+  const { isArtistPro } = useSubscription();
   const dispatch = useDispatch();
   const source = useAppSelector((s) => s.audioSource.source);
   const [isUploading, setIsUploading] = useState(false);
@@ -427,6 +433,7 @@ export default function TrackInfoPage({
   const waveformBars = Array.from({ length: 120 }, (_, i) =>
     10 + Math.abs(Math.sin(i * 0.4) * 28 + Math.sin(i * 0.13) * 18)
   );
+  const directDownloadsLocked = !isArtistPro;
 
   const handleArtworkSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -875,15 +882,27 @@ export default function TrackInfoPage({
             <div className="pb-8">
               <p className="text-sm font-bold text-white mb-4">Access settings</p>
               <div>
-                {accessSettings.map(({ key, label, desc }) => (
-                  <div key={key} className="flex items-start justify-between py-4 border-b border-[#1e1e1e]">
+                {accessSettings.map(({ key, label, desc }) => {
+                  const isLocked = key === "downloads" && directDownloadsLocked;
+                  return (
+                  <div key={key} className={`flex items-start justify-between py-4 border-b border-[#1e1e1e] ${isLocked ? "opacity-55" : ""}`}>
                     <div className="pr-8">
-                      <p className="text-sm text-white">{label}</p>
+                      <div className="flex items-center gap-2">
+                        <p className={`text-sm ${isLocked ? "text-zinc-500" : "text-white"}`}>{label}</p>
+                        {isLocked ? <LockIcon /> : null}
+                      </div>
                       <p className="text-sm text-[#666] mt-0.5">{desc}</p>
+                      {isLocked ? (
+                        <p className="mt-1 text-xs font-semibold text-[#c9a227]">Available on Artist Pro only.</p>
+                      ) : null}
                     </div>
-                    <Toggle enabled={toggles[key]} onChange={(v) => setToggle(key, v)} />
+                    <Toggle
+                      enabled={toggles[key]}
+                      disabled={isLocked}
+                      onChange={(v) => setToggle(key, v)}
+                    />
                   </div>
-                ))}
+                )})}
               </div>
               <p className="text-sm font-bold text-white mt-6 mb-4">Engagement privacy</p>
               <div>

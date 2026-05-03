@@ -4,6 +4,7 @@ import type { Track } from "../../../shared/types/Track";
 import storefrontImg from "@/assets/storefront.png";
 import { trackService } from "../trackService";
 import ArtistProUpgradeButton from "@/features/premium/components/ArtistProUpgradeButton";
+import { useSubscription } from "@/hooks/useSubscription";
 
 interface EditTrackDrawerProps {
   track: Track;
@@ -43,11 +44,23 @@ function LockIcon() {
   );
 }
 
-function Toggle({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean) => void }) {
+function Toggle({
+  enabled,
+  onChange,
+  disabled = false,
+}: {
+  enabled: boolean;
+  onChange: (v: boolean) => void;
+  disabled?: boolean;
+}) {
   return (
     <div
-      onClick={() => onChange(!enabled)}
-      className={`relative cursor-pointer flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200 ${enabled ? "bg-[#169b45]" : "bg-[#333]"}`}
+      onClick={() => {
+        if (!disabled) onChange(!enabled);
+      }}
+      className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200 ${
+        disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+      } ${enabled ? "bg-[#169b45]" : "bg-[#333]"}`}
     >
       <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all duration-200 ${enabled ? "left-5" : "left-0.5"}`} />
     </div>
@@ -89,6 +102,7 @@ function Accordion({
 }
 
 export default function EditTrackDrawer({ track, onClose, onUpdate, onSaved }: EditTrackDrawerProps) {
+  const { isArtistPro } = useSubscription();
   const [activeTab, setActiveTab] = useState<"details" | "advanced" | "storefront">("details");
   const [artworkFile, setArtworkFile] = useState<File | null>(null);
   const [artworkPreview, setArtworkPreview] = useState<string | null>(null);
@@ -152,6 +166,7 @@ export default function EditTrackDrawer({ track, onClose, onUpdate, onSaved }: E
 
   const inputClass =
     "w-full bg-[#181818] border border-[#333] text-white text-sm px-3 py-2.5 focus:outline-none focus:border-[#555] placeholder-[#555]";
+  const directDownloadsLocked = !isArtistPro;
 
   const TrackDetailsTab = (
     <div className="px-6 py-5 space-y-0 overflow-y-auto flex-1">
@@ -351,15 +366,27 @@ export default function EditTrackDrawer({ track, onClose, onUpdate, onSaved }: E
               { key: "embed" as const, label: "Display embed code", desc: "Choose whether you want this track's embedded-player code to be displayed publicly." },
               { key: "appPlayback" as const, label: "Enable app playback", desc: "Choose whether you want this track to be playable outside of SoundCloud and its apps." },
             ]
-          ).map(({ key, label, desc }) => (
-            <div key={key} className="flex items-start justify-between py-4 border-b border-[#1e1e1e]">
+          ).map(({ key, label, desc }) => {
+            const isLocked = key === "downloads" && directDownloadsLocked;
+            return (
+            <div key={key} className={`flex items-start justify-between py-4 border-b border-[#1e1e1e] ${isLocked ? "opacity-55" : ""}`}>
               <div className="pr-8">
-                <p className="text-sm text-white">{label}</p>
+                <div className="flex items-center gap-2">
+                  <p className={`text-sm ${isLocked ? "text-zinc-500" : "text-white"}`}>{label}</p>
+                  {isLocked ? <LockIcon /> : null}
+                </div>
                 <p className="text-sm text-[#666] mt-0.5">{desc}</p>
+                {isLocked ? (
+                  <p className="mt-1 text-xs font-semibold text-[#c9a227]">Available on Artist Pro only.</p>
+                ) : null}
               </div>
-              <Toggle enabled={toggles[key]} onChange={(v) => setToggle(key, v)} />
+              <Toggle
+                enabled={toggles[key]}
+                disabled={isLocked}
+                onChange={(v) => setToggle(key, v)}
+              />
             </div>
-          ))}
+          )})}
 
           <p className="text-sm font-bold text-white mt-6 mb-4">Engagement privacy</p>
           {(
