@@ -10,6 +10,8 @@ import { profileService } from "@/features/profile/profileService";
 import { useMe } from "@/features/profile/context/useMe";
 import { SOCIAL_GRAPH_UPDATED_EVENT } from "@/features/profile/socialGraphEvents";
 import { FaUser } from "react-icons/fa";
+import { motion, AnimatePresence } from "framer-motion";
+import type { Variants } from "framer-motion";
 
 function formatTimeAgo(dateStr: string): string {
   const diffMs = Date.now() - new Date(dateStr).getTime();
@@ -95,6 +97,30 @@ const dedupeFeedByTrackId = (items: FeedItem[]): FeedItem[] => {
   }
 
   return Array.from(byTrackId.values());
+};
+
+// Animation variants for the feed list container (stagger parent)
+const feedListVariants: Variants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.25,
+    },
+  },
+};
+
+const feedItemVariants: Variants = {
+  hidden: {
+    opacity: 0,
+    y: 8,
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.25,
+    ease:"linear"    },
+  },
 };
 
 export default function FeedPage() {
@@ -434,9 +460,13 @@ export default function FeedPage() {
             </div>
           </div>
 
-          <div
+          <motion.div
             data-testid="feed-list"
             className="flex w-full flex-col xl:max-w-220"
+            variants={feedListVariants}
+            initial="hidden"
+            animate="visible"
+            key={displayItems.map((i) => i.trackId).join(",")}
           >
             {displayItems.length === 0 && (
               <p
@@ -451,10 +481,11 @@ export default function FeedPage() {
               const itemRouteId = item.action.id;
 
               return (
-                <div
+                <motion.div
                   key={item.trackId}
                   data-testid={`feed-item-${item.trackId}`}
                   className="mb-3 flex w-full flex-col items-stretch sm:mb-4"
+                  variants={feedItemVariants}
                 >
                   <div className="flex items-center gap-1.5 pb-0.5 sm:gap-3 sm:pb-1">
                     <div
@@ -593,7 +624,7 @@ export default function FeedPage() {
                       />
                     </div>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
 
@@ -622,7 +653,7 @@ export default function FeedPage() {
                 You're all caught up.
               </p>
             )}
-          </div>
+          </motion.div>
         </div>
 
         <aside data-testid="feed-sidebar" className="hidden xl:sticky xl:top-6 xl:block xl:h-[calc(100vh-3rem)] xl:w-90 xl:shrink-0 xl:overflow-y-auto xl:pr-2 xl:[scrollbar-width:none] xl:[-ms-overflow-style:none] xl:[&::-webkit-scrollbar]:hidden">
