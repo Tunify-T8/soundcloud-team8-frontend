@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import SongCard from "@/components/ui/SongCard";
 import { profileService } from "@/features/profile/profileService";
 import { useMe } from "@/features/profile/context/useMe";
@@ -27,6 +27,9 @@ function waveformSeedFromId(id: string): number {
 
 export default function RepostsPage() {
   const { username } = useParams<{ username: string }>();
+  const location = useLocation();
+  const userIdFromState =
+    (location.state as { userId?: string } | null)?.userId ?? null;
   const { me } = useMe();
   const isMeView = !username || username === me?.username;
 
@@ -41,13 +44,13 @@ export default function RepostsPage() {
       setLoading(true);
       setError(null);
       try {
-        if (!isMeView) {
-          if (!isMounted) return;
-          setReposts([]);
-          return;
-        }
-
-        const repostsRes = await profileService.getMeReposts(1, 20);
+        const repostsRes = isMeView
+          ? await profileService.getMeReposts(1, 20)
+          : await profileService.getUserReposts(
+              userIdFromState ?? username ?? "",
+              1,
+              20,
+            );
         if (!isMounted) return;
         setReposts(repostsRes?.data ?? []);
       } catch {
@@ -65,12 +68,11 @@ export default function RepostsPage() {
     return () => {
       isMounted = false;
     };
-  }, [isMeView]);
+  }, [isMeView, userIdFromState, username]);
 
   const content = useMemo(() => {
     if (loading) return <p data-testid="profile-reposts-loading" className="py-10 text-sm text-zinc-400">Loading reposts...</p>;
     if (error) return <p data-testid="profile-reposts-error" className="py-10 text-sm text-red-400">{error}</p>;
-    if (!isMeView) return <p data-testid="profile-reposts-not-available" className="py-10 text-sm text-zinc-400">Reposts are only available on your profile for now.</p>;
     if (reposts.length === 0) return <p data-testid="profile-reposts-empty" className="py-10 text-sm text-zinc-400">No reposts yet.</p>;
 
     return (
@@ -79,10 +81,11 @@ export default function RepostsPage() {
           <div key={item.repostId} data-testid={`profile-repost-item-${item.repostId}`}>
             <SongCard
               trackId={item.track.id}
-              artistName={me?.displayName || me?.username || "Artist"}
+              artistName={me?.displayName || me?.username || username || "Artist"}
               title={item.track.title}
               coverUrl={item.track.coverUrl ?? undefined}
               timeAgo={formatTimeAgo(item.repostedAt)}
+              isRepostedInitial
               likes={String(item.track.likesCount ?? 0)}
               reposts={String(item.track.repostsCount ?? 0)}
               plays="0"

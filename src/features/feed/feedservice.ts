@@ -18,6 +18,50 @@ interface SuggestedArtistsPayload {
   items?: unknown;
 }
 
+function normalizeSearchResultsPayload(rawPayload: unknown): SearchResult[] {
+  const payload =
+    rawPayload && typeof rawPayload === "object"
+      ? (rawPayload as Record<string, unknown>)
+      : {};
+  const rawItems = Array.isArray(payload.data) ? payload.data : [];
+
+  return rawItems.map((item) => {
+    const result =
+      item && typeof item === "object"
+        ? ({ ...(item as Record<string, unknown>) } as Record<string, unknown>)
+        : ({} as Record<string, unknown>);
+
+    if (result.type === "user") {
+      result.avatarUrl =
+        result.avatarUrl ??
+        result.avatar ??
+        result.profileImage ??
+        result.photo ??
+        null;
+    }
+
+    if (result.type === "track") {
+      const artwork =
+        result.artwork && typeof result.artwork === "object"
+          ? (result.artwork as Record<string, unknown>).url
+          : null;
+      result.coverUrl =
+        result.coverUrl ?? result.artworkUrl ?? result.cover ?? artwork ?? null;
+    }
+
+    if (result.type === "album" || result.type === "playlist") {
+      const artwork =
+        result.artwork && typeof result.artwork === "object"
+          ? (result.artwork as Record<string, unknown>).url
+          : null;
+      result.coverUrl =
+        result.coverUrl ?? result.artworkUrl ?? result.cover ?? artwork ?? null;
+    }
+
+    return result as SearchResult;
+  });
+}
+
 function normalizeLikedTracksPayload(rawPayload: unknown): LikedTrack[] {
   const payload =
     rawPayload && typeof rawPayload === "object"
@@ -237,7 +281,7 @@ export const feedService = {
       const response = await api.get("/search/tracks/", {
         params: { q: query.toLowerCase() },
       });
-      return response.data.data ?? [];
+      return normalizeSearchResultsPayload(response.data);
     } catch {
       return [];
     }
@@ -249,7 +293,7 @@ export const feedService = {
       const response = await api.get("/search/people/", {
         params: { q: query.toLowerCase() },
       });
-      return response.data.data ?? [];
+      return normalizeSearchResultsPayload(response.data);
     } catch {
       return [];
     }
@@ -261,7 +305,7 @@ export const feedService = {
       const response = await api.get("/search/collections/", {
         params: { q: query.toLowerCase() },
       });
-      return response.data.data ?? [];
+      return normalizeSearchResultsPayload(response.data);
     } catch {
       return [];
     }
@@ -273,7 +317,7 @@ export const feedService = {
       const response = await api.get("/search/", {
         params: { q: query.toLowerCase() },
       });
-      return response.data.data ?? [];
+      return normalizeSearchResultsPayload(response.data);
     } catch {
       return [];
     }

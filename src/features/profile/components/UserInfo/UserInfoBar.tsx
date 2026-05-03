@@ -3,7 +3,7 @@ import EditInfo from "./EditInfo";
 import { FaUser, FaPen, FaEnvelope } from "react-icons/fa";
 import { MdPodcasts, MdMoreHoriz } from "react-icons/md";
 import { FiSlash, FiInfo } from "react-icons/fi";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Upload, BarChart2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { followingService } from "../../../following/followingService";
@@ -152,6 +152,7 @@ export default function UserInfoBar({
   const [messageLoading, setMessageLoading] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (isMe || !userId) return;
@@ -241,6 +242,10 @@ export default function UserInfoBar({
 
   const menuTargetName = username?.trim() || displayName?.trim() || "user";
   const sharePathTarget = userId?.trim() || username?.trim() || "";
+  const tabState = {
+    ...(location.state as Record<string, unknown> | null),
+    userId: userId ?? (location.state as { userId?: string } | null)?.userId,
+  };
   const shareUrl =
     typeof window === "undefined"
       ? ""
@@ -254,7 +259,7 @@ export default function UserInfoBar({
           className="hide-scrollbar flex w-full flex-row gap-3 overflow-x-auto whitespace-nowrap pr-1 cursor-pointer sm:gap-4 lg:min-w-0 lg:flex-1 lg:pr-4"
         >
           {tabs.map(({ label, path }) => (
-            <NavLink key={label} to={path} end={path === "."}>
+            <NavLink key={label} to={path} end={path === "."} state={tabState}>
               {({ isActive }) => (
                 <UserInfoBarTab label={label} isActive={isActive} />
               )}

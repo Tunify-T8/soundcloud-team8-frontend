@@ -324,6 +324,17 @@ export const profileService = {
     return normalizeRepostsResponse(data);
   },
 
+  async getUserReposts(
+    userIdOrUsername: string,
+    page = 1,
+    limit = 20,
+  ): Promise<UserRepostsDto> {
+    const { data } = await api.get<RawUserRepostsResponse>(
+      `/users/${encodeURIComponent(userIdOrUsername)}/reposts?page=${page}&limit=${limit}`,
+    );
+    return normalizeRepostsResponse(data);
+  },
+
   async getUserTracks(
     userIdOrUsername: string,
     page = 1,

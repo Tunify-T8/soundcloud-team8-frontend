@@ -121,7 +121,26 @@ export default function SearchPage() {
               ? () => feedService.searchCollections(query)
               : () => feedService.search(query);
     fetchFn()
-      .then(setResults)
+      .then((data) => {
+        if (activeFilter === "albums") {
+          setResults(
+            data.filter(
+              (item): item is CollectionSearchResult => item.type === "album",
+            ),
+          );
+          return;
+        }
+        if (activeFilter === "playlists") {
+          setResults(
+            data.filter(
+              (item): item is CollectionSearchResult =>
+                item.type === "playlist",
+            ),
+          );
+          return;
+        }
+        setResults(data);
+      })
       .finally(() => setLoading(false));
   }, [query, activeFilter]);
 
@@ -137,7 +156,11 @@ export default function SearchPage() {
 
   const summaryParts = [
     collections.length > 0 &&
-      `${collections.length} playlist${collections.length !== 1 ? "s" : ""}`,
+      `${collections.length} ${
+        activeFilter === "albums"
+          ? `album${collections.length !== 1 ? "s" : ""}`
+          : `playlist${collections.length !== 1 ? "s" : ""}`
+      }`,
     tracks.length > 0 &&
       `${tracks.length} track${tracks.length !== 1 ? "s" : ""}`,
     users.length > 0 &&
