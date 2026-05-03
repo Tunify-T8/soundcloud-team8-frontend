@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import SongCard from "@/components/ui/SongCard";
 import { profileService } from "@/features/profile/profileService";
 import type { UserTrack } from "@/shared/types/User";
@@ -40,6 +41,9 @@ export default function ProfileTracksSection({
   className = "",
   hideEmptyState = false,
 }: ProfileTracksSectionProps) {
+  const location = useLocation();
+  const userIdFromState =
+    (location.state as { userId?: string } | null)?.userId ?? null;
   const [tracks, setTracks] = useState<UserTrack[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,7 +63,7 @@ export default function ProfileTracksSection({
         }
 
         const tracksRes = await profileService.getUserTracks(
-          username || "",
+          userIdFromState ?? username ?? "",
           1,
           20,
         );
@@ -78,7 +82,7 @@ export default function ProfileTracksSection({
     return () => {
       isMounted = false;
     };
-  }, [isMeView, username]);
+  }, [isMeView, username, userIdFromState]);
 
   const content = useMemo(() => {
     if (loading)

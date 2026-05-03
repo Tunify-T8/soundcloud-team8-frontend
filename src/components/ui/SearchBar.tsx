@@ -228,8 +228,7 @@ export default function SearchBar() {
                       )}
                     </div>
                     <p className="text-gray-400 text-[11px] truncate">
-                      @{user.username} ·{" "}
-                      {(user.followersCount ?? 0).toLocaleString()} followers
+                      @{user.username}
                     </p>
                   </div>
                 </ResultRow>

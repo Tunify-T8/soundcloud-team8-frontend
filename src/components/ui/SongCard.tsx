@@ -129,12 +129,17 @@ export default function SongCard({
   const [showDownloadTooltip, setShowDownloadTooltip] = useState(false);
   const [showAlreadyDownloaded, setShowAlreadyDownloaded] = useState(false);
   const [showCopyToast, setShowCopyToast] = useState(false);
-  const [showDownloadSuccessToast, setShowDownloadSuccessToast] = useState(false);
+  const [showDownloadSuccessToast, setShowDownloadSuccessToast] =
+    useState(false);
   const [randomSeed] = useState(() => Math.random() * 1000000);
   const [barCount, setBarCount] = useState<number | null>(null);
-  const [hoveredSubtrackId, setHoveredSubtrackId] = useState<string | null>(null);
+  const [hoveredSubtrackId, setHoveredSubtrackId] = useState<string | null>(
+    null,
+  );
   const copyToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const downloadToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const downloadToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   const handlePlayToggle = () => {
     if (!trackId) return;
@@ -199,7 +204,8 @@ export default function SongCard({
     engagementService
       .getEngagement(trackId)
       .then((data) => {
-        if (!mounted || likeMutationVersionRef.current !== fetchMutationVersion) return;
+        if (!mounted || likeMutationVersionRef.current !== fetchMutationVersion)
+          return;
         setIsLiked(Boolean(data.isLiked));
         setIsReposted(Boolean(data.isReposted));
         if (Number.isFinite(data.likesCount)) {
@@ -230,7 +236,10 @@ export default function SongCard({
 
     window.addEventListener(TRACK_LIKE_CHANGED_EVENT, handleTrackLikeChanged);
     return () => {
-      window.removeEventListener(TRACK_LIKE_CHANGED_EVENT, handleTrackLikeChanged);
+      window.removeEventListener(
+        TRACK_LIKE_CHANGED_EVENT,
+        handleTrackLikeChanged,
+      );
     };
   }, [trackId]);
 
@@ -252,7 +261,8 @@ export default function SongCard({
     if (!trackId || !me?.id) return;
 
     const handleDownloadLibraryChanged = (event: Event) => {
-      const detail = (event as CustomEvent<DownloadLibraryChangedDetail>).detail;
+      const detail = (event as CustomEvent<DownloadLibraryChangedDetail>)
+        .detail;
       if (!detail || detail.userId !== me.id) return;
 
       if (detail.action === "saved" && detail.trackId === trackId) {
@@ -268,9 +278,15 @@ export default function SongCard({
       }
     };
 
-    window.addEventListener(DOWNLOAD_LIBRARY_CHANGED_EVENT, handleDownloadLibraryChanged);
+    window.addEventListener(
+      DOWNLOAD_LIBRARY_CHANGED_EVENT,
+      handleDownloadLibraryChanged,
+    );
     return () => {
-      window.removeEventListener(DOWNLOAD_LIBRARY_CHANGED_EVENT, handleDownloadLibraryChanged);
+      window.removeEventListener(
+        DOWNLOAD_LIBRARY_CHANGED_EVENT,
+        handleDownloadLibraryChanged,
+      );
     };
   }, [trackId, me?.id]);
 
@@ -418,7 +434,8 @@ export default function SongCard({
       setDownloaded(true);
       setShowAlreadyDownloaded(false);
       setShowDownloadSuccessToast(true);
-      if (downloadToastTimerRef.current) clearTimeout(downloadToastTimerRef.current);
+      if (downloadToastTimerRef.current)
+        clearTimeout(downloadToastTimerRef.current);
       downloadToastTimerRef.current = setTimeout(() => {
         setShowDownloadSuccessToast(false);
       }, 3500);
@@ -633,7 +650,7 @@ export default function SongCard({
             )}
           </div>
 
-          <div className="flex w-full items-center gap-1 pl-7 sm:w-auto sm:shrink-0 sm:gap-2 sm:pl-0">
+          <div className="ml-auto flex items-center gap-1 self-start sm:ml-0 sm:shrink-0 sm:self-auto sm:gap-2">
             <span className="whitespace-nowrap text-[8px] text-[hsl(0,0%,40%)] sm:text-[11px]">
               {timeAgo}
             </span>
@@ -646,7 +663,7 @@ export default function SongCard({
         </div>
 
         <div
-          className="relative mb-1 mt-0.5 flex h-[28px] w-full cursor-pointer items-center sm:h-[52px]"
+          className="relative mb-1 mt-5 flex h-[28px] w-full cursor-pointer items-center sm:mt-2 sm:h-[52px]"
           style={{ gap: `${GAP}px` }}
           onClick={handleWaveformClick}
           onMouseEnter={() => setIsWaveHovered(true)}
@@ -701,7 +718,10 @@ export default function SongCard({
         {isCollectionCard && playlistTracks.length > 0 ? (
           <div className="mb-2 mt-2 space-y-2">
             {playlistTracks.map((collectionTrack) => (
-              <div key={collectionTrack.id} className="flex items-center gap-2 py-0.5 text-sm text-zinc-300">
+              <div
+                key={collectionTrack.id}
+                className="flex items-center gap-2 py-0.5 text-sm text-zinc-300"
+              >
                 <button
                   type="button"
                   onClick={() => handleSubtrackPlayToggle(collectionTrack)}
@@ -733,19 +753,31 @@ export default function SongCard({
                   >
                     <div className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-black">
                       {currentTrack?.id === collectionTrack.id && isPlaying ? (
-                        <svg width="11" height="11" viewBox="0 0 14 14" fill="currentColor">
+                        <svg
+                          width="11"
+                          height="11"
+                          viewBox="0 0 14 14"
+                          fill="currentColor"
+                        >
                           <rect x="1" y="1" width="4" height="12" />
                           <rect x="9" y="1" width="4" height="12" />
                         </svg>
                       ) : (
-                        <svg width="11" height="11" viewBox="0 0 14 14" fill="currentColor">
+                        <svg
+                          width="11"
+                          height="11"
+                          viewBox="0 0 14 14"
+                          fill="currentColor"
+                        >
                           <polygon points="2,0 14,7 2,14" />
                         </svg>
                       )}
                     </div>
                   </div>
                 </button>
-                <span className="text-zinc-400">{collectionTrack.number} ·</span>
+                <span className="text-zinc-400">
+                  {collectionTrack.number} ·
+                </span>
                 <span className="truncate">
                   <span
                     className={

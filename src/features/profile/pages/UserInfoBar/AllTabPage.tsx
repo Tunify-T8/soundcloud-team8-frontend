@@ -40,6 +40,7 @@ export default function AllTabPage() {
           hideEmptyState
         />
         <ProfileRepostsSection
+          username={username}
           isMeView={isMeView}
           meDisplayName={me?.displayName}
           meUsername={me?.username}

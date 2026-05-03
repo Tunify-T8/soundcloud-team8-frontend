@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import SongCard from "@/components/ui/SongCard";
 import { profileService } from "@/features/profile/profileService";
 import { useMe } from "@/features/profile/context/useMe";
@@ -27,6 +27,9 @@ function waveformSeedFromId(id: string): number {
 
 export default function PopularTracksPage() {
   const { username } = useParams<{ username: string }>();
+  const location = useLocation();
+  const userIdFromState =
+    (location.state as { userId?: string } | null)?.userId ?? null;
   const { me } = useMe();
   const isMeView = !username || username === me?.username;
 
@@ -43,7 +46,11 @@ export default function PopularTracksPage() {
       try {
         const tracksRes = isMeView
           ? await profileService.getMePopularTracks(1, 20)
-          : await profileService.getUserTracks(username || "", 1, 20);
+          : await profileService.getUserTracks(
+              userIdFromState ?? username ?? "",
+              1,
+              20,
+            );
 
         if (!isMounted) return;
         setTracks(tracksRes?.tracks ?? []);
@@ -62,7 +69,7 @@ export default function PopularTracksPage() {
     return () => {
       isMounted = false;
     };
-  }, [isMeView, username]);
+  }, [isMeView, username, userIdFromState]);
 
   const content = useMemo(() => {
     if (loading) return <p data-testid="popular-tracks-loading" className="py-10 text-sm text-zinc-400">Loading popular tracks...</p>;

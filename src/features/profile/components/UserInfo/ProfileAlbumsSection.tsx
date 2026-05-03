@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import SongCard from "@/components/ui/SongCard";
 import { playlistService } from "@/features/library/libraryService";
 import { profileService } from "@/features/profile/profileService";
@@ -74,6 +75,9 @@ export default function ProfileAlbumsSection({
   sortOrder = "desc",
   hideEmptyState = false,
 }: ProfileAlbumsSectionProps) {
+  const location = useLocation();
+  const userIdFromState =
+    (location.state as { userId?: string } | null)?.userId ?? null;
   const [items, setItems] = useState<AlbumWithTrack[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +90,7 @@ export default function ProfileAlbumsSection({
       setError(null);
 
       try {
-        let targetUsername = username || "";
+        let targetUsername = userIdFromState ?? username ?? "";
         if (!isMeView && targetUsername && isUuidLike(targetUsername)) {
           try {
             const profile =
@@ -144,7 +148,7 @@ export default function ProfileAlbumsSection({
     return () => {
       isMounted = false;
     };
-  }, [isMeView, meUsername, username]);
+  }, [isMeView, meUsername, username, userIdFromState]);
 
   const content = useMemo(() => {
     if (loading)
@@ -180,7 +184,7 @@ export default function ProfileAlbumsSection({
       <div data-testid="profile-albums-list" className="space-y-8 mt-8">
         {items.map(({ album, tracks }) => {
           const firstTrack = tracks[0];
-          const mappedTracks = tracks.slice(0, 3).map((ct, i) => ({
+          const mappedTracks = tracks.map((ct, i) => ({
             id: ct.track.id,
             number: i + 1,
             title: ct.track.title,
