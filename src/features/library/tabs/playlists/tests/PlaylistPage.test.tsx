@@ -1,88 +1,132 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
-import "@testing-library/jest-dom";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { Provider } from "react-redux";
+import { configureStore } from "@reduxjs/toolkit";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+
 import PlaylistPage from "../pages/PlaylistPage";
-import { playlistService } from "../../../libraryService";
+import audioSourceReducer from "@/store/AudioSourceSlice";
+import userReducer from "@/store/userSlice";
+import queueReducer from "@/store/queueSlice";
+import playContextReducer from "@/store/playContextSlice";
 
 const mockNavigate = vi.fn();
+const mockGetPlaylistById = vi.fn();
+const mockGetPlaylistTracks = vi.fn();
 
-vi.mock("react-router-dom", () => ({
-  useParams: () => ({ id: "pl-1" }),
-  useNavigate: () => mockNavigate,
+vi.mock("react-router-dom", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("react-router-dom")>();
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
+
+vi.mock("@/features/playerUI/context/usePlayer", () => ({
+  usePlayer: () => ({
+    currentTrack: null,
+    isPlaying: false,
+    progress: 0,
+    setCurrentTrack: vi.fn(),
+    setIsPlaying: vi.fn(),
+    requestSeek: vi.fn(),
+  }),
 }));
 
-vi.mock("react-redux", () => ({
-  useSelector: (selector: any) =>
-    selector({ user: { currentUser: { id: "owner-1" } } }),
+vi.mock("@/hooks/usePlayContext", () => ({
+  usePlayContext: vi.fn(),
 }));
 
 vi.mock("../../../libraryService", () => ({
   playlistService: {
-    getPlaylistById: vi.fn(),
-    getPlaylistTracks: vi.fn(),
+    getPlaylistById: (...args: unknown[]) => mockGetPlaylistById(...args),
+    getPlaylistTracks: (...args: unknown[]) => mockGetPlaylistTracks(...args),
+    getPlaylistByToken: vi.fn(),
+    reorderTracks: vi.fn(),
+  },
+}));
+
+vi.mock("@/features/profile/profileService", () => ({
+  profileService: {
+    getFollowStatus: vi.fn().mockResolvedValue({ isFollowing: false }),
+    followUser: vi.fn(),
+    unfollowUser: vi.fn(),
   },
 }));
 
 vi.mock("../components/PlaylistHeader", () => ({
-  default: ({ isMe }: { isMe?: boolean }) => (
-    <div data-testid="playlist-header">{isMe ? "owner-view" : "viewer-view"}</div>
-  ),
+  default: ({ playlist }: { playlist: { title: string } }) => <div data-testid="playlist-header">{playlist.title}</div>,
 }));
 
 vi.mock("../components/TrackList", () => ({
-  default: ({ tracks }: { tracks: unknown[] }) => (
-    <div data-testid="playlist-track-list">tracks:{tracks.length}</div>
-  ),
+  default: ({ tracks }: { tracks: Array<unknown> }) => <div data-testid="playlist-track-list">{tracks.length}</div>,
 }));
 
 vi.mock("../components/ActionBar", () => ({
-  default: ({
-    canDelete,
-    onDeleted,
-  }: {
-    canDelete?: boolean;
-    onDeleted?: () => void;
-  }) => (
-    <div data-testid="playlist-action-bar">
-      <span>{canDelete ? "can-delete" : "cannot-delete"}</span>
-      <button onClick={onDeleted}>trigger-delete</button>
-    </div>
+  default: ({ onDeleted }: { onDeleted: () => void }) => (
+    <button onClick={onDeleted}>Delete playlist</button>
   ),
 }));
 
 vi.mock("../components/EditPlaylistOverlay", () => ({
-  default: ({ isOpen }: { isOpen: boolean }) =>
-    isOpen ? <div data-testid="edit-overlay-open" /> : null,
+  default: () => null,
 }));
 
-const mockedPlaylistService = vi.mocked(playlistService);
-
 describe("PlaylistPage", () => {
+  function renderPlaylistPage(currentUserId = "owner-1") {
+    const store = configureStore({
+      reducer: {
+        audioSource: audioSourceReducer,
+        user: userReducer,
+        queue: queueReducer,
+        playContext: playContextReducer,
+      },
+      preloadedState: {
+        user: {
+          currentUser: {
+            id: currentUserId,
+            username: "alice",
+            email: "alice@example.com",
+            role: "listener",
+            isVerified: true,
+            avatarUrl: null,
+          },
+        },
+      },
+    });
+
+    return render(
+      <Provider store={store}>
+        <MemoryRouter initialEntries={["/collections/pl-1"]}>
+          <Routes>
+            <Route path="/collections/:id" element={<PlaylistPage />} />
+          </Routes>
+        </MemoryRouter>
+      </Provider>,
+    );
+  }
+
   beforeEach(() => {
-    vi.clearAllMocks();
+    mockNavigate.mockReset();
+    mockGetPlaylistById.mockReset();
+    mockGetPlaylistTracks.mockReset();
   });
 
-  it("renders collection-not-found when playlist is missing", async () => {
-    mockedPlaylistService.getPlaylistById.mockResolvedValue(null as never);
-    mockedPlaylistService.getPlaylistTracks.mockResolvedValue({ data: [] } as never);
+  it("shows an error when the playlist cannot be loaded", async () => {
+    mockGetPlaylistById.mockResolvedValue(null);
+    mockGetPlaylistTracks.mockResolvedValue({ data: [] });
 
-    render(<PlaylistPage />);
+    renderPlaylistPage();
 
     expect(await screen.findByText(/collection not found/i)).toBeInTheDocument();
   });
 
-  it("renders playlist content for owner", async () => {
-    mockedPlaylistService.getPlaylistById.mockResolvedValue({
+  it("renders playlist content after loading", async () => {
+    mockGetPlaylistById.mockResolvedValue({
       id: "pl-1",
-      title: "My List",
-      description: null,
-      type: "PLAYLIST",
+      title: "My Playlist",
       privacy: "public",
-      coverUrl: null,
-      trackCount: 1,
-      likeCount: 0,
-      repostsCount: 0,
-      isLiked: false,
       owner: {
         id: "owner-1",
         username: "alice",
@@ -90,34 +134,22 @@ describe("PlaylistPage", () => {
         avatarUrl: null,
         followerCount: 10,
       },
-      createdAt: "2026-01-01T00:00:00.000Z",
-      updatedAt: "2026-01-01T00:00:00.000Z",
-    } as never);
-    mockedPlaylistService.getPlaylistTracks.mockResolvedValue({
-      data: [{ track: { id: "t-1" } }],
-    } as never);
-
-    render(<PlaylistPage />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId("playlist-header")).toHaveTextContent("owner-view");
-      expect(screen.getByTestId("playlist-action-bar")).toHaveTextContent("can-delete");
-      expect(screen.getByTestId("playlist-track-list")).toHaveTextContent("tracks:1");
     });
+    mockGetPlaylistTracks.mockResolvedValue({
+      data: [{ track: { id: "t-1" } }],
+    });
+
+    renderPlaylistPage();
+
+    expect(await screen.findByTestId("playlist-header")).toHaveTextContent("My Playlist");
+    expect(screen.getByTestId("playlist-track-list")).toHaveTextContent("1");
   });
 
-  it("navigates to library after delete callback", async () => {
-    mockedPlaylistService.getPlaylistById.mockResolvedValue({
+  it("navigates back to the library after deletion", async () => {
+    mockGetPlaylistById.mockResolvedValue({
       id: "pl-1",
-      title: "My List",
-      description: null,
-      type: "PLAYLIST",
+      title: "My Playlist",
       privacy: "public",
-      coverUrl: null,
-      trackCount: 0,
-      likeCount: 0,
-      repostsCount: 0,
-      isLiked: false,
       owner: {
         id: "owner-1",
         username: "alice",
@@ -125,15 +157,16 @@ describe("PlaylistPage", () => {
         avatarUrl: null,
         followerCount: 10,
       },
-      createdAt: "2026-01-01T00:00:00.000Z",
-      updatedAt: "2026-01-01T00:00:00.000Z",
-    } as never);
-    mockedPlaylistService.getPlaylistTracks.mockResolvedValue({ data: [] } as never);
+    });
+    mockGetPlaylistTracks.mockResolvedValue({ data: [] });
 
-    render(<PlaylistPage />);
-    await screen.findByTestId("playlist-action-bar");
+    renderPlaylistPage();
 
-    fireEvent.click(screen.getByRole("button", { name: "trigger-delete" }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /delete playlist/i })).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: /delete playlist/i }));
     expect(mockNavigate).toHaveBeenCalledWith("/library");
   });
 });

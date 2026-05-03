@@ -294,10 +294,13 @@ export default function PlayerBar() {
 
       <NextUpPanel isOpen={showNextUp} onClose={() => setShowNextUp(false)} />
 
-      <div data-testid="player-bar" className="fixed bottom-0 left-0 right-0 h-12 bg-[#222] border-t border-zinc-700 z-50 flex items-center justify-center px-6 gap-5">
+      <div
+        data-testid="player-bar"
+        className="fixed bottom-0 left-0 right-0 z-50 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-zinc-700 bg-[#222] px-2 py-1 sm:h-12 sm:flex-nowrap sm:justify-center sm:px-6 sm:py-0 sm:gap-5"
+      >
 
         {/* Playback controls */}
-        <div data-testid="player-controls" className="flex items-center gap-4 shrink-0">
+        <div data-testid="player-controls" className="order-2 ml-auto flex items-center gap-2 shrink-0 sm:order-none sm:ml-0 sm:gap-4">
           <svg
             data-testid="player-prev-button"
             width="16" height="16" viewBox="0 0 16 16" fill="white"
@@ -341,7 +344,7 @@ export default function PlayerBar() {
             data-testid="player-shuffle-button"
             data-active={shuffle}
             size={15}
-            className="cursor-pointer transition-colors"
+            className="hidden cursor-pointer transition-colors sm:block"
             style={{ color: shuffle ? "#FF5500" : "#71717a" }}
             onClick={toggleShuffle}
           />
@@ -349,15 +352,21 @@ export default function PlayerBar() {
             data-testid="player-repeat-button"
             data-repeat-mode={repeat}
             size={15}
-            className="cursor-pointer transition-colors"
+            className="hidden cursor-pointer transition-colors sm:block"
             style={{ color: repeat === "one" ? "#FF5500" : "#71717a" }}
             onClick={handleRepeatToggle}
           />
         </div>
 
         {/* Progress bar + times */}
-        <div data-testid="player-progress-section" className="flex items-center gap-2 shrink-0" style={{ width: "378px" }}>
-          <span data-testid="player-current-time" className="text-xs font-bold text-white shrink-0 tracking-tight">
+        <div
+          data-testid="player-progress-section"
+          className="order-3 flex w-full basis-full items-center gap-2 sm:order-none sm:w-[378px] sm:basis-auto sm:shrink-0"
+        >
+          <span
+            data-testid="player-current-time"
+            className="hidden shrink-0 text-xs font-bold tracking-tight text-white sm:block"
+          >
             {formatTime(currentTime)}
           </span>
 
@@ -379,7 +388,10 @@ export default function PlayerBar() {
             />
           </div>
 
-          <span data-testid="player-duration" className="text-xs font-bold text-white shrink-0 tracking-tight">
+          <span
+            data-testid="player-duration"
+            className="hidden shrink-0 text-xs font-bold tracking-tight text-white sm:block"
+          >
             {formatTime(duration)}
           </span>
         </div>
@@ -387,7 +399,7 @@ export default function PlayerBar() {
         {/* Volume */}
         <div
           data-testid="player-volume-control"
-          className="relative shrink-0"
+          className="relative hidden shrink-0 sm:block"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
@@ -429,7 +441,7 @@ export default function PlayerBar() {
         </div>
 
         {/* Track info */}
-        <div data-testid="player-track-info" className="flex items-center gap-2 shrink-0">
+        <div data-testid="player-track-info" className="order-1 flex min-w-0 flex-1 items-center gap-2 sm:order-none sm:flex-none sm:shrink-0">
           {thumbnailUrl && (
             <a
               href={trackLink}
@@ -439,7 +451,7 @@ export default function PlayerBar() {
               <img data-testid="player-track-thumbnail" src={thumbnailUrl} alt="cover" className="w-8 h-8 object-cover" />
             </a>
           )}
-          <div className="flex flex-col leading-tight">
+          <div className="min-w-0 flex flex-col leading-tight">
             <a
               href={artistLink}
               data-testid="player-track-artist"
@@ -458,7 +470,7 @@ export default function PlayerBar() {
             <a
               href={trackLink}
               data-testid="player-track-title"
-              className="mt-0.5 text-xs font-bold leading-none text-white transition-colors hover:text-zinc-300"
+              className="mt-0.5 truncate text-xs font-bold leading-none text-white transition-colors hover:text-zinc-300"
               onClick={(event) => navigateWithinApp(event, trackLink)}
             >
               {trackTitle}
@@ -467,7 +479,7 @@ export default function PlayerBar() {
         </div>
 
         {/* Right-side actions */}
-        <div data-testid="player-actions" className="flex items-center gap-4 shrink-0">
+        <div data-testid="player-actions" className="hidden items-center gap-4 shrink-0 sm:flex">
           <Heart
             data-testid="player-like-button"
             size={15}

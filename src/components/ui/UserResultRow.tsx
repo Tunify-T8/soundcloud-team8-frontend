@@ -26,9 +26,17 @@ export default function UserResultRow({ user }: { user: UserSearchResult }) {
         data-testid={`user-avatar-${user.id}`}
         className="w-[70px] h-[70px] rounded-full bg-[hsl(0,0%,20%)] flex items-center justify-center shrink-0 overflow-hidden"
       >
-        <span className="text-[26px] font-bold text-gray-400">
-          {(user.displayName ?? user.username).charAt(0).toUpperCase()}
-        </span>
+        {user.avatarUrl ? (
+          <img
+            src={user.avatarUrl}
+            alt={user.displayName ?? user.username}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <span className="text-[26px] font-bold text-gray-400">
+            {(user.displayName ?? user.username).charAt(0).toUpperCase()}
+          </span>
+        )}
       </div>
 
       {/* Info */}

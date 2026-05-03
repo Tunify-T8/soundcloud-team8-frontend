@@ -14,7 +14,7 @@ export default function AllTabPage() {
   return (
     <div data-testid="profile-all-tab-page" className="w-full">
       <div data-testid="profile-all-tab-content" className="w-full">
-        <Spotlight isMe={isMeView} />
+        {isMeView ? <Spotlight isMe={isMeView} /> : null}
         <ProfileTracksSection
           username={username}
           isMeView={isMeView}
@@ -40,6 +40,7 @@ export default function AllTabPage() {
           hideEmptyState
         />
         <ProfileRepostsSection
+          username={username}
           isMeView={isMeView}
           meDisplayName={me?.displayName}
           meUsername={me?.username}

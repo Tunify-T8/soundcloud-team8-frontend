@@ -28,14 +28,17 @@ function FilterSidebar({
   onChange: (f: FilterType) => void;
 }) {
   return (
-    <div className="w-[200px] shrink-0 pt-10 pl-6 pr-4 flex flex-col justify-between min-h-[calc(100vh-48px)]">
-      <div>
+    <div
+      data-testid="filter-sidebar"
+      className="w-full shrink-0 flex flex-row overflow-x-auto gap-1 px-3 py-3 border-b border-zinc-800 md:w-[200px] md:flex-col md:overflow-x-visible md:gap-0 md:justify-between md:pt-10 md:pl-6 md:pr-4 md:min-h-[calc(100vh-48px)] md:border-b-0"
+    >
+      <div className="flex flex-row gap-1 md:flex-col md:gap-0">
         {FILTERS.map(({ key, label }) => (
           <button
             key={key}
             data-testid={`filter-${key}`}
             onClick={() => onChange(key)}
-            className={`w-full text-left px-4 py-2 mb-1 rounded text-[14px] font-semibold transition-colors ${
+            className={`whitespace-nowrap text-left px-3 py-2 rounded text-[14px] font-semibold transition-colors md:w-full md:px-4 md:mb-1 ${
               active === key
                 ? "bg-white text-black"
                 : "text-gray-300 hover:text-white"
@@ -46,8 +49,7 @@ function FilterSidebar({
         ))}
       </div>
 
-      {/* Legal footer matches SoundCloud sidebar */}
-      <div className="text-zinc-500 text-[12px] pb-8 leading-6">
+      <div className="hidden md:block text-zinc-500 text-[12px] pb-8 leading-6">
         <a href="#" className="hover:text-zinc-300">
           Legal
         </a>{" "}
@@ -119,7 +121,26 @@ export default function SearchPage() {
               ? () => feedService.searchCollections(query)
               : () => feedService.search(query);
     fetchFn()
-      .then(setResults)
+      .then((data) => {
+        if (activeFilter === "albums") {
+          setResults(
+            data.filter(
+              (item): item is CollectionSearchResult => item.type === "album",
+            ),
+          );
+          return;
+        }
+        if (activeFilter === "playlists") {
+          setResults(
+            data.filter(
+              (item): item is CollectionSearchResult =>
+                item.type === "playlist",
+            ),
+          );
+          return;
+        }
+        setResults(data);
+      })
       .finally(() => setLoading(false));
   }, [query, activeFilter]);
 
@@ -135,7 +156,11 @@ export default function SearchPage() {
 
   const summaryParts = [
     collections.length > 0 &&
-      `${collections.length} playlist${collections.length !== 1 ? "s" : ""}`,
+      `${collections.length} ${
+        activeFilter === "albums"
+          ? `album${collections.length !== 1 ? "s" : ""}`
+          : `playlist${collections.length !== 1 ? "s" : ""}`
+      }`,
     tracks.length > 0 &&
       `${tracks.length} track${tracks.length !== 1 ? "s" : ""}`,
     users.length > 0 &&
@@ -143,20 +168,30 @@ export default function SearchPage() {
   ].filter(Boolean) as string[];
 
   return (
-    <div className="min-h-screen bg-[#0b0b0b] flex">
+    <div
+      data-testid="search-page"
+      className="min-h-screen bg-[#0b0b0b] flex flex-col md:flex-row"
+    >
       <FilterSidebar active={activeFilter} onChange={setActiveFilter} />
 
-      <div className="flex-1 pt-10 px-8 max-w-[860px]">
-        {/* Heading */}
+      <div
+        data-testid="search-page-content"
+        className="flex-1 pt-4 px-4 sm:px-6 sm:pt-6 md:pt-10 md:px-8 max-w-[860px]"
+      >
         {query && (
-          <h1 className="text-white text-[22px] font-bold mb-2">
+          <h1
+            data-testid="search-heading"
+            className="text-white text-[22px] font-bold mb-2"
+          >
             Search results for <span className="font-bold">"{query}"</span>
           </h1>
         )}
 
-        {/* Summary line */}
         {!loading && summaryParts.length > 0 && (
-          <p className="text-gray-400 text-[14px] mb-8">
+          <p
+            data-testid="search-summary"
+            className="text-gray-400 text-[14px] mb-8"
+          >
             Found {summaryParts.join(", ")}
           </p>
         )}

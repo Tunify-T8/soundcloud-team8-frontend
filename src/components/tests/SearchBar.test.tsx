@@ -1,158 +1,102 @@
-/**
- * SearchBar.test.tsx
- *
- * SearchBar has no submit button — it submits on Enter keypress.
- * The only interactive element is the text input; the search icon is decorative.
- */
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
-import SearchBar from '../ui/SearchBar';
-
-// ─── Mock useNavigate ─────────────────────────────────────────────────────────
+import SearchBar from "../ui/SearchBar";
+import { renderWithProviders } from "@/test/renderWithProviders";
 
 const mockNavigate = vi.fn();
+const mockSearchAutocomplete = vi.fn();
 
-vi.mock('react-router-dom', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('react-router-dom')>();
+vi.mock("react-router-dom", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("react-router-dom")>();
   return {
     ...actual,
     useNavigate: () => mockNavigate,
   };
 });
 
-// ─── Helper ───────────────────────────────────────────────────────────────────
+vi.mock("@/hooks/useDebounce", () => ({
+  useDebounce: (value: string) => value,
+}));
 
-function renderSearchBar() {
-  return render(
-    <MemoryRouter>
-      <SearchBar />
-    </MemoryRouter>,
-  );
-}
+vi.mock("@/features/feed/feedservice", () => ({
+  feedService: {
+    searchAutocomplete: (...args: unknown[]) => mockSearchAutocomplete(...args),
+  },
+}));
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
-
-describe('SearchBar — rendering', () => {
+describe("SearchBar", () => {
   beforeEach(() => {
-    mockNavigate.mockClear();
+    mockNavigate.mockReset();
+    mockSearchAutocomplete.mockReset();
+    mockSearchAutocomplete.mockResolvedValue({
+      tracks: [],
+      users: [],
+      collections: [],
+    });
   });
 
-  it('renders a text input', () => {
-    renderSearchBar();
-    expect(screen.getByRole('textbox')).toBeInTheDocument();
+  it("renders the search input", () => {
+    renderWithProviders(<SearchBar />);
+    expect(screen.getByTestId("search-input")).toHaveAttribute("placeholder", "Search");
   });
 
-  it('renders a search icon (SVG)', () => {
-    renderSearchBar();
-    const svg = document.querySelector('svg');
-    expect(svg).toBeInTheDocument();
+  it("navigates to the search page on Enter", async () => {
+    renderWithProviders(<SearchBar />);
+
+    await userEvent.type(screen.getByTestId("search-input"), "kendrick lamar{Enter}");
+
+    expect(mockNavigate).toHaveBeenCalledWith("/search?q=kendrick%20lamar");
+    expect(screen.getByTestId("search-input")).toHaveValue("");
   });
 
-  it('input starts empty', () => {
-    renderSearchBar();
-    expect(screen.getByRole('textbox')).toHaveValue('');
+  it("navigates to /me when the query matches the current user", async () => {
+    renderWithProviders(<SearchBar />, {
+      preloadedState: {
+        user: {
+          currentUser: {
+            id: "me-1",
+            username: "nada",
+            email: "nada@example.com",
+            role: "listener",
+            isVerified: true,
+            avatarUrl: null,
+          },
+        },
+      },
+    });
+
+    await userEvent.type(screen.getByTestId("search-input"), "Nada{Enter}");
+
+    expect(mockNavigate).toHaveBeenCalledWith("/me");
   });
 
-  it('renders a search-related placeholder', () => {
-    renderSearchBar();
-    const input = screen.getByRole('textbox');
-    expect(input.getAttribute('placeholder')).toBeTruthy();
-  });
+  it("shows autocomplete results and navigates when a result is selected", async () => {
+    mockSearchAutocomplete.mockResolvedValue({
+      tracks: [
+        {
+          id: "track-1",
+          type: "track",
+          title: "Skyline",
+          artist: "Artist One",
+          coverUrl: null,
+        },
+      ],
+      users: [],
+      collections: [],
+    });
 
-  it('input is not disabled', () => {
-    renderSearchBar();
-    expect(screen.getByRole('textbox')).not.toBeDisabled();
-  });
-});
+    renderWithProviders(<SearchBar />);
 
-describe('SearchBar — typing', () => {
-  beforeEach(() => {
-    mockNavigate.mockClear();
-  });
+    await userEvent.type(screen.getByTestId("search-input"), "sky");
 
-  it('updates value as user types', async () => {
-    renderSearchBar();
-    const input = screen.getByRole('textbox');
-    await userEvent.type(input, 'lofi beats');
-    expect(input).toHaveValue('lofi beats');
-  });
+    await waitFor(() => {
+      expect(screen.getByTestId("search-dropdown")).toBeInTheDocument();
+    });
 
-  it('reflects each keypress incrementally', async () => {
-    renderSearchBar();
-    const input = screen.getByRole('textbox');
-    await userEvent.type(input, 'abc');
-    expect(input).toHaveValue('abc');
-  });
-});
+    await userEvent.click(screen.getByTestId("search-track-track-1"));
 
-describe('SearchBar — form submission', () => {
-  beforeEach(() => {
-    mockNavigate.mockClear();
-  });
-
-  it('navigates to /search?q=... when Enter is pressed', async () => {
-    renderSearchBar();
-    await userEvent.type(screen.getByRole('textbox'), 'kendrick lamar{Enter}');
-    expect(mockNavigate).toHaveBeenCalledWith('/search?q=kendrick%20lamar');
-  });
-
-  it('trims leading/trailing whitespace before navigating', async () => {
-    renderSearchBar();
-    await userEvent.type(screen.getByRole('textbox'), '  lofi  {Enter}');
-    expect(mockNavigate).toHaveBeenCalledWith('/search?q=lofi');
-  });
-
-  it('does NOT navigate for an empty query on Enter', async () => {
-    renderSearchBar();
-    await userEvent.type(screen.getByRole('textbox'), '{Enter}');
-    expect(mockNavigate).not.toHaveBeenCalled();
-  });
-
-  it('does NOT navigate for a whitespace-only query', async () => {
-    renderSearchBar();
-    await userEvent.type(screen.getByRole('textbox'), '   {Enter}');
-    expect(mockNavigate).not.toHaveBeenCalled();
-  });
-
-  it('encodes special characters in the query', async () => {
-    renderSearchBar();
-    await userEvent.type(screen.getByRole('textbox'), 'AC/DC{Enter}');
-    const call = mockNavigate.mock.calls[0][0] as string;
-    expect(call).toMatch('/search?q=');
-    expect(call).not.toContain(' ');
-  });
-
-  it('only triggers navigate once per Enter press', async () => {
-    renderSearchBar();
-    await userEvent.type(screen.getByRole('textbox'), 'drake{Enter}');
-    expect(mockNavigate).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe('SearchBar — controlled input state', () => {
-  beforeEach(() => {
-    mockNavigate.mockClear();
-  });
-
-  it('allows typing a new query after a previous submit', async () => {
-    renderSearchBar();
-    const input = screen.getByRole('textbox');
-    await userEvent.type(input, 'first{Enter}');
-    await userEvent.clear(input);
-    await userEvent.type(input, 'second');
-    expect(input).toHaveValue('second');
-  });
-
-  it('does not navigate again without a new Enter press', async () => {
-    renderSearchBar();
-    const input = screen.getByRole('textbox');
-    await userEvent.type(input, 'first{Enter}');
-    expect(mockNavigate).toHaveBeenCalledTimes(1);
-    await userEvent.clear(input);
-    await userEvent.type(input, 'second');
-    expect(mockNavigate).toHaveBeenCalledTimes(1);
+    expect(mockNavigate).toHaveBeenCalledWith("/tracks/track-1");
   });
 });

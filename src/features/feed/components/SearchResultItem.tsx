@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import SongCard from '@/components/ui/SongCard';
-import AlbumCard from '@/components/ui/AlbumCard';
 import UserResultRow from '@/components/ui/UserResultRow';
 import { playlistService } from '@/features/library/libraryService';
 import type { CollectionTrack } from '@/features/library/types';
@@ -13,6 +12,21 @@ import type {
 
 function waveformSeedFromId(id: string): number {
   return id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+}
+
+function resolveImageUrl(source: Record<string, unknown>): string | null {
+  const direct = source.coverUrl ?? source.artworkUrl ?? source.avatarUrl ?? source.cover;
+  if (typeof direct === 'string' && direct.trim().length > 0) return direct;
+
+  const artwork = source.artwork;
+  if (artwork && typeof artwork === 'object') {
+    const artworkUrl = (artwork as Record<string, unknown>).url;
+    if (typeof artworkUrl === 'string' && artworkUrl.trim().length > 0) {
+      return artworkUrl;
+    }
+  }
+
+  return null;
 }
 
 function formatTimeAgo(dateStr: string): string {
@@ -83,7 +97,7 @@ function extractPlaylistTracks(collection: CollectionSearchResult): SearchPlayli
       ) as Record<string, unknown>;
 
       const id = String(track.id ?? source.id ?? `${collection.id}-t${index + 1}`);
-      const title = String(track.title ?? source.title ?? `Track ${index + 1}`);
+      const title = String(track.title ?? source.title ?? 'Untitled track');
       const artist = String(
         track.artist ??
         source.artist ??
@@ -98,9 +112,7 @@ function extractPlaylistTracks(collection: CollectionSearchResult): SearchPlayli
         source.playCount ??
         0,
       );
-      const avatarUrl = typeof (track.coverUrl ?? source.coverUrl) === 'string'
-        ? String(track.coverUrl ?? source.coverUrl)
-        : null;
+      const avatarUrl = resolveImageUrl(track) ?? resolveImageUrl(source);
 
       return {
         id,
@@ -113,13 +125,18 @@ function extractPlaylistTracks(collection: CollectionSearchResult): SearchPlayli
     });
   }
 
-  return Array.from({ length: 3 }, (_, i) => ({
-    id: `${collection.id}-t${i + 1}`,
-    number: i + 1,
-    title: `Track ${i + 1}`,
-    artist: collection.artist,
-    playsCount: 0,
-  }));
+  if (Array.isArray(collection.trackPreview) && collection.trackPreview.length > 0) {
+    return collection.trackPreview.slice(0, 5).map((preview, index) => ({
+      id: preview.id || `${collection.id}-preview-${index + 1}`,
+      number: index + 1,
+      title: preview.title || 'Untitled track',
+      artist: preview.artist || collection.artist,
+      playsCount: 0,
+      avatarUrl: preview.coverUrl ?? collection.coverUrl ?? null,
+    }));
+  }
+
+  return [];
 }
 
 function CollectionResult({ collection }: { collection: CollectionSearchResult }) {
@@ -127,7 +144,7 @@ function CollectionResult({ collection }: { collection: CollectionSearchResult }
 
   useEffect(() => {
     let isMounted = true;
-    if (collection.type !== 'playlist') return;
+    if (collection.type !== 'playlist' && collection.type !== 'album') return;
 
     const loadTracks = async () => {
       try {
@@ -143,7 +160,9 @@ function CollectionResult({ collection }: { collection: CollectionSearchResult }
             (ct.track as { playCount?: number; playsCount?: number }).playCount ??
             (ct.track as { playCount?: number; playsCount?: number }).playsCount ??
             0,
-          avatarUrl: ct.track.coverUrl ?? null,
+          avatarUrl:
+            resolveImageUrl(ct.track as unknown as Record<string, unknown>) ??
+            null,
         }));
         setFetchedPlaylistTracks(mapped);
       } catch {
@@ -161,10 +180,14 @@ function CollectionResult({ collection }: { collection: CollectionSearchResult }
   const playlistTracks = fetchedPlaylistTracks.length > 0
     ? fetchedPlaylistTracks
     : extractPlaylistTracks(collection);
+  const totalPlays = playlistTracks.reduce((sum, t) => sum + t.playsCount, 0);
+  const firstTrack = playlistTracks[0];
+  const artistName = firstTrack?.artist || collection.artist;
+  const trackCount =
+    collection.trackCount > 0 ? collection.trackCount : playlistTracks.length;
 
   if (collection.type === 'playlist') {
     const firstRealTrack = playlistTracks.find((t) => !t.id.startsWith(`${collection.id}-t`));
-    const totalPlays = playlistTracks.reduce((sum, t) => sum + t.playsCount, 0);
 
     return (
       <div data-testid={`search-result-collection-${collection.id}`} className="mb-8">
@@ -189,15 +212,23 @@ function CollectionResult({ collection }: { collection: CollectionSearchResult }
   }
 
   return (
-    <div data-testid={`search-result-collection-${collection.id}`}>
-      <AlbumCard
-        id={collection.id}
-        type={collection.type}
-        title={collection.title}
-        artist={collection.artist}
-        coverUrl={collection.coverUrl}
-        createdAt={collection.createdAt}
-        tracks={playlistTracks}
+    <div data-testid={`search-result-collection-${collection.id}`} className="mb-8">
+      <SongCard
+        trackId={firstTrack?.id ?? ''}
+        entityLinkTo={`/collections/${collection.id}`}
+        artistName={artistName}
+        title={collection.title || 'Untitled album'}
+        coverUrl={collection.coverUrl ?? undefined}
+        timeAgo={formatTimeAgo(collection.createdAt)}
+        contextTag="Album"
+        likes="0"
+        reposts="0"
+        comments={trackCount.toString()}
+        plays={totalPlays.toString()}
+        waveformSeed={waveformSeedFromId(collection.id)}
+        playlistTracks={playlistTracks}
+        profileTrackTextStyle="titleWhiteArtistGray"
+        smallCoverOnMobile
       />
     </div>
   );

@@ -30,7 +30,7 @@ const ResetPasswordPage: React.FC = () => {
 
   const hasAllFields =
     email.trim().length > 0 &&
-    token.trim().length > 0 &&
+    token.trim().length >= 6 &&
     newPassword.length > 0 &&
     confirmPassword.length > 0;
 
@@ -54,7 +54,7 @@ const ResetPasswordPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       await resetPassword(email.trim(), token.trim().toUpperCase(), newPassword, confirmPassword, true);
-      setSubmitted(true);
+      navigate('/signin');
     } catch (err: any) {
       const msg = err?.response?.data?.message;
       if (Array.isArray(msg)) {
@@ -96,7 +96,7 @@ const ResetPasswordPage: React.FC = () => {
                     >
                       <ChevronLeft className="h-5 w-5 text-[#111]" />
                     </button>
-                    <h1 className="text-[#111] text-base font-bold">Reset your password</h1>
+                    <h1 className="text-[#111] text-base font-bold" data-testid="pageTitle">Reset your password</h1>
                   </div>
 
                   {apiError && (
@@ -241,8 +241,8 @@ const ResetPasswordPage: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <h2 className="text-[#111] text-lg font-bold mb-3">Password changed</h2>
-                  <p className="text-[#666] text-sm leading-relaxed mb-6">
+                  <h2 className="text-[#111] text-lg font-bold mb-3" data-testid="successHeading">Password changed</h2>
+                  <p className="text-[#666] text-sm leading-relaxed mb-6" data-testid="successMessage">
                     Your password has been updated successfully. You have been signed out of all other devices.
                   </p>
                   <button

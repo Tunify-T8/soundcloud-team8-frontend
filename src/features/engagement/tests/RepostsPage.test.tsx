@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 import { engagementService } from '../services/engagementService';
@@ -40,7 +40,9 @@ describe('RepostsPage', () => {
 
     render(
       <MemoryRouter initialEntries={['/tracks/123/reposts']}>
-        <RepostsPage />
+        <Routes>
+          <Route path="/tracks/:trackId/reposts" element={<RepostsPage />} />
+        </Routes>
       </MemoryRouter>
     );
 

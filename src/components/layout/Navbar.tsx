@@ -103,7 +103,6 @@ export default function Navbar() {
   const [notifications, setNotifications] = useState<NotificationObject[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifLoading, setNotifLoading] = useState(false);
-  const [followedBack, setFollowedBack] = useState<Set<string>>(new Set());
 
   // Connect the messaging socket so real-time badge works on ALL pages
   useEffect(() => {
@@ -204,8 +203,8 @@ export default function Navbar() {
       } else {
         await followUser(actorId);
       }
-      setFollowedBack((prev) => new Set([...prev, actorId]));
     } catch {
+      // Revert optimistic update on failure
       setNotifications((prev) =>
         prev.map((notif) =>
           notif.actor?.id === actorId
@@ -479,7 +478,6 @@ const handleSignOut = async () => {
                         <DropdownNotifRow
                           key={notif.id}
                           notif={notif}
-                          followedBack={followedBack.has(notif.actor?.id)}
                           onFollowBack={() => handleFollowBack(notif.actor?.id, notif.isFollowed)}
                           onClose={() => setNotifOpen(false)}
                         />
@@ -603,12 +601,10 @@ const handleSignOut = async () => {
 
 function DropdownNotifRow({
   notif,
-  followedBack,
   onFollowBack,
   onClose,
 }: {
   notif: NotificationObject;
-  followedBack: boolean;
   onFollowBack: () => void;
   onClose: () => void;
 }) {
@@ -644,8 +640,11 @@ function DropdownNotifRow({
       {notif.type === "user_followed" && (
         <button
           onClick={(e) => { e.stopPropagation(); onFollowBack(); }}
-          disabled={followedBack}
-          className={`px-4 py-2 text-sm font-bold rounded-lg flex-shrink-0 transition-colors ${followedBack ? "bg-zinc-700 text-zinc-400 cursor-default" : "bg-white text-black hover:bg-zinc-200"}`}
+          className={`px-4 py-2 text-sm font-bold rounded-lg flex-shrink-0 transition-colors ${
+            notif.isFollowed
+              ? "bg-zinc-700 text-white hover:bg-red-900 hover:text-red-400"
+              : "bg-white text-black hover:bg-zinc-200"
+          }`}
         >
           {notif.isFollowed ? "Following" : "Follow back"}
         </button>

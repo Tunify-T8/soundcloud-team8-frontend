@@ -222,7 +222,7 @@ export default function ChatWindow({ conversationId: conversationIdProp }: ChatW
         sender: {
           id: currentUserId,
           displayName:
-            currentUser?.displayName ?? currentUser?.username ?? "Me",
+            (currentUser as any)?.displayName ?? currentUser?.username ?? "Me",
           avatarUrl: currentUser?.avatarUrl ?? null,
         },
         type: attachmentDraft.type as MessageType,
@@ -276,7 +276,7 @@ export default function ChatWindow({ conversationId: conversationIdProp }: ChatW
       sender: {
         id: currentUserId,
         displayName:
-          currentUser?.displayName ?? currentUser?.username ?? "Me",
+          (currentUser as any)?.displayName ?? currentUser?.username ?? "Me",
         avatarUrl: currentUser?.avatarUrl ?? null,
       },
       type: "TEXT",

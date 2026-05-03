@@ -1,8 +1,18 @@
-import React from "react";
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
 import { DiscoverSection } from "../../components/DiscoverSection";
 import type { DiscoverTrack } from "@/features/discover/Discover";
+
+vi.mock("../../components/DiscoverTrackCarousel", () => ({
+  DiscoverTrackCarousel: ({ tracks }: { tracks: DiscoverTrack[] }) => (
+    <div>
+      {tracks.map((track) => (
+        <span key={track.id}>{track.title}</span>
+      ))}
+    </div>
+  ),
+}));
 
 const tracks: DiscoverTrack[] = [
   {
@@ -28,17 +38,13 @@ const tracks: DiscoverTrack[] = [
 ];
 
 describe("DiscoverSection", () => {
-  it("renders section title", () => {
+  it("renders the section title", () => {
     render(<DiscoverSection title="Made for you" tracks={tracks} />);
-
-    expect(
-      screen.getByRole("heading", { name: "Made for you" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Made for you" })).toBeInTheDocument();
   });
 
-  it("renders tracks inside carousel", () => {
+  it("renders the provided tracks through the carousel", () => {
     render(<DiscoverSection title="Made for you" tracks={tracks} />);
-
     expect(screen.getByText("Northern Lights")).toBeInTheDocument();
     expect(screen.getByText("Golden Echo")).toBeInTheDocument();
   });
